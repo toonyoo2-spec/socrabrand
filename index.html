@@ -2261,13 +2261,9 @@
 
             if (!title || !raw_html) return alert('제목과 HTML 코드를 모두 입력해주세요.');
 
-            // 디버깅: 현재 사용자 정보 확인
-            console.log('=== submitReference 디버깅 ===');
-            console.log('currentUserId:', currentUserId);
-            console.log('currentUserEmail:', currentUserEmail);
-            console.log('currentUserName:', currentUserName);
-            console.log('adminToken:', adminToken ? '있음' : '없음');
-            console.log('isAdmin:', isAdmin);
+            console.log('=== submitReference 시작 ===');
+            console.log('제목:', title);
+            console.log('작성자:', currentUserName || currentUserEmail || '관리자');
 
             document.getElementById('loadingSpinner').style.display = 'flex';
 
@@ -2280,13 +2276,13 @@
                         console.error('참고자료 수정 실패:', response.status, errorText);
                         throw new Error(`수정 실패: ${response.status} - ${errorText}`);
                     }
+                    console.log('수정 완료');
                 } else {
-                    // 신규 - author_id와 author_name 모두 전송
+                    // 신규 - author_name만 전송
                     const payload = {
                         title,
                         raw_html,
-                        author_id: currentUserId,
-                        author_name: currentUserName || currentUserEmail || 'Unknown'
+                        author_name: currentUserName || currentUserEmail || '관리자'
                     };
 
                     console.log('전송할 payload:', payload);
