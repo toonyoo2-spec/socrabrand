@@ -2260,13 +2260,26 @@
                     // 수정
                     await adminRest(`references?id=eq.${id}`, 'PATCH', { title, raw_html });
                 } else {
-                    // 신규
-                    await adminRest('references', 'POST', { title, raw_html, author_name: currentUserName });
+                    // 신규 - author_id와 author_name 모두 전송
+                    const payload = {
+                        title,
+                        raw_html,
+                        author_id: currentUserId,
+                        author_name: currentUserName || currentUserEmail || 'Unknown'
+                    };
+                    const response = await adminRest('references', 'POST', payload);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('참고자료 등록 실패:', errorText);
+                        throw new Error(`저장 실패: ${response.status}`);
+                    }
                 }
                 closeReferenceEditor();
                 await loadReferences();
+                alert('참고자료가 저장되었습니다.');
             } catch (e) {
-                alert('저장 중 오류가 발생했습니다.');
+                console.error('submitReference 에러:', e);
+                alert('저장 중 오류가 발생했습니다: ' + e.message);
             } finally {
                 document.getElementById('loadingSpinner').style.display = 'none';
             }
