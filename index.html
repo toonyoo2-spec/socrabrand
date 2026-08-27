@@ -2182,11 +2182,18 @@
         let currentReferences = [];
 
         async function loadReferences() {
+            console.log('=== loadReferences 시작 ===');
+            console.log('adminToken:', adminToken ? '있음' : '없음');
             try {
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/references?select=*&order=created_at.desc`, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` }
                 });
+                console.log('응답 상태:', res.status);
+
                 const data = await res.json();
+                console.log('받은 데이터:', data);
+                console.log('데이터 개수:', Array.isArray(data) ? data.length : 0);
+
                 currentReferences = Array.isArray(data) ? data : [];
                 renderReferences();
             } catch (e) {
@@ -2253,12 +2260,26 @@
             const raw_html = document.getElementById('refHtmlInput').value.trim();
 
             if (!title || !raw_html) return alert('제목과 HTML 코드를 모두 입력해주세요.');
+
+            // 디버깅: 현재 사용자 정보 확인
+            console.log('=== submitReference 디버깅 ===');
+            console.log('currentUserId:', currentUserId);
+            console.log('currentUserEmail:', currentUserEmail);
+            console.log('currentUserName:', currentUserName);
+            console.log('adminToken:', adminToken ? '있음' : '없음');
+            console.log('isAdmin:', isAdmin);
+
             document.getElementById('loadingSpinner').style.display = 'flex';
 
             try {
                 if (id) {
                     // 수정
-                    await adminRest(`references?id=eq.${id}`, 'PATCH', { title, raw_html });
+                    const response = await adminRest(`references?id=eq.${id}`, 'PATCH', { title, raw_html });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('참고자료 수정 실패:', response.status, errorText);
+                        throw new Error(`수정 실패: ${response.status} - ${errorText}`);
+                    }
                 } else {
                     // 신규 - author_id와 author_name 모두 전송
                     const payload = {
@@ -2267,13 +2288,22 @@
                         author_id: currentUserId,
                         author_name: currentUserName || currentUserEmail || 'Unknown'
                     };
+
+                    console.log('전송할 payload:', payload);
+
                     const response = await adminRest('references', 'POST', payload);
+                    console.log('응답 상태:', response.status);
+
                     if (!response.ok) {
                         const errorText = await response.text();
-                        console.error('참고자료 등록 실패:', errorText);
-                        throw new Error(`저장 실패: ${response.status}`);
+                        console.error('참고자료 등록 실패:', response.status, errorText);
+                        throw new Error(`저장 실패: ${response.status} - ${errorText}`);
                     }
+
+                    const result = await response.json();
+                    console.log('저장된 데이터:', result);
                 }
+
                 closeReferenceEditor();
                 await loadReferences();
                 alert('참고자료가 저장되었습니다.');
