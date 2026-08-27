@@ -258,7 +258,7 @@
         .note-date-section { margin-bottom: 2rem; }
         .note-date-section > .date-badge { display: inline-block; margin-bottom: 0.8rem; }
 
-        /* Note 왼쪽 사이드바 (노션 스타일 작성자/날짜 네비게이션) */
+        /* Note 왼쪽 사이드바 */
         .note-list-layout { display: flex; gap: 2.5rem; align-items: flex-start; margin-top: 1.5rem; }
         .note-sidebar { flex: 0 0 170px; position: sticky; top: 90px; }
         .note-sidebar-section { margin-bottom: 1.6rem; }
@@ -291,7 +291,7 @@
 </head>
 <body>
 
-    <!-- 1. 로그인 스크린 (앱 진입 전 게이트) -->
+    <!-- 1. 로그인 스크린 -->
     <div id="loginScreen">
         <div class="login-box">
             <div class="login-title">Socra Brandteam</div>
@@ -310,7 +310,7 @@
         </div>
     </div>
 
-    <!-- 2. 메인 앱 컨테이너 (로그인 성공 시 보임) -->
+    <!-- 2. 메인 앱 컨테이너 -->
     <div id="appContainer" style="display: none;">
         <header class="grid-layout-align">
             <div class="header-tag" id="mainHeaderTitle">Socra Brandteam</div>
@@ -324,7 +324,8 @@
             <div class="main-menu-container grid-layout-align">
                 <a href="#archive" class="main-menu-tab active" onclick="switchMainTab('archive')">아카이브</a>
                 <a href="#note" class="main-menu-tab" id="noteTab" style="display: none;" onclick="switchMainTab('note')">문서</a>
-                <a href="#library" class="main-menu-tab" onclick="switchMainTab('library')">자료실</a>
+                <a href="#library" class="main-menu-tab" id="libraryTab" onclick="switchMainTab('library')">자료실</a>
+                <a href="#reference" class="main-menu-tab" id="referenceTab" onclick="switchMainTab('reference')">참고자료</a>
             </div>
         </div>
 
@@ -391,10 +392,10 @@
                     </div>
                     <div class="note-toolbar-divider"></div>
                     <div class="note-toolbar-group">
-                        <button type="button" title="옵션+커맨드+1" onclick="noteExec('formatBlock','&lt;h1&gt;')">H1</button>
-                        <button type="button" title="옵션+커맨드+2" onclick="noteExec('formatBlock','&lt;h2&gt;')">H2</button>
-                        <button type="button" title="옵션+커맨드+3" onclick="noteExec('formatBlock','&lt;h3&gt;')">H3</button>
-                        <button type="button" title="본문으로" onclick="noteExec('formatBlock','&lt;p&gt;')">본문</button>
+                        <button type="button" title="옵션+커맨드+1" onclick="noteExec('formatBlock','<h1>')">H1</button>
+                        <button type="button" title="옵션+커맨드+2" onclick="noteExec('formatBlock','<h2>')">H2</button>
+                        <button type="button" title="옵션+커맨드+3" onclick="noteExec('formatBlock','<h3>')">H3</button>
+                        <button type="button" title="본문으로" onclick="noteExec('formatBlock','<p>')">본문</button>
                     </div>
                     <div class="note-toolbar-divider"></div>
                     <div class="note-toolbar-group">
@@ -414,7 +415,7 @@
                     <div class="note-toolbar-group">
                         <button type="button" title="글머리 목록" onclick="noteExec('insertUnorderedList')">• 목록</button>
                         <button type="button" title="번호 목록" onclick="noteExec('insertOrderedList')">1. 목록</button>
-                        <button type="button" title="인용구" onclick="noteExec('formatBlock','&lt;blockquote&gt;')">" 인용구</button>
+                        <button type="button" title="인용구" onclick="noteExec('formatBlock','<blockquote>')">" 인용구</button>
                         <button type="button" title="구분선" onclick="insertNoteDivider()">─ 구분선</button>
                         <button type="button" title="링크" onclick="toggleNoteLinkInput()">🔗 링크</button>
                     </div>
@@ -437,6 +438,16 @@
                 </div>
                 <div id="noteContentEditable" class="note-content-editable" contenteditable="false"></div>
             </div>
+        </main>
+
+        <!-- Reference Page (참고자료) -->
+        <main id="referenceContainer" class="grid-layout-align" style="display: none;">
+            <div class="section-header" style="margin-top: 1.5rem;">
+                <h2 class="section-title">참고자료</h2>
+                <!-- 관리자(또는 작성 권한자)에게만 보이는 버튼 -->
+                <button id="btnAdminReference" class="btn-admin-action" style="display: none;" onclick="openReferenceEditor()">+ 새 참고자료</button>
+            </div>
+            <div id="referenceListContainer" class="note-list"></div>
         </main>
 
         <button class="top-btn" onclick="scrollToTop()">TOP ▲</button>
@@ -703,6 +714,41 @@
                 </div>
             </div>
         </div>
+
+        <!-- 참고자료 작성/수정 에디터 모달 -->
+        <div id="referenceEditorModal" class="admin-modal-overlay">
+            <div class="admin-modal-box" style="max-width: 800px; width: 95%;">
+                <div class="admin-modal-title">참고자료 등록/수정</div>
+                <input type="hidden" id="editRefId">
+                <div class="admin-input-group">
+                    <label>제목</label>
+                    <input type="text" id="refTitleInput" class="admin-input" placeholder="예: ROI 계산기 위젯">
+                </div>
+                <div class="admin-input-group">
+                    <label>HTML 코드 (제미나이가 짜준 코드 복사/붙여넣기)</label>
+                    <textarea id="refHtmlInput" class="admin-input" style="height: 350px; font-family: ui-monospace, monospace; line-height: 1.4; resize: vertical;" placeholder="<!DOCTYPE html>..."></textarea>
+                </div>
+                <div class="admin-btn-row">
+                    <button class="btn-cancel" onclick="closeReferenceEditor()">취소</button>
+                    <button class="btn-submit" onclick="submitReference()">저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 참고자료 열람 (iframe 뷰어) 모달 -->
+        <div id="referenceViewModal" class="modal-overlay" onclick="closeReferenceView(event)">
+            <div class="modal-container" style="width: 95vw; height: 90vh; background: white; border-radius: 12px;">
+                <div class="modal-header" style="background: #121212; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <span id="refViewTitle" class="modal-header-title">참고자료 미리보기</span>
+                    <button class="close-btn" onclick="closeReferenceView()">✕</button>
+                </div>
+                <div style="flex: 1; display: flex; width: 100%; height: calc(100% - 44px); background: #ffffff;">
+                    <!-- iframe을 통해 CSS/JS 완벽 격리 -->
+                    <iframe id="refViewIframe" style="width: 100%; height: 100%; border: none; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+                </div>
+            </div>
+        </div>
+
     </div> <!-- // end of appContainer -->
 
     <div id="loadingSpinner">
@@ -974,10 +1020,13 @@
             const noteTab = document.getElementById('noteTab');
             const archiveTab = document.querySelector('a[href="#archive"]');
             const libraryTab = document.querySelector('a[href="#library"]');
+            const btnAdminReference = document.getElementById('btnAdminReference');
 
             // 탭 표시는 profiles.visible_tabs 기준
             archiveTab.style.display = visibleTabs.includes('archive') ? 'inline-block' : 'none';
             libraryTab.style.display = visibleTabs.includes('library') ? 'inline-block' : 'none';
+            // 참고자료 탭은 모두에게 항시 표시
+            document.getElementById('referenceTab').style.display = 'inline-block'; 
 
             // Note 탭은 note_access 권한이 있을 때만 표시
             if (noteAccess) {
@@ -989,14 +1038,17 @@
             if (isAdmin) {
                 if (currentMainTab === 'archive') addProjBtn.style.display = 'block';
                 if (libraryHeaderAdmin && currentMainTab === 'library') libraryHeaderAdmin.style.display = 'flex';
+                if (btnAdminReference && currentMainTab === 'reference') btnAdminReference.style.display = 'inline-block';
             } else {
                 addProjBtn.style.display = 'none';
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
+                if (btnAdminReference) btnAdminReference.style.display = 'none';
             }
         }
 
         function canSeeTab(tabName) {
             if (tabName === 'note') return noteAccess;
+            if (tabName === 'reference') return true; // 참고자료는 누구나 열람 가능
             return visibleTabs.includes(tabName);
         }
 
@@ -1004,7 +1056,7 @@
             if (visibleTabs.includes('archive')) return 'archive';
             if (visibleTabs.includes('library')) return 'library';
             if (noteAccess) return 'note';
-            return 'archive';
+            return 'reference';
         }
 
         function switchMainTab(tabName) {
@@ -1019,40 +1071,54 @@
             const archiveContainer = document.getElementById('archiveContainer');
             const libraryContainer = document.getElementById('libraryContainer');
             const noteContainer = document.getElementById('noteContainer');
+            const referenceContainer = document.getElementById('referenceContainer');
+            
             const navBarWrapper = document.querySelector('.nav-bar-wrapper');
             const addProjBtn = document.getElementById('btnAddProject');
             const libraryHeaderAdmin = document.getElementById('libraryHeaderAdmin');
+            const btnAdminReference = document.getElementById('btnAdminReference');
 
+            // 1) 모든 컨테이너 숨기기
+            if (archiveContainer) archiveContainer.style.display = 'none';
+            if (libraryContainer) libraryContainer.style.display = 'none';
+            if (noteContainer) noteContainer.style.display = 'none';
+            if (referenceContainer) referenceContainer.style.display = 'none';
+
+            // 2) 선택된 컨테이너 보여주기
             if (tabName === 'archive') {
-                archiveContainer.style.display = 'block';
-                libraryContainer.style.display = 'none';
-                noteContainer.style.display = 'none';
-                navBarWrapper.style.display = 'block';
-                if (isAdmin) addProjBtn.style.display = 'block';
+                if (archiveContainer) archiveContainer.style.display = 'block';
+                if (navBarWrapper) navBarWrapper.style.display = 'block';
+                if (isAdmin && addProjBtn) addProjBtn.style.display = 'block';
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
+                if (btnAdminReference) btnAdminReference.style.display = 'none';
             } else if (tabName === 'library') {
-                archiveContainer.style.display = 'none';
-                libraryContainer.style.display = 'block';
-                noteContainer.style.display = 'none';
-                navBarWrapper.style.display = 'none';
-                addProjBtn.style.display = 'none';
+                if (libraryContainer) libraryContainer.style.display = 'block';
+                if (navBarWrapper) navBarWrapper.style.display = 'none';
+                if (addProjBtn) addProjBtn.style.display = 'none';
+                if (btnAdminReference) btnAdminReference.style.display = 'none';
                 if (libraryHeaderAdmin && isAdmin) libraryHeaderAdmin.style.display = 'flex';
                 loadLibraryFiles();
             } else if (tabName === 'note') {
                 if (!noteAccess) { switchMainTab('archive'); return; }
-                archiveContainer.style.display = 'none';
-                libraryContainer.style.display = 'none';
-                noteContainer.style.display = 'block';
-                navBarWrapper.style.display = 'none';
-                addProjBtn.style.display = 'none';
+                if (noteContainer) noteContainer.style.display = 'block';
+                if (navBarWrapper) navBarWrapper.style.display = 'none';
+                if (addProjBtn) addProjBtn.style.display = 'none';
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
+                if (btnAdminReference) btnAdminReference.style.display = 'none';
                 closeNoteEditor();
+            } else if (tabName === 'reference') {
+                if (referenceContainer) referenceContainer.style.display = 'block';
+                if (navBarWrapper) navBarWrapper.style.display = 'none';
+                if (addProjBtn) addProjBtn.style.display = 'none';
+                if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
+                if (isAdmin && btnAdminReference) btnAdminReference.style.display = 'inline-block';
+                loadReferences();
             }
         }
 
         function handleHashChange() {
             const hash = window.location.hash.slice(1) || 'archive';
-            if (hash === 'archive' || hash === 'library' || hash === 'note') {
+            if (['archive', 'library', 'note', 'reference'].includes(hash)) {
                 switchMainTab(hash);
             }
         }
@@ -1905,7 +1971,6 @@
                 return;
             }
 
-            // 날짜별로 그룹화 (작성일 기준, 최신순)
             const groups = {};
             filtered.forEach(n => {
                 const key = (n.created_at || '').slice(0, 10) || '날짜 미상';
@@ -1937,14 +2002,14 @@
         }
 
         function canEditNote(note) {
-            if (!note) return true; // 새 글은 작성자 본인이니 항상 편집 가능
+            if (!note) return true;
             return userRole === 'editor' || note.author_id === currentUserId;
         }
 
         function openNoteEditor(id) {
             currentNoteId = id || null;
             const note = currentNoteId ? currentNotes.find(n => n.id === currentNoteId) : null;
-            noteEditMode = !note; // 새 글은 바로 편집 모드, 기존 글은 뷰어 모드로 먼저 열림
+            noteEditMode = !note;
 
             document.getElementById('noteTitleInput').value = note ? note.title : '';
             document.getElementById('noteContentEditable').innerHTML = note ? (note.content || '') : '';
@@ -1988,7 +2053,6 @@
             document.execCommand(cmd, false, value || null);
         }
 
-        // Notion처럼 옵션+커맨드+1/2/3으로 헤딩 크기 전환 (Mac: Option=Alt, Command=Meta)
         document.getElementById('noteContentEditable').addEventListener('keydown', function (e) {
             if (e.altKey && e.metaKey && ['1', '2', '3'].includes(e.key)) {
                 e.preventDefault();
@@ -2028,7 +2092,6 @@
             document.execCommand('insertHTML', false, `<code>${(text || '코드').replace(/</g, '&lt;')}</code>`);
         }
 
-        // 링크/동영상링크 입력창은 하나만 열리도록 서로 닫아줌
         function closeNoteInlineInputRows() {
             document.getElementById('noteLinkRow').style.display = 'none';
             document.getElementById('noteLinkInput').value = '';
@@ -2036,7 +2099,6 @@
             document.getElementById('noteVideoLinkInput').value = '';
         }
 
-        // 링크 삽입 — 텍스트를 선택한 상태면 그 텍스트에 링크를 걸고, 아니면 URL 텍스트를 그대로 삽입
         function toggleNoteLinkInput(show) {
             closeNoteInlineInputRows();
             if (show === false) return;
@@ -2062,7 +2124,6 @@
             toggleNoteLinkInput(false);
         }
 
-        // 동영상 링크(임베드) 삽입 — 파일 업로드와 별개로, URL만 붙여넣는 방식
         function toggleNoteVideoLinkInput(show) {
             toggleNoteLinkInput(false);
             const row = document.getElementById('noteVideoLinkRow');
@@ -2113,6 +2174,137 @@
                 if (!res.ok) throw new Error('삭제 실패');
                 closeNoteEditor();
             } catch (e) { alert(e.message); }
+        }
+
+        // ==========================================
+        // --- 참고자료 (Reference) 기능 로직 ---
+        // ==========================================
+        let currentReferences = [];
+
+        async function loadReferences() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/references?select=*&order=created_at.desc`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` }
+                });
+                const data = await res.json();
+                currentReferences = Array.isArray(data) ? data : [];
+                renderReferences();
+            } catch (e) {
+                console.error('참고자료 로드 실패:', e);
+            }
+        }
+
+        function renderReferences() {
+            const container = document.getElementById('referenceListContainer');
+            if (currentReferences.length === 0) {
+                container.innerHTML = '<div class="note-empty">등록된 참고자료가 없습니다.</div>';
+                return;
+            }
+
+            container.innerHTML = currentReferences.map(ref => {
+                const dateStr = new Date(ref.created_at).toLocaleDateString('ko-KR');
+                const adminBtns = isAdmin ? `
+                    <div style="margin-top: 0.8rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem; display: flex; gap: 0.5rem;">
+                        <button class="admin-edit-badge" onclick="event.stopPropagation(); openReferenceEditor('${ref.id}')">수정</button>
+                        <button class="admin-delete-badge" onclick="event.stopPropagation(); deleteReference('${ref.id}')">삭제</button>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="note-card" onclick="openReferenceView('${ref.id}')">
+                        <div class="note-card-title">${ref.title.replace(/</g, '&lt;')}</div>
+                        <div class="note-card-snippet">인터랙티브 HTML 자료</div>
+                        <div class="note-card-meta">${ref.author_name || '관리자'} · ${dateStr}</div>
+                        ${adminBtns}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 에디터 열기/닫기
+        function openReferenceEditor(id = null) {
+            const titleInput = document.getElementById('refTitleInput');
+            const htmlInput = document.getElementById('refHtmlInput');
+            const idInput = document.getElementById('editRefId');
+
+            if (id) {
+                const target = currentReferences.find(r => r.id == id);
+                if (target) {
+                    idInput.value = target.id;
+                    titleInput.value = target.title;
+                    htmlInput.value = target.raw_html;
+                }
+            } else {
+                idInput.value = '';
+                titleInput.value = '';
+                htmlInput.value = '';
+            }
+            document.getElementById('referenceEditorModal').classList.add('active');
+        }
+
+        function closeReferenceEditor() {
+            document.getElementById('referenceEditorModal').classList.remove('active');
+        }
+
+        // 저장 기능 (신규/수정)
+        async function submitReference() {
+            const id = document.getElementById('editRefId').value;
+            const title = document.getElementById('refTitleInput').value.trim();
+            const raw_html = document.getElementById('refHtmlInput').value.trim();
+
+            if (!title || !raw_html) return alert('제목과 HTML 코드를 모두 입력해주세요.');
+            document.getElementById('loadingSpinner').style.display = 'flex';
+
+            try {
+                if (id) {
+                    // 수정
+                    await adminRest(`references?id=eq.${id}`, 'PATCH', { title, raw_html });
+                } else {
+                    // 신규
+                    await adminRest('references', 'POST', { title, raw_html, author_name: currentUserName });
+                }
+                closeReferenceEditor();
+                await loadReferences();
+            } catch (e) {
+                alert('저장 중 오류가 발생했습니다.');
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+
+        // 삭제 기능
+        async function deleteReference(id) {
+            if (!confirm('이 참고자료를 삭제하시겠습니까?')) return;
+            try {
+                await adminRest(`references?id=eq.${id}`, 'DELETE');
+                await loadReferences();
+            } catch (e) {
+                alert('삭제 실패');
+            }
+        }
+
+        // 뷰어 열기/닫기 (iframe에 srcdoc 주입)
+        function openReferenceView(id) {
+            const target = currentReferences.find(r => r.id == id);
+            if (!target) return;
+
+            document.getElementById('refViewTitle').textContent = target.title;
+            
+            // iframe srcdoc에 HTML 텍스트 주입
+            const iframe = document.getElementById('refViewIframe');
+            iframe.srcdoc = target.raw_html;
+
+            document.getElementById('referenceViewModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReferenceView(event) {
+            if (event && event.target.id !== 'referenceViewModal') return;
+            document.getElementById('referenceViewModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // 닫을 때 iframe 내용 초기화 (소리 재생 등 멈춤)
+            document.getElementById('refViewIframe').srcdoc = '';
         }
 
         // 앱 렌더링 초기화
