@@ -1047,6 +1047,13 @@
         }
         function handleHashChange() {
             const hash = window.location.hash.slice(1) || 'archive';
+            const refIdFromHash = getReferenceIdFromHash();
+
+            if (refIdFromHash) {
+                // #reference/7 같은 형태 - 참고자료 상세 보기
+                return;
+            }
+
             if (['archive', 'library', 'note', 'reference'].includes(hash)) {
                 switchMainTab(hash);
             }
