@@ -706,7 +706,7 @@
             <span id="refViewTitle" class="reference-viewer-title"></span>
             <button class="close-btn" onclick="closeReferenceView()" aria-label="닫기">✕</button>
         </div>
-        <iframe id="refViewIframe" class="reference-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+        <iframe id="refViewIframe" class="reference-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"></iframe>
     </div>
     <div id="loadingSpinner">
         <div style="font-size: 1.1rem;" id="spinnerText">⏳ 처리 중...</div>
@@ -1047,10 +1047,10 @@
         }
         function handleHashChange() {
             const hash = window.location.hash.slice(1) || 'archive';
-            const refIdFromHash = getReferenceIdFromHash();
 
-            if (refIdFromHash) {
-                // #reference/7 같은 형태 - 참고자료 상세 보기
+            // #reference/7 형태인지 체크 (참고자료 상세 보기)
+            const isReferenceDetail = /^reference\/(.+)$/.test(hash);
+            if (isReferenceDetail) {
                 return;
             }
 
