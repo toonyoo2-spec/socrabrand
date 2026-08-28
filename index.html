@@ -2149,8 +2149,8 @@
             referenceViewerOpen = true;
         }
         function openReferenceView(id) {
-            renderReferenceView(id);
-            history.pushState({ referenceViewOpen: true, referenceId: id }, '', `#reference/${id}`);
+            // 새 탭에서 참고자료 열기
+            window.open(`#reference/${id}`, "_blank");
         }
         function closeReferenceView() {
             if (!referenceViewerOpen) return;
