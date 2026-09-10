@@ -706,7 +706,7 @@
             <span id="refViewTitle" class="reference-viewer-title"></span>
             <button class="close-btn" onclick="closeReferenceView()" aria-label="닫기">✕</button>
         </div>
-        <iframe id="refViewIframe" class="reference-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"></iframe>
+        <iframe id="refViewIframe" class="reference-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
     </div>
     <div id="loadingSpinner">
         <div style="font-size: 1.1rem;" id="spinnerText">⏳ 처리 중...</div>
@@ -2026,6 +2026,7 @@
         // ==========================================
         let currentReferences = [];
         let referenceViewerOpen = false;
+        let currentRefBlobUrl = null;
         function getReferenceIdFromHash() {
             const m = window.location.hash.slice(1).match(/^reference\/(.+)$/);
             return m ? decodeURIComponent(m[1]) : null;
@@ -2143,7 +2144,15 @@
             const target = currentReferences.find(r => r.id == id);
             if (!target) return;
             document.getElementById('refViewTitle').textContent = target.title;
-            document.getElementById('refViewIframe').srcdoc = target.raw_html;
+            // srcdoc으로 넣으면 iframe 문서의 base URL이 부모 페이지 URL을 그대로 물려받아서,
+            // 문서 내부의 "#섹션" 앵커 링크(자체 목차 등)가 부모 페이지와 완전히 같은 URL로 취급된다.
+            // 그 결과 브라우저가 이걸 "같은 문서 내 이동"으로 보고 최상단 페이지의 해시를 바꿔버려서
+            // (sandbox의 allow-top-navigation 여부와 무관하게) 메인 탭 라우팅이 깨진다.
+            // Blob URL로 고유한 origin을 주면 내부 앵커 이동이 iframe 안에서만 스크롤된다.
+            if (currentRefBlobUrl) URL.revokeObjectURL(currentRefBlobUrl);
+            const blob = new Blob([target.raw_html], { type: 'text/html' });
+            currentRefBlobUrl = URL.createObjectURL(blob);
+            document.getElementById('refViewIframe').src = currentRefBlobUrl;
             document.getElementById('referenceViewerContainer').style.display = 'flex';
             document.body.style.overflow = 'hidden';
             referenceViewerOpen = true;
@@ -2159,7 +2168,11 @@
         function forceCloseReferenceView() {
             document.getElementById('referenceViewerContainer').style.display = 'none';
             document.body.style.overflow = 'auto';
-            document.getElementById('refViewIframe').srcdoc = '';
+            document.getElementById('refViewIframe').removeAttribute('src');
+            if (currentRefBlobUrl) {
+                URL.revokeObjectURL(currentRefBlobUrl);
+                currentRefBlobUrl = null;
+            }
             referenceViewerOpen = false;
         }
         // 앱 렌더링 초기화
