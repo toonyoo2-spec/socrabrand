@@ -642,7 +642,7 @@
                         </div>
                         <div class="column-media" onclick="togglePlay('videoLeft', 'overlayLeft')">
                             <div id="overlayLeft" class="overlay-play-btn"></div>
-                            <video id="videoLeft" preload="auto" playsinline controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"></video>
+                            <video id="videoLeft" preload="metadata" playsinline controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"></video>
                             <div class="video-control-bar" onclick="event.stopPropagation();">
                                 <div class="progress-container" onclick="seekVideo(event, 'videoLeft')">
                                     <div class="progress-bg"><div id="fillLeft" class="progress-fill"></div></div>
@@ -664,7 +664,7 @@
                         </div>
                         <div class="column-media" onclick="togglePlay('videoRight', 'overlayRight')">
                             <div id="overlayRight" class="overlay-play-btn"></div>
-                            <video id="videoRight" preload="auto" playsinline controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"></video>
+                            <video id="videoRight" preload="metadata" playsinline controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"></video>
                             <div class="video-control-bar" onclick="event.stopPropagation();">
                                 <div class="progress-container" onclick="seekVideo(event, 'videoRight')">
                                     <div class="progress-bg"><div id="fillRight" class="progress-fill"></div></div>
@@ -1061,14 +1061,13 @@
         window.addEventListener('hashchange', handleHashChange);
         async function loadArchiveFromDB() {
             try {
-                const projRes = await fetch(`${SUPABASE_URL}/rest/v1/archive_projects?select=*`, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` }
-                });
-                const dbProjects = await projRes.json();
-                const vidRes = await fetch(`${SUPABASE_URL}/rest/v1/archive_videos?select=*&order=display_order.asc`, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` }
-                });
-                const dbVideos = await vidRes.json();
+                const authHeaders = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` };
+                // 두 요청은 서로 의존하지 않으므로 병렬로 보낸다
+                const [projRes, vidRes] = await Promise.all([
+                    fetch(`${SUPABASE_URL}/rest/v1/archive_projects?select=*`, { headers: authHeaders }),
+                    fetch(`${SUPABASE_URL}/rest/v1/archive_videos?select=*&order=display_order.asc`, { headers: authHeaders })
+                ]);
+                const [dbProjects, dbVideos] = await Promise.all([projRes.json(), vidRes.json()]);
                 displayArchive = JSON.parse(JSON.stringify(defaultProjectsArchive));
                 if (Array.isArray(dbProjects)) {
                     dbProjects.forEach(p => {
@@ -1115,6 +1114,32 @@
             const month = dateStr.substring(2, 4);
             const day = dateStr.substring(4, 6);
             return { year, month, day, formattedFull: `${year}.${month}.${day}` };
+        }
+        // 썸네일은 화면에 들어올 때만 R2에서 메타데이터를 받는다 (초기 로딩 시간 단축)
+        const THUMB_PRELOAD_MARGIN = '400px';
+        let thumbObserver = null;
+        function loadThumbVideo(video) {
+            const src = video.dataset.src;
+            if (!src) return;
+            delete video.dataset.src;
+            video.src = src;
+        }
+        function observeThumbnails(container) {
+            const thumbs = container.querySelectorAll('video.thumb-video[data-src]');
+            if (!('IntersectionObserver' in window)) {
+                thumbs.forEach(loadThumbVideo);
+                return;
+            }
+            if (!thumbObserver) {
+                thumbObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting) return;
+                        loadThumbVideo(entry.target);
+                        observer.unobserve(entry.target);
+                    });
+                }, { rootMargin: THUMB_PRELOAD_MARGIN });
+            }
+            thumbs.forEach(thumb => thumbObserver.observe(thumb));
         }
         function renderArchive() {
             const container = document.getElementById('archiveContainer');
@@ -1168,7 +1193,7 @@
                         <div class="video-card ${canEdit ? 'draggable' : ''}" onclick="openDualModalFromCard(this)" ${draggableAttrs} data-video-id="${item.id || ''}" data-item-index="${itemIndex}" data-item='${dataItem.replace(/'/g, "&apos;")}'>
                             ${dragHandleHtml}
                             <div class="thumb-cover ${item.mode || 'landscape'}">
-                                <video src="${encodedThumbSource}#t=0.1" class="thumb-video" preload="metadata" muted playsinline
+                                <video data-src="${encodedThumbSource}#t=0.1" class="thumb-video" preload="metadata" muted playsinline
                                     controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"
                                     onloadedmetadata="if(this.videoWidth && this.videoHeight){ this.closest('.thumb-cover').style.aspectRatio = (this.videoWidth / this.videoHeight); }"></video>
                                 <div class="play-btn"></div>
@@ -1199,6 +1224,7 @@
                 `;
                 container.appendChild(section);
             });
+            observeThumbnails(container);
             renderYearTabs(Array.from(yearsSet).sort((a, b) => b - a));
             renderMonthTabs(Array.from(availableMonthsSet).sort((a, b) => a - b));
         }
