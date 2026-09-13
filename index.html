@@ -93,7 +93,8 @@
         .video-card:hover { border-color: var(--accent-red); transform: translateY(-2px); }
         .thumb-cover { position: relative; width: 100%; background: #171717; overflow: hidden; aspect-ratio: 16 / 9; }
         .thumb-cover.portrait { aspect-ratio: 9 / 16; }
-        .thumb-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .thumb-video, .thumb-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .thumb-image { display: block; background: #171717; }
         .play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(239, 68, 68, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; }
         .play-btn::after { content: ""; display: block; width: 0; height: 0; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent #ffffff; margin-left: 2px; }
         .video-info { padding: 0.75rem; }
@@ -1093,6 +1094,7 @@
                                     rightBadge: v.right_badge || '',
                                     fullUrl: v.full_url,
                                     introUrl: v.intro_url,
+                                    thumbUrl: v.thumb_url || null,
                                     mode: v.mode,
                                     displayOrder: v.display_order || 0
                                 });
@@ -1179,6 +1181,13 @@
                         return R2_PUBLIC_DOMAIN + encodeURIComponent(afterDomain);
                     };
                     const encodedThumbSource = encodeThumbUrl(thumbSource);
+                    // 정적 썸네일(수십 KB)이 있으면 그걸 쓰고, 없을 때만 영상에서 프레임을 뽑는다
+                    const thumbMarkup = item.thumbUrl
+                        ? `<img src="${item.thumbUrl}" class="thumb-image" loading="lazy" decoding="async" alt=""
+                                onload="if(this.naturalWidth && this.naturalHeight){ this.closest('.thumb-cover').style.aspectRatio = (this.naturalWidth / this.naturalHeight); }">`
+                        : `<video data-src="${encodedThumbSource}#t=0.1" class="thumb-video" preload="metadata" muted playsinline
+                                controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"
+                                onloadedmetadata="if(this.videoWidth && this.videoHeight){ this.closest('.thumb-cover').style.aspectRatio = (this.videoWidth / this.videoHeight); }"></video>`;
                     const canEdit = isAdmin && item.id;
                     const dataItem = JSON.stringify(item);
                     const editClickAttr = canEdit ? `onclick="event.stopPropagation(); openVideoEditModal(JSON.parse(this.closest('.video-card').dataset.item))"` : '';
@@ -1193,9 +1202,7 @@
                         <div class="video-card ${canEdit ? 'draggable' : ''}" onclick="openDualModalFromCard(this)" ${draggableAttrs} data-video-id="${item.id || ''}" data-item-index="${itemIndex}" data-item='${dataItem.replace(/'/g, "&apos;")}'>
                             ${dragHandleHtml}
                             <div class="thumb-cover ${item.mode || 'landscape'}">
-                                <video data-src="${encodedThumbSource}#t=0.1" class="thumb-video" preload="metadata" muted playsinline
-                                    controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"
-                                    onloadedmetadata="if(this.videoWidth && this.videoHeight){ this.closest('.thumb-cover').style.aspectRatio = (this.videoWidth / this.videoHeight); }"></video>
+                                ${thumbMarkup}
                                 <div class="play-btn"></div>
                             </div>
                             <div class="video-info">
@@ -1362,11 +1369,15 @@
             try {
                 const fullUrl = fullFileInput.files.length > 0 ? await uploadVideoFile(fullFileInput.files[0], projectDate) : currentFullUrl;
                 const introUrl = isDual ? (introFileInput.files.length > 0 ? await uploadVideoFile(introFileInput.files[0], projectDate) : currentIntroUrl) : null;
+                // 그리드에 쓰이는 영상이 교체됐을 때만 썸네일을 다시 만든다
+                const thumbSourceFile = isDual ? introFileInput.files[0] : fullFileInput.files[0];
+                const newThumbUrl = thumbSourceFile ? await uploadThumbnailFor(thumbSourceFile) : null;
                 const res = await adminRest(`archive_videos?id=eq.${vidId}`, 'PATCH', {
                     tag: newTag, title: newTitle, mode: newMode,
                     full_url: fullUrl, intro_url: introUrl, left_title: isDual ? newLeftTitle : null,
                     right_title: isDual ? newRightTitle : null, left_badge: isDual ? newLeftBadge : null,
-                    right_badge: isDual ? newRightBadge : null, is_single: !isDual
+                    right_badge: isDual ? newRightBadge : null, is_single: !isDual,
+                    ...(newThumbUrl ? { thumb_url: newThumbUrl } : {})
                 });
                 document.getElementById('loadingSpinner').style.display = 'none';
                 if (res.ok) {
@@ -1429,6 +1440,55 @@
             document.getElementById('dualIntroFields').style.display = isDual ? 'flex' : 'none';
             document.getElementById('labelFileVideoFull').textContent = isDual ? '메인(오른쪽/FULL) 영상 파일 (.mp4)' : '영상 파일 (.mp4)';
         }
+        const THUMB_MAX_WIDTH = 720;
+        const THUMB_CAPTURE_SEC = 0.5;
+        const THUMB_JPEG_QUALITY = 0.82;
+        const THUMB_TIMEOUT_MS = 15000;
+        // 업로드한 영상에서 정적 썸네일을 만들어 함께 올린다.
+        // 실패해도 등록 자체는 막지 않는다(그리드가 영상 프레임 방식으로 폴백).
+        async function generateThumbnailFile(videoFile, baseName) {
+            const objectUrl = URL.createObjectURL(videoFile);
+            const video = document.createElement('video');
+            video.muted = true; video.playsInline = true; video.preload = 'metadata';
+            try {
+                const blob = await new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => reject(new Error('썸네일 생성 시간 초과')), THUMB_TIMEOUT_MS);
+                    const fail = (e) => { clearTimeout(timer); reject(e instanceof Error ? e : new Error('영상을 읽지 못했습니다.')); };
+                    video.onerror = fail;
+                    video.onloadedmetadata = () => {
+                        const target = Math.min(THUMB_CAPTURE_SEC, (video.duration || 1) / 2);
+                        video.currentTime = isFinite(target) ? target : 0;
+                    };
+                    video.onseeked = () => {
+                        try {
+                            const scale = Math.min(1, THUMB_MAX_WIDTH / video.videoWidth);
+                            const canvas = document.createElement('canvas');
+                            canvas.width = Math.round(video.videoWidth * scale);
+                            canvas.height = Math.round(video.videoHeight * scale);
+                            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                            canvas.toBlob(b => {
+                                clearTimeout(timer);
+                                b ? resolve(b) : reject(new Error('썸네일 인코딩 실패'));
+                            }, 'image/jpeg', THUMB_JPEG_QUALITY);
+                        } catch (e) { fail(e); }
+                    };
+                    video.src = objectUrl;
+                });
+                return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+            } finally {
+                URL.revokeObjectURL(objectUrl);
+            }
+        }
+        async function uploadThumbnailFor(videoFile) {
+            try {
+                const baseName = `t${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                const thumbFile = await generateThumbnailFile(videoFile, baseName);
+                return await uploadVideoFile(thumbFile, 'thumbs');
+            } catch (e) {
+                console.warn('썸네일 생성 건너뜀:', e);
+                return null;
+            }
+        }
         async function uploadVideoFile(file, folder) {
             try {
                 const rawName = folder ? `${folder}/${file.name}` : file.name;
@@ -1460,9 +1520,11 @@
             try {
                 const fullUrl = await uploadVideoFile(fileInput.files[0], date);
                 const introUrl = isDual ? await uploadVideoFile(introFileInput.files[0], date) : null;
+                // 그리드에 보이는 쪽(듀얼이면 인트로)을 기준으로 썸네일을 만든다
+                const thumbUrl = await uploadThumbnailFor(isDual ? introFileInput.files[0] : fileInput.files[0]);
                 const dbRes = await adminRest('archive_videos', 'POST', {
                     project_date: date, tag, title, mode,
-                    full_url: fullUrl, intro_url: introUrl, left_title: isDual ? leftTitle : null,
+                    full_url: fullUrl, intro_url: introUrl, thumb_url: thumbUrl, left_title: isDual ? leftTitle : null,
                     right_title: isDual ? rightTitle : null, left_badge: isDual ? leftBadge : null, right_badge: isDual ? rightBadge : null,
                     is_single: !isDual
                 });
