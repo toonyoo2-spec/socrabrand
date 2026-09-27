@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>리얼아카데미 콘텐츠 자동화 · 7단계 현황</title>
+  <meta name="description" content="리얼아카데미 블로그 자동화와 카드뉴스 제작·검수·업로드 흐름">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23141923'/%3E%3Cpath d='M14 20h20v8h16v16H30v-8H14z' fill='%2336cf9a'/%3E%3Cpath d='M44 36l8 8-8 8' fill='none' stroke='%23f5b650' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg:#f6f5f1; --panel:#ffffff; --card:#ffffff; --border:#e3e1db; --text:#141414; --muted:#6f6d67;
+      /* 상태 색: 선·막대는 배경 대비 3:1 이상, 칩 글씨는 먹색 */
+      --green:#00D37A; --green-line:#0E955C; --green-tint:#E6F9ED;
+      --amber:#B86E00; --amber-tint:#FDF0D5;
+      --red:#D92D20;   --red-tint:#FDE7E4;
+      --blue:#2F6FDB;  --blue-tint:#E7EEFC;
+      --line:#8a8780;
+      --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+      --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 var(--font); -webkit-font-smoothing:antialiased; }
+    button { font:inherit; cursor:pointer; }
+    a { color:var(--text); }
+    header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 24px; background:var(--bg); border-bottom:1px solid var(--text); }
+    h1 { font-size:20px; margin:0 0 4px; letter-spacing:-.04em; font-weight:800; }
+    .subtitle { color:var(--muted); font-size:12px; }
+    .header-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .pill { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:99px; padding:5px 11px; font-size:11px; font-weight:700; white-space:nowrap; transition:border-color .2s; }
+    a.pill:hover { border-color:var(--text); }
+    .pill strong { color:var(--text); background:var(--green-tint); margin:-5px -11px; padding:5px 11px; border-radius:99px; }
+    .dot { width:7px; height:7px; border-radius:50%; background:currentColor; display:inline-block; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 24px; border-bottom:1px solid var(--border); background:var(--bg); flex-wrap:wrap; }
+    .tabs,.zoom { display:flex; gap:4px; }
+    .tabs button,.zoom button { border:1px solid transparent; background:transparent; color:var(--muted); border-radius:99px; padding:6px 12px; font-size:12px; font-weight:600; transition:background .2s,color .2s; }
+    .tabs button.active { color:#0b1a12; background:var(--green); border-color:var(--green); }
+    .zoom button { border-color:var(--border); background:var(--panel); }
+    .zoom button:hover,.tabs button:hover { color:var(--text); border-color:var(--text); }
+    .tabs button.active:hover { border-color:var(--green); color:#0b1a12; }
+    .note { color:var(--muted); font-size:11px; }
+    .canvas-wrap { height:calc(100vh - 160px); min-height:580px; overflow:hidden; position:relative; cursor:grab; background-color:var(--bg); background-image:radial-gradient(#d6d3cb 1px,transparent 1px); background-size:23px 23px; }
+    .canvas-wrap.dragging { cursor:grabbing; }
+    .canvas { position:absolute; top:0; left:0; width:1730px; height:1760px; transform-origin:top left; }
+    svg { position:absolute; inset:0; z-index:1; overflow:visible; pointer-events:none; }
+    .group { position:absolute; z-index:2; border:1px dashed #c9c6bd; border-radius:20px; background:rgba(255,255,255,.35); pointer-events:none; }
+    .group span { position:absolute; z-index:6; top:-13px; left:16px; background:var(--bg); color:var(--text); border:1px solid #c9c6bd; border-radius:99px; padding:2px 11px; font-size:11px; font-weight:700; white-space:nowrap; }
+    .node { position:absolute; z-index:4; width:290px; height:168px; padding:14px 15px 13px; border:1px solid var(--border); border-top:4px solid var(--line); border-radius:14px; background:var(--card); box-shadow:0 1px 2px rgba(20,20,20,.04),0 10px 24px -14px rgba(20,20,20,.18); text-align:left; color:var(--text); transition:filter .15s,border-color .15s,transform .15s,box-shadow .15s; }
+    .node:hover { border-color:var(--text); transform:translateY(-3px); box-shadow:0 16px 30px -16px rgba(20,20,20,.3); }
+    .node.dim { opacity:.25; filter:grayscale(.8); }
+    .node.ok { border-top-color:var(--green); }
+    .node.human { border-top-color:var(--amber); }
+    .node.gap { border-top-color:var(--red); }
+    .node.ready { border-top-color:var(--blue); }
+    .node .port { position:absolute; width:12px; height:12px; border-radius:50%; border:2px solid var(--line); background:var(--panel); }
+    .node .port.left { left:-7px; top:calc(50% - 6px); } .node .port.right { right:-7px; top:calc(50% - 6px); }
+    .node .port.top { top:-8px; left:calc(50% - 6px); } .node .port.bottom { bottom:-8px; left:calc(50% - 6px); }
+    .node-top { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--muted); font-size:11px; font-weight:600; font-family:var(--mono); }
+    .status { border-radius:99px; padding:3px 8px; font-size:10px; white-space:nowrap; background:#f1f0ec; color:var(--text); font-family:var(--font); font-weight:700; }
+    .ok .status { background:var(--green-tint); } .human .status { background:var(--amber-tint); }
+    .gap .status { background:var(--red-tint); } .ready .status { background:var(--blue-tint); }
+    .node h2 { font-size:17px; line-height:1.3; margin:13px 0 5px; letter-spacing:-.03em; font-weight:800; }
+    .node p { color:var(--muted); margin:0; font-size:12px; line-height:1.45; }
+    .node small { display:block; margin-top:10px; color:var(--text); font-size:10px; line-height:1.45; padding-top:8px; border-top:1px solid var(--border); }
+    .wire { fill:none; stroke:var(--line); stroke-width:2.2; marker-end:url(#arrow-default); }
+    .wire.ok { stroke:var(--green-line); marker-end:url(#arrow-ok); } .wire.human { stroke:var(--amber); marker-end:url(#arrow-human); }
+    .wire.gap { stroke:var(--red); stroke-dasharray:8 7; animation:dash 1.2s linear infinite; marker-end:url(#arrow-gap); }
+    .wire-label rect { fill:#ffffff; stroke:var(--red); rx:9; }
+    .wire-label text { fill:var(--text); font-size:11px; font-weight:700; text-anchor:middle; dominant-baseline:middle; }
+    @keyframes dash { to { stroke-dashoffset:-30; } }
+    .legend { position:absolute; bottom:16px; left:18px; display:flex; gap:13px; flex-wrap:wrap; padding:9px 12px; border:1px solid var(--border); border-radius:99px; background:rgba(255,255,255,.92); font-size:11px; color:var(--text); }
+    .legend i { display:inline-block; width:8px; height:8px; margin-right:5px; border-radius:50%; }
+    .footer { padding:8px 24px; color:var(--muted); font-size:11px; background:var(--bg); border-top:1px solid var(--border); font-family:var(--mono); }
+    .overlay { position:fixed; inset:0; z-index:8; background:rgba(20,20,18,.35); display:none; }
+    .overlay.show { display:block; }
+    aside { position:fixed; right:0; top:0; bottom:0; width:min(450px,100vw); background:var(--panel); border-left:1px solid var(--border); box-shadow:-25px 0 45px rgba(20,20,20,.12); z-index:9; transform:translateX(103%); transition:transform .2s ease; overflow:auto; padding:22px; }
+    aside.show { transform:translateX(0); }
+    aside h2 { margin:14px 0 8px; font-size:21px; letter-spacing:-.03em; }
+    aside p { color:var(--muted); line-height:1.65; }
+    aside ul { color:var(--text); padding-left:20px; line-height:1.7; }
+    aside li { margin:7px 0; }
+    aside li::marker { color:var(--green-line); }
+    .aside-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .aside-head .pill { background:var(--green-tint); border-color:transparent; }
+    .aside-head button { border:1px solid var(--border); color:var(--text); background:var(--panel); width:32px; height:32px; border-radius:99px; }
+    .aside-head button:hover { border-color:var(--text); }
+    .source-list { margin-top:20px; padding-top:15px; border-top:1px solid var(--border); display:grid; gap:6px; }
+    .source-list a { text-decoration:none; border:1px solid var(--border); border-radius:10px; padding:8px 10px; background:var(--bg); color:var(--text); font-weight:600; font-size:13px; }
+    .source-list a:hover { border-color:var(--text); }
+    .post-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:12px; }
+    .post-card { border:1px solid var(--border); border-radius:14px; background:var(--card); padding:16px; transition:border-color .2s; }
+    .post-card:hover { border-color:var(--text); }
+    .post-card h3 { font-size:16px; line-height:1.45; margin:12px 0 8px; letter-spacing:-.02em; }
+    .post-card p { color:var(--muted); font-size:12px; line-height:1.6; }
+    .post-card p b { color:var(--text); }
+    .post-meta,.post-links { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+    .post-meta { justify-content:space-between; color:var(--muted); font-size:11px; font-family:var(--mono); }
+    .post-badge { border-radius:99px; padding:4px 9px; font-size:10px; color:var(--text); font-family:var(--font); font-weight:700; }
+    .post-badge.amber { background:var(--amber-tint); }.post-badge.blue { background:var(--blue-tint); }.post-badge.green { background:var(--green-tint); }
+    .post-links { border-top:1px solid var(--border); padding-top:11px; margin-top:12px; }
+    .post-links a { color:var(--text); font-size:11px; font-weight:600; text-decoration:none; border:1px solid var(--border); border-radius:99px; padding:5px 10px; background:var(--bg); }
+    .post-links a:hover { border-color:var(--text); }
+    #content-status .pill { text-decoration:none; }
+    @media (max-width:740px) { header { padding:12px 15px; display:block; } .header-right { margin-top:10px; justify-content:flex-start; } .toolbar { padding:9px 14px; } .note { display:none; } .canvas-wrap { height:calc(100vh - 190px); } .footer { padding:6px 14px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>리얼아카데미 콘텐츠 자동화 · 7단계 현황</h1><div class="subtitle">주제 선정 → 블로그 초안 → 수정 분기·재검수 → 최종 승인 → 카드뉴스 · 현황 기준 2026.09.28</div></div>
+    <div class="header-right"><span class="pill"><span class="dot" style="color:#00D37A"></span> 자동화 작동 중</span><span class="pill"><strong>블로그 비공개 초안 확인 완료</strong></span></div>
+  </header>
+  <div class="toolbar">
+    <div class="tabs" role="group" aria-label="노드 필터"><button class="active" data-filter="all">전체</button><button data-filter="ok">자동 진행</button><button data-filter="human">담당자 확인</button><button data-filter="gap">보완 필요</button></div>
+    <div class="zoom" role="group" aria-label="캔버스 확대"><button id="zoom-out" aria-label="축소">−</button><button id="fit">화면 맞춤</button><button id="zoom-in" aria-label="확대">＋</button></div>
+    <span class="note">단계 선택: 담당 업무와 관련 링크 확인</span>
+  </div>
+  <main class="canvas-wrap" id="viewport" aria-label="콘텐츠 자동화 노드 흐름도">
+    <div class="canvas" id="canvas">
+      <div class="group" style="left:70px;top:75px;width:1535px;height:236px"><span>주제 선택 → 초안 · 저비용 실물 시험 완료</span></div>
+      <div class="group" style="left:70px;top:382px;width:1535px;height:248px;border-color:#59DC94"><span>4. 자동 실행 · 이미지 생성 → 보관 → CMS 비공개 기준 초안 → Notion 검수 링크 기록</span></div>
+      <div class="group" style="left:70px;top:724px;width:1535px;height:238px"><span>블로그 검수 · 피드백 분류 → 해당 지점 재작업 → 통합 재검수 → 최종 승인</span></div>
+      <div class="group" style="left:70px;top:1064px;width:1535px;height:238px;border-color:#e2c48a"><span>카드뉴스 별도 작업 · 승인 샘플 선택 → 직접/Astra 제작 → 수정·재검수 → 완료</span></div>
+      <div class="group" style="left:70px;top:1400px;width:1535px;height:238px;border-color:#c9c6bd"><span>완료 후 운영 · 결과물 아카이빙 → 게시 채널·일정 승인 → 업로드</span></div>
+      <svg id="wires" width="1730" height="1760" aria-hidden="true"><defs>
+        <marker id="arrow-default" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a8780"/></marker>
+        <marker id="arrow-ok" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0E955C"/></marker>
+        <marker id="arrow-human" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#B86E00"/></marker>
+        <marker id="arrow-gap" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#D92D20"/></marker>
+      </defs></svg>
+      <div id="nodes"></div>
+    </div>
+    <div class="legend"><span><i style="background:#00D37A"></i>자동 진행</span><span><i style="background:#B86E00"></i>담당자 확인</span><span><i style="background:#D92D20"></i>수정 후 재검수</span><span><i style="background:#2F6FDB"></i>예정 단계</span></div>
+  </main>
+  <section id="content-status" style="padding:28px 24px 34px;background:#ffffff;border-top:1px solid #141414">
+    <div style="max-width:1320px;margin:auto">
+      <h2 style="margin:0 0 6px;font-size:22px">현재 포스팅·카드뉴스 현황</h2>
+      <p style="color:#6f6d67;margin:0 0 18px">Notion 진행표의 6개 항목을 2026.09.28 기준으로 표시합니다. 링크를 누르면 원문, dev 미리보기, 선택한 카드뉴스 샘플 또는 실제 Figma 결과를 엽니다. 모든 글은 미발행입니다.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"><a class="pill" href="https://app.notion.com/p/de9b71dae297413d8501583a29ce9920" target="_blank" rel="noopener">전체 진행표</a><a class="pill" href="https://app.notion.com/p/3e25bc5f630781fda8e4f48d9200d179" target="_blank" rel="noopener">운영 가이드</a><a class="pill" href="https://app.notion.com/p/3e35bc5f630781ad8ebdd8ef25780376" target="_blank" rel="noopener">유튜브 1회차 기획</a><a class="pill" href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/%25EB%25B8%258C%25EB%259E%259C%25EB%2593%259C_RA-%25EC%B9%25B4%25EB%2593%259C%25EB%2589%25B4%25%EC%8A%A4-%25ED%258F%25AC%25EB%25A7%25B7?node-id=92-47" target="_blank" rel="noopener">카드뉴스 Figma 샘플</a></div>
+      <div class="post-grid">
+        <article class="post-card"><div class="post-meta"><span>5단계 · 9월 5주차</span><span class="post-badge amber">담당자 최종 검수 대기</span></div><h3>10월 1일부터 유아 레벨테스트 금지, 초등 입학 전 영어 준비는 어떻게 바꿔야 할까</h3><p>dev 비공개 초안과 미리보기 링크까지 준비했습니다. 담당자가 사실관계와 화면을 확인한 뒤 카드뉴스 제작을 승인합니다.</p><p><b>카드뉴스:</b> 제작 전 · 사람의 최종 승인 대기</p><div class="post-links"><a href="https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf" target="_blank" rel="noopener">Notion 원고</a><a href="https://www.moe.go.kr/boardCnts/viewRenew.do?boardID=294&boardSeq=107278&lev=0&m=020402" target="_blank" rel="noopener">공식 출처</a><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/%25EB%25B8%258C%25EB%259E%259C%25EB%2593%259C_RA-%25EC%B9%B4%25EB%2593%259C%25EB%2589%25B4%25EC%258A%A4-%25ED%258F%25AC%25EB%25A7%25B7?node-id=92-47" target="_blank" rel="noopener">카드뉴스 샘플</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>6단계 · 9월 3주차</span><span class="post-badge blue">직접 제작 중</span></div><h3>영어유치원 후 초등 영어</h3><p>블로그 dev 검증은 통과했습니다. 카드뉴스 시안이 연결되어 있고, 실제 제작 Figma 링크는 아직 없습니다.</p><p><b>카드뉴스:</b> 직접 제작 중 · 결과물 URL 대기 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e35bc5f63078120b03eebbdd0ff40da" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f630781daa662e126ab58379b" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://www.moe.go.kr/boardCnts/view.do?boardID=295&boardSeq=78261&lev=0&searchTy=" target="_blank" rel="noopener">출처</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>6단계 · 9월 3주차</span><span class="post-badge blue">직접 제작 중</span></div><h3>2026 AI·디지털 교육자료, 우리 학교는?</h3><p>블로그 dev 검증은 통과했습니다. 카드뉴스 시안이 연결되어 있고, 실제 제작 Figma 링크는 아직 없습니다.</p><p><b>카드뉴스:</b> 직접 제작 중 · 결과물 URL 대기 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e35bc5f63078123877de00716bf8877" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f63078155bd43f7470c90711b" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://eiec.kdi.re.kr/policy/materialView.do?num=275455" target="_blank" rel="noopener">출처</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>6단계 · 자동화테스트</span><span class="post-badge blue">직접 제작 중</span></div><h3>2026 초등 학급당 18.6명, 우리 반은?</h3><p>블로그 dev 검증은 통과했습니다. 재생성 요청 이력은 처리됐고, 실제 제작 Figma 링크는 아직 없습니다.</p><p><b>카드뉴스:</b> 직접 제작 중 · 결과물 URL 대기 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e45bc5f630781319090c03dad287a76" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f630781da8c02d61023781e1e" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://eiec.kdi.re.kr/policy/materialView.do?num=285801" target="_blank" rel="noopener">출처</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>7단계 · 9월 4주차</span><span class="post-badge green">콘텐츠 제작 완료</span></div><h3>초등 저학년 3시 하교, 학교는 반대하는데 학부모는?</h3><p>Figma 결과 링크가 기록되어 있습니다. 콘텐츠 제작 완료 상태이며 실제 발행은 하지 않았습니다.</p><p><b>카드뉴스:</b> Figma 결과 링크 있음 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e25bc5f6307814d8976e7b40c4799c8" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/?node-id=1-821" target="_blank" rel="noopener">Figma 제작물</a><a href="https://app.notion.com/p/3e35bc5f630781daa662e126ab58379b" target="_blank" rel="noopener">선택 샘플</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>7단계 · 9월 4주차</span><span class="post-badge green">콘텐츠 제작 완료</span></div><h3>2026년부터 초5·6 영어도 ‘표현’ 중심으로 바뀐다는데</h3><p>Figma 결과 링크가 기록되어 있습니다. 콘텐츠 제작 완료 상태이며 실제 발행은 하지 않았습니다.</p><p><b>카드뉴스:</b> Figma 결과 링크 있음 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e25bc5f630781f0834efb09d8767c03" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/?node-id=39-47" target="_blank" rel="noopener">Figma 제작물</a><a href="https://app.notion.com/p/3e35bc5f630781d0a2dcd1e2a9fe608d" target="_blank" rel="noopener">선택 샘플</a></div></article>
+      </div>
+      <section style="margin-top:26px;padding:20px;border:1px solid #e3e1db;border-radius:13px;background:#f6f5f1">
+        <div class="post-meta"><span>별도 트랙 · 온드채널 유튜브</span><span class="post-badge blue">기획 진행 중</span></div>
+        <h3 style="font-size:18px;margin:12px 0 8px">블로그·카드뉴스 자동화와 별도로, 유튜브 1회차 릴리즈를 기획하고 있습니다.</h3>
+        <p>Notion 최신 기록(9월 24일) 기준 Q&A 콘셉트와 기능 정의를 조율 중입니다. 릴리즈 목표는 10월 12일이며, 톤과 부서별 역할·일정 의견을 모아야 합니다. 기록상 9월 28일 촬영 예정이므로 내일 진행 상태를 담당자가 확인해 주세요.</p>
+        <div class="post-links"><a href="https://app.notion.com/p/3e35bc5f630781ad8ebdd8ef25780376" target="_blank" rel="noopener">유튜브 1회차 릴리즈 기획</a><a href="https://app.notion.com/p/3de5bc5f6307819abe97dd434e716792" target="_blank" rel="noopener">유튜브 온드미디어 구성</a><a href="https://app.notion.com/p/3e35bc5f630780cdae30fcbfa0c9af40" target="_blank" rel="noopener">튜토리얼 기능 정의</a></div>
+      </section>
+      <p style="color:#6f6d67;font-size:11px;margin-top:15px">현황 기준일: 2026년 9월 28일 · 상태와 링크는 Notion 진행표를 기준으로 관리합니다.</p>
+    </div>
+  </section>
+  <div class="footer">콘텐츠 운영 현황 · 담당 업무 · 관련 문서</div>
+  <div class="overlay" id="overlay"></div>
+  <aside id="drawer" aria-label="노드 상세">
+    <div class="aside-head"><span id="drawer-state" class="pill">상태</span><button id="close" aria-label="닫기">×</button></div>
+    <h2 id="drawer-title"></h2><p id="drawer-summary"></p><ul id="drawer-points"></ul><div id="drawer-links" class="source-list"></div>
+  </aside>
+  <script>
+    const notionPipeline = "https://app.notion.com/p/de9b71dae297413d8501583a29ce9920";
+    const guide = "https://app.notion.com/p/3e25bc5f630781fda8e4f48d9200d179";
+    const canonicalFigmaSample = "https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/%25EB%25B8%258C%25EB%259E%259C%25EB%2593%259C_RA-%25EC%25B9%25B4%25EB%2593%259C%25EB%2589%25B4%25EC%258A%25A4-%25ED%258F%25AC%25EB%25A7%25B7?node-id=92-47&p=f&t=LRJTR67ibHESJC9W-0";
+    document.querySelectorAll('a[href*="node-id=92-47"]').forEach(function(anchor){ anchor.href = canonicalFigmaSample; });
+    const nodes = [
+      {id:"research",x:95,y:117,num:"01",title:"후보 조사·1차 팩트체크",sub:"공식 원문 + 독립 출처 + 관심 근거 자동 검증",state:"ok",badge:"예약 활성",detail:"매주 최근 30일 교육 이슈를 조사하고, 공식 발표 원문·독립된 두 번째 출처·학부모 관심 근거를 모두 갖춘 후보만 Notion에 기록합니다.",points:["자동 검증: 발표일, 공식 사실, 서로 다른 HTTPS 출처 2개, 관심 근거와 조사 한계를 확인합니다.","필수 근거가 없거나 중복·오래된 주제이면 후보 생성 자체를 중단합니다.","사람은 검증 결과와 링크를 읽고 실제로 진행할 주제를 선택합니다."],links:[["주제 후보함","https://app.notion.com/p/d21afe4b8ca2413ebd825b0fb723ecf7"],["주간 조사 실행 내역","https://github.com/toonyoo2-spec/socraauto/actions/workflows/research.yml"],["운영 가이드",guide]]},
+      {id:"select",x:465,y:117,num:"02",title:"주제 선택",sub:"후보 중 진행할 주제 선택",state:"human",badge:"사람 선택",detail:"후보함에서 주제를 고르면 진행표에 자동으로 연결됩니다.",points:["담당자: 진행할 주제를 선택 상태로 변경합니다.","선택한 주제는 진행표에 등록되며 중복 항목은 만들지 않습니다.","현재 실제 초안 건은 9월 5주차 주제입니다."],links:[["주제 후보함","https://app.notion.com/p/d21afe4b8ca2413ebd825b0fb723ecf7"],["전체 진행표",notionPipeline]]},
+      {id:"draft",x:835,y:117,num:"03-A",title:"초안 작성·2차 근거 검증",sub:"초안 자동 작성 → 사실·날짜·수치 재대조",state:"ok",badge:"자동 검증",detail:"선택된 주제로 초안을 작성한 뒤, 같은 실행에서 초안의 사실 주장·날짜·수치를 1차 조사 메모와 다시 대조합니다. 근거 밖 단정이 있으면 사람 검토로 넘기지 않습니다.",points:["1차 검증을 통과한 공식 출처와 조사 메모 범위 안에서만 초안을 작성합니다.","별도의 짧은 검증 호출이 초안 전체를 다시 읽고 뒷받침되지 않는 주장을 찾습니다.","통과 결과는 Notion의 Codex 검증 결과에 기록하며, 실패하면 초안 저장 전 자동화를 중단합니다."],links:[["현재 자동화 시험 글","https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf"],["전체 진행표",notionPipeline]]},
+      {id:"review",x:1205,y:117,num:"03-B",title:"사람 초안 검토·제출",sub:"톤·방향·민감 표현 확인 후 4단계 시작",state:"human",badge:"사람 승인",detail:"자동 2차 검증을 통과한 초안을 사람이 읽고 톤과 방향까지 확인합니다. 승인한 항목만 4단계 이미지·CMS 자동 제작으로 제출합니다.",points:["Notion에서 자동 검증 결과, 본문, 출처 링크를 확인합니다.","승인할 때 단계 → 4. 블로그 제작·검증, 다음 액션 → 시스템 대기로 변경합니다.","수정이 있으면 Notion 본문을 고친 뒤 같은 값으로 제출해 기준 초안을 생성합니다."],links:[["현재 진행 항목","https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf"],["진행표",notionPipeline]]},
+      {id:"image",x:1205,y:425,num:"04-A",title:"블로그 이미지 자동 생성",sub:"본문 4장·썸네일 1장 생성 후 초안에 연결",state:"ok",badge:"자동 완료",detail:"4단계가 시작되면 본문 이미지 4장과 썸네일 1장을 자동 생성해 CMS 초안에 연결합니다.",points:["현재 시험 글에서 이미지 5장 생성과 연결까지 실제로 완료했습니다.","이미지 수정 요청이 없으면 재실행해도 같은 결과를 사용해 생성 비용을 줄입니다.","특정 이미지에 수정 요청이 있으면 그 이미지만 다시 생성하고 이후 초안을 갱신합니다."],links:[["운영 가이드",guide],["현재 시험 글","https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf"]]},
+      {id:"github",x:835,y:425,num:"04-B",title:"생성 이미지 자동 보관",sub:"기준 이미지는 유지하고 요청된 이미지만 교체",state:"ok",badge:"자동 완료",detail:"생성 직후 이미지를 GitHub의 영구 URL로 보관합니다. 이후 수정에서는 저장된 결과를 기준으로 유지하고, 피드백이 있는 이미지만 교체합니다.",points:["CMS 초안 링크가 만료되거나 로컬 파일이 사라지지 않도록 영구 URL을 사용합니다.","글·배치만 수정할 때는 기존 이미지를 그대로 연결해 중복 생성을 막습니다.","이미지 수정 요청이 들어오면 해당 파일을 새 버전으로 만들고 CMS 기준 초안을 다시 갱신합니다."],links:[["현재 진행표",notionPipeline]]},
+      {id:"cms",x:465,y:425,num:"04-C",title:"검수용 비공개 초안 자동 생성",sub:"글·사진·배치 수정의 기준본을 CMS에 저장",state:"ok",badge:"자동 완료",detail:"본문과 이미지를 합친 최초 검수 형식을 CMS의 비공개 초안으로 자동 저장합니다. 담당자는 이 기준본을 보며 글, 사진, 순서와 화면 구성을 수정합니다.",points:["공개 게시물이 아니라 실제 화면과 같은 형태로 검수하기 위한 기준본입니다.","원고·이미지·배치 수정 결과가 생길 때마다 같은 공정으로 기준 초안을 갱신합니다.","최종 게시 여부는 별도 승인 전까지 바뀌지 않습니다."],links:[["개발 CMS 가이드","https://socraai-cmsweb.vercel.app/realacademy/blog/guide"],["CMS 연동 코드","https://github.com/toonyoo2-spec/socraauto/blob/main/automation/notion-pipeline/dev-cms.js"]]},
+      {id:"preview",x:95,y:425,num:"04-D",title:"기술 검증·검수 링크 기록",sub:"이미지·저장·CMS 응답 확인 후 Notion에 결과 저장",state:"ok",badge:"자동 완료",detail:"자동화가 이미지 5장, GitHub 저장, CMS 초안 생성과 미리보기 HTTP 응답을 확인한 뒤 기준 초안 URL과 처리 결과를 Notion에 기록합니다.",points:["자동 기술 검증: 이미지 5장 구성, 영구 URL 저장, CMS 업서트, 미리보기 HTTP 응답을 확인합니다.","담당자는 기록된 링크에서 글·이미지·출처·배치를 PC와 휴대전화로 최종 확인합니다.","수정 요청이 있으면 내용에 따라 03, 04-A 또는 04-C로 돌아간 뒤 이 링크에서 통합 재검수합니다."],links:[["현재 시험 글","https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf"],["전체 진행표",notionPipeline]]},
+      {id:"revise",x:95,y:765,num:"05-A",title:"수정 범위 분기·재검수",sub:"원고·이미지·배치에 따라 복귀 지점 선택",state:"human",badge:"사람 확인 필수",detail:"피드백을 원고, 이미지, 화면 배치로 나눈 뒤 필요한 제작 지점으로 돌아갑니다. 여러 종류가 섞이면 각 작업을 모두 반영하고 미리보기에서 통합 재검수합니다.",points:["원고·수치·출처·톤 수정 → 3단계 초안 작성·검토로 돌아가 Notion 본문을 수정합니다.","이미지 내용·품질·크롭 수정 → 4-A 이미지 준비로 돌아갑니다. 이미지 변경이 필요할 때만 이미지 재생성을 요청합니다.","CMS 배치·줄바꿈·캡션·모바일 표시 수정 → 4-C 비공개 초안에서 배치를 고치고 4-D 미리보기를 다시 확인합니다.","복합 수정 → 원고, 이미지, 배치를 각각 처리한 뒤 4-D에서 한 번에 통합 재검수합니다.","재작업 제출 시 검증 상태는 검증 필요, 다음 액션은 시스템 대기로 설정합니다.","수정이 남아 있으면 같은 분기 과정을 반복하고, 모두 끝나야 05-B 최종 승인으로 이동합니다."],links:[["현재 시험 글","https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf"],["전체 진행표",notionPipeline]]},
+      {id:"final",x:465,y:765,num:"05-B",title:"블로그 최종 승인",sub:"수정 완료 후 통과 처리",state:"human",badge:"명시적 승인",detail:"수정 사항이 모두 반영된 새 미리보기를 확인한 뒤에만 블로그 검증 상태를 통과로 바꿉니다.",points:["필수 조건: 검증 상태 통과, 미리보기 링크 있음, 미처리 블로그 수정 요청 없음.","세 조건을 갖춘 뒤 진행표를 6단계로 옮깁니다.","조건 없이 6단계로 이동하면 정기 실행이 5단계로 되돌립니다.","이 승인은 카드뉴스 자동 실행이 아니라 개인 카드뉴스 작업을 시작해도 된다는 뜻입니다."],links:[["운영 가이드",guide],["전체 진행표",notionPipeline]]},
+      {id:"cardtemplate",x:95,y:1105,num:"06-A",title:"승인 샘플 선택",sub:"콘텐츠 유형에 맞는 8장 묶음 고정",state:"human",badge:"사람 선택",detail:"공식 샘플 페이지에서 정보성·연계형·서비스 업데이트·Q&A 중 하나를 고릅니다. 새 디자인을 임의로 만들지 않습니다.",points:["정보성: 실사형·그래픽 포스터형·3D형 중 승인된 묶음을 선택합니다.","연계형: 3D 풀이미지·3D 오브젝트·실사형 중 승인된 묶음을 선택합니다.","서비스 업데이트와 Q&A도 각각 승인된 전용 묶음만 사용합니다.","템플릿 노드 ID를 작업에 고정한 뒤 원본은 건드리지 않고 복제합니다."],links:[["공식 카드뉴스 샘플 · node 92-47",canonicalFigmaSample],["카드뉴스 시안함","https://app.notion.com/p/cfe72e31d040402fab388b55e0b940ed"]]},
+      {id:"cardnews",x:465,y:1105,num:"06-B",title:"직접/Astra 카드 제작",sub:"선택 샘플 복제 · 슬롯만 교체",state:"human",badge:"요청형 제작",detail:"담당자가 직접 제작하거나 Notion 상태로 Astra 제작 요청 신호를 보냅니다. Astra 자동 작업은 평일 10시·15시에 요청 대기를 확인하고 한 번에 1건만 처리해 비용을 줄입니다.",points:["Astra 요청: 제작 방식 → Astra 요청, 작업 상태 → 제작 대기, 다음 액션 → 시스템 대기.","직접 제작: 제작 방식 → 직접 제작, 작업 상태 → 제작 중.","색상·폰트·로고·간격·카드 크기는 승인 샘플 값을 그대로 유지하고 지정 슬롯만 교체합니다.","완성된 새 프레임 링크를 Notion에 기록하면 작업 상태가 검수 필요, 다음 액션이 내 확인 필요로 바뀝니다."],links:[["공식 카드뉴스 샘플",canonicalFigmaSample],["전체 진행표",notionPipeline]]},
+      {id:"cardreview",x:835,y:1105,num:"06-C",title:"카드뉴스 수정·재검수",sub:"피드백 종류에 따라 재작업 지점 선택",state:"human",badge:"사람 검수 필수",detail:"카드뉴스 결과를 검수하고 카피·이미지·템플릿·원문 근거 중 무엇을 고쳐야 하는지 분류합니다.",points:["카피·카드 순서·이미지 슬롯 수정 → 06-B 카드 제작으로 돌아갑니다.","템플릿·레이아웃 유형이 맞지 않음 → 06-A 승인 샘플 선택으로 돌아갑니다.","수치·출처·블로그 사실 자체가 바뀜 → 05-A 블로그 수정 분기로 돌아갑니다.","수정 요청을 모두 반영하고 새 결과 링크를 확인한 뒤에만 7단계로 이동합니다."],links:[["전체 진행표",notionPipeline],["공식 카드뉴스 샘플",canonicalFigmaSample]]},
+      {id:"done",x:1205,y:1105,num:"07",title:"콘텐츠 제작 완료",sub:"최종 결과 확정 · 이후 운영 공정으로 인계",state:"ready",badge:"기존 2건",detail:"Figma 결과 링크가 있고 미처리 카드뉴스 수정 요청이 없으면 제작을 완료합니다. 완료 뒤에는 제작 단계로 되돌아가지 않고 아카이빙과 업로드 공정으로 인계합니다.",points:["완료 전에 수정이 있으면 06-C에서 피드백 종류에 따라 재작업합니다.","완료 처리 후 Notion 진행표가 최종 결과와 관련 링크의 기준 기록이 됩니다.","완료는 공개 게시와 다르며, 게시 채널과 일정은 다음 공정에서 승인합니다."],links:[["전체 진행표",notionPipeline],["카드뉴스 샘플 Figma",canonicalFigmaSample]]},
+      {id:"archive",x:835,y:1440,num:"완료 후",title:"결과물 아카이빙",sub:"Figma·CMS·이미지·출처 링크를 한 건으로 보관",state:"ok",badge:"운영 기록",detail:"완료된 콘텐츠의 최종 Figma, CMS 비공개 초안, GitHub 이미지와 공식 출처 링크를 Notion 진행표 한 건에 모아 보관합니다.",points:["최종본 링크와 출처가 함께 남아 다음 수정이나 재활용 때 기준 자료가 됩니다.","이미지는 GitHub 영구 URL, 카드뉴스는 Figma 결과 링크, 글은 CMS 초안 링크를 사용합니다.","아카이빙 후 게시 채널과 일정을 정해 업로드 담당자에게 인계합니다."],links:[["전체 진행표",notionPipeline],["CMS 글 목록","https://socraai-cmsweb.vercel.app/realacademy/blog/articles"]]},
+      {id:"publish",x:1205,y:1440,num:"완료 후",title:"업로드·게시",sub:"채널·일정 승인 뒤 CMS와 온드채널에 게시",state:"human",badge:"별도 승인",detail:"아카이빙된 최종본을 기준으로 게시 채널, 날짜와 담당자를 승인한 뒤 실제 업로드합니다.",points:["블로그 공개, 카드뉴스 업로드, 유튜브 활용은 각각 게시 일정과 담당자를 정합니다.","수정본이 필요하면 완료 상태를 덮어쓰지 않고 새 작업 기록으로 관리합니다.","현재 자동화 시험 글과 기존 결과물은 모두 미발행 상태입니다."],links:[["CMS 글 목록","https://socraai-cmsweb.vercel.app/realacademy/blog/articles"],["전체 진행표",notionPipeline]]}
+    ];
+    const actionById = {
+      research:"자동 실행 · 1차 팩트체크 통과 후보만 기록",
+      select:"노션 액션 · 사용할 1건만 선정상태 → 선택됨",
+      draft:"자동 실행 · 초안 작성 후 2차 근거 일치 검증·결과 기록",
+      review:"사람 액션 · 단계 → 4 · 다음 액션 → 시스템 대기",
+      image:"자동 실행 · 이미지 수정 요청이 있을 때만 해당 장면 재생성",
+      github:"자동 실행 · 기준 이미지 영구 보관·재연결",
+      cms:"자동 실행 · 검수용 비공개 기준 초안 생성·갱신",
+      preview:"자동 기술 검증 후 사람 액션 · 통과 또는 수정 요청 입력",
+      revise:"노션 액션 · 수정 요청 입력 → 검증 필요 → 시스템 대기",
+      final:"노션 액션 · 수정 요청 비움 → 통과 → 단계 6",
+      cardtemplate:"노션 액션 · 카드뉴스 시안 1개만 선택됨",
+      cardnews:"노션 액션 · 제작 방식 선택 → 제작 중/제작 대기",
+      cardreview:"노션 액션 · 수정 요청 입력 → 수정 반영 대기",
+      done:"노션 액션 · Figma 링크 확인 → 완료 → 단계 7",
+      archive:"확인 액션 · 최종 링크·출처가 한 기록에 모였는지 확인",
+      publish:"사람 액션 · 게시 채널·일정·담당자 승인 후 업로드"
+    };
+    const wires = [
+      ["research","select","ok","right","left"],["select","draft","ok","right","left"],["draft","review","human","right","left"],
+      ["review","image","ok","bottom","top"],["image","github","ok","left","right"],["github","cms","ok","left","right"],
+      ["cms","preview","ok","left","right"],["preview","revise","human","bottom","top"],
+      ["revise","final","human","right","left"],["final","cardtemplate","human","bottom","top"],
+      ["cardtemplate","cardnews","human","right","left"],["cardnews","cardreview","human","right","left"],["cardreview","done","ready","right","left"],
+      ["done","archive","ok","bottom","top"],["archive","publish","human","right","left"]
+    ];
+    const revisionRoutes = [
+      {d:"M 95 849 L 34 849 L 34 345 L 980 345 L 980 285",label:"원고·수치·출처 → 03",x:790,y:345},
+      {d:"M 240 933 L 240 985 L 1660 985 L 1660 653 L 1350 653 L 1350 593",label:"이미지 → 04-A",x:1485,y:653},
+      {d:"M 240 765 L 240 686 L 610 686 L 610 593",label:"배치·줄바꿈 → 04-C/04-D",x:442,y:686}
+    ];
+    const cardRevisionRoutes = [
+      {d:"M 835 1189 L 790 1189 L 790 1080 L 610 1080 L 610 1105",label:"카피·이미지·순서 → 06-B",x:700,y:1080},
+      {d:"M 980 1105 L 980 1030 L 240 1030 L 240 1105",label:"템플릿·레이아웃 → 06-A",x:610,y:1030},
+      {d:"M 980 1273 L 980 1345 L 45 1345 L 45 849 L 95 849",label:"원문 사실·출처 변경 → 05-A",x:300,y:1345}
+    ];
+    const nodeContainer = document.getElementById("nodes");
+    const width = 290, height = 168;
+    nodes.forEach(function(n) {
+      const el = document.createElement("button");
+      el.type = "button"; el.className = "node " + n.state; el.style.left = n.x + "px"; el.style.top = n.y + "px"; el.dataset.state = n.state;
+      const ports = ["left","right","top","bottom"].map(function(side){ return '<span class="port ' + side + '"></span>'; }).join("");
+      const stepLabel = n.num === "완료 후" ? n.num : n.num + "단계";
+      el.innerHTML = ports + '<div class="node-top"><span>' + stepLabel + '</span><span class="status">' + n.badge + '</span></div><h2>' + n.title + '</h2><p>' + n.sub + '</p><small>' + actionById[n.id] + '</small>';
+      el.addEventListener("click",function(){openNode(n);});
+      nodeContainer.appendChild(el);
+    });
+    function point(n,side) {
+      if(side === "left") return [n.x,n.y+height/2];
+      if(side === "right") return [n.x+width,n.y+height/2];
+      if(side === "top") return [n.x+width/2,n.y];
+      return [n.x+width/2,n.y+height];
+    }
+    const wireSvg = document.getElementById("wires");
+    wires.forEach(function(w) {
+      const a = nodes.find(function(n){return n.id===w[0];}), b = nodes.find(function(n){return n.id===w[1];});
+      const p = point(a,w[3]), q = point(b,w[4]);
+      const horizontal = w[3] === "left" || w[3] === "right";
+      const bend = horizontal ? Math.max(65,Math.abs(p[0]-q[0])*.47) : Math.max(55,Math.abs(p[1]-q[1])*.47);
+      const dir = w[3] === "left" || w[3] === "top" ? -1 : 1;
+      const endDir = w[4] === "left" || w[4] === "top" ? -1 : 1;
+      const d = horizontal
+        ? "M "+p[0]+" "+p[1]+" C "+(p[0]+dir*bend)+" "+p[1]+", "+(q[0]+endDir*bend)+" "+q[1]+", "+q[0]+" "+q[1]
+        : "M "+p[0]+" "+p[1]+" C "+p[0]+" "+(p[1]+dir*bend)+", "+q[0]+" "+(q[1]+endDir*bend)+", "+q[0]+" "+q[1];
+      const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+      path.setAttribute("d",d); path.setAttribute("class","wire "+w[2]); wireSvg.appendChild(path);
+    });
+    revisionRoutes.concat(cardRevisionRoutes).forEach(function(route) {
+      const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+      path.setAttribute("d",route.d);path.setAttribute("class","wire gap");wireSvg.appendChild(path);
+      const g=document.createElementNS("http://www.w3.org/2000/svg","g");g.setAttribute("class","wire-label");
+      const width=Math.max(108,route.label.length*11);const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",route.x-width/2);rect.setAttribute("y",route.y-13);rect.setAttribute("width",width);rect.setAttribute("height",26);
+      const label=document.createElementNS("http://www.w3.org/2000/svg","text");label.setAttribute("x",route.x);label.setAttribute("y",route.y);label.textContent=route.label;
+      g.appendChild(rect);g.appendChild(label);wireSvg.appendChild(g);
+    });
+    const drawer=document.getElementById("drawer"), overlay=document.getElementById("overlay");
+    function openNode(n) {
+      document.getElementById("drawer-state").textContent=n.badge;
+      document.getElementById("drawer-title").textContent=n.num+" · "+n.title;
+      document.getElementById("drawer-summary").textContent=n.detail;
+      const points=document.getElementById("drawer-points"); points.replaceChildren();
+      const action=document.createElement("li");action.textContent=actionById[n.id];action.style.color="#0B6B44";action.style.fontWeight="700";points.appendChild(action);
+      n.points.forEach(function(item){const li=document.createElement("li");li.textContent=item;points.appendChild(li);});
+      const links=document.getElementById("drawer-links"); links.replaceChildren();
+      n.links.forEach(function(item){const a=document.createElement("a");a.href=item[1].includes("node-id=92-47")?canonicalFigmaSample:item[1];a.target="_blank";a.rel="noopener noreferrer";a.textContent="↗ "+item[0];links.appendChild(a);});
+      drawer.classList.add("show");overlay.classList.add("show");
+    }
+    function closeNode(){drawer.classList.remove("show");overlay.classList.remove("show");}
+    document.getElementById("close").addEventListener("click",closeNode);overlay.addEventListener("click",closeNode);
+    document.addEventListener("keydown",function(e){if(e.key==="Escape")closeNode();});
+    document.querySelectorAll("[data-filter]").forEach(function(btn){btn.addEventListener("click",function(){
+      document.querySelectorAll("[data-filter]").forEach(function(b){b.classList.toggle("active",b===btn);});
+      const filter=btn.dataset.filter;document.querySelectorAll(".node").forEach(function(el){el.classList.toggle("dim",filter!=="all"&&el.dataset.state!==filter);});
+    });});
+    const viewport=document.getElementById("viewport"),canvas=document.getElementById("canvas");
+    let scale=.82,tx=20,ty=10,dragging=false,startX=0,startY=0;
+    function render(){canvas.style.transform="translate("+tx+"px,"+ty+"px) scale("+scale+")";}
+    function fit(){scale=Math.min((viewport.clientWidth-34)/1680,(viewport.clientHeight-30)/1700,1);tx=Math.max(14,(viewport.clientWidth-1605*scale)/2);ty=20;render();}
+    function zoom(factor,cx,cy){const next=Math.max(.35,Math.min(1.7,scale*factor));tx=cx-(cx-tx)*(next/scale);ty=cy-(cy-ty)*(next/scale);scale=next;render();}
+    document.getElementById("fit").addEventListener("click",fit);
+    document.getElementById("zoom-in").addEventListener("click",function(){zoom(1.18,viewport.clientWidth/2,viewport.clientHeight/2);});
+    document.getElementById("zoom-out").addEventListener("click",function(){zoom(.84,viewport.clientWidth/2,viewport.clientHeight/2);});
+    viewport.addEventListener("wheel",function(e){e.preventDefault();const r=viewport.getBoundingClientRect();zoom(e.deltaY<0?1.08:.92,e.clientX-r.left,e.clientY-r.top);},{passive:false});
+    viewport.addEventListener("pointerdown",function(e){if(e.target.closest(".node"))return;dragging=true;startX=e.clientX-tx;startY=e.clientY-ty;viewport.classList.add("dragging");viewport.setPointerCapture(e.pointerId);});
+    viewport.addEventListener("pointermove",function(e){if(!dragging)return;tx=e.clientX-startX;ty=e.clientY-startY;render();});
+    viewport.addEventListener("pointerup",function(){dragging=false;viewport.classList.remove("dragging");});
+    window.addEventListener("resize",fit);fit();
+  </script>
+</body>
+</html>
