@@ -344,6 +344,53 @@ tr.new td{background:var(--green-tint)}
 .nw .body{padding:0 14px 14px;display:grid;gap:10px}
 .nw pre{white-space:pre-wrap;font-family:inherit;font-size:13.5px;line-height:1.6;background:var(--surface-2);border-radius:var(--r);padding:12px 14px;margin:0;overflow-wrap:anywhere}
 
+
+/* ===== 걸어 다니는 캐릭터 ===== */
+.map{position:relative;padding-bottom:58px}
+.door{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:84px;height:40px;border:3px solid var(--o-wall);border-bottom:none;border-radius:10px 10px 0 0;background:repeating-linear-gradient(90deg,var(--o-desk) 0 20px,var(--o-desk-e) 20px 22px);display:grid;place-items:center}
+.door span{background:var(--o-wall);color:var(--o-ink);font-size:10px;font-weight:800;padding:1px 7px;border-radius:5px}
+.seat{position:absolute;left:50%;bottom:4px;width:1px;height:1px}
+.tablewrap{position:relative;width:min(260px,92%);margin:34px auto 56px;height:62px}
+.tablewrap .tablebig{position:absolute;inset:0;margin:0;width:auto}
+.mslot{position:absolute;width:1px;height:1px}
+.sprites{position:absolute;inset:0;pointer-events:none;z-index:6}
+.sp{position:absolute;left:0;top:0;width:36px;height:48px;margin:-48px 0 0 -18px;pointer-events:auto;cursor:pointer;will-change:transform}
+.sp[hidden]{display:none}
+.sp .fig{position:absolute;inset:0;transform-origin:50% 100%}
+.sp.flip .fig{transform:scaleX(-1)}
+.sp .hd{position:absolute;left:6px;top:0;width:24px;height:22px;border-radius:50% 50% 46% 46%;background:#f6d7b8;border:2px solid rgba(0,0,0,.28);z-index:2}
+.sp .hd::before,.sp .hd::after{content:"";position:absolute;top:9px;width:3px;height:4px;border-radius:2px;background:#2b2a26}
+.sp .hd::before{left:6px}.sp .hd::after{right:6px}
+.sp .hr{position:absolute;left:5px;top:-2px;width:26px;height:10px;border-radius:12px 12px 4px 4px;background:var(--hair,#3a2a20);z-index:3}
+.sp .ck{position:absolute;top:13px;width:4px;height:3px;border-radius:50%;background:#f3a3a3;z-index:3}
+.sp .ck.l{left:9px}.sp .ck.r{right:9px}
+.sp .bd{position:absolute;left:5px;top:19px;width:26px;height:19px;border-radius:11px 11px 6px 6px;background:var(--team,#8a8780);z-index:1}
+.sp .lg{position:absolute;top:36px;width:6px;height:10px;border-radius:3px;background:#3b3b46;transform-origin:50% 0}
+.sp .lg.l{left:11px}.sp .lg.r{right:11px}
+.sp .tag{position:absolute;left:50%;top:22px;transform:translateX(-50%);font-family:var(--mono);font-size:8px;font-weight:800;color:#fff;z-index:4;pointer-events:none}
+.sp .q{position:absolute;left:50%;top:-22px;transform:translateX(-50%);width:18px;height:18px;border-radius:50%;background:#ffd23f;color:#3c2a00;font-weight:900;font-size:12px;display:grid;place-items:center;box-shadow:0 2px 0 #c79a00;animation:hop .9s ease-in-out infinite}
+.sp.walk .fig{animation:walkbob .36s ease-in-out infinite}
+.sp.walk .lg.l{animation:legl .36s ease-in-out infinite}.sp.walk .lg.r{animation:legr .36s ease-in-out infinite}
+.sp.sit .lg{opacity:0}
+.sp.sit.work .fig{animation:type2 1.2s ease-in-out infinite}
+.sp.hop .fig{animation:jump .7s ease-out}
+.sp.meet .fig{animation:type2 2s ease-in-out infinite}
+@keyframes walkbob{0%,100%{translate:0 0}50%{translate:0 -3px}}
+@keyframes legl{0%,100%{rotate:25deg}50%{rotate:-25deg}}
+@keyframes legr{0%,100%{rotate:-25deg}50%{rotate:25deg}}
+@keyframes type2{0%,100%{translate:0 0}50%{translate:0 -1.5px}}
+@keyframes jump{0%{translate:0 0}40%{translate:0 -12px}100%{translate:0 0}}
+@media(prefers-reduced-motion:reduce){.sp .fig,.sp .lg,.sp .q{animation:none!important}}
+.hud-chip.go{background:var(--green);color:var(--on-green);border-color:transparent;cursor:pointer}
+.sheet-bg{position:fixed;inset:0;background:rgba(20,20,18,.45);z-index:60;display:grid;place-items:center;padding:16px}
+.sheet{background:var(--surface);border-radius:14px;width:min(460px,100%);padding:18px;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.sheet h3{font-size:18px}
+.pick-row{display:flex;flex-wrap:wrap;gap:6px}
+.pk{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600;color:var(--text)}
+.pk[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.sheet textarea{min-height:70px;font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:10px;padding:9px 11px;resize:vertical}
+.sheet .acts{display:flex;justify-content:flex-end;gap:8px}
+
 @media (prefers-reduced-motion:no-preference){.tab,.pick,.ag{transition:background .15s,border-color .15s,color .15s}}
 </style>
 </head>
@@ -528,15 +575,17 @@ async function boot(){
   const { data: own } = await sb.from("agency_owners").select("user_id").limit(1).maybeSingle();
   if (!own) return show("denied");
   show("app");
-  const [ag, mt, pf, iv, pr, ch, cf] = await Promise.all([
+  const [ag, mt, pf, iv, pr, ch, cf, sm] = await Promise.all([
     sb.from("agency_agents").select("*").order("sort"),
     sb.from("agency_meetings").select("*").order("meeting_date", {ascending:false}).order("created_at", {ascending:false}).limit(60),
     sb.from("agency_profile").select("*").order("created_at"),
     sb.from("agency_interventions").select("*").order("created_at", {ascending:false}).limit(300),
     sb.from("agency_presence").select("*"),
     sb.from("agency_chat").select("*").order("created_at").limit(500),
-    sb.from("agency_config").select("key,value")
+    sb.from("agency_config").select("key,value"),
+    sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1)
   ]);
+  SUMMON = (sm.data || [])[0] || null;
   (pr.data || []).forEach(x => PRES[x.code] = x);
   CHAT = ch.data || [];
   (cf.data || []).forEach(x => CFG[x.key] = x.value);
@@ -635,11 +684,13 @@ function pipelineHtml(){
 let pollTimer = null;
 async function pollRun(){
   if (document.hidden) return schedulePoll();
-  const [mr, pr, ch] = await Promise.all([
+  const [mr, pr, ch, smr] = await Promise.all([
     sb.from("agency_meetings").select("*").order("created_at", {ascending:false}).limit(1),
     sb.from("agency_presence").select("*"),
-    sb.from("agency_chat").select("*").order("created_at").limit(500)
+    sb.from("agency_chat").select("*").order("created_at").limit(500),
+    sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1)
   ]);
+  const prevSum = SUMMON ? SUMMON.id + SUMMON.status : ""; SUMMON = (smr.data || [])[0] || SUMMON;
   const row = mr.data && mr.data[0]; const cur = MEETINGS[0];
   const sig = r => r ? r.id + r.status + JSON.stringify((r.meta||{}).steps || []) : "";
   const psig = JSON.stringify(PRES) + CHAT.length + CHAT.filter(c => c.handled).length;
@@ -647,12 +698,12 @@ async function pollRun(){
   const changedMeeting = row && sig(row) !== sig(cur);
   if (changedMeeting) { const i = MEETINGS.findIndex(x => x.id === row.id); if (i >= 0) MEETINGS[i] = row; else MEETINGS.unshift(row); }
   if (changedMeeting && row.status !== "running") { renderToday(); renderMinutesNav(); }
-  else if (changedMeeting || psig !== JSON.stringify(PRES) + CHAT.length + CHAT.filter(c => c.handled).length) refreshOffice();
+  else if (changedMeeting || psig !== JSON.stringify(PRES) + CHAT.length + CHAT.filter(c => c.handled).length || prevSum !== (SUMMON ? SUMMON.id + SUMMON.status : "")) refreshOffice();
   const ap = $("#autoPipe"); if (ap && changedMeeting) ap.innerHTML = pipelineHtml();
   if (DRAWER) { const code = DRAWER.querySelector(".av")?.textContent; if (AG[code]) renderThread(code); }
   schedulePoll();
 }
-function schedulePoll(){ clearTimeout(pollTimer); const busy = (MEETINGS[0] && MEETINGS[0].status === "running") || Object.values(PRES).some(p => p.status !== "off"); pollTimer = setTimeout(pollRun, busy ? 15000 : 60000); }
+function schedulePoll(){ clearTimeout(pollTimer); const busy = (MEETINGS[0] && MEETINGS[0].status === "running") || Object.values(PRES).some(p => p.status !== "off") || summonBusy(); pollTimer = setTimeout(pollRun, busy ? 15000 : 60000); }
 // 카카오톡식 대화 (KWAN = 오른쪽 노란 말풍선)
 function bubble(code, text, extra, i){
   const me = code === "KWAN";
@@ -770,7 +821,7 @@ function officeHtml(){
       ${q ? `<span class="quest" title="채팅 요청 ${q}건">!</span>` : ""}
       ${p.status === "working" && p.activity ? `<span class="say">${esc(p.activity)}</span>` : ""}
       <span class="monitor"></span><span class="table"></span>
-      <span class="who"><span class="chair"></span>${charHtml(code)}</span>
+      <span class="who"><span class="chair"></span><span class="seat" data-seat="${code}"></span></span>
       <span class="plate"><span class="lamp"></span>${esc(a.name)}<span class="lv">Lv.${lv}</span><small>${esc(a.role)}</small><small>${t}</small></span></button>`; };
   const rooms = ROOMS.map(([area, nm, codes, cls]) => `<div class="room ${cls}" style="grid-area:${area}"><span class="rl">${nm}</span><div class="desks">${codes.map(desk).join("")}</div></div>`).join("");
   const inMeet = Object.keys(AG).filter(c => pres(c).status === "meeting");
@@ -781,17 +832,21 @@ function officeHtml(){
     <div class="hud"><div class="hud-l"><span class="hud-clock" id="kclock">${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}</span>
       <span class="hud-chip${running ? " live" : ""}"><span class="dot"></span>${phase}</span>
       <span class="hud-chip">출근 ${counts.working} · 회의 ${counts.meeting} · 퇴근 ${counts.off}</span>
-      ${reqs ? `<button class="hud-chip req" id="reqBtn">! 채팅 요청 ${reqs}</button>` : ""}</div>
+      ${reqs ? `<button class="hud-chip req" id="reqBtn">! 채팅 요청 ${reqs}</button>` : ""}
+      ${summonBusy() ? `<span class="hud-chip live"><span class="dot"></span>출근 요청 처리 중</span>` : `<button class="hud-chip go" id="summonBtn">출근시키기</button>`}</div>
       <div class="hud-r"><span class="seg" role="group" aria-label="야간 근무 강도">${[["off","야간 끄기"],["light","가볍게"],["normal","보통"],["bold","과감"]].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${mode === v}">${l}</button>`).join("")}</span></div></div>
     <div class="dayline"><span class="bar"></span>${evs}<span class="now" style="left:${nowPct}%"></span></div>
     <div class="map">
-      <div class="room meetroom" style="grid-area:meet"><span class="rl">회의실</span><div class="tablebig"></div><div class="seats">${inMeet.map(charHtml).join("")}</div>${board}</div>
+      <div class="room meetroom" style="grid-area:meet"><span class="rl">회의실</span><div class="tablewrap"><div class="tablebig"></div>${MSLOTS.map(([x,y], i) => `<span class="mslot" data-mslot="${i}" style="left:${x}%;top:${y}%"></span>`).join("")}</div>${board}</div>
       ${rooms}
+      <div class="door" id="door"><span>입구</span></div><div class="sprites" id="sprites"></div>
     </div></div></div>`;
 }
 function nextShiftText(){ const k = kstNow(); const m = k.h*60 + k.m; const wd = k.wd; const list = SHIFTS.map(([id, t, nm]) => { const [hh, mm] = t.split(":").map(Number); return {m:hh*60+mm, t, nm}; });
   const today = (wd >= 1 && wd <= 5) ? list.find(x => x.m > m) : null; if (today) return `오늘 ${today.t} ${today.nm}`; return `다음 평일 ${list[0].t} ${list[0].nm}`; }
 function bindOffice(){
+  requestAnimationFrame(() => placeSprites(true));
+  const sb2 = $("#summonBtn"); if (sb2) sb2.addEventListener("click", openSummon);
   document.querySelectorAll(".desk[data-agent]").forEach(b => b.addEventListener("click", () => openDrawer(b.dataset.agent)));
   const rb = $("#reqBtn"); if (rb) rb.addEventListener("click", () => { const c = Object.keys(AG).find(x => pendingReq(x)); if (c) openDrawer(c); });
   document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", async () => {
@@ -802,6 +857,75 @@ function bindOffice(){
 }
 function refreshOffice(){ const sec = $("#officeSec"); if (sec) { sec.outerHTML = officeHtml(); bindOffice(); } }
 setInterval(() => { const c = $("#kclock"); if (c) { const k = kstNow(); c.textContent = `${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}`; } }, 20000);
+
+
+// ===== 걸어 다니는 캐릭터 =====
+const MSLOTS = [[10,-8],[30,-18],[50,-22],[70,-18],[90,-8],[10,150],[30,160],[50,164],[70,160],[90,150]];
+const HAIR = {YK:"#1f1f1f",AE:"#3a2a20",AD:"#6b3f2a",PD:"#222",WR:"#8a5a3c",CP:"#2d2d2d",GR:"#5a3b28",IN:"#1c1c1c",SO:"#a0522d",PM:"#3b2b1f"};
+let SPOS = {}, SUMMON = null;
+function summonBusy(){ return SUMMON && ["queued","fired","running"].includes(SUMMON.status) && Date.now() - new Date(SUMMON.requested_at).getTime() < 25*60e3; }
+function spriteHtml(code){ return `<div class="sp" data-sp="${code}" style="--team:${TEAM_COLOR[code]||"#8a8780"};--hair:${HAIR[code]||"#333"}" title="${esc(AG[code]?.name || code)}"><div class="fig"><span class="lg l"></span><span class="lg r"></span><span class="bd"></span><span class="hd"></span><span class="hr"></span><span class="ck l"></span><span class="ck r"></span></div><span class="tag">${esc(code)}</span>${pendingReq(code) ? `<span class="q">!</span>` : ""}</div>`; }
+function anchorOf(el, base){ const r = el.getBoundingClientRect(), b = base.getBoundingClientRect(); return {x: r.left - b.left + r.width/2, y: r.top - b.top + r.height/2}; }
+function placeSprites(animate){
+  const map = document.querySelector(".map"), layer = $("#sprites"), door = $("#door"); if (!map || !layer || !door) return;
+  const dp = anchorOf(door, map); const doorPt = {x: dp.x, y: dp.y + 14};
+  const corridorY = doorPt.y - 6;
+    layer.innerHTML = Object.keys(AG).map(spriteHtml).join("");
+  Object.keys(AG).forEach(code => {
+    const el = layer.querySelector(`[data-sp="${code}"]`); const st = (PRES[code]||{}).status || "off";
+    let place = "door", tgt = doorPt;
+    if (st === "working") { const s = map.querySelector(`[data-seat="${code}"]`); if (s) { place = "seat"; tgt = anchorOf(s, map); } }
+    if (st === "meeting") { const i = Object.keys(AG).indexOf(code); const s = map.querySelector(`[data-mslot="${i % MSLOTS.length}"]`); if (s) { place = "meet"; tgt = anchorOf(s, map); } }
+    const prev = SPOS[code];
+    const setAt = (p, vis) => { el.style.transform = `translate(${p.x}px,${p.y}px)`; el.hidden = !vis; };
+    const mode = () => { el.classList.toggle("sit", place === "seat" || place.startsWith("meet")); el.classList.toggle("work", place === "seat"); el.classList.toggle("meet", place.startsWith("meet")); };
+    el.addEventListener("click", () => openDrawer(code));
+    if (!prev || !animate || prev.place === place) {
+      setAt(tgt, place !== "door"); mode(); SPOS[code] = {...tgt, place}; return;
+    }
+    // 이전 자리 → 복도 → 새 자리로 걸어간다
+    const from = prev.place === "door" ? doorPt : prev;
+    // 입구를 오갈 때만 복도로 돌아가고, 자리 ↔ 회의실은 곧장 걸어간다
+    const viaDoor = prev.place === "door" || place === "door";
+    const pts = viaDoor ? [from, {x: from.x, y: corridorY}, {x: tgt.x, y: corridorY}, tgt] : [from, {x: (from.x + tgt.x) / 2, y: Math.min(from.y, tgt.y) - 18}, tgt];
+    const lens = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y)); const total = lens.reduce((a, b) => a + b, 0) || 1;
+    let acc = 0; const frames = pts.map((p, i) => { if (i) acc += lens[i-1]; return {transform:`translate(${p.x}px,${p.y}px)`, offset: acc/total}; });
+    el.hidden = false; el.classList.add("walk"); el.classList.toggle("flip", tgt.x < from.x);
+    if (prev.place === "door") el.animate([{opacity:0},{opacity:1}], {duration:300, fill:"forwards"});
+    const anim = el.animate(frames, {duration: Math.max(900, total / 170 * 1000), easing:"linear", fill:"forwards"});
+    anim.onfinish = () => { el.classList.remove("walk", "flip"); setAt(tgt, true); anim.cancel(); mode();
+      if (place === "door") { const f = el.animate([{opacity:1},{opacity:0}], {duration:400, fill:"forwards"}); f.onfinish = () => { el.hidden = true; }; } };
+    SPOS[code] = {...tgt, place};
+  });
+}
+window.addEventListener("resize", () => placeSprites(false));
+// 대기 중인 캐릭터가 가끔 기지개를 켠다
+setInterval(() => { const els = [...document.querySelectorAll(".sp.sit:not(.walk)")]; if (!els.length) return; const el = els[Math.floor(Math.random()*els.length)]; el.classList.add("hop"); setTimeout(() => el.classList.remove("hop"), 800); }, 9000);
+
+// ===== 강제 출근 =====
+const TEAMS = [["전원", Object.keys(TEAM_COLOR)], ["크리에이티브팀", ["AE","AD","PD"]], ["콘텐츠팀", ["WR","CP"]], ["데이터·인사이트팀", ["GR","IN","SO"]]];
+function openSummon(){
+  const pick = new Set(["PM","YK"]);
+  const bg = document.createElement("div"); bg.className = "sheet-bg";
+  const draw = () => { bg.innerHTML = `<form class="sheet" id="sumForm" role="dialog" aria-label="출근시키기"><h3>누구를 출근시킬까요?</h3>
+    <div class="pick-row">${TEAMS.map(([nm, cs]) => `<button type="button" class="pk" data-team="${cs.join(",")}" aria-pressed="${cs.every(c => pick.has(c))}">${nm}</button>`).join("")}</div>
+    <div class="pick-row">${Object.keys(AG).map(c => `<button type="button" class="pk" data-one="${c}" aria-pressed="${pick.has(c)}">${esc(AG[c].name)}</button>`).join("")}</div>
+    <span class="sub">Grace와 YK는 항상 함께 출근해요</span>
+    <textarea id="sumNote" placeholder="무엇을 시킬까요? (비워두면 지금 필요한 회의를 알아서 열어요)"></textarea>
+    <div class="acts"><button type="button" class="btn ghost" id="sumCancel">취소</button><button class="btn" type="submit">출근시키기</button></div></form>`;
+    bg.querySelectorAll("[data-team]").forEach(b => b.addEventListener("click", () => { const cs = b.dataset.team.split(","); const all = cs.every(c => pick.has(c)); cs.forEach(c => all ? pick.delete(c) : pick.add(c)); pick.add("PM"); pick.add("YK"); const note = bg.querySelector("#sumNote").value; draw(); bg.querySelector("#sumNote").value = note; }));
+    bg.querySelectorAll("[data-one]").forEach(b => b.addEventListener("click", () => { const c = b.dataset.one; if (c === "PM" || c === "YK") return; pick.has(c) ? pick.delete(c) : pick.add(c); const note = bg.querySelector("#sumNote").value; draw(); bg.querySelector("#sumNote").value = note; }));
+    bg.querySelector("#sumCancel").addEventListener("click", () => bg.remove());
+    bg.querySelector("#sumForm").addEventListener("submit", async e => { e.preventDefault();
+      const btn = e.submitter; btn.disabled = true; btn.textContent = "부르는 중…";
+      const { data, error } = await sb.functions.invoke("agency-summon", { body: { team:[...pick], note: bg.querySelector("#sumNote").value.trim() } });
+      if (error) { let msg = "출근시키지 못했어요. 잠시 뒤 다시 눌러주세요"; try { const j = await error.context.json(); if (j.error) msg = j.error; } catch (_) {} toast(msg); btn.disabled = false; btn.textContent = "출근시키기"; return; }
+      SUMMON = { id: data.id, status:"fired", requested_at: new Date().toISOString() };
+      bg.remove(); refreshOffice(); schedulePoll(); toast("출근 요청을 보냈어요. 1~2분 안에 입구로 들어와요");
+    });
+  };
+  draw(); document.body.appendChild(bg); bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
+}
 
 // 캐릭터 카드 · 1:1 채팅
 let DRAWER = null;
