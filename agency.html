@@ -456,7 +456,7 @@ tr.new td{background:var(--green-tint)}
       </div>
       <div class="two">
         <div class="box"><h3>크레딧 절약 규칙</h3><ul>
-          <li>하루 예산 상한(기본 $8)을 넘을 것 같으면 야간 근무를 한 단계 낮춰 진행합니다</li><li>병렬 에이전트는 야간 강도 "과감"과 수동 <b>깊은 회의</b>에서만 씁니다</li>
+          <li>병렬 에이전트는 야간 강도 "과감"과 수동 <b>깊은 회의</b>에서만 씁니다</li>
           <li>안건 없는 날은 조회만 하고 끝냅니다</li>
           <li>에이전트 전체 지침 대신 요약 카드를 읽습니다</li>
           <li>이전 회의는 결정과 KWAN 선택만 참조합니다</li>
@@ -782,8 +782,7 @@ function officeHtml(){
       <span class="hud-chip${running ? " live" : ""}"><span class="dot"></span>${phase}</span>
       <span class="hud-chip">출근 ${counts.working} · 회의 ${counts.meeting} · 퇴근 ${counts.off}</span>
       ${reqs ? `<button class="hud-chip req" id="reqBtn">! 채팅 요청 ${reqs}</button>` : ""}</div>
-      <div class="hud-r"><span class="hud-chip" title="하루 예상 사용액 상한">예산 $${esc(CFG.daily_budget_usd ?? 8)}/일</span>
-      <span class="seg" role="group" aria-label="야간 근무 강도">${[["off","야간 끄기"],["light","가볍게"],["normal","보통"],["bold","과감"]].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${mode === v}">${l}</button>`).join("")}</span></div></div>
+      <div class="hud-r"><span class="seg" role="group" aria-label="야간 근무 강도">${[["off","야간 끄기"],["light","가볍게"],["normal","보통"],["bold","과감"]].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${mode === v}">${l}</button>`).join("")}</span></div></div>
     <div class="dayline"><span class="bar"></span>${evs}<span class="now" style="left:${nowPct}%"></span></div>
     <div class="map">
       <div class="room meetroom" style="grid-area:meet"><span class="rl">회의실</span><div class="tablebig"></div><div class="seats">${inMeet.map(charHtml).join("")}</div>${board}</div>
