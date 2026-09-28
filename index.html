@@ -2057,7 +2057,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const frame = document.getElementById('agencyFrame');
             if (!frame || frame.getAttribute('src')) return;
             await ensureFreshSession(); // agency.html은 이 페이지의 로그인 토큰을 그대로 쓴다
-            frame.src = frame.dataset.src;
+            frame.src = frame.dataset.src + '?v=' + Date.now(); // 캐시된 옛 버전 대신 항상 최신 파일
         }
         function loadAutomationFrame() {
             const frame = document.getElementById('automationFrame');
