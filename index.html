@@ -350,7 +350,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
 /* 자동화: 데스크톱에서는 사이드바 옆 전체 높이 패널 */
 @media (min-width: 1024px) {
     #appContainer > #automationContainer { padding: 0; }
-    #automationContainer .automation-frame { height: 100vh; min-height: 0; border: none; border-radius: 0; }
+    #automationContainer .automation-frame, #agencyContainer .automation-frame { height: 100vh; min-height: 0; border: none; border-radius: 0; }
     #quickLinks .quick-link-btn.current { border-left-color: var(--accent); }
 }
     </style>
@@ -389,6 +389,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
+                <a href="#agency" class="main-menu-tab" id="agencyTab" style="display: none;">Agency</a>
             </div>
         </div>
         <div class="nav-bar-wrapper">
@@ -415,6 +416,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         <!-- Automation Page (자동화 현황) -->
         <main id="automationContainer" class="grid-layout-align" style="display: none;">
             <iframe id="automationFrame" class="automation-frame" title="콘텐츠 자동화 현황" data-src="automation.html"></iframe>
+        </main>
+        <!-- Agency Page (profiles.visible_tabs에 agency가 있는 계정만) -->
+        <main id="agencyContainer" class="grid-layout-align" style="display: none;">
+            <iframe id="agencyFrame" class="automation-frame" title="Agency" data-src="agency.html"></iframe>
         </main>
         <!-- Reference Page (참고자료) -->
         <main id="referenceContainer" class="grid-layout-align" style="display: none;">
@@ -744,6 +749,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             currentUserEmail = null;
             currentUserName = null;
             visibleTabs = ['archive', 'library'];
+            const agencyFrame = document.getElementById('agencyFrame');
+            if (agencyFrame) agencyFrame.removeAttribute('src');
             localStorage.removeItem(ADMIN_TOKEN_KEY);
             localStorage.removeItem(ADMIN_EXP_KEY);
             localStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -954,6 +961,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             // 탭 표시는 profiles.visible_tabs 기준
             archiveTab.style.display = visibleTabs.includes('archive') ? 'inline-block' : 'none';
             libraryTab.style.display = visibleTabs.includes('library') ? 'inline-block' : 'none';
+            document.getElementById('agencyTab').style.display = visibleTabs.includes('agency') ? 'inline-block' : 'none';
             // 참고자료 탭은 모두에게 항시 표시
             document.getElementById('referenceTab').style.display = 'inline-block'; 
             if (isAdmin) {
@@ -990,6 +998,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const libraryContainer = document.getElementById('libraryContainer');
             const referenceContainer = document.getElementById('referenceContainer');
             const automationContainer = document.getElementById('automationContainer');
+            const agencyContainer = document.getElementById('agencyContainer');
             
             const navBarWrapper = document.querySelector('.nav-bar-wrapper');
             const addProjBtn = document.getElementById('btnAddProject');
@@ -1000,6 +1009,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (libraryContainer) libraryContainer.style.display = 'none';
             if (referenceContainer) referenceContainer.style.display = 'none';
             if (automationContainer) automationContainer.style.display = 'none';
+            if (agencyContainer) agencyContainer.style.display = 'none';
             // 2) 선택된 컨테이너 보여주기
             if (tabName === 'archive') {
                 if (archiveContainer) archiveContainer.style.display = 'block';
@@ -1021,6 +1031,13 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
                 if (btnAdminReference) btnAdminReference.style.display = 'none';
                 loadAutomationFrame();
+            } else if (tabName === 'agency') {
+                if (agencyContainer) agencyContainer.style.display = 'block';
+                if (navBarWrapper) navBarWrapper.style.display = 'none';
+                if (addProjBtn) addProjBtn.style.display = 'none';
+                if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
+                if (btnAdminReference) btnAdminReference.style.display = 'none';
+                loadAgencyFrame();
             } else if (tabName === 'reference') {
                 if (referenceContainer) referenceContainer.style.display = 'block';
                 if (navBarWrapper) navBarWrapper.style.display = 'none';
@@ -1039,7 +1056,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 return;
             }
 
-            if (['archive', 'library', 'automation', 'reference'].includes(hash)) {
+            if (['archive', 'library', 'automation', 'agency', 'reference'].includes(hash)) {
                 switchMainTab(hash);
             }
         }
@@ -2021,6 +2038,12 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             initApp();
         })();
         // --- 자동화 현황 (iframe은 처음 열 때 한 번만 로드) ---
+        async function loadAgencyFrame() {
+            const frame = document.getElementById('agencyFrame');
+            if (!frame || frame.getAttribute('src')) return;
+            await ensureFreshSession(); // agency.html은 이 페이지의 로그인 토큰을 그대로 쓴다
+            frame.src = frame.dataset.src;
+        }
         function loadAutomationFrame() {
             const frame = document.getElementById('automationFrame');
             if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;

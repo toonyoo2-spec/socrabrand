@@ -371,7 +371,16 @@ tr.new td{background:var(--green-tint)}
 <script>
 const SUPABASE_URL = "https://eoljasmgogdcvnytaoax.supabase.co";
 const SUPABASE_KEY = "sb_publishable_FsdOrzNSaHLmsuykEg9BVw_QbhI3h11";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 메인(index.html)에 로그인돼 있으면 그 토큰을 그대로 쓴다. 메인이 토큰을 갱신하므로 요청마다 다시 읽는다.
+const EMBED = window.top !== window;
+function indexToken(){ try { const t = localStorage.getItem("socra_admin_token"); const e = Number(localStorage.getItem("socra_admin_token_exp")); return t && e > Date.now() ? t : null; } catch(e) { return null; } }
+const MODE = indexToken() ? "index" : "own";
+const sb = MODE === "index"
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false },
+      global: { fetch: (url, opts = {}) => { const h = new Headers(opts.headers || {}); const t = indexToken(); if (t) h.set("Authorization", "Bearer " + t); return fetch(url, { ...opts, headers:h }); } }
+    })
+  : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -395,9 +404,13 @@ const ivChip = x => x.status === "done" ? `<span class="chip g">반영됨</span>
 function show(id){ ["login","denied","app"].forEach(x => $("#"+x).hidden = x !== id); }
 
 async function boot(){
-  const { data:{ session } } = await sb.auth.getSession();
-  if (!session) return show("login");
-  const { data: own } = await sb.from("agency_owners").select("user_id").eq("user_id", session.user.id).maybeSingle();
+  if (MODE === "own") {
+    const { data:{ session } } = await sb.auth.getSession();
+    if (!session) return show("login");
+  }
+  if (MODE === "index" && !indexToken()) return show("login");
+  // RLS가 본인 행만 돌려주므로 행이 있으면 소유자
+  const { data: own } = await sb.from("agency_owners").select("user_id").limit(1).maybeSingle();
   if (!own) return show("denied");
   show("app");
   const [ag, mt, pf, iv] = await Promise.all([
@@ -421,7 +434,9 @@ $("#loginForm").addEventListener("submit", async e => {
   if (error) { $("#lerr").textContent = "아이디 또는 비밀번호가 맞지 않아요."; return; }
   boot();
 });
-for (const b of ["#logout","#logout2"]) $(b).addEventListener("click", async () => { await sb.auth.signOut(); show("login"); });
+for (const b of ["#logout","#logout2"]) $(b).addEventListener("click", async () => { if (MODE === "own") await sb.auth.signOut(); show("login"); });
+if (MODE === "index") { $("#logout").hidden = true; $("#logout2").hidden = true; }
+if (EMBED) { document.querySelector(".topbar").hidden = true; document.querySelector(".wrap").style.paddingBlock = "16px 48px"; }
 
 
 // 작동 상태 노드
