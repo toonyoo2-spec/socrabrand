@@ -386,6 +386,18 @@ tr.new td{background:var(--green-tint)}
 .mr-empty{display:grid;place-items:center;color:var(--muted);font-size:14px;grid-row:1/-1}
 @media(max-width:760px){.msg-app{grid-template-columns:1fr}.msg-app.open .msg-list{display:none}.msg-app:not(.open) .msg-room{display:none}.mr-head .back{display:block}.msg-list{border-right:none}}
 
+/* 팀 채팅방 · 준비 노트 · 팝업 메신저 */
+.team{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+.team-body{background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start;max-height:520px;min-height:180px;overflow-y:auto}
+.team .dr-foot{background:var(--surface)}
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.note{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:grid;gap:6px;font-size:13.5px;line-height:1.55}
+.note .nh{display:flex;gap:8px;align-items:center}.note .nh b{font-size:14px}
+.note .pitch{background:var(--surface-2);border-radius:6px;padding:6px 9px;font-size:13px}
+.pop{position:fixed;right:16px;bottom:16px;width:min(380px,calc(100% - 24px));height:min(560px,calc(100% - 32px));z-index:70;background:var(--surface);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.28);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;border:1px solid var(--border)}
+.pop .mr-head .x{margin-left:auto}
+.pop .mr-body{min-height:0}
+
 /* 밤사이 작업 */
 .nightwork{display:grid;gap:10px}
 .nw{background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
@@ -649,7 +661,7 @@ async function boot(){
   const { data: own } = await sb.from("agency_owners").select("user_id").limit(1).maybeSingle();
   if (!own) return show("denied");
   show("app");
-  const [ag, mt, pf, iv, pr, ch, cf, sm, sc, at] = await Promise.all([
+  const [ag, mt, pf, iv, pr, ch, cf, sm, sc, at, nt] = await Promise.all([
     sb.from("agency_agents").select("*").order("sort"),
     sb.from("agency_meetings").select("*").order("meeting_date", {ascending:false}).order("created_at", {ascending:false}).limit(60),
     sb.from("agency_profile").select("*").order("created_at"),
@@ -659,8 +671,10 @@ async function boot(){
     sb.from("agency_config").select("key,value"),
     sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1),
     sb.from("agency_scout").select("*").order("collected_date", {ascending:false}).order("id").limit(60),
-    sb.from("agency_attendance").select("*").order("work_date", {ascending:false}).limit(1)
+    sb.from("agency_attendance").select("*").order("work_date", {ascending:false}).limit(1),
+    sb.from("agency_notes").select("*").order("id", {ascending:false}).limit(40)
   ]);
+  NOTES = (nt.data || []);
   ATT = (at.data || [])[0] || null; if (ATT && ATT.work_date !== kstNow().date) ATT = ATT.clock_out ? null : ATT;
   SUMMON = (sm.data || [])[0] || null;
   SCOUT = sc.data || [];
@@ -806,8 +820,10 @@ function startRealtime(){
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_chat"}, ({eventType, new:row}) => {
       if (!row || !row.id) return; const fresh = eventType === "INSERT" && !CHAT.some(c => c.id === row.id);
       upsertBy(CHAT, row); CHAT.sort((a, b) => a.id - b.id);
-      if (fresh && row.sender === "agent") notify(row.code, row.body, () => openDrawer(row.code), row.kind === "request" ? "채팅 요청" : "");
+      if (fresh && row.sender === "agent") row.code === "TEAM" ? notify(row.speaker || "PM", row.body, () => { showTab("today"); const t = $("#teamSec"); if (t) t.scrollIntoView({behavior:"smooth"}); }, "팀 채팅방") : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
+      if (row.code === "TEAM") renderTeam();
       rtDirty.office = true; rtFlush(); })
+    .on("postgres_changes", {event:"INSERT", schema:"public", table:"agency_notes"}, ({new:row}) => { if (row && row.id && !NOTES.some(n => n.id === row.id)) { NOTES.unshift(row); rtDirty.today = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_presence"}, ({new:row}) => { if (row && row.code) { PRES[row.code] = row; rtDirty.office = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_interventions"}, ({new:row, old}) => {
       if (!row || !row.id) return; const prev = IV.find(x => x.id === row.id);
@@ -841,15 +857,16 @@ function notify(code, body, onClick, label){
 }
 // 메인 화면에 끼워진 상태에서도 서랍·알림이 보이는 영역 안에 들어오게 맞춘다
 const FITS = new Set();
-function fitOverlay(el, topOnly){
-  FITS.add([el, topOnly]);
+function fitOverlay(el, topOnly, bottomDock){
+  FITS.add([el, topOnly, bottomDock]);
   try { const fe = window.frameElement; if (!fe) return; const r = fe.getBoundingClientRect(); const vh = window.parent.innerHeight;
     const top = Math.max(0, -r.top), bottom = Math.min(r.height, vh - r.top);
+    if (bottomDock) { el.style.bottom = "auto"; const h = Math.min(560, bottom - top - 32); el.style.height = Math.max(300, h) + "px"; el.style.top = (bottom - Math.max(300, h) - 16) + "px"; return; }
     el.style.top = (top + (topOnly ? 12 : 0)) + "px";
     if (!topOnly) { el.style.bottom = "auto"; el.style.height = Math.max(320, bottom - top) + "px"; }
   } catch (e) {}
 }
-function refit(){ FITS.forEach(x => { if (!x[0].isConnected) FITS.delete(x); else fitOverlay(x[0], x[1]); }); }
+function refit(){ FITS.forEach(x => { if (!x[0].isConnected) FITS.delete(x); else fitOverlay(x[0], x[1], x[2]); }); }
 try { if (window.frameElement) { window.parent.addEventListener("scroll", refit, {passive:true}); window.parent.addEventListener("resize", refit); } } catch (e) {}
 // Enter로 보내기, Shift+Enter 줄바꿈 (한글 조합 중에는 보내지 않는다)
 document.addEventListener("keydown", e => {
@@ -951,7 +968,7 @@ function bindIvPanel(){
 
 
 // ===== 사무실 (게임형) =====
-let PRES = {}, CHAT = [], CFG = {}, ATT = null, LIVE = false;
+let PRES = {}, CHAT = [], CFG = {}, ATT = null, LIVE = false, NOTES = [];
 const TEAM_COLOR = {YK:"#B86E00", AE:"#2F6FDB", AD:"#2F6FDB", PD:"#2F6FDB", WR:"#7a4fd6", CP:"#7a4fd6", GR:"#0E955C", IN:"#0E955C", SO:"#0E955C", PM:"#444", SS:"#D9467A", LS:"#D9467A"};
 // [영역, 이름, 자리, 스타일, 문 위치(아래 벽 기준 %)]
 const ROOMS = [["yk","검증실 · KWAN",["KWAN","YK"],"glass",70],["ops","비서실",["PM"],"",28],["cre","크리에이티브팀",["AE","AD","PD"],"",16],["con","콘텐츠팀",["WR","CP"],"",66],["data","데이터·인사이트팀",["GR","IN","SO"],"",84],["scout","스카우트팀",["SS","LS"],"",34]];
@@ -1019,9 +1036,9 @@ function bindOffice(){
   const sb2 = $("#summonBtn"); if (sb2) sb2.addEventListener("click", openSummon);
   const ab = $("#attBtn"); if (ab) ab.addEventListener("click", toggleAttendance);
   const kd = $("#kwanDesk"); if (kd) kd.addEventListener("click", toggleAttendance);
-  document.querySelectorAll(".desk[data-agent]").forEach(b => b.addEventListener("click", () => openDrawer(b.dataset.agent)));
-  const rb = $("#reqBtn"); if (rb) rb.addEventListener("click", () => { const c = Object.keys(AG).find(x => pendingReq(x)); if (c) openDrawer(c); });
-  const mb = $("#msgBtn"); if (mb) mb.addEventListener("click", () => { const c = Object.keys(AG).find(x => unreadMsg(x)); if (c) openDrawer(c); });
+  document.querySelectorAll(".desk[data-agent]").forEach(b => b.addEventListener("click", () => openPop(b.dataset.agent)));
+  const rb = $("#reqBtn"); if (rb) rb.addEventListener("click", () => { const c = Object.keys(AG).find(x => pendingReq(x)); if (c) openPop(c); });
+  const mb = $("#msgBtn"); if (mb) mb.addEventListener("click", () => { const c = Object.keys(AG).find(x => unreadMsg(x)); if (c) openPop(c); });
   document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", async () => {
     const { error } = await sb.from("agency_config").update({ value: b.dataset.mode, updated_at: new Date().toISOString() }).eq("key", "night_mode");
     if (error) return toast("바꾸지 못했어요. 다시 눌러주세요.");
@@ -1105,7 +1122,7 @@ function placeSprites(animate){
   const codes = [...Object.keys(AG), "KWAN"]; let grid = null, order = 0;
   codes.forEach(code => {
     let el = layer.querySelector(`[data-sp="${code}"]`);
-    if (!el) { layer.insertAdjacentHTML("beforeend", spriteHtml(code)); el = layer.lastElementChild; el.addEventListener("click", () => code === "KWAN" ? toggleAttendance() : openDrawer(code)); }
+    if (!el) { layer.insertAdjacentHTML("beforeend", spriteHtml(code)); el = layer.lastElementChild; el.addEventListener("click", () => code === "KWAN" ? toggleAttendance() : openPop(code)); }
     else { const mk = el.querySelector(".mk"); const h = spriteMarks(code); if (mk.innerHTML !== h) mk.innerHTML = h; }
     const st = code === "KWAN" ? (kwanIn() ? "idle" : "off") : (PRES[code]||{}).status || "off";
     let place = "door", tgt = doorPt;
@@ -1209,15 +1226,37 @@ function openDrawer(code){
   if (!AG[code]) return; showTab("chat"); CHAT_CUR = code; renderMsgList(); renderRoom(); markRead(code);
   const ta = $("#drIn"); if (ta && window.matchMedia("(min-width:761px)").matches) ta.focus();
 }
-function refreshChat(){ renderMsgList(); if (CHAT_CUR) { renderThread(CHAT_CUR); const st = $("#roomStatus"); if (st) st.textContent = `${AG[CHAT_CUR].role} · ${statusLine(CHAT_CUR)}`; if (!$("#p-chat").hidden) markRead(CHAT_CUR); } }
-function renderThread(code){
-  const box = $("#drBody"); if (!box) return;
+// 오늘 회의 탭에서 에이전트를 누르면 뜨는 팝업 메신저
+let POP = null;
+function openPop(code){
+  if (!AG[code]) return; closePop();
+  const a = AG[code], {lv} = level(a);
+  const el = document.createElement("div"); el.className = "pop"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", `${a.name} 채팅`);
+  el.innerHTML = `<div class="mr-head">${av(code)}<div style="min-width:0"><b>${esc(a.name)}</b> <span class="lv" style="background:var(--text);color:var(--bg)">Lv.${lv}</span><br><span class="sub" id="popStatus">${esc(a.role)} · ${esc(statusLine(code))}</span></div><button class="x" aria-label="닫기">×</button></div>
+    <div class="mr-body" id="popBody"></div>
+    <form class="dr-foot" id="popForm"><textarea id="popIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
+  document.body.appendChild(el); POP = {el, code}; fitOverlay(el, false, true);
+  el.querySelector(".x").addEventListener("click", closePop);
+  renderThread(code, $("#popBody")); markRead(code);
+  $("#popForm").addEventListener("submit", async e => { e.preventDefault(); const body = $("#popIn").value.trim(); if (!body) return;
+    const { data, error } = await sb.from("agency_chat").insert({ code, sender:"kwan", body }).select().single();
+    if (error) return toast("보내지 못했어요. 다시 시도해주세요.");
+    upsertBy(CHAT, data); $("#popIn").value = ""; renderThread(code, $("#popBody")); renderMsgList(); });
+  const ta = $("#popIn"); if (ta) ta.focus();
+}
+function closePop(){ if (POP) { POP.el.remove(); POP = null; } }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closePop(); });
+function refreshChat(){ if (POP && POP.el.isConnected) { renderThread(POP.code, $("#popBody")); const st = $("#popStatus"); if (st) st.textContent = `${AG[POP.code].role} · ${statusLine(POP.code)}`; markRead(POP.code); }
+ renderMsgList(); if (CHAT_CUR) { renderThread(CHAT_CUR); const st = $("#roomStatus"); if (st) st.textContent = `${AG[CHAT_CUR].role} · ${statusLine(CHAT_CUR)}`; if (!$("#p-chat").hidden) markRead(CHAT_CUR); } }
+function renderThread(code, target){
+  const box = target || $("#drBody"); if (!box) return;
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   const th = CHAT.filter(c => c.code === code);
   box.innerHTML = th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "Grace 확인 중" : "다음 근무 때 답변"}</span>`) : ""))).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
   if (nearBottom || !box.dataset.init) box.scrollTop = box.scrollHeight; box.dataset.init = "1";
 }
+
 
 
 // 밤사이 작업 (오늘 날짜의 야간 근무 기록)
@@ -1263,14 +1302,51 @@ function refsHtml(){
 }
 function bindRefs(){ document.querySelectorAll("[data-refk]").forEach(b => b.addEventListener("click", () => { REF_KIND = b.dataset.refk; const sec = $("#refSec"); if (sec) { sec.outerHTML = refsHtml(); bindRefs(); } })); }
 
+// 팀 채팅방 (12명 전원 단톡방, code='TEAM') — 모든 말은 DB가 회의록에 자동 복제한다
+function teamHtml(){
+  return `<div class="sec" id="teamSec"><div class="sec-h"><h2>팀 채팅방</h2><span class="sub">여기 남기면 관련 에이전트들이 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. 모든 대화는 회의록에 저장돼요</span></div>
+    <div class="team"><div class="team-body" id="teamBody"></div>
+    <form class="dr-foot" id="teamForm"><textarea id="teamIn" placeholder="모두에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
+}
+function renderTeam(){
+  const box = $("#teamBody"); if (!box) return;
+  const near = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  const today = kstNow().date;
+  const th = CHAT.filter(c => c.code === "TEAM" && new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10) >= new Date(Date.now() + 9*3600e3 - 2*864e5).toISOString().slice(0,10));
+  let lastDay = "";
+  box.innerHTML = th.length ? th.map(c => { const day = new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10);
+      const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day;
+      return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "")); }).join("")
+    : `<div class="kk-day">아직 대화가 없어요. 팀 전체에게 말을 걸어보세요</div>`;
+  if (near || !box.dataset.init) box.scrollTop = box.scrollHeight; box.dataset.init = "1";
+}
+function bindTeam(){
+  renderTeam();
+  const f = $("#teamForm"); if (!f) return;
+  f.addEventListener("submit", async e => { e.preventDefault(); const body = $("#teamIn").value.trim(); if (!body) return;
+    const { data, error } = await sb.from("agency_chat").insert({ code:"TEAM", sender:"kwan", body }).select().single();
+    if (error) return toast("보내지 못했어요. 다시 시도해주세요.");
+    upsertBy(CHAT, data); $("#teamIn").value = ""; renderTeam(); toast(dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
+}
+// 회의 준비 노트 (근무 시간에 에이전트들이 남긴 인사이트)
+function notesHtml(){
+  const since = new Date(Date.now() + 9*3600e3 - 864e5).toISOString().slice(0,10);
+  const list = NOTES.filter(n => n.note_date >= since).slice(0, 12);
+  if (!list.length) return "";
+  return `<div class="sec"><div class="sec-h"><h2>회의 준비 노트</h2><span class="sub">근무 시간에 에이전트들이 레퍼런스와 경쟁사 분석을 읽고 남긴 인사이트예요 · 다음 회의 재료</span></div><div class="notes">
+    ${list.map(n => `<article class="note"><div class="nh">${av(n.code, true)}<b>${esc(n.title)}</b><span class="sub" style="margin-left:auto">${esc(AG[n.code]?.name || n.code)} · ${fmtTime(n.created_at)}</span></div>
+      <div>${linkify(n.body)}</div>${n.pitch ? `<div class="pitch">💡 ${linkify(n.pitch)}</div>` : ""}
+      ${(n.links || []).filter(x => x && x.u).length ? `<div class="links">${n.links.filter(x => x && x.u).map(x => `<a href="${esc(x.u)}" target="_blank" rel="noopener">🔗 ${esc(x.t || x.u)}</a>`).join("")}</div>` : ""}</article>`).join("")}</div></div>`;
+}
+
 // 오늘 회의
 function renderToday(){
   const el = $("#p-today");
-  const m = MEETINGS.find(x => x.status !== "error" && x.status !== "running" && x.kind !== "night");
-  if (!m) { el.innerHTML = officeHtml() + nightHtml() + refsHtml() + ivPanelHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; bindOffice(); bindNight(); bindRefs(); bindIvPanel(); return; }
+  const m = MEETINGS.find(x => x.status !== "error" && x.status !== "running" && x.kind !== "night" && x.kind !== "chat");
+  if (!m) { el.innerHTML = officeHtml() + teamHtml() + nightHtml() + notesHtml() + refsHtml() + ivPanelHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; bindOffice(); bindTeam(); bindNight(); bindRefs(); bindIvPanel(); return; }
   const meta = m.meta || {};
   const att = meta.attendees || [...new Set((m.decisions||[]).flatMap(d => d.who || []))];
-  let h = officeHtml() + nightHtml() + ivPanelHtml() + `<div class="sec"><div class="meta">
+  let h = officeHtml() + teamHtml() + nightHtml() + ivPanelHtml() + `<div class="sec"><div class="meta">
      <span><b>${fmtDate(m.meeting_date)}</b> ${m.kind==="auto"?"자동회의":m.kind==="deep"?"깊은 회의":"수동 회의"}</span>
      ${m.title ? `<span><b>${esc(m.title)}</b></span>` : ""}
      <span>결정 <b>${(m.decisions||[]).length}건</b></span>
@@ -1278,20 +1354,20 @@ function renderToday(){
      ${meta.agenda_reason ? `<span>${esc(meta.agenda_reason)}</span>` : ""}
    </div></div>`;
   if (m.status === "no_agenda") h += `<div class="empty">${esc(meta.note || "오늘은 회의할 만한 변화가 없어서 회의를 열지 않았어요.")}</div>`;
-  h += chatBlock(m, "today");
+  if ((m.decisions||[]).length || (m.meta||{}).opening) h += `<div class="sec"><span class="sub">회의 대화 전체는 <button class="linkbtn" id="toMinutes">회의록 탭</button>에서 볼 수 있어요.</span></div>`;
   if ((m.escalations||[]).length) h += `<div class="sec"><div class="sec-h"><h2>비서 메모</h2><span class="sub">Grace가 챙기는 일이에요. 회의 안건과는 별개로, 확인이나 답이 필요한 것만 모았어요</span></div>
      ${m.escalations.map((e, i) => { const did = "m" + (i + 1); const th = ivFor(m.id, did).slice().reverse();
        return `<div class="esc">${av(e.owner || "PM", true)}<div style="flex:1;min-width:0"><strong>${esc(e.title)}</strong><br>${linkify(e.body)}
         ${th.length ? `<div class="esc-th">${th.map(x => `<div class="me">${linkify(x.body)} ${ivChip(x)}</div>${x.response ? `<div class="re"><b>${esc(AG[x.responder]?.name || "Grace")}</b> ${linkify(x.response)}</div>` : ""}`).join("")}</div>` : ""}
         <div class="esc-acts"><button class="kk-act" data-escr="${did}">답 적기</button></div><div data-escslot="${did}"></div></div></div>`; }).join("")}</div>`;
   if ((m.decisions||[]).length) h += `<div class="sec"><div class="sec-h"><h2>KWAN이 결정할 것</h2><span class="sub">A·B·C는 서로 다른 전략 방향입니다</span></div>${m.decisions.map((d, i) => decCard(m, d, i)).join("")}</div>`;
-  h += refsHtml();
+  h += notesHtml() + refsHtml();
   if (meta.question) h += `<div class="sec"><div class="sec-h"><h2>오늘의 질문</h2></div><div class="box"><p style="margin:0">${esc(meta.question)}</p><span class="sub">KWAN 프로필 탭이나 DM으로 답해주세요</span></div></div>`;
   el.innerHTML = h;
-  bindOffice(); bindNight(); bindRefs();
+  bindOffice(); bindTeam(); bindNight(); bindRefs();
   bindIvPanel();
-  bindChat(m, "today");
   bindPicks(m);
+  const tm = $("#toMinutes"); if (tm) tm.addEventListener("click", () => { showTab("minutes"); renderMinutes(m); });
   document.querySelectorAll("#p-today [data-escr]").forEach(b => b.addEventListener("click", () => {
     const slot = document.querySelector(`#p-today [data-escslot="${b.dataset.escr}"]`);
     if (slot.firstChild) { slot.innerHTML = ""; return; }
@@ -1349,21 +1425,22 @@ function bindPicks(m){
     f.addEventListener("submit", async e => { e.preventDefault(); const body = f.querySelector("textarea").value.trim(); if (!body) return;
       if (await addIv({ meeting_id:m.id, decision_id:b.dataset.d, kind:b.dataset.iv, body })) renderToday(); });
   }));
-  document.querySelectorAll("#p-today [data-goto]").forEach(b => b.addEventListener("click", () => { bindChat(m, "today", b.dataset.goto); $("#today-nav").scrollIntoView({behavior:"smooth", block:"start"}); }));
+  document.querySelectorAll("#p-today [data-goto]").forEach(b => b.addEventListener("click", () => { showTab("minutes"); renderMinutes(m, b.dataset.goto); }));
 }
 
 // 회의록
 function renderMinutesNav(){
-  const list = MEETINGS.filter(m => m.status !== "running" && (m.decisions||[]).length);
-  $("#datesel").innerHTML = list.slice(0, 20).map(m => `<button data-id="${m.id}">${fmtDate(m.meeting_date)}${m.kind!=="auto"?" · 수동":""}</button>`).join("");
+  const list = MEETINGS.filter(m => m.status !== "running" && m.kind !== "night" && ((m.decisions||[]).length || Object.keys(m.transcript || {}).length));
+  const KL = {auto:"", manual:" · 수동", deep:" · 깊은 회의", chat:" · 팀 채팅"};
+  $("#datesel").innerHTML = list.slice(0, 30).map(m => `<button data-id="${m.id}">${fmtDate(m.meeting_date)}${KL[m.kind] || ""}</button>`).join("");
   $("#datesel").querySelectorAll("button").forEach(b => b.addEventListener("click", () => renderMinutes(MEETINGS.find(m => m.id === b.dataset.id))));
   if (list[0]) renderMinutes(list[0]); else { $("#tx").innerHTML = `<div class="empty">회의록이 아직 없어요.</div>`; }
 }
 function renderMinutes(m, decId){
   CUR = m;
   $("#datesel").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === m.id ? "true" : "false"));
-  $("#mtitle").textContent = `회의록 · ${fmtDate(m.meeting_date)}`;
-  const decs = m.decisions || [];
+  $("#mtitle").textContent = `${m.kind === "chat" ? "팀 채팅방" : "회의록"} · ${fmtDate(m.meeting_date)}${m.title && m.kind !== "chat" ? " · " + m.title : ""}`;
+  const decs = (m.decisions || []).length ? m.decisions : Object.keys(m.transcript || {}).map(k => ({ id:k, q: k === "chat" ? "팀 채팅방 대화" : k }));
   $("#txnav").innerHTML = decs.map((d, i) => `<button data-id="${esc(d.id)}">결정 ${i+1}${d.proj?` · ${esc(d.proj)}`:""}<br><span style="font-weight:400">${esc(d.task || d.q)}</span></button>`).join("");
   $("#txnav").querySelectorAll("button").forEach(b => b.addEventListener("click", () => renderTx(m, b.dataset.id)));
   if (decs.length) renderTx(m, decId || decs[0].id);
