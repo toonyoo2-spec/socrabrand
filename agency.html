@@ -522,7 +522,9 @@ function bindKakao(root, m, id, rerender){
 function chatBlock(m, prefix){
   const decs = m.decisions || [];
   if (!decs.length) return "";
+  const opening = (m.meta || {}).opening ? `<div class="kk"><div class="kk-day">비서실장 오프닝</div>${bubble("PM", m.meta.opening, (m.meta.slack_scanned ? `<span class="ev">Slack ${m.meta.slack_scanned}건 확인</span>` : "") + (m.meta.weekly ? `<span class="chip b">월요일 주간 콘텐츠 회의 포함</span>` : ""))}</div>` : "";
   return `<div class="sec"><div class="sec-h"><h2>회의 대화</h2><span class="sub">말풍선마다 답장할 수 있어요. 내 말은 오른쪽 노란 말풍선, YK 검증은 테두리 말풍선입니다</span></div>
+    ${opening}
     <div class="kk-nav" id="${prefix}-nav">${decs.map((d, i) => `<button data-id="${esc(d.id)}">결정 ${i+1}${d.proj?` · ${esc(d.proj)}`:""}</button>`).join("")}</div>
     <div id="${prefix}-chat"></div></div>`;
 }
