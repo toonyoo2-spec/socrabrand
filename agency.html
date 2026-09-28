@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Agency · Socra Brandteam</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* socrabrand.cloud 토큰과 동일 (라이트 단일 테마) */
+:root{
+  color-scheme: light;
+  --bg:#f6f5f1; --surface:#ffffff; --surface-2:#f1f0ec; --border:#e3e1db; --border-hover:#1a1a1a;
+  --text:#141414; --muted:#6f6d67; --faint:#9a978f;
+  --green:#00D37A; --green-line:#0E955C; --green-tint:#E6F9ED; --on-green:#0b1a12;
+  --amber:#8a5200; --amber-line:#B86E00; --amber-tint:#FDF0D5;
+  --red:#b42318; --red-tint:#FDE7E4;
+  --blue:#2F6FDB; --blue-tint:#E7EEFC;
+  --font:"Pretendard Variable",Pretendard,"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:4px;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;-webkit-font-smoothing:antialiased;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:24px 64px}
+@media(min-width:768px){.wrap{padding-inline:32px}}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--green-line);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+.crumb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.crumb b{color:var(--text);font-weight:600}
+.lock{display:inline-flex;gap:6px;align-items:center;background:var(--text);color:var(--bg);border-radius:999px;padding:2px 10px;font-size:11px}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-top:14px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1;letter-spacing:-.05em;font-weight:800;margin:0}
+h1::after{content:".";color:var(--green)}
+.head p{margin:8px 0 0;color:var(--muted);max-width:60ch}
+.sample{display:inline-block;background:var(--amber-tint);color:var(--amber);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:24px 0 20px;border-bottom:1px solid var(--border);padding-bottom:14px}
+.tab{background:transparent;border:1px solid transparent;color:var(--muted);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:600}
+.tab:hover{color:var(--text);border-color:var(--border)}
+.tab[aria-selected="true"]{background:var(--green);color:var(--on-green)}
+.tab .n{font-family:var(--mono);font-size:11px;margin-left:4px;opacity:.7}
+
+h2{font-size:20px;letter-spacing:-.03em;margin:0;text-wrap:balance}
+h3{font-size:16px;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sec{display:grid;gap:14px;margin-bottom:36px}
+.sec-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.sub{color:var(--muted);font-size:13px}
+
+/* meeting summary strip */
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px}
+.meta b{color:var(--text);font-weight:600}
+.attend{display:flex;flex-wrap:wrap;gap:4px}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.g{background:var(--green-tint);color:var(--green-line)}
+.chip.a{background:var(--amber-tint);color:var(--amber)}
+.chip.r{background:var(--red-tint);color:var(--red)}
+.chip.b{background:var(--blue-tint);color:var(--blue)}
+.chip.k{background:var(--text);color:var(--bg)}
+
+/* avatar */
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:10px;font-weight:700;background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.av.yk{background:var(--amber-tint);border-color:var(--amber-line);color:var(--amber)}
+.av.sm{width:26px;height:26px;font-size:9px}
+
+/* escalation */
+.esc{display:flex;gap:12px;align-items:flex-start;background:var(--red-tint);border-radius:var(--r);padding:12px 16px;font-size:14px}
+.esc strong{color:var(--red)}
+
+/* decision */
+.dec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.dec-top{display:grid;gap:6px;padding:18px 18px 14px;border-bottom:1px solid var(--border)}
+.dec-top .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dec-q{font-size:14px;color:var(--muted);max-width:75ch;margin:0}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.plan{display:grid;grid-template-rows:auto auto 1fr auto;gap:8px;padding:16px 18px;border-right:1px solid var(--border)}
+.plan:last-child{border-right:none}
+@media(max-width:820px){.plan{border-right:none;border-bottom:1px solid var(--border)}.plan:last-child{border-bottom:none}}
+.plan-h{display:flex;gap:10px;align-items:baseline}
+.plan-l{font-family:var(--mono);font-weight:700;font-size:22px;line-height:1}
+.plan-t{font-weight:700;letter-spacing:-.02em}
+.plan p{margin:0;font-size:13.5px}
+.plan dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px}
+.plan dt{color:var(--faint);font-family:var(--mono);font-size:11px;padding-top:2px}
+.plan dd{margin:0}
+.plan.rec{background:linear-gradient(var(--green-tint),var(--green-tint)) top/100% 3px no-repeat}
+.pick{justify-self:start;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:600;color:var(--text)}
+.pick:hover{border-color:var(--border-hover)}
+.pick[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.yk-note{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;background:var(--amber-tint);font-size:13.5px;border-top:1px solid var(--border)}
+.yk-note p{margin:0}
+.dec-foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+.linkbtn{background:none;border:none;padding:0;color:var(--text);font-weight:600;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+
+/* transcript */
+.tx{display:grid;grid-template-columns:minmax(0,1fr);gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+@media(min-width:980px){.tx-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;align-items:start}}
+.tx-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+@media(min-width:980px){.tx-nav{flex-direction:column;position:sticky;top:16px}}
+.tx-nav button{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;text-align:left;font-size:13px;color:var(--muted)}
+.tx-nav button[aria-current="true"]{border-color:var(--text);color:var(--text);font-weight:600}
+.stage{display:flex;gap:10px;align-items:center;padding:10px 18px;background:var(--surface-2);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stage b{color:var(--text)}
+.msg{display:flex;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.msg:last-child{border-bottom:none}
+.msg.yk{background:var(--amber-tint)}
+.msg-b{display:grid;gap:6px;min-width:0}
+.msg-h{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:13px}
+.msg-h .who{font-weight:700}
+.msg-h .role{color:var(--muted)}
+.msg p{margin:0;font-size:14px;max-width:72ch}
+.ev{display:flex;flex-wrap:wrap;gap:6px}
+.ev span{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px dashed var(--border);border-radius:var(--r);padding:1px 6px}
+.reply{font-size:12px;color:var(--muted)}
+
+/* agents */
+.org{display:grid;gap:10px}
+.org-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.org-lbl{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
+.ag{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:left;color:var(--text)}
+.ag:hover{border-color:var(--border-hover)}
+.ag[aria-pressed="true"]{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.ag .nm{font-weight:700;font-size:14px;line-height:1.3}
+.ag .rl{font-size:12px;color:var(--muted);line-height:1.3}
+.ag.yk{background:var(--amber-tint);border-color:var(--amber-line)}
+.detail{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;display:grid;gap:18px}
+.detail-h{display:flex;gap:14px;align-items:center}
+.detail-h .av{width:48px;height:48px;font-size:13px}
+.mission{font-size:17px;font-weight:600;letter-spacing:-.02em;max-width:60ch;margin:0}
+.gl{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px 28px}
+.gl h4{margin:0 0 6px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.gl ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:13.5px}
+.gl .out{font-family:var(--mono);font-size:12px;background:var(--surface-2);border-radius:var(--r);padding:10px 12px;white-space:pre-wrap;margin:0;overflow-x:auto}
+.level{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px}
+.level b{color:var(--text);font-family:var(--mono)}
+
+/* automation */
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13.5px}
+th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr.new td{background:var(--green-tint)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.step{padding:14px 16px;border-right:1px solid var(--border);display:grid;gap:4px;align-content:start}
+.step:last-child{border-right:none}
+@media(max-width:700px){.step{border-right:none;border-bottom:1px solid var(--border)}}
+.step .t{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.step b{font-size:14px}
+.step p{margin:0;font-size:12.5px;color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:grid;gap:8px;align-content:start}
+.box ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:13.5px}
+
+/* profile */
+.pref{display:grid;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.pref-i{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px}
+.pref-i:last-child{border-bottom:none}
+.pref-i small{grid-column:1/-1;color:var(--muted);font-size:12px}
+.q{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px}
+.q:last-child{border-bottom:none}
+.q .mono{color:var(--muted);font-size:12px;padding-top:2px}
+
+@media (prefers-reduced-motion:no-preference){.tab,.pick,.ag{transition:background .15s,border-color .15s,color .15s}}
+</style>
+</head>
+<body>
+<style>
+.login{max-width:360px;margin:12vh auto 0;display:grid;gap:14px}
+.login h1{font-size:40px}
+.login label{font-size:12px;font-weight:600;color:var(--muted)}
+.login input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);padding:10px 0;font-size:15px;font-family:inherit;color:var(--text);outline:none}
+.login input:focus{border-color:var(--text)}
+.btn{background:var(--green);color:var(--on-green);border:none;border-radius:999px;padding:11px 18px;font-weight:700;font-size:14px}
+.btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.err{color:var(--red);font-size:13px;min-height:1em}
+.empty{background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);padding:28px 20px;color:var(--muted);font-size:14px;text-align:center}
+.datesel{display:flex;flex-wrap:wrap;gap:6px}
+.datesel button{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:12px;font-family:var(--mono);color:var(--muted)}
+.datesel button[aria-current="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.qa{display:grid;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.qa:last-child{border-bottom:none}
+.qa textarea{width:100%;min-height:56px;font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;background:var(--bg);color:var(--text);resize:vertical}
+.qa .row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar a{color:var(--muted);font-size:12px;font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+  <section id="login" class="login" hidden>
+    <h1>Agency</h1>
+    <p class="sub" style="margin:0">KWAN 전용 페이지입니다. socrabrand 계정으로 로그인하세요.</p>
+    <form id="loginForm" style="display:grid;gap:14px">
+      <div><label for="lid">아이디</label><input id="lid" autocomplete="username" required></div>
+      <div><label for="lpw">비밀번호</label><input id="lpw" type="password" autocomplete="current-password" required></div>
+      <button class="btn" type="submit">로그인</button>
+      <div class="err" id="lerr"></div>
+    </form>
+  </section>
+
+  <section id="denied" hidden>
+    <div class="empty">이 페이지는 KWAN 계정만 볼 수 있어요. <button class="linkbtn" id="logout2">로그아웃</button></div>
+  </section>
+
+  <section id="app" hidden>
+    <div class="topbar">
+      <div class="crumb"><a href="/">socrabrand.cloud</a><span>/</span><b>agency</b><span class="lock">KWAN 전용 · 비공개</span></div>
+      <button class="linkbtn" id="logout">로그아웃</button>
+    </div>
+    <div class="head">
+      <div>
+        <h1>Agency</h1>
+        <p>평일 아침 KWAN Tasks로 에이전트 10명이 회의하고, YK가 검증해 결정할 것을 A·B·C로 올립니다.</p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="today" aria-selected="true">오늘 회의</button>
+      <button class="tab" role="tab" data-tab="minutes" aria-selected="false">회의록</button>
+      <button class="tab" role="tab" data-tab="agents" aria-selected="false">에이전트<span class="n">10</span></button>
+      <button class="tab" role="tab" data-tab="auto" aria-selected="false">자동화</button>
+      <button class="tab" role="tab" data-tab="profile" aria-selected="false">KWAN 프로필</button>
+    </div>
+
+    <section id="p-today" class="panel"></section>
+
+    <section id="p-minutes" class="panel" hidden>
+      <div class="sec">
+        <div class="sec-h"><h2 id="mtitle">회의록</h2><div class="datesel" id="datesel"></div></div>
+        <div class="tx-layout">
+          <nav class="tx-nav" id="txnav" aria-label="안건"></nav>
+          <div class="tx" id="tx"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="p-agents" class="panel" hidden>
+      <div class="sec">
+        <div class="sec-h"><h2>조직도</h2><span class="sub">인물을 누르면 업무 지침이 열립니다</span></div>
+        <div class="org" id="org"></div>
+      </div>
+      <div class="sec"><div class="detail" id="detail"></div></div>
+    </section>
+
+    <section id="p-auto" class="panel" hidden>
+      <div class="sec">
+        <div class="sec-h"><h2>걸려 있는 자동화</h2><span class="sub">기존 4개는 비서실장 담당, Agency 회의 1개 추가</span></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>자동화</th><th>주기 (KST)</th><th>담당</th><th>하는 일</th></tr></thead>
+          <tbody>
+            <tr class="new"><td><b>Agency 일일 회의</b></td><td class="mono">평일 07:27</td><td>AE 진행 · YK 검증</td><td>변화 있는 Task로 회의, 결정을 이 페이지에 저장하고 개인 DM 발송</td></tr>
+            <tr><td>콘텐츠실 프로젝트 캘린더</td><td class="mono">평일 08:00</td><td>비서실장</td><td>콘텐츠실 담당 프로젝트 요약·캘린더 갱신</td></tr>
+            <tr><td>주간회의 브랜드팀 아젠다</td><td class="mono">월 08:00</td><td>비서실장</td><td>지난 7일 Task 기록으로 아젠다 작성</td></tr>
+            <tr><td>아침 브리핑</td><td class="mono">평일 08:40</td><td>비서실장</td><td>일정·체크포인트·질문</td></tr>
+            <tr><td>저녁 마무리</td><td class="mono">평일 17:00</td><td>비서실장</td><td>오늘 흔적 기록 초안, 금요일은 주간 회고</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><h2>일일 회의 흐름</h2><span class="sub">세션 1개에서 진행, 에이전트를 따로 띄우지 않음</span></div>
+        <div class="flow">
+          <div class="step"><span class="t">0</span><b>공휴일 확인</b><p>공휴일이면 조회 없이 종료</p></div>
+          <div class="step"><span class="t">1</span><b>안건 선정</b><p>24시간 내 변화, 마감 3일 이내, 멈춘 Task. 없으면 "안건 없음" 기록 후 종료</p></div>
+          <div class="step"><span class="t">2</span><b>소집</b><p>안건별 3~4명 + YK. 요약 카드만 읽음</p></div>
+          <div class="step"><span class="t">3</span><b>제안 · 교차 토론</b><p>각자 제안 후 반론·흡수 1라운드</p></div>
+          <div class="step"><span class="t">4</span><b>YK 검증</b><p>근거 라벨, 서로 다른 A·B·C, 결정 3개로 압축</p></div>
+          <div class="step"><span class="t">5</span><b>저장 · DM</b><p>이 페이지에 저장, KWAN 개인 DM 1통</p></div>
+        </div>
+      </div>
+      <div class="two">
+        <div class="box"><h3>크레딧 절약 규칙</h3><ul>
+          <li>자동회의는 한 세션 안에서 역할을 나눠 진행합니다. 병렬 에이전트는 수동 <b>깊은 회의</b>에서만 씁니다</li>
+          <li>안건 없는 날은 조회만 하고 끝냅니다</li>
+          <li>에이전트 전체 지침 대신 요약 카드를 읽습니다</li>
+          <li>이전 회의는 결정과 KWAN 선택만 참조합니다</li>
+        </ul></div>
+        <div class="box"><h3>보안 · 슬랙 규칙</h3><ul>
+          <li>회의 데이터는 KWAN 계정만 읽을 수 있습니다 (Supabase RLS)</li>
+          <li>슬랙은 KWAN 개인 DM 발송 한 가지만 씁니다</li>
+          <li>Notion은 읽기만 합니다. 회의가 Task를 직접 고치지 않습니다</li>
+        </ul></div>
+      </div>
+    </section>
+
+    <section id="p-profile" class="panel" hidden>
+      <div class="sec">
+        <div class="sec-h"><h2>지금까지 파악한 KWAN의 방식</h2><span class="sub">YK가 이 프로필로 KWAN을 미러링합니다</span></div>
+        <div class="pref" id="prefs"></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><h2>에이전트의 질문</h2><span class="sub">여기에 답하면 다음 회의부터 반영됩니다. DM으로 답해도 됩니다</span></div>
+        <div class="pref" id="questions"></div>
+      </div>
+    </section>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = "https://eoljasmgogdcvnytaoax.supabase.co";
+const SUPABASE_KEY = "sb_publishable_FsdOrzNSaHLmsuykEg9BVw_QbhI3h11";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tagCls = {근거:"b",사실:"b",추정:"a",의견:"",반론:"r",흡수:"g",검증:"a",재설계:"a",추천:"g",도전안:"k",질문:"b"};
+const WD = ["일","월","화","수","목","금","토"];
+const fmtDate = d => { const x = new Date(d + "T00:00:00"); return `${x.getMonth()+1}/${x.getDate()}(${WD[x.getDay()]})`; };
+function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v);}catch(e){ return null; } }
+function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
+
+let AG = {}, MEETINGS = [], CUR = null;
+const av = (k, sm) => `<span class="av${sm?" sm":""}${k==="YK"?" yk":""}" title="${esc(AG[k]?.name || k)}">${esc(k)}</span>`;
+
+function show(id){ ["login","denied","app"].forEach(x => $("#"+x).hidden = x !== id); }
+
+async function boot(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session) return show("login");
+  const { data: own } = await sb.from("agency_owners").select("user_id").eq("user_id", session.user.id).maybeSingle();
+  if (!own) return show("denied");
+  show("app");
+  const [ag, mt, pf] = await Promise.all([
+    sb.from("agency_agents").select("*").order("sort"),
+    sb.from("agency_meetings").select("*").order("meeting_date", {ascending:false}).order("created_at", {ascending:false}).limit(60),
+    sb.from("agency_profile").select("*").order("created_at")
+  ]);
+  (ag.data || []).forEach(a => AG[a.code] = a);
+  MEETINGS = mt.data || [];
+  renderToday(); renderMinutesNav(); renderOrg(); renderProfile(pf.data || []);
+  const h = (location.hash || "").slice(1);
+  showTab(["today","minutes","agents","auto","profile"].includes(h) ? h : (store("agency-tab") || "today"));
+}
+
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  let id = $("#lid").value.trim(); if (!id.includes("@")) id += "@internal.local";
+  const { error } = await sb.auth.signInWithPassword({ email:id, password:$("#lpw").value });
+  if (error) { $("#lerr").textContent = "아이디 또는 비밀번호가 맞지 않아요."; return; }
+  boot();
+});
+for (const b of ["#logout","#logout2"]) $(b).addEventListener("click", async () => { await sb.auth.signOut(); show("login"); });
+
+// 오늘 회의
+function renderToday(){
+  const el = $("#p-today");
+  const m = MEETINGS.find(x => x.status !== "error");
+  if (!m) { el.innerHTML = `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; return; }
+  const meta = m.meta || {};
+  const att = meta.attendees || [...new Set((m.decisions||[]).flatMap(d => d.who || []))];
+  let h = `<div class="sec"><div class="meta">
+     <span><b>${fmtDate(m.meeting_date)}</b> ${m.kind==="auto"?"자동회의":m.kind==="deep"?"깊은 회의":"수동 회의"}</span>
+     ${m.title ? `<span><b>${esc(m.title)}</b></span>` : ""}
+     <span>결정 <b>${(m.decisions||[]).length}건</b></span>
+     ${att.length ? `<span class="attend">참석 ${att.map(k => av(k, true)).join("")}</span>` : ""}
+     ${meta.agenda_reason ? `<span>${esc(meta.agenda_reason)}</span>` : ""}
+   </div></div>`;
+  if (m.status === "no_agenda") h += `<div class="empty">${esc(meta.note || "오늘은 회의할 만한 변화가 없어서 회의를 열지 않았어요.")}</div>`;
+  if ((m.escalations||[]).length) h += `<div class="sec"><div class="sec-h"><h2>막힘 알림</h2><span class="sub">결정과 별도로, 진행이 멈춘 건은 개수 제한 없이 올립니다</span></div>
+     ${m.escalations.map(e => `<div class="esc">${av(e.owner || "PM", true)}<div><strong>${esc(e.title)}</strong><br>${esc(e.body)}</div></div>`).join("")}</div>`;
+  if ((m.decisions||[]).length) h += `<div class="sec"><div class="sec-h"><h2>KWAN이 결정할 것</h2><span class="sub">A·B·C는 서로 다른 전략 방향입니다</span></div>${m.decisions.map((d, i) => decCard(m, d, i)).join("")}</div>`;
+  if (meta.question) h += `<div class="sec"><div class="sec-h"><h2>오늘의 질문</h2></div><div class="box"><p style="margin:0">${esc(meta.question)}</p><span class="sub">KWAN 프로필 탭이나 DM으로 답해주세요</span></div></div>`;
+  el.innerHTML = h;
+  bindPicks(m);
+}
+function decCard(m, d, i){
+  const chosen = (m.choices || {})[d.id];
+  return `<article class="dec">
+   <div class="dec-top">
+    <div class="row"><span class="eyebrow">결정 ${i+1} / ${m.decisions.length}</span>${d.proj?`<span class="chip">${esc(d.proj)}</span>`:""}${d.task?`<span class="chip">${esc(d.task)}</span>`:""}${chosen?`<span class="chip k">KWAN 선택 ${esc(chosen)}</span>`:""}</div>
+    <h3>${esc(d.q)}</h3>
+    ${d.why ? `<p class="dec-q">안건 선정 이유 · ${esc(d.why)}</p>` : ""}
+   </div>
+   <div class="plans">${(d.plans||[]).map(p => `
+    <div class="plan${p.l===d.rec?" rec":""}">
+     <div class="plan-h"><span class="plan-l">${esc(p.l)}</span><span class="plan-t">${esc(p.t)}</span></div>
+     <div style="display:flex;gap:4px;flex-wrap:wrap;min-height:20px">${p.l===d.rec?'<span class="chip g">YK 추천</span>':''}${p.l===d.chal?'<span class="chip k">도전안</span>':''}</div>
+     <div style="display:grid;gap:8px;align-content:start">
+      <p>${esc(p.d)}</p>
+      <dl>${p.h?`<dt>가설</dt><dd>${esc(p.h)}</dd>`:""}${p.c?`<dt>비용</dt><dd>${esc(p.c)}</dd>`:""}${p.m?`<dt>판정</dt><dd>${esc(p.m)}</dd>`:""}</dl>
+     </div>
+     <button class="pick" data-dec="${esc(d.id)}" data-plan="${esc(p.l)}" aria-pressed="${chosen===p.l}">${esc(p.l)}로 진행</button>
+    </div>`).join("")}
+   </div>
+   ${d.yk ? `<div class="yk-note">${av("YK", true)}<p>${esc(d.yk)}</p></div>` : ""}
+   <div class="dec-foot"><span>참석 ${(d.who||[]).map(k => esc(AG[k]?.name || k)).join(" · ")}</span><button class="linkbtn" data-goto="${esc(d.id)}">회의록에서 근거 보기</button></div>
+  </article>`;
+}
+function bindPicks(m){
+  document.querySelectorAll("#p-today .pick").forEach(b => b.addEventListener("click", async () => {
+    const choices = { ...(m.choices || {}), [b.dataset.dec]: b.dataset.plan };
+    const { error } = await sb.from("agency_meetings").update({ choices }).eq("id", m.id);
+    if (error) { toast("저장하지 못했어요. 다시 눌러주세요."); return; }
+    m.choices = choices; renderToday(); toast(`${b.dataset.plan}안으로 기록했어요. 다음 회의에 반영됩니다`);
+  }));
+  document.querySelectorAll("#p-today [data-goto]").forEach(b => b.addEventListener("click", () => { CUR = m; showTab("minutes"); renderMinutes(m, b.dataset.goto); window.scrollTo({top:0}); }));
+}
+
+// 회의록
+function renderMinutesNav(){
+  const list = MEETINGS.filter(m => (m.decisions||[]).length);
+  $("#datesel").innerHTML = list.slice(0, 20).map(m => `<button data-id="${m.id}">${fmtDate(m.meeting_date)}${m.kind!=="auto"?" · 수동":""}</button>`).join("");
+  $("#datesel").querySelectorAll("button").forEach(b => b.addEventListener("click", () => renderMinutes(MEETINGS.find(m => m.id === b.dataset.id))));
+  if (list[0]) renderMinutes(list[0]); else { $("#tx").innerHTML = `<div class="empty">회의록이 아직 없어요.</div>`; }
+}
+function renderMinutes(m, decId){
+  CUR = m;
+  $("#datesel").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === m.id ? "true" : "false"));
+  $("#mtitle").textContent = `회의록 · ${fmtDate(m.meeting_date)}`;
+  const decs = m.decisions || [];
+  $("#txnav").innerHTML = decs.map((d, i) => `<button data-id="${esc(d.id)}">결정 ${i+1}${d.proj?` · ${esc(d.proj)}`:""}<br><span style="font-weight:400">${esc(d.task || d.q)}</span></button>`).join("");
+  $("#txnav").querySelectorAll("button").forEach(b => b.addEventListener("click", () => renderTx(m, b.dataset.id)));
+  if (decs.length) renderTx(m, decId || decs[0].id);
+}
+function renderTx(m, id){
+  $("#txnav").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id ? "true" : "false"));
+  const msgs = (m.transcript || {})[id] || [];
+  $("#tx").innerHTML = msgs.length ? msgs.map(x => x.st
+    ? `<div class="stage"><b>${esc(x.st)}</b></div>`
+    : `<div class="msg${x.a==="YK"?" yk":""}">${av(x.a)}
+        <div class="msg-b">
+         <div class="msg-h"><span class="who">${esc(AG[x.a]?.name || x.a)}</span><span class="role">${esc(AG[x.a]?.role || "")}</span>${(x.tag||[]).map(t => `<span class="chip ${tagCls[t]||""}">${esc(t)}</span>`).join("")}</div>
+         <p>${esc(x.p)}</p>
+         ${(x.ev||[]).length ? `<div class="ev">${x.ev.map(e => `<span>${esc(e)}</span>`).join("")}</div>` : ""}
+        </div></div>`).join("") : `<div class="empty">이 안건의 발언 기록이 없어요.</div>`;
+}
+
+// 에이전트
+const ORG = [["검증 · 최종 게이트",["YK"]],["크리에이티브",["AE","AD","PD"]],["콘텐츠",["WR","CP"]],["데이터 · 인사이트",["GR","IN","SO"]],["운영",["PM"]]];
+function renderOrg(){
+  $("#org").innerHTML = ORG.map(([lbl, ks]) => `<div class="org-lbl">${lbl}</div><div class="org-row">${ks.filter(k => AG[k]).map(k => `
+    <button class="ag${k==="YK"?" yk":""}" data-ag="${k}" aria-pressed="false">${av(k)}<span><span class="nm">${esc(AG[k].name)}</span><br><span class="rl">${esc(AG[k].role)}</span></span></button>`).join("")}</div>`).join("");
+  document.querySelectorAll(".ag").forEach(b => b.addEventListener("click", () => renderAg(b.dataset.ag)));
+  const last = store("agency-agent"); renderAg(AG[last] ? last : "YK");
+}
+function renderAg(k){
+  const a = AG[k]; if (!a) return; const g = a.guideline || {}; const st = a.stats || {};
+  document.querySelectorAll(".ag").forEach(b => b.setAttribute("aria-pressed", b.dataset.ag === k ? "true" : "false"));
+  const li = xs => `<ul>${(xs||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  $("#detail").innerHTML = `
+   <div class="detail-h">${av(k)}<div><h2>${esc(a.name)}</h2><span class="sub">${esc(a.role)} · ${esc(a.grp)}</span></div></div>
+   <p class="mission">${esc(g.mission)}</p>
+   <div class="gl">
+    <div><h4>책임</h4>${li(g.duty)}</div>
+    <div><h4>판단 기준</h4>${li(g.crit)}</div>
+    <div><h4>하지 않는 것</h4>${li(g.no)}</div>
+    <div><h4>KWAN에게 질문하는 때</h4><p style="margin:0;font-size:13.5px">${esc(g.ask)}</p></div>
+    <div style="grid-column:1/-1"><h4>회의 발언 형식</h4><pre class="out">${esc(g.out)}</pre></div>
+    ${(a.growth_notes||[]).length ? `<div style="grid-column:1/-1"><h4>성장 노트</h4>${li(a.growth_notes)}</div>` : ""}
+   </div>
+   <div class="level"><span>참석 <b>${st.meetings||0}</b>회</span><span>채택 <b>${st.adopted||0}</b>회</span><span>설득 성공 <b>${st.persuaded||0}</b>회</span></div>`;
+  store("agency-agent", k);
+}
+
+// 프로필
+function renderProfile(rows){
+  const label = {pref:["확정","g"], rule:["규칙","k"], pattern:["패턴",""]};
+  const prefs = rows.filter(r => r.kind !== "question" && r.status === "active");
+  $("#prefs").innerHTML = prefs.map(r => `<div class="pref-i"><span>${esc(r.body)}</span><span class="chip ${label[r.kind][1]}">${label[r.kind][0]}${r.kind==="pattern"&&r.confidence?` · ${r.confidence}`:""}</span><small>${esc(r.source || "")}</small></div>`).join("") || `<div class="q">아직 없음</div>`;
+  const qs = rows.filter(r => r.kind === "question" && r.status !== "retired");
+  $("#questions").innerHTML = qs.map(r => `<div class="qa" data-id="${r.id}">
+     <span>${esc(r.body)}</span>
+     <textarea id="qa-${r.id}" placeholder="답변을 적어주세요">${esc(r.answer || "")}</textarea>
+     <div class="row"><span class="sub">${r.status==="answered"?"답변 완료 · 다음 회의에서 프로필에 반영":"답변 대기"}</span><button class="btn ghost" data-save="${r.id}">저장</button></div>
+   </div>`).join("") || `<div class="q">지금은 질문이 없어요.</div>`;
+  document.querySelectorAll("[data-save]").forEach(b => b.addEventListener("click", async () => {
+    const id = b.dataset.save; const answer = $("#qa-" + id).value.trim(); if (!answer) return;
+    const { error } = await sb.from("agency_profile").update({ answer, status:"answered", updated_at:new Date().toISOString() }).eq("id", id);
+    toast(error ? "저장하지 못했어요. 다시 눌러주세요." : "답변을 저장했어요");
+    if (!error) b.closest(".qa").querySelector(".sub").textContent = "답변 완료 · 다음 회의에서 프로필에 반영";
+  }));
+}
+
+// 탭
+function showTab(t){
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t ? "true" : "false"));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "p-" + t);
+  store("agency-tab", t);
+}
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+boot();
+</script>
+</body>
+</html>
