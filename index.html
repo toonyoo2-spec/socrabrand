@@ -806,6 +806,20 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }, 5 * 60 * 1000); // 5분마다 만료 임박 여부 확인
         }
         let currentMainTab = 'archive';
+        // 탭 권한이 바뀌어도 다시 로그인하지 않게, 앱을 열 때마다 profiles.visible_tabs를 새로 읽는다
+        async function refreshVisibleTabs() {
+            if (!adminToken || !currentUserId) return;
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${currentUserId}&select=visible_tabs`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` }
+                });
+                const rows = await res.json();
+                if (Array.isArray(rows) && rows[0] && Array.isArray(rows[0].visible_tabs) && rows[0].visible_tabs.length > 0) {
+                    visibleTabs = rows[0].visible_tabs;
+                    localStorage.setItem(VISIBLE_TABS_KEY, JSON.stringify(visibleTabs));
+                }
+            } catch (e) { /* 실패하면 저장된 권한 그대로 사용 */ }
+        }
         // 앱 시작/분기 로직
         async function initApp() {
             const loginScreen = document.getElementById('loginScreen');
@@ -821,6 +835,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 // 로그인 상태
                 loginScreen.style.display = 'none';
                 appContainer.style.display = 'block';
+                await refreshVisibleTabs();
                 applyAdminMode();
                 setupQuickLinksScroll();
                 const refIdFromHash = getReferenceIdFromHash();
