@@ -49,7 +49,9 @@ h1::after{content:".";color:var(--green)}
 
 h2{font-size:20px;letter-spacing:-.03em;margin:0;text-wrap:balance}
 h3{font-size:16px;letter-spacing:-.02em;margin:0;text-wrap:balance}
-.sec{display:grid;gap:14px;margin-bottom:36px}
+.sec{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:36px}
+.sec > *{min-width:0}
+.rep-dir .row textarea{min-width:0}
 .sec-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
 .sub{color:var(--muted);font-size:13px}
 
@@ -217,6 +219,10 @@ tr.new td{background:var(--green-tint)}
 /* 카카오톡식 대화 */
 .kk{background:#bacee0;border-radius:var(--r);padding:16px 12px;display:grid;gap:10px}
 @media(min-width:768px){.kk{padding:20px 22px}}
+/* 긴 대화 성능: 화면 밖 말풍선은 레이아웃을 건너뛰고(스크롤해 들어오면 그림), 채팅 영역 변경이 페이지 전체 레이아웃을 흔들지 않게 */
+.mr-body, .dr-body, .team-body{contain:content}
+.mr-body > .kk-row, .dr-body > .kk-row, .team-body > .kk-row{content-visibility:auto;contain-intrinsic-size:auto 90px}
+.kk-more{justify-self:center;border:none;background:rgba(255,255,255,.85);color:#1d2a24;font-size:12px;padding:6px 14px;border-radius:999px;cursor:pointer}
 .kk-day{justify-self:center;background:rgba(0,0,0,.18);color:#fff;font-size:11.5px;padding:3px 12px;border-radius:999px}
 .kk-row{display:flex;gap:8px;align-items:flex-start;max-width:100%}
 .kk-row .av{background:#fff;border-color:transparent}
@@ -526,6 +532,22 @@ tr.new td{background:var(--green-tint)}
 @keyframes jump{0%{translate:0 0}40%{translate:0 -12px}100%{translate:0 0}}
 @media(prefers-reduced-motion:reduce){.sp .fig,.sp .lg,.sp .q{animation:none!important}}
 .hud-chip.go{background:var(--green);color:var(--on-green);border-color:transparent;cursor:pointer}
+.topbar{padding-right:62px}
+.pop{grid-template-columns:minmax(0,1fr)}
+.pop .kk-bub, .mr-body .kk-bub{overflow-wrap:anywhere;min-width:0}
+.pop .dr-foot textarea, .dr-foot textarea{min-width:0}
+@media (max-width:560px){ .pop{left:8px;right:8px;width:auto} }
+.chat-fab{position:fixed;top:14px;right:14px;z-index:55;width:48px;height:48px;border-radius:50%;border:none;background:var(--text);color:var(--bg);font-size:21px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.22);display:grid;place-items:center}
+.chat-fab .cnt{position:absolute;top:-3px;right:-3px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.pick-sheet{width:min(420px,100%);max-height:min(640px,calc(100% - 8px));overflow:hidden;grid-template-rows:auto auto minmax(0,1fr)}
+.pick-sheet .pk-list{overflow-y:auto;overscroll-behavior:contain;display:grid;gap:2px;margin:0 -8px;padding:0 8px}
+.pick-sheet h4{margin:8px 0 2px;font-size:11px;letter-spacing:.08em;color:var(--muted);font-family:var(--mono)}
+.pick-sheet .pi{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;text-align:left;padding:8px;border-radius:10px;cursor:pointer;color:inherit;font:inherit}
+.pick-sheet .pi:hover{background:var(--surface-2)}
+.pick-sheet .pi .mid{flex:1;min-width:0;display:grid}
+.pick-sheet .pi .mid small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-sheet .pi .cnt{background:var(--red);color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px}
+.pick-sheet input{border:1px solid var(--border);border-radius:10px;padding:9px 12px;font:inherit;background:var(--bg)}
 .sheet-bg{position:fixed;inset:0;background:rgba(20,20,18,.45);z-index:60;display:grid;place-items:center;padding:16px}
 .sheet{background:var(--surface);border-radius:14px;width:min(460px,100%);padding:18px;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
 .sheet h3{font-size:18px}
@@ -636,7 +658,7 @@ tr.new td{background:var(--green-tint)}
 .empty{background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);padding:28px 20px;color:var(--muted);font-size:14px;text-align:center}
 .datesel{display:flex;flex-wrap:wrap;gap:6px}
 /* 일일 보고 */
-.rep-dir{display:grid;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.rep-dir{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
 .rep-dir .row{display:flex;gap:8px;align-items:stretch}
 .rep-dir textarea{flex:1;min-height:44px;resize:vertical;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;background:var(--bg)}
 .rep-dir ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px}
@@ -804,6 +826,7 @@ tr.new td{background:var(--green-tint)}
   </section>
 </div>
 
+<button class="chat-fab" id="chatFab" type="button" aria-label="채팅 열기" title="채팅" hidden>💬<span class="cnt" id="chatFabCnt" hidden></span></button>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL = "https://eoljasmgogdcvnytaoax.supabase.co";
@@ -1498,6 +1521,7 @@ function renderMsgList(){
   const box = $("#msgList"); const badge = $("#chatBadge");
   const total = Object.keys(AG).reduce((n, c) => n + chatUnread(c), 0);
   if (badge) { badge.hidden = !total; badge.textContent = total; }
+  fabBadge(total);
   if (!box) return;
   const last = code => { const th = CHAT.filter(c => c.code === code); return th[th.length - 1]; };
   const codes = Object.keys(AG).sort((x, y) => { const a = last(x), b = last(y); return (b ? +new Date(b.created_at) : 0) - (a ? +new Date(a.created_at) : 0); });
@@ -1532,6 +1556,34 @@ function openDrawer(code){
   if (!AG[code]) return; showTab("chat"); CHAT_CUR = code; renderMsgList(); renderRoom(); markRead(code);
   const ta = $("#drIn"); if (ta && window.matchMedia("(min-width:761px)").matches) ta.focus();
 }
+// ===== 우상단 채팅 버튼: 누르면 채팅방·사람 목록이 뜨고, 골라서 바로 대화 =====
+function fabBadge(total){
+  const fab = $("#chatFab"), c = $("#chatFabCnt"); if (!fab) return;
+  if (fab.hidden && Object.keys(AG).length) { fab.hidden = false; fitOverlay(fab, true); fab.addEventListener("click", openChatPicker); }
+  const n = (total ?? Object.keys(AG).reduce((k, x) => k + chatUnread(x), 0)) + CROOMS.filter(r => !r.archived).concat([{code:"TEAM"}]).reduce((k, r) => k + (r.code === ROOM_CUR ? 0 : roomUnread(r.code)), 0);
+  if (c) { c.hidden = !n; c.textContent = n > 99 ? "99+" : n; }
+}
+function openChatPicker(){
+  const bg = document.createElement("div"); bg.className = "sheet-bg";
+  const last = code => { for (let i = CHAT.length - 1; i >= 0; i--) if (CHAT[i].code === code) return CHAT[i]; return null; };
+  const rooms = [{code:"TEAM", title:"팀 전체"}].concat(CROOMS.filter(r => !r.archived && r.code !== "TEAM"));
+  const people = Object.keys(AG).sort((x, y) => { const a = last(x), b = last(y); return (b ? +new Date(b.created_at) : 0) - (a ? +new Date(a.created_at) : 0) || (AG[x].sort - AG[y].sort); });
+  const item = (attr, left, name, sub, n) => `<button type="button" class="pi" ${attr}>${left}<span class="mid"><b>${esc(name)}</b><small>${esc(sub)}</small></span>${n ? `<span class="cnt">${n}</span>` : ""}</button>`;
+  const draw = (q = "") => {
+    const ql = q.trim().toLowerCase(), hit = t => !ql || t.toLowerCase().includes(ql);
+    const rs = rooms.filter(r => hit(r.title)).map(r => { const l = last(r.code); return item(`data-pick-room="${r.code}"`, `<span class="av">💬</span>`, r.title, l ? l.body.replace(/\s+/g, " ").slice(0, 60) : "대화 없음", roomUnread(r.code)); }).join("");
+    const ps = people.filter(c => hit(AG[c].name + AG[c].role)).map(c => { const l = last(c); return item(`data-pick-one="${c}"`, av(c), AG[c].name + " · " + AG[c].role, l ? (l.sender === "kwan" ? "나: " : "") + l.body.replace(/\s+/g, " ").slice(0, 60) : statusLine(c), chatUnread(c)); }).join("");
+    bg.querySelector(".pk-list").innerHTML = (rs ? `<h4>채팅방</h4>${rs}` : "") + (ps ? `<h4>1:1 대화</h4>${ps}` : "") || `<div class="sub" style="padding:8px">찾는 이름이 없어요</div>`;
+    bg.querySelectorAll("[data-pick-one]").forEach(b => b.addEventListener("click", () => { bg.remove(); openPop(b.dataset.pickOne); }));
+    bg.querySelectorAll("[data-pick-room]").forEach(b => b.addEventListener("click", () => { bg.remove(); closePop(); showTab("today"); ROOM_CUR = b.dataset.pickRoom; store("agency-room", ROOM_CUR);
+      const t = $("#teamSec"); if (t) { t.outerHTML = teamHtml(); bindTeam(); $("#teamSec").scrollIntoView({ behavior: "smooth", block: "start" }); } }));
+  };
+  bg.innerHTML = `<div class="sheet pick-sheet" role="dialog" aria-label="채팅 고르기"><div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0">채팅</h3><button type="button" class="btn ghost" data-x>닫기</button></div><input type="search" placeholder="이름·직무로 찾기" aria-label="찾기"><div class="pk-list"></div></div>`;
+  document.body.appendChild(bg); fitOverlay(bg); draw();
+  bg.querySelector("input").addEventListener("input", e => draw(e.target.value));
+  bg.querySelector("[data-x]").addEventListener("click", () => bg.remove());
+  bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
+}
 // 오늘 회의 탭에서 에이전트를 누르면 뜨는 팝업 메신저
 let POP = null;
 function openPop(code){
@@ -1556,12 +1608,21 @@ function refreshChat(){ if (POP && POP.el.isConnected) { renderThread(POP.code, 
  renderMsgList(); if (CHAT_CUR) { renderThread(CHAT_CUR); const st = $("#roomStatus"); if (st) st.textContent = `${AG[CHAT_CUR].role} · ${statusLine(CHAT_CUR)}`; if (!$("#p-chat").hidden) markRead(CHAT_CUR); } }
 function renderThread(code, target){
   const box = target || $("#drBody"); if (!box) return;
-  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-  const th = CHAT.filter(c => c.code === code);
-  box.innerHTML = th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "Grace 확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c))).join("")
-    : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
-  if (nearBottom || !box.dataset.init) box.scrollTop = box.scrollHeight; box.dataset.init = "1";
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80, prevTop = box.scrollTop;
+  if (box.dataset.code !== code) { box.dataset.code = code; box.dataset.limit = String(MSG_WINDOW); delete box.dataset.init; }
+  const all = CHAT.filter(c => c.code === code), lim = Number(box.dataset.limit) || MSG_WINDOW, th = all.slice(-lim);
+  box.innerHTML = (all.length > th.length ? moreBtn(all.length - th.length) : "") + (th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "Grace 확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c))).join("")
+    : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`);
+  if (nearBottom || !box.dataset.init) box.scrollTop = box.scrollHeight; else box.scrollTop = prevTop; box.dataset.init = "1";
+  bindMore(box, () => renderThread(code, target));
   hydrateAtt(box);
+}
+// 긴 대화는 최근 것만 그린다(휴대폰에서 전체를 한 번에 그리면 화면이 잠깐 멈춤). 위로 올려 '이전 대화 더 보기'로 불러온다
+const MSG_WINDOW = 40, MSG_STEP = 60;
+const moreBtn = n => `<button type="button" class="kk-more" data-more>이전 대화 ${n}개 더 보기</button>`;
+function bindMore(box, redraw){
+  const b = box.querySelector("[data-more]"); if (!b) return;
+  b.addEventListener("click", () => { const fromBottom = box.scrollHeight - box.scrollTop; box.dataset.limit = String((Number(box.dataset.limit) || MSG_WINDOW) + MSG_STEP); redraw(); box.scrollTop = box.scrollHeight - fromBottom; });
 }
 
 
@@ -1728,15 +1789,18 @@ function renderTeam(){
   const box = $("#teamBody"); if (!box) return;
   const near = box.scrollHeight - box.scrollTop - box.clientHeight < 80, prevTop = box.scrollTop;
   const today = kstNow().date;
-  const th = CHAT.filter(c => c.code === ROOM_CUR);
+  if (box.dataset.code !== ROOM_CUR) { box.dataset.code = ROOM_CUR; box.dataset.limit = String(MSG_WINDOW); delete box.dataset.init; }
+  const all = CHAT.filter(c => c.code === ROOM_CUR), th = all.slice(-(Number(box.dataset.limit) || MSG_WINDOW));
   let lastDay = "";
-  box.innerHTML = th.length ? th.map(c => { const day = new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10);
+  box.innerHTML = (all.length > th.length ? moreBtn(all.length - th.length) : "") + (th.length ? th.map(c => { const day = new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10);
       const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day;
       return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c)); }).join("")
-    : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
+    : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`);
   if (near || !box.dataset.init) box.scrollTop = box.scrollHeight; else box.scrollTop = prevTop; box.dataset.init = "1";
+  bindMore(box, renderTeam);
   hydrateAtt(box);
   const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#teamSec").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
+  fabBadge();
 }
 function bindTeam(){
   renderTeam();
