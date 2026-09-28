@@ -633,6 +633,40 @@ tr.new td{background:var(--green-tint)}
 .err{color:var(--red);font-size:13px;min-height:1em}
 .empty{background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);padding:28px 20px;color:var(--muted);font-size:14px;text-align:center}
 .datesel{display:flex;flex-wrap:wrap;gap:6px}
+/* 일일 보고 */
+.rep-dir{display:grid;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.rep-dir .row{display:flex;gap:8px;align-items:stretch}
+.rep-dir textarea{flex:1;min-height:44px;resize:vertical;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;background:var(--bg)}
+.rep-dir ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px}
+.rep-dir li{display:flex;gap:8px;align-items:baseline}
+.rep-dir li button{border:none;background:none;color:var(--muted);cursor:pointer}
+.rep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:14px;align-items:start}
+.rep{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.rep > *, .rep-it > div{min-width:0;overflow-wrap:anywhere}
+.rep.new{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+.rep-h{display:flex;align-items:center;gap:10px}
+.rep-h .who{display:grid;line-height:1.25}
+.rep-h .who small{color:var(--muted);font-size:12px;white-space:nowrap}
+.rep-h .who{overflow-wrap:normal}
+.rep-h .chip{margin-left:auto}
+.rep h3{margin:0;font-size:16px;line-height:1.4}
+.rep-applied{margin:0;font-size:12.5px;color:#0b7a4b;background:rgba(14,149,92,.08);border-radius:8px;padding:6px 10px}
+.rep-sec{display:grid;gap:8px}
+.rep-sec h4{margin:0;font-size:11px;letter-spacing:.08em;color:var(--muted);font-family:var(--mono);text-transform:uppercase}
+.rep-it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:start;font-size:13.5px;line-height:1.55}
+.rep-it b{font-weight:650}
+.rep-it p{margin:2px 0 0;color:var(--text)}
+.rep-it .why{color:var(--muted);font-size:12.5px}
+.rep-it a{color:inherit}
+.rep-it .warn{font-size:11px;color:#a15c00;margin-left:6px}
+.vote{display:flex;gap:4px}
+.vote button{border:1px solid var(--border);background:var(--bg);border-radius:8px;width:30px;height:28px;cursor:pointer;font-size:13px;filter:grayscale(1);opacity:.6}
+.vote button[aria-pressed="true"]{filter:none;opacity:1;border-color:var(--text)}
+.rep details{font-size:12px;color:var(--muted)}
+.rep details a{color:var(--muted)}
+.rep-fb{display:flex;gap:8px;align-items:stretch}
+.rep-fb textarea{flex:1;min-height:40px;resize:vertical;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit;font-size:13.5px;background:var(--bg)}
+.rep-fb .done{font-size:12px;color:var(--muted)}
 .datesel button{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:12px;font-family:var(--mono);color:var(--muted)}
 .datesel button[aria-current="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
 .qa{display:grid;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)}
@@ -674,14 +708,24 @@ tr.new td{background:var(--green-tint)}
 
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="today" aria-selected="true">오늘 회의</button>
+      <button class="tab" role="tab" data-tab="reports" aria-selected="false">일일 보고<span class="n badge" id="repBadge" hidden></span></button>
       <button class="tab" role="tab" data-tab="chat" aria-selected="false">메신저<span class="n badge" id="chatBadge" hidden></span></button>
       <button class="tab" role="tab" data-tab="minutes" aria-selected="false">회의록</button>
-      <button class="tab" role="tab" data-tab="agents" aria-selected="false">에이전트<span class="n">12</span></button>
+      <button class="tab" role="tab" data-tab="agents" aria-selected="false">에이전트<span class="n" id="agentCount">18</span></button>
       <button class="tab" role="tab" data-tab="auto" aria-selected="false">자동화</button>
       <button class="tab" role="tab" data-tab="profile" aria-selected="false">KWAN 프로필</button>
     </div>
 
     <section id="p-today" class="panel"></section>
+
+    <section id="p-reports" class="panel" hidden>
+      <div class="sec">
+        <div class="sec-h"><h2 id="repTitle">일일 보고</h2><div class="datesel" id="repDates"></div></div>
+        <p class="sub" style="margin:0">매일 아침 8시, 상시 근무자가 자기 직무로 인사이트 · 레퍼런스 · 아이디어를 올려요. 👍 / 👎와 코멘트를 남기면 다음 보고부터 반영되고, 코멘트는 그 사람의 성장 기록에도 남아 회의 때도 이어져요. AI팀은 필요할 때만 일해서 보고하지 않아요.</p>
+        <form class="rep-dir" id="repDir"><b style="font-size:14px">모두에게 방향 한마디</b><ul id="repDirList"></ul><div class="row"><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="repDirIn" placeholder="예: 이번 주는 초등 학부모가 실제로 저장하는 콘텐츠 위주로 / 경쟁사 광고보다 학부모 커뮤니티 반응을 더 봐줘"></textarea><button class="btn" type="submit">전달</button></div></form>
+        <div class="rep-grid" id="repGrid"></div>
+      </div>
+    </section>
 
     <section id="p-chat" class="panel" hidden><div class="msg-app" id="msgApp"><aside class="msg-list" id="msgList" aria-label="대화 목록"></aside><div class="msg-room" id="msgRoom"></div></div></section>
     <section id="p-minutes" class="panel" hidden>
@@ -826,6 +870,7 @@ async function boot(){
     sb.from("agency_rooms").select("*").order("created_at")
   ]);
   CROOMS = (rm.data || []);
+  try { REPORTS = (await sb.from("agency_reports").select("*").order("report_date", {ascending:false}).limit(300)).data || []; } catch (x) { REPORTS = []; }
   try { MEDIA = (await sb.from("agency_media").select("*").order("id", {ascending:false}).limit(200)).data || []; } catch (x) { MEDIA = []; }
   NOTES = (nt.data || []);
   ATT = (at.data || [])[0] || null; if (ATT && ATT.work_date !== kstNow().date) ATT = ATT.clock_out ? null : ATT;
@@ -837,9 +882,11 @@ async function boot(){
   IV = iv.data || [];
   (ag.data || []).forEach(a => AG[a.code] = a);
   MEETINGS = mt.data || [];
+  const ac = $("#agentCount"); if (ac) ac.textContent = Object.keys(AG).length;
+  renderReports(); bindRepDir();
   renderToday(); renderMinutesNav(); $("#autoPipe").innerHTML = pipelineHtml(); renderOrg(); renderProfile(pf.data || []); renderMsgList(); renderRoom();
   const h = (location.hash || "").slice(1);
-  showTab(["today","chat","minutes","agents","auto","profile"].includes(h) ? h : (store("agency-tab") || "today"));
+  showTab(["today","reports","chat","minutes","agents","auto","profile"].includes(h) ? h : (store("agency-tab") || "today"));
   schedulePoll(); startRealtime(); openDocFromHash();
 }
 
@@ -979,6 +1026,7 @@ function startRealtime(){
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_media"}, ({new:row}) => { if (!row || !row.id) return; const prev = MEDIA.find(x => x.id === row.id); const wasDone = prev && prev.status === "done"; upsertBy(MEDIA, row); if (row.status === "done" && !wasDone) notify("PM", `Gemini가 '${row.name || "첨부 파일"}'을 다 봤어요`, () => {}, "첨부 분석"); updateAttAi(row); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_rooms"}, ({new:row}) => { if (row && row.code) { upsertBy(CROOMS, row, "code"); const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } })
     .on("postgres_changes", {event:"INSERT", schema:"public", table:"agency_notes"}, ({new:row}) => { if (row && row.id && !NOTES.some(n => n.id === row.id)) { NOTES.unshift(row); rtDirty.today = true; rtFlush(); } })
+    .on("postgres_changes", {event:"*", schema:"public", table:"agency_reports"}, ({new:row}) => { if (row && row.id) { upsertBy(REPORTS, row); if (!document.activeElement || !document.activeElement.closest(".rep-fb, .rep-dir")) renderReports(); else repBadge(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_presence"}, ({new:row}) => { if (row && row.code) { PRES[row.code] = row; rtDirty.office = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_interventions"}, ({new:row, old}) => {
       if (!row || !row.id) return; const prev = IV.find(x => x.id === row.id);
@@ -1124,9 +1172,11 @@ function bindIvPanel(){
 
 // ===== 사무실 (게임형) =====
 let PRES = {}, CHAT = [], CFG = {}, ATT = null, LIVE = false, NOTES = [];
-const TEAM_COLOR = {YK:"#B86E00", AE:"#2F6FDB", AD:"#2F6FDB", PD:"#2F6FDB", WR:"#7a4fd6", CP:"#7a4fd6", GR:"#0E955C", IN:"#0E955C", SO:"#0E955C", PM:"#444", SS:"#D9467A", LS:"#D9467A"};
+const TEAM_COLOR = {YK:"#B86E00", AE:"#2F6FDB", AD:"#2F6FDB", PD:"#2F6FDB", SB:"#2F6FDB", DS:"#2F6FDB", WR:"#7a4fd6", CP:"#7a4fd6", GR:"#0E955C", IN:"#0E955C", SO:"#0E955C", PM:"#444", SS:"#D9467A", LS:"#D9467A", AL:"#E0662B", AG:"#E0662B", AV:"#E0662B", AP:"#E0662B"};
+// 필요할 때만 부르는 AI팀: 매일 공부·일일 보고·자동 회의에서 빠진다
+const ONCALL = ["AL","AG","AV","AP"]; const isOnCall = k => ONCALL.includes(k) || !!(AG[k] && AG[k].on_call);
 // [영역, 이름, 자리, 스타일, 문 위치(아래 벽 기준 %)]
-const ROOMS = [["yk","검증실 · KWAN",["KWAN","YK"],"glass",70],["ops","비서실",["PM"],"",28],["cre","크리에이티브팀",["AE","AD","PD"],"",16],["con","콘텐츠팀",["WR","CP"],"",66],["data","데이터·인사이트팀",["GR","IN","SO"],"",84],["scout","스카우트팀",["SS","LS"],"",34]];
+const ROOMS = [["yk","검증실 · KWAN",["KWAN","YK"],"glass",70],["ops","비서실",["PM"],"",28],["cre","크리에이티브팀",["AE","AD","PD","SB","DS"],"",16],["con","콘텐츠팀",["WR","CP"],"",66],["data","데이터·인사이트팀",["GR","IN","SO"],"",84],["scout","스카우트팀",["SS","LS"],"",34],["ai","AI랩 · 필요할 때만",["AL","AG","AV","AP"],"",50]];
 const kwanIn = () => !!(ATT && ATT.clock_in && !ATT.clock_out);
 const SHIFTS = [["night1","01:17","야간 작업"],["night2","04:17","새벽 검토"],["morning","07:27","아침 회의"]];
 const STEP_LABEL = {trigger:"트리거",holiday:"공휴일 확인",memory:"기억 불러오기",intervene:"KWAN 개입",learn:"학습 반영",agenda:"안건 선정",meeting:"회의",verify:"NAWK 검증",save:"저장",dm:"DM 발송",clockin:"출근",load:"자료 읽기",pick:"작업 고르기",work:"작업",debate:"토론",review:"검토",clockout:"퇴근"};
@@ -1138,7 +1188,7 @@ function officeHtml(){
   const k = kstNow(); const night = k.h >= 21 || k.h < 6;
   const last = MEETINGS[0]; const running = last && last.status === "running" && (Date.now() - new Date((last.meta||{}).updated || last.created_at).getTime() < 30*60e3);
   const pres = code => PRES[code] || {status:"off"};
-  const counts = {working:0, meeting:0, idle:0, off:0}; Object.keys(AG).forEach(c => counts[pres(c).status] = (counts[pres(c).status] || 0) + 1);
+  const counts = {working:0, meeting:0, idle:0, off:0}; Object.keys(AG).filter(c => !isOnCall(c) || pres(c).status === "working" || pres(c).status === "meeting").forEach(c => counts[pres(c).status] = (counts[pres(c).status] || 0) + 1);
   const reqs = Object.keys(AG).reduce((n, c) => n + pendingReq(c), 0); const msgs = Object.keys(AG).reduce((n, c) => n + unreadMsg(c), 0);
   const minutes = k.h*60 + k.m; const nowPct = minutes / 1440 * 100;
   const evs = SHIFTS.map(([id, t, nm]) => { const [hh, mm] = t.split(":").map(Number); return `<span class="ev" style="left:${(hh*60+mm)/1440*100}%">${t} ${nm}</span>`; }).join("");
@@ -1194,23 +1244,26 @@ setInterval(() => { const c = $("#kclock"); if (c) { const k = kstNow(); c.textC
 // ===== 3D 사무실 (아이소메트릭) =====
 // 평면도는 좌표 데이터로 고정한다(단위: 평면 px). 화면 크기가 바뀌어도 동선이 그대로라 걷는 길이 깨지지 않는다.
 // 방은 모두 가운데 복도를 향해 문이 나 있고, 입구는 복도 오른쪽 끝이다. 사람은 A*로 복도와 문만 지나 자기 자리로 간다.
-const ISO = { W:1400, H:820, C:0.7071 };
+const ISO = { W:1720, H:820, C:0.7071 };
 const ROOMS3 = [
   {id:"yk",    name:"검증실 · KWAN",     x:40,   y:40,  w:300, h:300, desks:["KWAN","YK"],     door:["s",150], tone:"#ebe7ff"},
   {id:"meet",  name:"회의실",            x:370,  y:40,  w:490, h:300, desks:[],                door:["s",245], tone:"#fff3df"},
   {id:"ops",   name:"비서실",            x:890,  y:40,  w:160, h:300, desks:["PM"],            door:["s",80],  tone:"#e9f4ff"},
   {id:"scout", name:"스카우트팀",        x:1080, y:40,  w:280, h:300, desks:["SS","LS"],       door:["s",140], tone:"#ffe9f1"},
-  {id:"cre",   name:"크리에이티브팀",    x:40,   y:480, w:480, h:300, desks:["AE","AD","PD"],  door:["n",240], tone:"#e6f0ff"},
+  {id:"cre",   name:"크리에이티브팀",    x:40,   y:480, w:480, h:300, desks:["AE","AD","PD","SB","DS"], door:["n",240], tone:"#e6f0ff"},
   {id:"con",   name:"콘텐츠팀",          x:550,  y:480, w:280, h:300, desks:["WR","CP"],       door:["n",140], tone:"#f1eaff"},
   {id:"data",  name:"데이터·인사이트팀", x:860,  y:480, w:500, h:300, desks:["GR","IN","SO"],  door:["n",250], tone:"#e5f7ee"},
+  {id:"ai",    name:"AI랩 · 필요할 때만", x:1390, y:40,  w:300, h:300, desks:["AL","AG","AV","AP"], door:["s",150], tone:"#fff0e6", per:2},
 ];
 const DOOR3 = {x:ISO.W - 12, y:410}, OUTSIDE3 = {x:ISO.W + 70, y:410};
 const TABLE3 = {x:470, y:150, w:290, h:100, z:26};
 const DESK = {w:92, d:46, z:30};
 // 책상 위치와 의자(앉는 자리)
 const DESKS3 = {}, SEATS3 = {};
+// 한 줄에 책상 3개까지. 넘치면 두 줄로 앉힌다(두 줄 사이가 통로).
 ROOMS3.forEach(r => r.desks.forEach((code, i) => {
-  const cx = r.x + r.w * (i + 1) / (r.desks.length + 1), cy = r.y + r.h * 0.42;
+  const per = r.per || 3, rows = Math.ceil(r.desks.length / per), row = Math.floor(i / per), inRow = Math.min(per, r.desks.length - row * per), col = i - row * per;
+  const cx = r.x + r.w * (col + 1) / (inRow + 1), cy = r.y + r.h * (rows === 1 ? 0.42 : 0.3 + row * 0.42);
   DESKS3[code] = {x: cx - DESK.w / 2, y: cy - DESK.d / 2, room: r.id};
   SEATS3[code] = {x: cx, y: cy - DESK.d / 2 - 24}; // 책상 안쪽에 앉아 화면(카메라)을 바라본다
 }));
@@ -1218,7 +1271,7 @@ const MSLOTS3 = [0,1,2,3,4].map(i => ({x: TABLE3.x + 30 + i * 57.5, y: TABLE3.y 
   .concat([0,1,2,3,4].map(i => ({x: TABLE3.x + 30 + i * 57.5, y: TABLE3.y + TABLE3.h + 34})))
   .concat([{x: TABLE3.x - 30, y: TABLE3.y + 55}, {x: TABLE3.x + TABLE3.w + 30, y: TABLE3.y + 55}]);
 const BB = "rotateZ(-45deg) rotateX(-60deg)"; // 화면을 바라보게 세우는 변환(캐릭터·이름표)
-const HAIR = {YK:"#1f1f1f",AE:"#3a2a20",AD:"#6b3f2a",PD:"#222",WR:"#8a5a3c",CP:"#2d2d2d",GR:"#5a3b28",IN:"#1c1c1c",SO:"#a0522d",PM:"#3b2b1f",SS:"#c0392b",LS:"#2c3e50",KWAN:"#111"};
+const HAIR = {YK:"#1f1f1f",AE:"#3a2a20",AD:"#6b3f2a",PD:"#222",SB:"#7a4a2e",DS:"#2b2b3a",WR:"#8a5a3c",CP:"#2d2d2d",GR:"#5a3b28",IN:"#1c1c1c",SO:"#a0522d",PM:"#3b2b1f",SS:"#c0392b",LS:"#2c3e50",AL:"#1e1e1e",AG:"#8e44ad",AV:"#34495e",AP:"#5d4037",KWAN:"#111"};
 let SPOS = {}, SUMMON = null, ISO_S = 0.7;
 function summonBusy(){ return SUMMON && ["queued","fired","running"].includes(SUMMON.status) && Date.now() - new Date(SUMMON.requested_at).getTime() < 25*60e3; }
 const box3 = (x, y, w, d, h, cls, z = 0) => `<div class="b3 ${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px;--h:${h}px;--z:${z}px"><i class="t"></i><i class="s"></i><i class="e"></i></div>`;
@@ -1226,7 +1279,7 @@ function presOf(code){ return code === "KWAN" ? {status: kwanIn() ? "idle" : "of
 function plateHtml(code, style){
   const p = presOf(code); const q = code !== "KWAN" && pendingReq(code); const msg = code !== "KWAN" && !q && unreadMsg(code);
   const a = code === "KWAN" ? {name:"KWAN", role:"나"} : AG[code]; if (!a) return "";
-  const st = p.status === "working" ? "근무" : p.status === "idle" ? (code === "PM" ? "당직" : "대기") : p.status === "meeting" ? "회의" : "퇴근";
+  const st = p.status === "working" ? "근무" : p.status === "idle" ? (code === "PM" ? "당직" : isOnCall(code) ? "호출 대기" : "대기") : p.status === "meeting" ? "회의" : "퇴근";
   const say = (p.status === "working" || (p.status === "idle" && code === "PM")) && p.activity ? `<span class="say3">${esc(p.activity)}</span>` : "";
   return `<button class="plate3 ${p.status}" data-agent="${code}"${style ? ` style="${style}"` : ""} aria-label="${esc(a.name)} ${st}" title="${esc(a.name)} · ${esc(a.role || "")} · ${st}">${say}${q ? `<span class="qm">!</span>` : msg ? `<span class="qm msg">…</span>` : ""}<b><i class="dot"></i>${esc(a.name)}</b></button>`;
 }
@@ -1411,7 +1464,7 @@ function placeSprites(animate){
 setInterval(() => { const els = [...document.querySelectorAll(".sp.sit:not(.walk)")]; if (!els.length) return; const el = els[Math.floor(Math.random()*els.length)]; el.classList.add("hop"); setTimeout(() => el.classList.remove("hop"), 800); }, 9000);
 
 // ===== 강제 출근 =====
-const TEAMS = [["전원", Object.keys(TEAM_COLOR)], ["크리에이티브팀", ["AE","AD","PD"]], ["콘텐츠팀", ["WR","CP"]], ["데이터·인사이트팀", ["GR","IN","SO"]], ["스카우트팀", ["SS","LS"]]];
+const TEAMS = [["전원", Object.keys(TEAM_COLOR).filter(k => !ONCALL.includes(k))], ["크리에이티브팀", ["AE","AD","PD","SB","DS"]], ["콘텐츠팀", ["WR","CP"]], ["데이터·인사이트팀", ["GR","IN","SO"]], ["스카우트팀", ["SS","LS"]], ["AI팀 · 필요할 때만", ["AL","AG","AV","AP"]]];
 function openSummon(){
   const pick = new Set(["PM","YK"]);
   const bg = document.createElement("div"); bg.className = "sheet-bg";
@@ -1650,7 +1703,7 @@ function updateAttAi(m){
 // 팀 채팅방 (12명 전원 단톡방, code='TEAM') — 모든 말은 DB가 회의록에 자동 복제한다
 let CROOMS = [], ROOM_CUR = (() => { try { return localStorage.getItem("agency-room") || "TEAM"; } catch (e) { return "TEAM"; } })();
 const isRoom = c => c === "TEAM" || /^R\d+$/.test(c || "");
-const roomOf = c => CROOMS.find(r => r.code === c) || {code:"TEAM", title:"팀 전체", members:Object.keys(AG)};
+const roomOf = c => CROOMS.find(r => r.code === c) || {code:"TEAM", title:"팀 전체", members:Object.keys(AG).filter(k => !isOnCall(k))};
 function roomUnread(c){ const seen = Number(store("agency-room-seen-" + c) || 0); return CHAT.filter(x => x.code === c && x.sender === "agent" && x.id > seen).length; }
 function teamHtml(){
   const list = CROOMS.filter(r => !r.archived); if (!list.some(r => r.code === ROOM_CUR)) ROOM_CUR = "TEAM";
@@ -1893,7 +1946,7 @@ function renderTx(m, id){
 }
 
 // 에이전트
-const ORG = [["검증 · 최종 게이트",["YK"]],["크리에이티브",["AE","AD","PD"]],["콘텐츠",["WR","CP"]],["데이터 · 인사이트",["GR","IN","SO"]],["스카우트",["SS","LS"]],["운영",["PM"]]];
+const ORG = [["검증 · 최종 게이트",["YK"]],["크리에이티브",["AE","AD","PD","SB","DS"]],["콘텐츠",["WR","CP"]],["데이터 · 인사이트",["GR","IN","SO"]],["스카우트",["SS","LS"]],["운영",["PM"]],["AI팀 · 필요할 때만 호출",["AL","AG","AV","AP"]]];
 function renderOrg(){
   $("#org").innerHTML = ORG.map(([lbl, ks]) => `<div class="org-lbl">${lbl}</div><div class="org-row">${ks.filter(k => AG[k]).map(k => `
     <button class="ag${k==="YK"?" yk":""}" data-ag="${k}" aria-pressed="false">${av(k)}<span><span class="nm">${esc(AG[k].name)}</span><br><span class="rl">${esc(AG[k].role)}</span></span></button>`).join("")}</div>`).join("");
@@ -1940,10 +1993,88 @@ function renderProfile(rows){
 }
 
 // 탭
+// ===== 일일 보고: 인사이트·레퍼런스·아이디어 + KWAN 피드백(👍/👎·코멘트) =====
+let REPORTS = [], REP_DATE = null;
+function repBadge(){ const n = REPORTS.filter(r => r.status === "new").length, b = $("#repBadge"); if (b) { b.hidden = !n; b.textContent = n; } }
+function voteBtns(r, key){ const v = (r.votes || {})[key] || 0; return `<span class="vote"><button type="button" data-vote="${key}" data-v="1" aria-pressed="${v === 1}" title="좋아요 · 이 방향으로 더">👍</button><button type="button" data-vote="${key}" data-v="-1" aria-pressed="${v === -1}" title="별로예요 · 이런 건 피하기">👎</button></span>`; }
+function repCard(r){
+  const a = AG[r.code] || {name: r.code, role: ""}, ins = r.insight || {};
+  const refs = (r.refs || []).map((x, i) => `<div class="rep-it"><div><b>${x.u ? `<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</b>${x.ok ? "" : `<span class="warn">출처 확인 필요</span>`}<p class="why">${esc(x.why)}</p></div>${voteBtns(r, "ref" + i)}</div>`).join("");
+  const ideas = (r.ideas || []).map((x, i) => `<div class="rep-it"><div><b>${esc(x.t)}</b><p>${esc(x.d)}</p>${x.how ? `<p class="why">다음 행동 · ${esc(x.how)}</p>` : ""}</div>${voteBtns(r, "idea" + i)}</div>`).join("");
+  const src = (r.sources || []).length ? `<details><summary>검색 근거 ${(r.sources || []).length}개</summary>${(r.sources || []).map(s => `<div><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t)}</a></div>`).join("")}</details>` : "";
+  const st = r.status === "new" ? `<span class="chip g">새 보고</span>` : r.status === "replied" ? `<span class="chip">피드백 남김</span>` : `<span class="chip">읽음</span>`;
+  return `<article class="rep ${r.status}" data-rid="${r.id}">
+    <div class="rep-h"><span class="av" style="background:${TEAM_COLOR[r.code] || "#8a8780"};color:#fff;border:none">${esc(lbl(r.code))}</span><span class="who"><b>${esc(a.name)}</b><small>${esc(a.role || "")}</small></span>${st}</div>
+    <h3>${esc(r.headline || "")}</h3>
+    ${r.applied ? `<p class="rep-applied">↺ 지난 피드백 반영 · ${esc(r.applied)}</p>` : ""}
+    <div class="rep-sec"><h4>Insight</h4><div class="rep-it"><div><b>${esc(ins.title || "")}</b><p>${esc(ins.body || "")}</p>${ins.why ? `<p class="why">우리에게 · ${esc(ins.why)}</p>` : ""}</div>${voteBtns(r, "insight")}</div></div>
+    ${refs ? `<div class="rep-sec"><h4>Reference</h4>${refs}</div>` : ""}
+    ${ideas ? `<div class="rep-sec"><h4>Ideation</h4>${ideas}</div>` : ""}
+    ${src}
+    <form class="rep-fb" data-fb="${r.id}"><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea placeholder="${esc(a.name)}에게 피드백 · 방향을 알려주세요">${esc(r.feedback || "")}</textarea><button class="btn" type="submit">${r.feedback ? "고치기" : "보내기"}</button></form>
+  </article>`;
+}
+function renderReports(){
+  const grid = $("#repGrid"); if (!grid) return;
+  const dates = [...new Set(REPORTS.map(r => r.report_date))].sort().reverse();
+  if (!REP_DATE || !dates.includes(REP_DATE)) REP_DATE = dates[0] || null;
+  $("#repDates").innerHTML = dates.slice(0, 21).map(d => { const n = REPORTS.filter(r => r.report_date === d && r.status === "new").length; return `<button data-d="${d}" aria-current="${d === REP_DATE}">${fmtDate(d)}${n ? ` · 새 ${n}` : ""}</button>`; }).join("");
+  $("#repDates").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { REP_DATE = b.dataset.d; renderReports(); setTimeout(markRepRead, 4000); }));
+  const order = code => (AG[code] ? AG[code].sort : 99);
+  const list = REPORTS.filter(r => r.report_date === REP_DATE).sort((x, y) => order(x.code) - order(y.code));
+  const total = Object.values(AG).filter(a => !a.on_call).length;
+  $("#repTitle").textContent = REP_DATE ? `일일 보고 · ${fmtDate(REP_DATE)} · ${list.length}/${total}명` : "일일 보고";
+  grid.innerHTML = list.length ? list.map(repCard).join("") : `<div class="empty">아직 올라온 보고가 없어요. 매일 아침 8시부터 차례로 올라와요.</div>`;
+  grid.querySelectorAll("[data-vote]").forEach(b => b.addEventListener("click", () => repVote(b)));
+  grid.querySelectorAll(".rep-fb").forEach(f => { bindMic(f); f.addEventListener("submit", e => { e.preventDefault(); repFeedback(f); });
+    f.querySelector("textarea").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); f.requestSubmit(); } }); });
+  repBadge();
+}
+async function repVote(b){
+  const r = REPORTS.find(x => String(x.id) === b.closest(".rep").dataset.rid); if (!r) return;
+  const key = b.dataset.vote, v = +b.dataset.v, votes = { ...(r.votes || {}) };
+  if (votes[key] === v) delete votes[key]; else votes[key] = v;
+  const patch = { votes, ...(r.status === "new" ? { status: "read" } : {}) };
+  const { error } = await sb.from("agency_reports").update(patch).eq("id", r.id);
+  if (error) return toast("저장하지 못했어요: " + error.message);
+  Object.assign(r, patch); renderReports();
+}
+async function repFeedback(f){
+  micStop();
+  const r = REPORTS.find(x => String(x.id) === f.dataset.fb); if (!r) return;
+  const text = f.querySelector("textarea").value.trim(); if (!text) return toast("피드백을 적어주세요");
+  const patch = { feedback: text, feedback_at: new Date().toISOString(), status: "replied" };
+  const { error } = await sb.from("agency_reports").update(patch).eq("id", r.id);
+  if (error) return toast("저장하지 못했어요: " + error.message);
+  Object.assign(r, patch); renderReports(); toast(`${AG[r.code]?.name || r.code}에게 전달했어요. 다음 보고부터 반영돼요`);
+}
+async function markRepRead(){
+  if ($("#p-reports")?.hidden) return;
+  const ids = REPORTS.filter(r => r.report_date === REP_DATE && r.status === "new").map(r => r.id); if (!ids.length) return;
+  const { error } = await sb.from("agency_reports").update({ status: "read" }).in("id", ids);
+  if (!error) { REPORTS.forEach(r => { if (ids.includes(r.id)) r.status = "read"; }); if (!document.activeElement || !document.activeElement.closest(".rep-fb, .rep-dir")) renderReports(); else repBadge(); }
+}
+function repDirList(){
+  const list = Array.isArray(CFG.report_direction) ? CFG.report_direction : [];
+  $("#repDirList").innerHTML = list.length ? list.slice(-5).reverse().map((d, i) => `<li><span class="chip">${esc(fmtDate(d.date))}</span><span>${esc(d.body)}</span><button type="button" data-rmdir="${list.length - 1 - i}" title="빼기">×</button></li>`).join("") : `<li class="sub">아직 없어요. 여기 적은 방향은 모든 사람의 다음 보고에 반영돼요.</li>`;
+  $("#repDirList").querySelectorAll("[data-rmdir]").forEach(b => b.addEventListener("click", async () => { const next = list.filter((_, j) => j !== +b.dataset.rmdir); if (await saveDir(next)) repDirList(); }));
+}
+async function saveDir(next){
+  const { error } = await sb.from("agency_config").update({ value: next, updated_at: new Date().toISOString() }).eq("key", "report_direction");
+  if (error) { toast("저장하지 못했어요: " + error.message); return false; } CFG.report_direction = next; return true;
+}
+function bindRepDir(){
+  const f = $("#repDir"); if (!f || f.dataset.bound) return; f.dataset.bound = "1"; bindMic(f); repDirList();
+  f.addEventListener("submit", async e => { e.preventDefault(); micStop(); const ta = $("#repDirIn"), body = ta.value.trim(); if (!body) return;
+    const list = Array.isArray(CFG.report_direction) ? CFG.report_direction : [];
+    if (await saveDir([...list, { date: kstNow().date, body }].slice(-10))) { ta.value = ""; repDirList(); toast("모두에게 전달했어요. 내일 아침 보고부터 반영돼요"); } });
+}
+
 function showTab(t){
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t ? "true" : "false"));
   document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "p-" + t);
   store("agency-tab", t);
+  if (t === "reports") setTimeout(markRepRead, 4000);
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
