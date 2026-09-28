@@ -59,6 +59,11 @@
     .node .port.left { left:-7px; top:calc(50% - 6px); } .node .port.right { right:-7px; top:calc(50% - 6px); }
     .node .port.top { top:-8px; left:calc(50% - 6px); } .node .port.bottom { bottom:-8px; left:calc(50% - 6px); }
     .node-top { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--muted); font-size:11px; font-weight:600; font-family:var(--mono); }
+    .node-actions { display:flex; align-items:center; gap:6px; }
+    .node-check { color:#0B6B44; font-family:var(--font); font-size:10px; font-weight:800; text-decoration:none; white-space:nowrap; padding:3px 5px; border-radius:5px; }
+    .node-check:hover { background:var(--green-tint); text-decoration:underline; }
+    .node-check:focus-visible,.node-open:focus-visible { outline:2px solid #0B6B44; outline-offset:3px; }
+    .node-open { display:block; width:100%; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
     .status { border-radius:99px; padding:3px 8px; font-size:10px; white-space:nowrap; background:#f1f0ec; color:var(--text); font-family:var(--font); font-weight:700; }
     .ok .status { background:var(--green-tint); } .human .status { background:var(--amber-tint); }
     .gap .status { background:var(--red-tint); } .ready .status { background:var(--blue-tint); }
@@ -141,9 +146,9 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"><a class="pill" href="https://app.notion.com/p/de9b71dae297413d8501583a29ce9920" target="_blank" rel="noopener">전체 진행표</a><a class="pill" href="https://app.notion.com/p/3e25bc5f630781fda8e4f48d9200d179" target="_blank" rel="noopener">운영 가이드</a><a class="pill" href="https://app.notion.com/p/3e35bc5f630781ad8ebdd8ef25780376" target="_blank" rel="noopener">유튜브 1회차 기획</a><a class="pill" href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/%25EB%25B8%258C%25EB%259E%259C%25EB%2593%259C_RA-%25EC%B9%25B4%25EB%2593%259C%25EB%2589%25B4%25%EC%8A%A4-%25ED%258F%25AC%25EB%25A7%25B7?node-id=92-47" target="_blank" rel="noopener">카드뉴스 Figma 샘플</a></div>
       <div class="post-grid">
         <article class="post-card"><div class="post-meta"><span>5단계 · 9월 5주차</span><span class="post-badge amber">담당자 최종 검수 대기</span></div><h3>10월 1일부터 유아 레벨테스트 금지, 초등 입학 전 영어 준비는 어떻게 바꿔야 할까</h3><p>dev 비공개 초안과 미리보기 링크까지 준비했습니다. 담당자가 사실관계와 화면을 확인한 뒤 카드뉴스 제작을 승인합니다.</p><p><b>카드뉴스:</b> 제작 전 · 사람의 최종 승인 대기</p><div class="post-links"><a href="https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf" target="_blank" rel="noopener">Notion 원고</a><a href="https://www.moe.go.kr/boardCnts/viewRenew.do?boardID=294&boardSeq=107278&lev=0&m=020402" target="_blank" rel="noopener">공식 출처</a><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/%25EB%25B8%258C%25EB%259E%259C%25EB%2593%259C_RA-%25EC%B9%B4%25EB%2593%259C%25EB%2589%25B4%25EC%258A%A4-%25ED%258F%25AC%25EB%25A7%25B7?node-id=92-47" target="_blank" rel="noopener">카드뉴스 샘플</a></div></article>
-        <article class="post-card"><div class="post-meta"><span>6단계 · 9월 3주차</span><span class="post-badge blue">직접 제작 중</span></div><h3>영어유치원 후 초등 영어</h3><p>블로그 dev 검증은 통과했습니다. 카드뉴스 시안이 연결되어 있고, 실제 제작 Figma 링크는 아직 없습니다.</p><p><b>카드뉴스:</b> 직접 제작 중 · 결과물 URL 대기 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e35bc5f63078120b03eebbdd0ff40da" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f630781daa662e126ab58379b" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://www.moe.go.kr/boardCnts/view.do?boardID=295&boardSeq=78261&lev=0&searchTy=" target="_blank" rel="noopener">출처</a></div></article>
-        <article class="post-card"><div class="post-meta"><span>6단계 · 9월 3주차</span><span class="post-badge blue">직접 제작 중</span></div><h3>2026 AI·디지털 교육자료, 우리 학교는?</h3><p>블로그 dev 검증은 통과했습니다. 카드뉴스 시안이 연결되어 있고, 실제 제작 Figma 링크는 아직 없습니다.</p><p><b>카드뉴스:</b> 직접 제작 중 · 결과물 URL 대기 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e35bc5f63078123877de00716bf8877" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f63078155bd43f7470c90711b" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://eiec.kdi.re.kr/policy/materialView.do?num=275455" target="_blank" rel="noopener">출처</a></div></article>
-        <article class="post-card"><div class="post-meta"><span>6단계 · 자동화테스트</span><span class="post-badge blue">직접 제작 중</span></div><h3>2026 초등 학급당 18.6명, 우리 반은?</h3><p>블로그 dev 검증은 통과했습니다. 재생성 요청 이력은 처리됐고, 실제 제작 Figma 링크는 아직 없습니다.</p><p><b>카드뉴스:</b> 직접 제작 중 · 결과물 URL 대기 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e45bc5f630781319090c03dad287a76" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f630781da8c02d61023781e1e" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://eiec.kdi.re.kr/policy/materialView.do?num=285801" target="_blank" rel="noopener">출처</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>6단계 · 9월 3주차</span><span class="post-badge blue">검수 필요</span></div><h3>영어유치원 후 초등 영어</h3><p>블로그 dev 검증은 통과했습니다. 카드뉴스 시안이 연결되어 있고, 제작된 카드뉴스는 아래 Figma 결과에서 확인할 수 있습니다.</p><p><b>카드뉴스:</b> 검수 필요 · Figma 결과 확인 가능 · 미발행</p><div class="post-links"><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw?node-id=178-271" target="_blank" rel="noopener noreferrer">Figma 결과 확인</a><a href="https://app.notion.com/p/3e35bc5f63078120b03eebbdd0ff40da" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f630781daa662e126ab58379b" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://www.moe.go.kr/boardCnts/view.do?boardID=295&boardSeq=78261&lev=0&searchTy=" target="_blank" rel="noopener">출처</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>6단계 · 9월 3주차</span><span class="post-badge blue">검수 필요</span></div><h3>2026 AI·디지털 교육자료, 우리 학교는?</h3><p>블로그 dev 검증은 통과했습니다. 카드뉴스 시안이 연결되어 있고, 제작된 카드뉴스는 아래 Figma 결과에서 확인할 수 있습니다.</p><p><b>카드뉴스:</b> 검수 필요 · Figma 결과 확인 가능 · 미발행</p><div class="post-links"><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw?node-id=181-2503" target="_blank" rel="noopener noreferrer">Figma 결과 확인</a><a href="https://app.notion.com/p/3e35bc5f63078123877de00716bf8877" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f63078155bd43f7470c90711b" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://eiec.kdi.re.kr/policy/materialView.do?num=275455" target="_blank" rel="noopener">출처</a></div></article>
+        <article class="post-card"><div class="post-meta"><span>6단계 · 자동화테스트</span><span class="post-badge blue">검수 필요</span></div><h3>2026 초등 학급당 18.6명, 우리 반은?</h3><p>블로그 dev 검증은 통과했습니다. 재생성 요청 이력은 처리됐고, 제작된 카드뉴스는 아래 Figma 결과에서 확인할 수 있습니다.</p><p><b>카드뉴스:</b> 검수 필요 · Figma 결과 확인 가능 · 미발행</p><div class="post-links"><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw?node-id=192-495" target="_blank" rel="noopener noreferrer">Figma 결과 확인</a><a href="https://app.notion.com/p/3e45bc5f630781319090c03dad287a76" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://app.notion.com/p/3e35bc5f630781da8c02d61023781e1e" target="_blank" rel="noopener">선택한 카드 시안</a><a href="https://eiec.kdi.re.kr/policy/materialView.do?num=285801" target="_blank" rel="noopener">출처</a></div></article>
         <article class="post-card"><div class="post-meta"><span>7단계 · 9월 4주차</span><span class="post-badge green">콘텐츠 제작 완료</span></div><h3>초등 저학년 3시 하교, 학교는 반대하는데 학부모는?</h3><p>Figma 결과 링크가 기록되어 있습니다. 콘텐츠 제작 완료 상태이며 실제 발행은 하지 않았습니다.</p><p><b>카드뉴스:</b> Figma 결과 링크 있음 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e25bc5f6307814d8976e7b40c4799c8" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/?node-id=1-821" target="_blank" rel="noopener">Figma 제작물</a><a href="https://app.notion.com/p/3e35bc5f630781daa662e126ab58379b" target="_blank" rel="noopener">선택 샘플</a></div></article>
         <article class="post-card"><div class="post-meta"><span>7단계 · 9월 4주차</span><span class="post-badge green">콘텐츠 제작 완료</span></div><h3>2026년부터 초5·6 영어도 ‘표현’ 중심으로 바뀐다는데</h3><p>Figma 결과 링크가 기록되어 있습니다. 콘텐츠 제작 완료 상태이며 실제 발행은 하지 않았습니다.</p><p><b>카드뉴스:</b> Figma 결과 링크 있음 · 미발행</p><div class="post-links"><a href="https://app.notion.com/p/3e25bc5f630781f0834efb09d8767c03" target="_blank" rel="noopener">Notion 원고</a><a href="https://socraai-cmsweb.vercel.app/realacademy/blog/articles" target="_blank" rel="noopener">CMS 글 목록 · 미리보기</a><a href="https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/?node-id=39-47" target="_blank" rel="noopener">Figma 제작물</a><a href="https://app.notion.com/p/3e35bc5f630781d0a2dcd1e2a9fe608d" target="_blank" rel="noopener">선택 샘플</a></div></article>
       </div>
@@ -221,15 +226,36 @@
       {d:"M 980 1105 L 980 1030 L 240 1030 L 240 1105",label:"템플릿·레이아웃 → 06-A",x:610,y:1030},
       {d:"M 980 1273 L 980 1345 L 45 1345 L 45 849 L 95 849",label:"원문 사실·출처 변경 → 05-A",x:300,y:1345}
     ];
+    const currentArticle = "https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf";
+    const checkById = {
+      research:["후보 확인","https://app.notion.com/p/d21afe4b8ca2413ebd825b0fb723ecf7"],
+      select:["후보 확인","https://app.notion.com/p/d21afe4b8ca2413ebd825b0fb723ecf7"],
+      draft:["원고 확인",currentArticle], review:["원고 확인",currentArticle],
+      image:["이미지 확인",currentArticle], github:["보관함 확인","https://github.com/toonyoo2-spec/socraauto-blog-images"],
+      cms:["초안 확인",currentArticle], preview:["검수 링크 확인",currentArticle],
+      revise:["요청 확인",currentArticle], final:["검증 확인",currentArticle],
+      cardtemplate:["샘플 확인",canonicalFigmaSample],
+      cardnews:["결과 확인","#content-status"], cardreview:["결과 확인","#content-status"],
+      done:["완성본 확인","#content-status"], archive:["기록 확인",notionPipeline], publish:["발행 상태 확인",notionPipeline]
+    };
     const nodeContainer = document.getElementById("nodes");
     const width = 290, height = 168;
     nodes.forEach(function(n) {
-      const el = document.createElement("button");
-      el.type = "button"; el.className = "node " + n.state; el.style.left = n.x + "px"; el.style.top = n.y + "px"; el.dataset.state = n.state;
+      const el = document.createElement("article");
+      el.className = "node " + n.state; el.style.left = n.x + "px"; el.style.top = n.y + "px"; el.dataset.state = n.state;
       const ports = ["left","right","top","bottom"].map(function(side){ return '<span class="port ' + side + '"></span>'; }).join("");
       const stepLabel = n.num === "완료 후" ? n.num : n.num + "단계";
-      el.innerHTML = ports + '<div class="node-top"><span>' + stepLabel + '</span><span class="status">' + n.badge + '</span></div><h2>' + n.title + '</h2><p>' + n.sub + '</p><small>' + actionById[n.id] + '</small>';
-      el.addEventListener("click",function(){openNode(n);});
+      el.innerHTML = ports + '<div class="node-top"><span>' + stepLabel + '</span><div class="node-actions"><span class="status">' + n.badge + '</span></div></div>';
+      const check = checkById[n.id];
+      const a = document.createElement("a");
+      a.className = "node-check"; a.href = check[1];
+      if (!check[1].startsWith("#")) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      a.textContent = "확인 ↗"; a.setAttribute("aria-label",n.title + " · " + check[0]); a.title = check[0];
+      el.querySelector(".node-actions").appendChild(a);
+      const open = document.createElement("button"); open.type = "button"; open.className = "node-open";
+      open.innerHTML = '<h2>' + n.title + '</h2><p>' + n.sub + '</p><small>' + actionById[n.id] + '</small>';
+      open.setAttribute("aria-label",n.title + " 상세 설명");
+      open.addEventListener("click",function(){openNode(n);}); el.appendChild(open);
       nodeContainer.appendChild(el);
     });
     function point(n,side) {
