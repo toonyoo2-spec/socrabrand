@@ -1545,11 +1545,11 @@ function openNewRoom(){
 // 회의 준비 노트 (근무 시간에 에이전트들이 남긴 인사이트)
 function notesHtml(){
   const since = new Date(Date.now() + 9*3600e3 - 864e5).toISOString().slice(0,10);
-  const list = NOTES.filter(n => n.note_date >= since).slice(0, 12);
+  const list = NOTES.filter(n => n.note_date >= since).slice(0, 15);
   if (!list.length) return "";
-  return `<div class="sec"><div class="sec-h"><h2>회의 준비 노트</h2><span class="sub">근무 시간에 에이전트들이 레퍼런스와 경쟁사 분석을 읽고 남긴 인사이트예요 · 다음 회의 재료</span></div><div class="notes">
+  return `<div class="sec"><div class="sec-h"><h2>자기계발 노트</h2><span class="sub">근무 시간에 에이전트들이 자기 과목을 웹에서 찾아 공부한 기록이에요 · KWAN과 같은 수준으로, 다른 접근을 내기 위해</span></div><div class="notes">
     ${list.map(n => `<article class="note"><div class="nh">${av(n.code, true)}<b>${esc(n.title)}</b><span class="sub" style="margin-left:auto">${esc(AG[n.code]?.name || n.code)} · ${fmtTime(n.created_at)}</span></div>
-      <div>${linkify(n.body)}</div>${n.pitch ? `<div class="pitch">💡 ${linkify(n.pitch)}</div>` : ""}
+      <div style="white-space:pre-line">${linkify(n.body)}</div>${n.pitch ? `<div class="pitch">${n.kind === "study" ? "🔀" : "💡"} ${linkify(n.pitch)}</div>` : ""}
       ${(n.links || []).filter(x => x && x.u).length ? `<div class="links">${n.links.filter(x => x && x.u).map(x => `<a href="${esc(x.u)}" target="_blank" rel="noopener">🔗 ${esc(x.t || x.u)}</a>`).join("")}</div>` : ""}</article>`).join("")}</div></div>`;
 }
 
@@ -1686,6 +1686,7 @@ function renderAg(k){
     <div><h4>KWAN에게 질문하는 때</h4><p style="margin:0;font-size:13.5px">${esc(g.ask)}</p></div>
     <div style="grid-column:1/-1"><h4>회의 발언 형식</h4><pre class="out">${esc(g.out)}</pre></div>
     ${(a.growth_notes||[]).length ? `<div style="grid-column:1/-1"><h4>성장 노트</h4>${li(a.growth_notes)}</div>` : ""}
+    ${((a.study||{}).learned||[]).length ? `<div style="grid-column:1/-1"><h4>자기계발로 쌓은 원칙</h4><ul>${a.study.learned.slice(-10).reverse().map(x => `<li>${esc(x.principle || x.title)} <span class="sub">${esc(x.date || "")}${x.source ? ` · <a href="${esc(x.source)}" target="_blank" rel="noopener">출처</a>` : ""}</span></li>`).join("")}</ul>${a.study.contrarian ? `<p class="sub" style="margin:6px 0 0">🔀 KWAN과 다르게 보는 관점: ${esc(a.study.contrarian)}</p>` : ""}${(a.study.next||[]).length ? `<p class="sub" style="margin:4px 0 0">다음 공부: ${a.study.next.map(esc).join(" · ")}</p>` : ""}</div>` : ""}
    </div>
    <div class="level"><span>참석 <b>${st.meetings||0}</b>회</span><span>채택 <b>${st.adopted||0}</b>회</span><span>설득 성공 <b>${st.persuaded||0}</b>회</span></div>`;
   store("agency-agent", k);
