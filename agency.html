@@ -658,7 +658,7 @@ async function boot(){
     sb.from("agency_chat").select("*").order("created_at").limit(500),
     sb.from("agency_config").select("key,value"),
     sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1),
-    sb.from("agency_scout").select("*").order("collected_date", {ascending:false}).order("id").limit(30),
+    sb.from("agency_scout").select("*").order("collected_date", {ascending:false}).order("id").limit(60),
     sb.from("agency_attendance").select("*").order("work_date", {ascending:false}).limit(1)
   ]);
   ATT = (at.data || [])[0] || null; if (ATT && ATT.work_date !== kstNow().date) ATT = ATT.clock_out ? null : ATT;
@@ -1247,16 +1247,17 @@ const nfmt = n => n == null ? "-" : n >= 1e4 ? (n/1e4).toFixed(n >= 1e5 ? 0 : 1)
 function refsHtml(){
   if (!SCOUT.length) return "";
   const date = SCOUT[0].collected_date;
-  const CATN = {ad:"TVCF 광고", popular:"인기 콘텐츠", edu:"초등영어"}; const ORD = {ad:0, popular:1, edu:2};
-  const list = SCOUT.filter(r => r.collected_date === date && (REF_KIND === "all" || (r.cat || "edu") === REF_KIND)).sort((a, b) => (ORD[a.cat || "edu"] - ORD[b.cat || "edu"]) || (b.id - a.id));
-  return `<div class="sec" id="refSec"><div class="sec-h"><h2>오늘의 레퍼런스</h2><span class="sub">${fmtDate(date)} · TVCF 최신 광고 2 · 인기 콘텐츠 4(조회수 30만+) · 나머지 초등영어 — Ruby(숏폼)·Noah(롱폼)가 Gemini로 직접 보고 분석</span></div>
-    <div class="ref-tabs">${[["all","전체"],["ad","TVCF 광고"],["popular","인기 콘텐츠"],["edu","초등영어"]].map(([k, l]) => `<button class="pk" data-refk="${k}" aria-pressed="${REF_KIND === k}">${l}</button>`).join("")}</div>
+  const CATN = {ad:"TVCF 광고", competitor:"경쟁사 신규", popular:"초등 인기", edu:"초등영어", edu_ai:"초등영어"}; const ORD = {ad:0, competitor:1, popular:2, edu:3, edu_ai:3};
+  const list = SCOUT.filter(r => r.collected_date === date && (REF_KIND === "all" || (r.cat || "edu").replace("edu_ai", "edu") === REF_KIND)).sort((a, b) => (ORD[a.cat || "edu"] - ORD[b.cat || "edu"]) || (b.id - a.id));
+  return `<div class="sec" id="refSec"><div class="sec-h"><h2>오늘의 레퍼런스</h2><span class="sub">${fmtDate(date)} · TVCF 최신 광고 2 · 나머지는 모두 초등교육(경쟁사 신규 필수 · 30만 회 이상 인기작 · 초등영어) — Ruby·Noah가 Gemini로 직접 보고 분석</span></div>
+    <div class="ref-tabs">${[["all","전체"],["ad","TVCF 광고"],["competitor","경쟁사 신규"],["popular","초등 인기"],["edu","초등영어"]].map(([k, l]) => `<button class="pk" data-refk="${k}" aria-pressed="${REF_KIND === k}">${l}</button>`).join("")}</div>
     <div class="refs">${list.map(r => { const a = r.analysis || {}; return `<article class="ref">
       <a class="th" href="${esc(r.url)}" target="_blank" rel="noopener"><img src="${esc(r.thumbnail || "")}" alt="" loading="lazy"><span class="k">${CATN[r.cat || "edu"]} · ${r.kind === "short" ? "숏폼" : "롱폼"}</span>${a.score ? `<span class="sc">적합 ${esc(a.score)}/10</span>` : ""}</a>
       <div class="rb"><h4>${esc(r.title)}</h4>
         <div class="nums"><span>${esc(r.channel)}</span><span>조회 <b>${nfmt(r.views)}</b></span><span>구독자 대비 <b>${r.outlier ? r.outlier + "배" : "-"}</b></span><span>시간당 <b>${nfmt(r.views_per_hour)}</b></span></div>
         ${a.one_line ? `<p><b>${esc(a.one_line)}</b></p>` : `<p class="sub">${r.status === "failed" ? "분석 실패" : "분석 대기"}</p>`}
         ${a.hook ? `<span class="lbl">후킹</span><p>${esc(a.hook)}</p>` : ""}
+        ${a.counter ? `<span class="lbl">우리의 한 수</span><p>${esc(a.counter)}</p>` : ""}
         ${(a.apply || []).length ? `<span class="lbl">우리에게 적용</span><ul>${a.apply.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
       </div></article>`; }).join("")}</div></div>`;
 }
