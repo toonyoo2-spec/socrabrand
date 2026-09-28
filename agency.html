@@ -958,7 +958,7 @@ async function openDrawer(code){
     <div class="xp" title="다음 레벨까지"><i style="width:${xp}%"></i></div>
     <span class="sub">${p.status === "working" ? `근무 중 · ${esc(p.activity || "")}` : p.status === "meeting" ? "회의 중" : `퇴근${p.clock_out ? ` · ${fmtTime(p.clock_out)}` : ""}`} · 참석 ${(a.stats||{}).meetings||0} · 채택 ${(a.stats||{}).adopted||0}</span></div>
     <div class="dr-body" id="drBody"></div>
-    <form class="dr-foot" id="drForm"><textarea id="drIn" placeholder="${esc(a.name)}에게 말하기 (다음 근무 때 답합니다)"></textarea><button class="btn" type="submit">보내기</button></form>`;
+    <form class="dr-foot" id="drForm"><textarea id="drIn" placeholder="${esc(a.name)}에게 말하기 · 평일 08:30~18:00엔 Grace가 바로 확인해요"></textarea><button class="btn" type="submit">보내기</button></form>`;
   document.body.appendChild(el); DRAWER = el;
   el.querySelector(".x").addEventListener("click", closeDrawer);
   renderThread(code);
@@ -972,7 +972,7 @@ async function openDrawer(code){
 function renderThread(code){
   const box = $("#drBody"); if (!box) return;
   const th = CHAT.filter(c => c.code === code);
-  box.innerHTML = th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽고 반영함</span>` : `<span class="chip">다음 근무 때 답변</span>`) : ""))).join("")
+  box.innerHTML = th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽고 반영함</span>` : `<span class="chip">Grace 확인 대기</span>`) : ""))).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
   box.scrollTop = box.scrollHeight;
 }
