@@ -598,6 +598,22 @@ tr.new td{background:var(--green-tint)}
   .a4 details:not([open]){display:none}
   .a4 a{color:#141414}
 }
+
+/* 채팅 첨부 */
+.att-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;min-width:40px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:18px;background:var(--surface)}
+.att-btn:hover{border-color:var(--border-hover)}
+.att-list{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.att-list:empty{display:none}
+.att-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--border);border-radius:14px;padding:3px 6px 3px 10px;background:var(--surface-2)}
+.att-chip button{border:none;background:none;cursor:pointer;font-size:14px;line-height:1;color:var(--muted)}
+.att{margin-top:6px;max-width:min(460px,100%);display:grid;gap:6px}
+.att video,.att img{width:100%;border-radius:10px;background:#000;display:block;max-height:340px;object-fit:contain}
+.att .att-file{font-size:13px;text-decoration:underline}
+.att-ai{font-size:12.5px;background:rgba(255,255,255,.75);border-radius:8px;padding:6px 10px;color:#1d2a24}
+.att-ai summary{cursor:pointer;font-weight:600}
+.att-ai pre{white-space:pre-wrap;font-family:inherit;margin:6px 0 0;max-height:420px;overflow:auto;line-height:1.55}
+.att-ai.wait{color:#51605a}
+.att-ai.bad{color:var(--red)}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module" src="agency-office3d.js"></script>
@@ -807,6 +823,7 @@ async function boot(){
     sb.from("agency_rooms").select("*").order("created_at")
   ]);
   CROOMS = (rm.data || []);
+  try { MEDIA = (await sb.from("agency_media").select("*").order("id", {ascending:false}).limit(200)).data || []; } catch (x) { MEDIA = []; }
   NOTES = (nt.data || []);
   ATT = (at.data || [])[0] || null; if (ATT && ATT.work_date !== kstNow().date) ATT = ATT.clock_out ? null : ATT;
   SUMMON = (sm.data || [])[0] || null;
@@ -956,6 +973,7 @@ function startRealtime(){
       if (fresh && row.sender === "agent") isRoom(row.code) ? notify(row.speaker || "PM", row.body, () => { showTab("today"); ROOM_CUR = row.code; const t = $("#teamSec"); if (t) { t.outerHTML = teamHtml(); bindTeam(); $("#teamSec").scrollIntoView({behavior:"smooth"}); } }, roomOf(row.code).title) : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
       if (isRoom(row.code)) { if (row.code === ROOM_CUR) renderTeam(); else { const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } }
       rtDirty.office = true; rtFlush(); })
+    .on("postgres_changes", {event:"*", schema:"public", table:"agency_media"}, ({new:row}) => { if (!row || !row.id) return; const prev = MEDIA.find(x => x.id === row.id); const wasDone = prev && prev.status === "done"; upsertBy(MEDIA, row); if (row.status === "done" && !wasDone) notify("PM", `Gemini가 '${row.name || "첨부 파일"}'을 다 봤어요`, () => {}, "첨부 분석"); updateAttAi(row); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_rooms"}, ({new:row}) => { if (row && row.code) { upsertBy(CROOMS, row, "code"); const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } })
     .on("postgres_changes", {event:"INSERT", schema:"public", table:"agency_notes"}, ({new:row}) => { if (row && row.id && !NOTES.some(n => n.id === row.id)) { NOTES.unshift(row); rtDirty.today = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_presence"}, ({new:row}) => { if (row && row.code) { PRES[row.code] = row; rtDirty.office = true; rtFlush(); } })
@@ -1009,13 +1027,13 @@ document.addEventListener("keydown", e => {
   e.preventDefault(); if (ta.value.trim()) f.requestSubmit();
 });
 // 카카오톡식 대화 (KWAN = 오른쪽 노란 말풍선)
-function bubble(code, text, extra, i){
+function bubble(code, text, extra, i, att){
   const me = code === "KWAN";
   const name = me ? "KWAN" : (AG[code]?.name || code);
   const role = me ? "" : (AG[code]?.role || "");
   return `<div class="kk-row${me?" me":""}${code==="YK"?" yk":""}">${av(code)}<div class="kk-col">
      ${me ? "" : `<span class="kk-name">${esc(name)}<small>${esc(role)}</small></span>`}
-     <div class="kk-bub">${linkify(text)}</div>
+     <div class="kk-bub">${linkify(text)}${att || ""}</div>
      ${extra || i !== undefined ? `<div class="kk-meta">${extra || ""}${i !== undefined ? `<button class="kk-act" data-reply="${i}" data-to="${esc(code)}">답장</button>` : ""}</div>` : ""}
    </div></div>`;
 }
@@ -1438,13 +1456,13 @@ function renderRoom(){
   const code = CHAT_CUR, a = AG[code], {lv} = level(a);
   room.innerHTML = `<div class="mr-head"><button class="back" aria-label="목록으로">‹</button>${av(code)}<div style="min-width:0"><b>${esc(a.name)}</b> <span class="lv" style="background:var(--text);color:var(--bg)">Lv.${lv}</span><br><span class="sub" id="roomStatus">${esc(a.role)} · ${esc(statusLine(code))}</span></div></div>
     <div class="mr-body" id="drBody"></div>
-    <form class="dr-foot" id="drForm"><textarea id="drIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
+    <div class="att-list" id="drForm-att"></div><form class="dr-foot" id="drForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><textarea id="drIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
   room.querySelector(".back").addEventListener("click", () => { CHAT_CUR = null; renderMsgList(); renderRoom(); });
   renderThread(code);
-  $("#drForm").addEventListener("submit", async e => { e.preventDefault(); const body = $("#drIn").value.trim(); if (!body) return;
-    const { data, error } = await sb.from("agency_chat").insert({ code, sender:"kwan", body }).select().single();
-    if (error) return toast("보내지 못했어요. 다시 시도해주세요.");
-    upsertBy(CHAT, data); $("#drIn").value = ""; renderThread(code); renderMsgList(); });
+  bindAttach("drForm");
+  $("#drForm").addEventListener("submit", async e => { e.preventDefault();
+    const data = await sendChat(code, "drForm", "drIn"); if (!data) return;
+    renderThread(code); renderMsgList(); });
 }
 async function markRead(code){
   const unread = CHAT.filter(c => c.code === code && c.sender === "agent" && !c.read_by_kwan).map(c => c.id);
@@ -1464,14 +1482,14 @@ function openPop(code){
   const el = document.createElement("div"); el.className = "pop"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", `${a.name} 채팅`);
   el.innerHTML = `<div class="mr-head">${av(code)}<div style="min-width:0"><b>${esc(a.name)}</b> <span class="lv" style="background:var(--text);color:var(--bg)">Lv.${lv}</span><br><span class="sub" id="popStatus">${esc(a.role)} · ${esc(statusLine(code))}</span></div><button class="x" aria-label="닫기">×</button></div>
     <div class="mr-body" id="popBody"></div>
-    <form class="dr-foot" id="popForm"><textarea id="popIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
+    <div class="att-list" id="popForm-att"></div><form class="dr-foot" id="popForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><textarea id="popIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
   document.body.appendChild(el); POP = {el, code}; fitOverlay(el, false, true);
   el.querySelector(".x").addEventListener("click", closePop);
   renderThread(code, $("#popBody")); markRead(code);
-  $("#popForm").addEventListener("submit", async e => { e.preventDefault(); const body = $("#popIn").value.trim(); if (!body) return;
-    const { data, error } = await sb.from("agency_chat").insert({ code, sender:"kwan", body }).select().single();
-    if (error) return toast("보내지 못했어요. 다시 시도해주세요.");
-    upsertBy(CHAT, data); $("#popIn").value = ""; renderThread(code, $("#popBody")); renderMsgList(); });
+  bindAttach("popForm");
+  $("#popForm").addEventListener("submit", async e => { e.preventDefault();
+    const data = await sendChat(code, "popForm", "popIn"); if (!data) return;
+    renderThread(code, $("#popBody")); renderMsgList(); });
   const ta = $("#popIn"); if (ta) ta.focus();
 }
 function closePop(){ if (POP) { POP.el.remove(); POP = null; } }
@@ -1482,9 +1500,10 @@ function renderThread(code, target){
   const box = target || $("#drBody"); if (!box) return;
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   const th = CHAT.filter(c => c.code === code);
-  box.innerHTML = th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "Grace 확인 중" : "다음 근무 때 답변"}</span>`) : ""))).join("")
+  box.innerHTML = th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "Grace 확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c))).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
   if (nearBottom || !box.dataset.init) box.scrollTop = box.scrollHeight; box.dataset.init = "1";
+  hydrateAtt(box);
 }
 
 
@@ -1532,6 +1551,74 @@ function refsHtml(){
 }
 function bindRefs(){ document.querySelectorAll("[data-refk]").forEach(b => b.addEventListener("click", () => { REF_KIND = b.dataset.refk; const sec = $("#refSec"); if (sec) { sec.outerHTML = refsHtml(); bindRefs(); } })); }
 
+
+// ===== 채팅 첨부 (영상·이미지·PDF·오디오) — KWAN 전용 비공개 저장소 + Gemini 분석 =====
+let MEDIA = [];
+const ATT_FILES = {};
+const ATT_URL = {};
+const fsize = n => n > 1e9 ? (n/1e9).toFixed(1) + "GB" : n > 1e6 ? (n/1e6).toFixed(0) + "MB" : Math.max(1, Math.round(n/1e3)) + "KB";
+function bindAttach(fid){
+  const f = $("#" + fid); if (!f) return; ATT_FILES[fid] = ATT_FILES[fid] || [];
+  const inp = f.querySelector('input[type="file"]'), list = $("#" + fid + "-att");
+  const draw = () => { list.innerHTML = ATT_FILES[fid].map((x, j) => `<span class="att-chip">${x.type.startsWith("video/") ? "🎬" : x.type.startsWith("image/") ? "🖼" : x.type.startsWith("audio/") ? "🎧" : "📄"} ${esc(x.name)} · ${fsize(x.size)}<button type="button" data-rm="${j}" aria-label="빼기">×</button></span>`).join("");
+    list.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => { ATT_FILES[fid].splice(+b.dataset.rm, 1); draw(); })); };
+  inp.addEventListener("change", () => { Array.from(inp.files || []).forEach(x => ATT_FILES[fid].push(x)); inp.value = ""; draw(); });
+  f.addEventListener("dragover", e => { e.preventDefault(); });
+  f.addEventListener("drop", e => { e.preventDefault(); Array.from(e.dataTransfer.files || []).forEach(x => ATT_FILES[fid].push(x)); draw(); });
+  draw();
+}
+async function sendChat(code, fid, taid){
+  const ta = $("#" + taid), files = ATT_FILES[fid] || [];
+  let body = ta.value.trim(); if (!body && !files.length) return null;
+  const btn = $("#" + fid).querySelector('button[type="submit"]'); if (btn) btn.disabled = true;
+  try {
+    const attachments = [];
+    for (const file of files) {
+      toast(`올리는 중 · ${file.name} (${fsize(file.size)})`);
+      const safe = file.name.replace(/[^\w.\-가-힣]+/g, "_").slice(-80);
+      const path = `${code}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${safe}`;
+      const { error } = await sb.storage.from("agency-files").upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+      if (error) { toast(/size|large|exceed/i.test(error.message || "") ? `파일이 너무 커요(${fsize(file.size)}). 720p로 줄이거나 나눠서 올려 주세요.` : "올리지 못했어요: " + (error.message || "")); return null; }
+      attachments.push({ path, name: file.name, type: file.type || "application/octet-stream", size: file.size });
+    }
+    if (!body) body = attachments.length ? `(첨부 ${attachments.map(a => a.name).join(", ")})` : "";
+    const { data, error } = await sb.from("agency_chat").insert({ code, sender: "kwan", body, attachments }).select().single();
+    if (error) { toast("보내지 못했어요: " + (error.message || "다시 시도해주세요")); return null; }
+    upsertBy(CHAT, data); ta.value = ""; ATT_FILES[fid] = []; const l = $("#" + fid + "-att"); if (l) l.innerHTML = "";
+    return data;
+  } finally { if (btn) btn.disabled = false; }
+}
+function aiBox(m){
+  if (!m) return `<div class="att-ai wait">Gemini에 보내는 중…</div>`;
+  const W = {queued:"Gemini에 보내는 중…", uploading:`Gemini에 올리는 중… ${m.size ? Math.round((m.uploaded||0)/m.size*100) + "%" : ""}`, processing:"Gemini가 영상을 읽는 중…", analyzing:"Gemini가 분석하는 중…"};
+  if (W[m.status]) return `<div class="att-ai wait" data-mid="${m.id}">${W[m.status]}</div>`;
+  if (m.status === "done") return `<details class="att-ai" data-mid="${m.id}"><summary>Gemini 분석 보기</summary><pre>${linkify(m.result || "")}</pre></details>`;
+  return `<div class="att-ai bad" data-mid="${m.id}">${esc(m.error || "분석하지 못했어요")}</div>`;
+}
+function attHtml(c){
+  const list = c.attachments || []; if (!list.length) return "";
+  return list.map(a => { const m = MEDIA.find(x => x.chat_id === c.id && x.path === a.path);
+    const media = a.type.startsWith("video/") ? `<video controls preload="metadata" playsinline data-src="${esc(a.path)}"></video>`
+      : a.type.startsWith("image/") ? `<img alt="${esc(a.name)}" data-src="${esc(a.path)}">`
+      : a.type.startsWith("audio/") ? `<audio controls preload="metadata" data-src="${esc(a.path)}"></audio>`
+      : `<a class="att-file" href="#" data-src="${esc(a.path)}" target="_blank" rel="noopener">📄 ${esc(a.name)}</a>`;
+    return `<div class="att" data-path="${esc(a.path)}" data-chat="${c.id}">${media}${c.sender === "kwan" ? aiBox(m) : ""}</div>`; }).join("");
+}
+async function hydrateAtt(root){
+  const els = Array.from((root || document).querySelectorAll("[data-src]:not([data-ok])"));
+  for (const el of els) {
+    const p = el.dataset.src; el.dataset.ok = "1";
+    let u = ATT_URL[p]; if (!u || u.exp < Date.now()) { const { data } = await sb.storage.from("agency-files").createSignedUrl(p, 3600); if (!data) continue; u = ATT_URL[p] = { url: data.signedUrl, exp: Date.now() + 50 * 60e3 }; }
+    if (el.tagName === "A") el.href = u.url; else el.src = u.url;
+  }
+}
+function updateAttAi(m){
+  document.querySelectorAll(`.att[data-chat="${m.chat_id}"][data-path="${CSS.escape(m.path)}"]`).forEach(box => {
+    const old = box.querySelector(".att-ai"); const open = old && old.tagName === "DETAILS" && old.open;
+    const t = document.createElement("div"); t.innerHTML = aiBox(m); const n = t.firstElementChild; if (open && n.tagName === "DETAILS") n.open = true;
+    if (old) old.replaceWith(n); else box.appendChild(n); });
+}
+
 // 팀 채팅방 (12명 전원 단톡방, code='TEAM') — 모든 말은 DB가 회의록에 자동 복제한다
 let CROOMS = [], ROOM_CUR = (() => { try { return localStorage.getItem("agency-room") || "TEAM"; } catch (e) { return "TEAM"; } })();
 const isRoom = c => c === "TEAM" || /^R\d+$/.test(c || "");
@@ -1543,7 +1630,7 @@ function teamHtml(){
   return `<div class="sec" id="teamSec"><div class="sec-h"><h2>채팅방</h2><span class="sub">방마다 참여자가 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. Grace가 직접 참여할지 물어봐요. 모든 대화는 회의록에 저장돼요</span></div>
     <div class="rooms">${list.map(r => { const n = r.code === ROOM_CUR ? 0 : roomUnread(r.code); return `<button class="pk" data-room-tab="${r.code}" aria-pressed="${r.code === ROOM_CUR}">${esc(r.title)}${n ? ` <span class="cnt">${n}</span>` : ""}</button>`; }).join("")}<button class="pk add" id="newRoom">+ 새 채팅방</button></div>
     <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span></div><div class="team-body" id="teamBody"></div>
-    <form class="dr-foot" id="teamForm"><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
+    <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
 }
 function renderTeam(){
   const box = $("#teamBody"); if (!box) return;
@@ -1553,9 +1640,10 @@ function renderTeam(){
   let lastDay = "";
   box.innerHTML = th.length ? th.map(c => { const day = new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10);
       const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day;
-      return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "")); }).join("")
+      return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c)); }).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
   if (near || !box.dataset.init) box.scrollTop = box.scrollHeight; box.dataset.init = "1";
+  hydrateAtt(box);
   const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#teamSec").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
 }
 function bindTeam(){
@@ -1563,10 +1651,10 @@ function bindTeam(){
   document.querySelectorAll("[data-room-tab]").forEach(b => b.addEventListener("click", () => { ROOM_CUR = b.dataset.roomTab; store("agency-room", ROOM_CUR); const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); }));
   const nb = $("#newRoom"); if (nb) nb.addEventListener("click", openNewRoom);
   const f = $("#teamForm"); if (!f) return;
-  f.addEventListener("submit", async e => { e.preventDefault(); const body = $("#teamIn").value.trim(); if (!body) return;
-    const { data, error } = await sb.from("agency_chat").insert({ code:ROOM_CUR, sender:"kwan", body }).select().single();
-    if (error) return toast("보내지 못했어요: " + (error.message || "다시 시도해주세요"));
-    upsertBy(CHAT, data); $("#teamIn").value = ""; renderTeam(); toast(dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
+  bindAttach("teamForm");
+  f.addEventListener("submit", async e => { e.preventDefault();
+    const data = await sendChat(ROOM_CUR, "teamForm", "teamIn"); if (!data) return;
+    renderTeam(); toast((data.attachments || []).length ? "Gemini가 파일을 본 뒤 Grace가 답해요" : dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
 }
 function openNewRoom(){
   const pick = new Set(["PM"]);
