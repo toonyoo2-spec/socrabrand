@@ -211,6 +211,27 @@ tr.new td{background:var(--green-tint)}
 .kk-nav button{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted)}
 .kk-nav button[aria-current="true"]{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600}
 
+
+/* KWAN 개입 */
+.iv{background:var(--surface);border:1.5px solid var(--text);border-radius:var(--r);padding:14px 16px;display:grid;gap:10px}
+.iv-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.iv select,.iv-in textarea,.iv textarea{font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);padding:8px 10px}
+.iv textarea,.iv-in textarea{flex:1 1 260px;min-height:44px;resize:vertical}
+.iv-list{display:grid;gap:6px}
+.iv-item{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;font-size:13px;padding:8px 10px;background:var(--surface-2);border-radius:var(--r)}
+.iv-item .body{flex:1 1 240px}
+.iv-item .resp{flex-basis:100%;color:var(--muted);font-size:12.5px}
+.iv-in{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;padding:10px 12px;background:rgba(255,255,255,.7);border-radius:12px}
+.dec .iv-in{background:var(--surface-2);border-radius:0;padding:12px 18px}
+.dec-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.act{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:600;color:var(--text)}
+.act:hover{border-color:var(--border-hover)}
+.kk-act{background:none;border:none;padding:0 2px;font-size:11.5px;color:#3a4652;text-decoration:underline;text-underline-offset:2px}
+.kk-row.yk .kk-bub{background:#fff4d6;box-shadow:inset 0 0 0 1.5px var(--amber-line)}
+.kk-row.yk .av{background:var(--amber-tint);color:var(--amber)}
+.kk-row.me .kk-meta .chip{background:rgba(255,255,255,.7)}
+.kk-end{display:flex;justify-content:flex-end}
+
 @media (prefers-reduced-motion:no-preference){.tab,.pick,.ag{transition:background .15s,border-color .15s,color .15s}}
 </style>
 </head>
@@ -360,8 +381,16 @@ const fmtDate = d => { const x = new Date(d + "T00:00:00"); return `${x.getMonth
 function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v);}catch(e){ return null; } }
 function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
 
-let AG = {}, MEETINGS = [], CUR = null;
-const av = (k, sm) => `<span class="av${sm?" sm":""}${k==="YK"?" yk":""}" title="${esc(AG[k]?.name || k)}">${esc(k)}</span>`;
+let AG = {}, MEETINGS = [], CUR = null, IV = [];
+const av = (k, sm) => `<span class="av${sm?" sm":""}${k==="YK"?" yk":""}" title="${esc(k==="KWAN"?"KWAN":(AG[k]?.name || k))}">${esc(k==="KWAN"?"나":k)}</span>`;
+const IV_KIND = {reply:"답장", redo:"다시 논의", hold:"보류", add_plan:"내 안 추가", agenda:"안건 추가", exclude:"Task 제외", direction:"전체 지시", pause:"회의 쉬기"};
+async function addIv(row){
+  const { data, error } = await sb.from("agency_interventions").insert(row).select().single();
+  if (error) { toast("저장하지 못했어요. 다시 시도해주세요."); return false; }
+  IV.unshift(data); toast("남겼어요. 다음 회의가 가장 먼저 다룹니다"); return true;
+}
+const ivFor = (mid, did) => IV.filter(x => x.meeting_id === mid && x.decision_id === did && x.status !== "dismissed");
+const ivChip = x => x.status === "done" ? `<span class="chip g">반영됨</span>` : `<span class="chip a">다음 회의 대기</span>`;
 
 function show(id){ ["login","denied","app"].forEach(x => $("#"+x).hidden = x !== id); }
 
@@ -371,11 +400,13 @@ async function boot(){
   const { data: own } = await sb.from("agency_owners").select("user_id").eq("user_id", session.user.id).maybeSingle();
   if (!own) return show("denied");
   show("app");
-  const [ag, mt, pf] = await Promise.all([
+  const [ag, mt, pf, iv] = await Promise.all([
     sb.from("agency_agents").select("*").order("sort"),
     sb.from("agency_meetings").select("*").order("meeting_date", {ascending:false}).order("created_at", {ascending:false}).limit(60),
-    sb.from("agency_profile").select("*").order("created_at")
+    sb.from("agency_profile").select("*").order("created_at"),
+    sb.from("agency_interventions").select("*").order("created_at", {ascending:false}).limit(300)
   ]);
+  IV = iv.data || [];
   (ag.data || []).forEach(a => AG[a.code] = a);
   MEETINGS = mt.data || [];
   renderToday(); renderMinutesNav(); renderOrg(); renderProfile(pf.data || []);
@@ -395,7 +426,7 @@ for (const b of ["#logout","#logout2"]) $(b).addEventListener("click", async () 
 
 // 작동 상태 노드
 const STEPS = [
-  ["trigger","트리거","평일 07:27"],["holiday","공휴일 확인",""],["memory","기억 불러오기","Supabase"],["learn","학습 반영",""],
+  ["trigger","트리거","평일 07:27"],["holiday","공휴일 확인",""],["memory","기억 불러오기","Supabase"],["intervene","KWAN 개입 반영",""],["learn","학습 반영",""],
   ["agenda","안건 선정","Notion"],["meeting","회의",""],["verify","YK 검증",""],["save","저장","Supabase"],["dm","DM 발송","Slack"]];
 const ST_LABEL = {ok:"정상", skip:"건너뜀", fail:"실패", none:"기록 없음"};
 function kstNow(){ const d = new Date(Date.now() + 9*3600e3); return { date:d.toISOString().slice(0,10), h:d.getUTCHours(), m:d.getUTCMinutes(), wd:d.getUTCDay() }; }
@@ -428,44 +459,104 @@ function pipelineHtml(){
     <div class="pipe-wrap"><div class="pipe-head"><span>${state}</span><span>${lastTxt}</span></div><div class="pipe">${nodes}</div>${alert}</div></div>`;
 }
 
-// 카카오톡식 대화
+// 카카오톡식 대화 (KWAN = 오른쪽 노란 말풍선)
+function bubble(code, text, extra, i){
+  const me = code === "KWAN";
+  const name = me ? "KWAN" : (AG[code]?.name || code);
+  const role = me ? "" : (AG[code]?.role || "");
+  return `<div class="kk-row${me?" me":""}${code==="YK"?" yk":""}">${av(code)}<div class="kk-col">
+     ${me ? "" : `<span class="kk-name">${esc(name)}<small>${esc(role)}</small></span>`}
+     <div class="kk-bub">${esc(text)}</div>
+     ${extra || i !== undefined ? `<div class="kk-meta">${extra || ""}${i !== undefined ? `<button class="kk-act" data-reply="${i}" data-to="${esc(code)}">답장</button>` : ""}</div>` : ""}
+   </div></div>`;
+}
+function ivBubbles(list){
+  return list.map(x => bubble("KWAN", (x.target ? `@${AG[x.target]?.name || x.target} ` : "") + x.body, `<span class="chip">${IV_KIND[x.kind]}</span>${ivChip(x)}`)
+    + (x.response ? bubble(x.responder || "AE", x.response, `<span class="chip g">KWAN 개입에 대한 답</span>`) : "")).join("");
+}
 function kakaoHtml(m, id){
   const msgs = (m.transcript || {})[id] || [];
-  if (!msgs.length) return `<div class="empty">이 안건의 대화 기록이 없어요.</div>`;
-  return `<div class="kk">` + msgs.map(x => {
-    if (x.st) return `<div class="kk-day">${esc(x.st)}</div>`;
-    const me = x.a === "YK";
+  const ivs = ivFor(m.id, id).slice().reverse();
+  let h = `<div class="kk">`;
+  if (!msgs.length) h += `<div class="kk-day">대화 기록 없음</div>`;
+  msgs.forEach((x, i) => {
+    if (x.st) { h += `<div class="kk-day">${esc(x.st)}</div>`; return; }
     const tags = (x.tag||[]).map(t => `<span class="chip ${tagCls[t]||""}">${esc(t)}</span>`).join("");
     const ev = (x.ev||[]).map(e => `<span class="ev">${esc(e)}</span>`).join("");
-    return `<div class="kk-row${me?" me":""}">${av(x.a)}<div class="kk-col">
-      <span class="kk-name">${esc(AG[x.a]?.name || x.a)}<small>${esc(AG[x.a]?.role || "")}</small></span>
-      <div class="kk-bub">${esc(x.p)}</div>
-      ${tags || ev ? `<div class="kk-meta">${tags}${ev}</div>` : ""}
-    </div></div>`;
-  }).join("") + `</div>`;
+    h += bubble(x.a, x.p, tags + ev, x.a === "KWAN" ? undefined : i);
+    h += `<div class="iv-slot" data-slot="${i}"></div>`;
+    h += ivBubbles(ivs.filter(v => v.msg_index === i));
+  });
+  h += ivBubbles(ivs.filter(v => v.msg_index === null || v.msg_index === undefined));
+  h += `<form class="iv-in" data-endform><textarea placeholder="이 안건에 한마디 (다음 회의에서 에이전트가 답합니다)"></textarea><button class="btn" type="submit">보내기</button></form>`;
+  return h + `</div>`;
+}
+function bindKakao(root, m, id, rerender){
+  root.querySelectorAll("[data-reply]").forEach(b => b.addEventListener("click", () => {
+    const slot = root.querySelector(`[data-slot="${b.dataset.reply}"]`);
+    if (slot.firstChild) { slot.innerHTML = ""; return; }
+    slot.innerHTML = `<form class="iv-in"><textarea placeholder="${esc(AG[b.dataset.to]?.name || b.dataset.to)}에게 답장"></textarea><button class="btn" type="submit">보내기</button></form>`;
+    const f = slot.querySelector("form"); f.querySelector("textarea").focus();
+    f.addEventListener("submit", async e => { e.preventDefault(); const body = f.querySelector("textarea").value.trim(); if (!body) return;
+      if (await addIv({ meeting_id:m.id, decision_id:id, msg_index:+b.dataset.reply, target:b.dataset.to, kind:"reply", body })) rerender(); });
+  }));
+  const ef = root.querySelector("[data-endform]");
+  if (ef) ef.addEventListener("submit", async e => { e.preventDefault(); const body = ef.querySelector("textarea").value.trim(); if (!body) return;
+    if (await addIv({ meeting_id:m.id, decision_id:id, kind:"reply", body })) rerender(); });
 }
 function chatBlock(m, prefix){
   const decs = m.decisions || [];
   if (!decs.length) return "";
-  return `<div class="sec"><div class="sec-h"><h2>회의 대화</h2><span class="sub">노란 말풍선이 YK(KWAN 미러)의 검증입니다</span></div>
+  return `<div class="sec"><div class="sec-h"><h2>회의 대화</h2><span class="sub">말풍선마다 답장할 수 있어요. 내 말은 오른쪽 노란 말풍선, YK 검증은 테두리 말풍선입니다</span></div>
     <div class="kk-nav" id="${prefix}-nav">${decs.map((d, i) => `<button data-id="${esc(d.id)}">결정 ${i+1}${d.proj?` · ${esc(d.proj)}`:""}</button>`).join("")}</div>
     <div id="${prefix}-chat"></div></div>`;
 }
 function bindChat(m, prefix, first){
   const nav = $("#" + prefix + "-nav"); if (!nav) return;
-  const go = id => { nav.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id ? "true" : "false")); $("#" + prefix + "-chat").innerHTML = kakaoHtml(m, id); };
+  const go = id => { nav.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id ? "true" : "false"));
+    const box = $("#" + prefix + "-chat"); box.innerHTML = kakaoHtml(m, id); bindKakao(box, m, id, () => go(id)); };
   nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => go(b.dataset.id)));
   go(first || m.decisions[0].id);
+}
+
+
+// 다음 회의에 개입
+function ivPanelHtml(){
+  const open = IV.filter(x => !x.meeting_id && x.status === "open");
+  const done = IV.filter(x => !x.meeting_id && x.status === "done").slice(0, 3);
+  const item = x => `<div class="iv-item"><span class="chip">${IV_KIND[x.kind]}</span><span class="body">${esc(x.body)}</span>${ivChip(x)}${x.status==="open"?`<button class="kk-act" data-dismiss="${x.id}">취소</button>`:""}${x.response?`<span class="resp">${esc(AG[x.responder]?.name || "Agency")}: ${esc(x.response)}</span>`:""}</div>`;
+  return `<div class="sec"><div class="sec-h"><h2>다음 회의에 개입하기</h2><span class="sub">여기 남긴 말은 다음 회의가 가장 먼저 처리하고, 처리 결과를 여기에 답합니다</span></div>
+   <form class="iv" id="ivForm">
+    <div class="iv-row">
+     <select id="ivKind" aria-label="개입 종류">
+      <option value="direction">전체 지시</option><option value="agenda">안건 추가</option><option value="exclude">Task 제외</option><option value="pause">회의 쉬기</option>
+     </select>
+     <textarea id="ivBody" placeholder="예: 이번 주는 산타 숏폼만 집중해줘 / 리얼클래스 계정 건은 제외 / 10/2까지 회의 쉬기"></textarea>
+     <button class="btn" type="submit">남기기</button>
+    </div>
+    ${open.length || done.length ? `<div class="iv-list">${open.map(item).join("")}${done.map(item).join("")}</div>` : ""}
+   </form></div>`;
+}
+function bindIvPanel(){
+  const f = $("#ivForm"); if (!f) return;
+  f.addEventListener("submit", async e => {
+    e.preventDefault(); const body = $("#ivBody").value.trim(); if (!body) return;
+    if (await addIv({ kind:$("#ivKind").value, body })) renderToday();
+  });
+  f.querySelectorAll("[data-dismiss]").forEach(b => b.addEventListener("click", async () => {
+    const id = +b.dataset.dismiss; const { error } = await sb.from("agency_interventions").update({ status:"dismissed" }).eq("id", id);
+    if (!error) { IV.find(x => x.id === id).status = "dismissed"; renderToday(); }
+  }));
 }
 
 // 오늘 회의
 function renderToday(){
   const el = $("#p-today");
   const m = MEETINGS.find(x => x.status !== "error");
-  if (!m) { el.innerHTML = pipelineHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; return; }
+  if (!m) { el.innerHTML = pipelineHtml() + ivPanelHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; bindIvPanel(); return; }
   const meta = m.meta || {};
   const att = meta.attendees || [...new Set((m.decisions||[]).flatMap(d => d.who || []))];
-  let h = pipelineHtml() + `<div class="sec"><div class="meta">
+  let h = pipelineHtml() + ivPanelHtml() + `<div class="sec"><div class="meta">
      <span><b>${fmtDate(m.meeting_date)}</b> ${m.kind==="auto"?"자동회의":m.kind==="deep"?"깊은 회의":"수동 회의"}</span>
      ${m.title ? `<span><b>${esc(m.title)}</b></span>` : ""}
      <span>결정 <b>${(m.decisions||[]).length}건</b></span>
@@ -479,6 +570,7 @@ function renderToday(){
   if ((m.decisions||[]).length) h += `<div class="sec"><div class="sec-h"><h2>KWAN이 결정할 것</h2><span class="sub">A·B·C는 서로 다른 전략 방향입니다</span></div>${m.decisions.map((d, i) => decCard(m, d, i)).join("")}</div>`;
   if (meta.question) h += `<div class="sec"><div class="sec-h"><h2>오늘의 질문</h2></div><div class="box"><p style="margin:0">${esc(meta.question)}</p><span class="sub">KWAN 프로필 탭이나 DM으로 답해주세요</span></div></div>`;
   el.innerHTML = h;
+  bindIvPanel();
   bindChat(m, "today");
   bindPicks(m);
 }
@@ -502,7 +594,9 @@ function decCard(m, d, i){
     </div>`).join("")}
    </div>
    ${d.yk ? `<div class="yk-note">${av("YK", true)}<p>${esc(d.yk)}</p></div>` : ""}
-   <div class="dec-foot"><span>참석 ${(d.who||[]).map(k => esc(AG[k]?.name || k)).join(" · ")}</span><button class="linkbtn" data-goto="${esc(d.id)}">대화에서 근거 보기</button></div>
+   ${ivFor(m.id, d.id).filter(x => x.kind !== "reply").map(x => `<div class="iv-in"><span class="chip">${IV_KIND[x.kind]}</span><span style="flex:1 1 200px;font-size:13px">${esc(x.body)}</span>${ivChip(x)}${x.response?`<span style="flex-basis:100%;font-size:12.5px;color:var(--muted)">${esc(AG[x.responder]?.name || "Agency")}: ${esc(x.response)}</span>`:""}</div>`).join("")}
+   <div class="iv-slot" data-decslot="${esc(d.id)}"></div>
+   <div class="dec-foot"><div class="dec-acts"><button class="act" data-iv="redo" data-d="${esc(d.id)}">다시 논의</button><button class="act" data-iv="add_plan" data-d="${esc(d.id)}">내 안 추가</button><button class="act" data-iv="hold" data-d="${esc(d.id)}">보류</button></div><button class="linkbtn" data-goto="${esc(d.id)}">대화에서 근거 보기</button></div>
   </article>`;
 }
 function bindPicks(m){
@@ -511,6 +605,14 @@ function bindPicks(m){
     const { error } = await sb.from("agency_meetings").update({ choices }).eq("id", m.id);
     if (error) { toast("저장하지 못했어요. 다시 눌러주세요."); return; }
     m.choices = choices; renderToday(); toast(`${b.dataset.plan}안으로 기록했어요. 다음 회의에 반영됩니다`);
+  }));
+  const PH = {redo:"무엇이 아쉬운지, 어떤 방향으로 다시 봐야 하는지", add_plan:"내가 생각한 안 (A·B·C와 같이 비교됩니다)", hold:"언제까지, 왜 보류하는지"};
+  document.querySelectorAll("#p-today [data-iv]").forEach(b => b.addEventListener("click", () => {
+    const slot = document.querySelector(`#p-today [data-decslot="${b.dataset.d}"]`);
+    slot.innerHTML = `<form class="iv-in"><span class="chip k">${IV_KIND[b.dataset.iv]}</span><textarea placeholder="${PH[b.dataset.iv]}"></textarea><button class="btn" type="submit">남기기</button></form>`;
+    const f = slot.querySelector("form"); f.querySelector("textarea").focus();
+    f.addEventListener("submit", async e => { e.preventDefault(); const body = f.querySelector("textarea").value.trim(); if (!body) return;
+      if (await addIv({ meeting_id:m.id, decision_id:b.dataset.d, kind:b.dataset.iv, body })) renderToday(); });
   }));
   document.querySelectorAll("#p-today [data-goto]").forEach(b => b.addEventListener("click", () => { bindChat(m, "today", b.dataset.goto); $("#today-nav").scrollIntoView({behavior:"smooth", block:"start"}); }));
 }
@@ -533,7 +635,7 @@ function renderMinutes(m, decId){
 }
 function renderTx(m, id){
   $("#txnav").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id ? "true" : "false"));
-  $("#tx").innerHTML = kakaoHtml(m, id);
+  $("#tx").innerHTML = kakaoHtml(m, id); bindKakao($("#tx"), m, id, () => renderTx(m, id));
 }
 
 // 에이전트
