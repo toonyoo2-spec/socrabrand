@@ -59,10 +59,10 @@
     .node .port.left { left:-7px; top:calc(50% - 6px); } .node .port.right { right:-7px; top:calc(50% - 6px); }
     .node .port.top { top:-8px; left:calc(50% - 6px); } .node .port.bottom { bottom:-8px; left:calc(50% - 6px); }
     .node-top { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--muted); font-size:11px; font-weight:600; font-family:var(--mono); }
-    .check-node { position:absolute; z-index:5; width:124px; min-height:62px; padding:9px 12px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:5px; border:1px solid #76c9a5; border-top:4px solid var(--green); border-radius:12px; background:#f2fff8; color:#0B6B44; text-decoration:none; box-shadow:0 5px 14px -8px rgba(11,107,68,.55); line-height:1.15; text-align:left; }
-    .check-node::before { content:""; position:absolute; bottom:100%; left:50%; height:18px; border-left:2px solid #76c9a5; }
-    .check-node .check-kicker { color:#55806d; font-family:var(--mono); font-size:8px; font-weight:700; letter-spacing:.08em; }
-    .check-node strong { font-size:11px; font-weight:850; word-break:keep-all; }
+    .check-node { position:absolute; z-index:6; width:126px; height:26px; padding:0 9px; display:flex; align-items:center; justify-content:flex-start; gap:6px; border:1px solid #76c9a5; border-radius:8px; background:#f2fff8; color:#0B6B44; text-decoration:none; box-shadow:0 4px 10px -7px rgba(11,107,68,.55); line-height:1; white-space:nowrap; }
+    .check-node::after { content:""; position:absolute; top:100%; left:20px; height:7px; border-left:2px solid #76c9a5; }
+    .check-node .check-kicker { color:#55806d; font-family:var(--mono); font-size:7px; font-weight:700; letter-spacing:.04em; }
+    .check-node strong { font-size:9px; font-weight:850; }
     .check-node:hover { transform:translateY(-2px); border-color:#0B6B44; box-shadow:0 9px 18px -9px rgba(11,107,68,.7); }
     .check-node:focus-visible,.node-open:focus-visible { outline:2px solid #0B6B44; outline-offset:3px; }
     .node-open { display:block; width:100%; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
@@ -258,7 +258,7 @@
         const a = document.createElement("a");
         a.className = "check-node"; a.href = check[2];
         if (!check[2].startsWith("#")) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-        a.style.left = (n.x + 83) + "px"; a.style.top = (n.y + 186) + "px";
+        a.style.left = (n.x + 157) + "px"; a.style.top = (n.y - 32) + "px";
         a.innerHTML = '<span class="check-kicker">' + check[0] + '</span><strong>' + check[1] + '</strong>';
         a.setAttribute("aria-label",n.title + " · " + check[1]); a.title = check[1];
         nodeContainer.appendChild(a);
