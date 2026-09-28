@@ -321,7 +321,7 @@
     document.getElementById("zoom-in").addEventListener("click",function(){zoom(1.18,viewport.clientWidth/2,viewport.clientHeight/2);});
     document.getElementById("zoom-out").addEventListener("click",function(){zoom(.84,viewport.clientWidth/2,viewport.clientHeight/2);});
     viewport.addEventListener("wheel",function(e){e.preventDefault();const r=viewport.getBoundingClientRect();zoom(e.deltaY<0?1.08:.92,e.clientX-r.left,e.clientY-r.top);},{passive:false});
-    viewport.addEventListener("pointerdown",function(e){if(e.target.closest(".node"))return;dragging=true;startX=e.clientX-tx;startY=e.clientY-ty;viewport.classList.add("dragging");viewport.setPointerCapture(e.pointerId);});
+    viewport.addEventListener("pointerdown",function(e){if(e.target.closest("a,button,.node"))return;dragging=true;startX=e.clientX-tx;startY=e.clientY-ty;viewport.classList.add("dragging");viewport.setPointerCapture(e.pointerId);});
     viewport.addEventListener("pointermove",function(e){if(!dragging)return;tx=e.clientX-startX;ty=e.clientY-startY;render();});
     viewport.addEventListener("pointerup",function(){dragging=false;viewport.classList.remove("dragging");});
     window.addEventListener("resize",fit);fit();
