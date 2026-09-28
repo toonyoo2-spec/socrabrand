@@ -1548,8 +1548,8 @@ function notesHtml(){
   const list = NOTES.filter(n => n.note_date >= since).slice(0, 15);
   if (!list.length) return "";
   return `<div class="sec"><div class="sec-h"><h2>자기계발 노트</h2><span class="sub">근무 시간에 에이전트들이 자기 과목을 웹에서 찾아 공부한 기록이에요 · KWAN과 같은 수준으로, 다른 접근을 내기 위해</span></div><div class="notes">
-    ${list.map(n => `<article class="note"><div class="nh">${av(n.code, true)}<b>${esc(n.title)}</b><span class="sub" style="margin-left:auto">${esc(AG[n.code]?.name || n.code)} · ${fmtTime(n.created_at)}</span></div>
-      <div style="white-space:pre-line">${linkify(n.body)}</div>${n.pitch ? `<div class="pitch">${n.kind === "study" ? "🔀" : "💡"} ${linkify(n.pitch)}</div>` : ""}
+    ${list.map(n => `<article class="note"><div class="nh">${av(n.code, true)}<b>${esc(n.title)}</b>${n.kind === "research" ? `<span class="chip k">깊은 리서치</span>` : ""}<span class="sub" style="margin-left:auto">${esc(AG[n.code]?.name || n.code)} · ${fmtTime(n.created_at)}</span></div>
+      <div style="white-space:pre-line">${linkify(n.body)}</div>${n.pitch ? `<div class="pitch">${n.kind === "prep" ? "💡" : "🔀"} ${linkify(n.pitch)}</div>` : ""}
       ${(n.links || []).filter(x => x && x.u).length ? `<div class="links">${n.links.filter(x => x && x.u).map(x => `<a href="${esc(x.u)}" target="_blank" rel="noopener">🔗 ${esc(x.t || x.u)}</a>`).join("")}</div>` : ""}</article>`).join("")}</div></div>`;
 }
 
