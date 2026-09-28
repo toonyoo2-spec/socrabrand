@@ -602,6 +602,9 @@ tr.new td{background:var(--green-tint)}
 /* 채팅 첨부 */
 .att-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;min-width:40px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:18px;background:var(--surface)}
 .att-btn:hover{border-color:var(--border-hover)}
+.mic-btn{padding:0}
+.mic-btn.on{background:var(--red);border-color:var(--red);animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,60,60,.45)}50%{box-shadow:0 0 0 6px rgba(220,60,60,0)}}
 .att-list{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
 .att-list:empty{display:none}
 .att-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--border);border-radius:14px;padding:3px 6px 3px 10px;background:var(--surface-2)}
@@ -1456,7 +1459,7 @@ function renderRoom(){
   const code = CHAT_CUR, a = AG[code], {lv} = level(a);
   room.innerHTML = `<div class="mr-head"><button class="back" aria-label="목록으로">‹</button>${av(code)}<div style="min-width:0"><b>${esc(a.name)}</b> <span class="lv" style="background:var(--text);color:var(--bg)">Lv.${lv}</span><br><span class="sub" id="roomStatus">${esc(a.role)} · ${esc(statusLine(code))}</span></div></div>
     <div class="mr-body" id="drBody"></div>
-    <div class="att-list" id="drForm-att"></div><form class="dr-foot" id="drForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><textarea id="drIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
+    <div class="att-list" id="drForm-att"></div><form class="dr-foot" id="drForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="drIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
   room.querySelector(".back").addEventListener("click", () => { CHAT_CUR = null; renderMsgList(); renderRoom(); });
   renderThread(code);
   bindAttach("drForm");
@@ -1482,7 +1485,7 @@ function openPop(code){
   const el = document.createElement("div"); el.className = "pop"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", `${a.name} 채팅`);
   el.innerHTML = `<div class="mr-head">${av(code)}<div style="min-width:0"><b>${esc(a.name)}</b> <span class="lv" style="background:var(--text);color:var(--bg)">Lv.${lv}</span><br><span class="sub" id="popStatus">${esc(a.role)} · ${esc(statusLine(code))}</span></div><button class="x" aria-label="닫기">×</button></div>
     <div class="mr-body" id="popBody"></div>
-    <div class="att-list" id="popForm-att"></div><form class="dr-foot" id="popForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><textarea id="popIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
+    <div class="att-list" id="popForm-att"></div><form class="dr-foot" id="popForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="popIn" placeholder="${esc(a.name)}에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form>`;
   document.body.appendChild(el); POP = {el, code}; fitOverlay(el, false, true);
   el.querySelector(".x").addEventListener("click", closePop);
   renderThread(code, $("#popBody")); markRead(code);
@@ -1563,11 +1566,36 @@ function bindAttach(fid){
   const draw = () => { list.innerHTML = ATT_FILES[fid].map((x, j) => `<span class="att-chip">${x.type.startsWith("video/") ? "🎬" : x.type.startsWith("image/") ? "🖼" : x.type.startsWith("audio/") ? "🎧" : "📄"} ${esc(x.name)} · ${fsize(x.size)}<button type="button" data-rm="${j}" aria-label="빼기">×</button></span>`).join("");
     list.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => { ATT_FILES[fid].splice(+b.dataset.rm, 1); draw(); })); };
   inp.addEventListener("change", () => { Array.from(inp.files || []).forEach(x => ATT_FILES[fid].push(x)); inp.value = ""; draw(); });
+  bindMic(f);
   f.addEventListener("dragover", e => { e.preventDefault(); });
   f.addEventListener("drop", e => { e.preventDefault(); Array.from(e.dataTransfer.files || []).forEach(x => ATT_FILES[fid].push(x)); draw(); });
   draw();
 }
+// ===== 🎤 말로 입력: 브라우저 음성 인식(한국어)으로 입력창을 채운다. 보내기는 KWAN이 확인 후 직접 =====
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let MIC = null; // { rec, btn }
+function micStop(){ if (MIC) { try { MIC.rec.stop(); } catch (e) {} MIC.btn.classList.remove("on"); MIC = null; } }
+function bindMic(f){
+  const btn = f.querySelector(".mic-btn"), ta = f.querySelector("textarea"); if (!btn || !ta) return;
+  if (!SR) { btn.title = "이 브라우저는 음성 입력을 지원하지 않아요 (크롬·사파리에서 사용)"; btn.style.opacity = ".4"; btn.addEventListener("click", () => toast(btn.title)); return; }
+  btn.addEventListener("click", () => {
+    if (MIC && MIC.btn === btn) { micStop(); return; }
+    micStop();
+    const rec = new SR(); rec.lang = "ko-KR"; rec.continuous = true; rec.interimResults = true;
+    const base = ta.value.replace(/\s+$/, ""), sep = base ? (base.endsWith("\n") ? "" : " ") : "";
+    let done = "";
+    rec.onresult = e => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) done += t; else interim += t; }
+      ta.value = base + sep + (done + interim).trim(); ta.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    rec.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("마이크 권한을 허용해 주세요 (주소창 왼쪽 자물쇠 → 마이크)"); else if (e.error !== "no-speech" && e.error !== "aborted") toast("음성 입력 오류: " + e.error); };
+    rec.onend = () => { if (MIC && MIC.rec === rec) { btn.classList.remove("on"); MIC = null; ta.focus(); } };
+    try { rec.start(); MIC = { rec, btn }; btn.classList.add("on"); toast("듣고 있어요 · 다 말하면 🎤를 한 번 더 누르세요"); } catch (e) { toast("음성 입력을 시작하지 못했어요"); }
+  });
+}
 async function sendChat(code, fid, taid){
+  micStop();
   const ta = $("#" + taid), files = ATT_FILES[fid] || [];
   let body = ta.value.trim(); if (!body && !files.length) return null;
   const btn = $("#" + fid).querySelector('button[type="submit"]'); if (btn) btn.disabled = true;
@@ -1630,7 +1658,7 @@ function teamHtml(){
   return `<div class="sec" id="teamSec"><div class="sec-h"><h2>채팅방</h2><span class="sub">방마다 참여자가 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. Grace가 직접 참여할지 물어봐요. 모든 대화는 회의록에 저장돼요</span></div>
     <div class="rooms">${list.map(r => { const n = r.code === ROOM_CUR ? 0 : roomUnread(r.code); return `<button class="pk" data-room-tab="${r.code}" aria-pressed="${r.code === ROOM_CUR}">${esc(r.title)}${n ? ` <span class="cnt">${n}</span>` : ""}</button>`; }).join("")}<button class="pk add" id="newRoom">+ 새 채팅방</button></div>
     <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span></div><div class="team-body" id="teamBody"></div>
-    <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
+    <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
 }
 function renderTeam(){
   const box = $("#teamBody"); if (!box) return;
