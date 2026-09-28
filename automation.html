@@ -173,6 +173,14 @@
     const notionPipeline = "https://app.notion.com/p/socraai/de9b71dae297413d8501583a29ce9920?v=577687fb0f3345f78d4adff84d3d2c82&source=copy_link";
     const guide = "https://app.notion.com/p/socraai/3e25bc5f630781fda8e4f48d9200d179";
     const canonicalFigmaSample = "https://www.figma.com/design/s6VFnZUWPYUzmT1AUUFkdw/%25EB%25B8%258C%25EB%259E%259C%25EB%2593%259C_RA-%25EC%25B9%25B4%25EB%2593%259C%25EB%2589%25B4%25EC%258A%25A4-%25ED%258F%25AC%25EB%25A7%25B7?node-id=92-47&p=f&t=LRJTR67ibHESJC9W-0";
+    document.addEventListener("click",function(e){
+      const link=e.target.closest("a[href]");
+      if(!link)return;
+      const href=link.getAttribute("href");
+      if(!href||href.startsWith("#"))return;
+      e.preventDefault();e.stopPropagation();
+      window.top.location.assign(link.href);
+    },true);
     document.querySelectorAll('a[href*="node-id=92-47"]').forEach(function(anchor){ anchor.href = canonicalFigmaSample; });
     const nodes = [
       {id:"research",x:95,y:117,num:"01",title:"후보 조사·1차 팩트체크",sub:"공식 원문 + 독립 출처 + 관심 근거 자동 검증",state:"ok",badge:"예약 활성",detail:"매주 최근 30일 교육 이슈를 조사하고, 공식 발표 원문·독립된 두 번째 출처·학부모 관심 근거를 모두 갖춘 후보만 Notion에 기록합니다.",points:["자동 검증: 발표일, 공식 사실, 서로 다른 HTTPS 출처 2개, 관심 근거와 조사 한계를 확인합니다.","필수 근거가 없거나 중복·오래된 주제이면 후보 생성 자체를 중단합니다.","사람은 검증 결과와 링크를 읽고 실제로 진행할 주제를 선택합니다."],links:[["주제 후보함","https://app.notion.com/p/socraai/d21afe4b8ca2413ebd825b0fb723ecf7?v=983786deff3d4ce4ab398bd8ba4be0e9"],["주간 조사 실행 내역","https://github.com/toonyoo2-spec/socraauto/actions/workflows/research.yml"],["운영 가이드",guide]]},
