@@ -286,6 +286,61 @@ tr.new td{background:var(--green-tint)}
 .desk.idle .char{display:none}
 .desk.kwan .table{background:#e6c48a}
 .sp.kw .bd{background:#fee500}.sp.kw .tag{color:#3c2a00}
+/* ===== 3D 사무실 (아이소메트릭) ===== */
+.iso{position:relative;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;--cs:1;--ls:1;background:radial-gradient(120% 90% at 50% 0%,#fbf8f2 0%,#efe9dc 70%)}
+.office.night .iso{background:radial-gradient(120% 90% at 50% 0%,#1f2740 0%,#121829 70%)}
+.iso-spacer{height:1px}
+.iso-floor{position:absolute;left:0;top:0;transform-origin:0 0;transform-style:preserve-3d}
+.iso-floor *{box-sizing:border-box}
+.ground{position:absolute;inset:-20px -110px -20px -20px;background:#e7e1d4;border-radius:28px;background-image:radial-gradient(rgba(0,0,0,.05) 1.5px,transparent 1.6px);background-size:28px 28px;box-shadow:0 0 0 14px #ddd5c4}
+.office.night .ground{background-color:#2a3248;box-shadow:0 0 0 14px #20273a}
+.floor3{position:absolute;background:var(--tone);border-radius:6px;background-image:linear-gradient(rgba(255,255,255,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px);background-size:30px 30px}
+.office.night .floor3{filter:none;background-color:#39425d}
+.flabel{position:absolute;left:18px;top:14px;font-size:22px;font-weight:800;letter-spacing:-.02em;color:rgba(40,36,30,.55)}
+.office.night .flabel{color:rgba(255,255,255,.55)}
+.b3{position:absolute;transform-style:preserve-3d;transform:translateZ(var(--z,0px))}
+.b3 i{position:absolute;left:0;top:0;transform-origin:0 0;display:block}
+.b3 .t{width:100%;height:100%;transform:translateZ(var(--h))}
+.b3 .s{top:100%;width:100%;height:var(--h);transform:rotateX(90deg)}
+.b3 .e{left:100%;width:var(--h);height:100%;transform:rotateY(-90deg)}
+.wall .t{background:#fbfaf7}.wall .s{background:#d9d2c3}.wall .e{background:#cfc7b6}
+.office.night .wall .t{background:#4a5474}.office.night .wall .s{background:#353d57}.office.night .wall .e{background:#2f364e}
+.rim .t{background:#fbfaf7}.rim .s{background:#ddd6c8}.rim .e{background:#d3cbbb}
+.office.night .rim .t{background:#4a5474}.office.night .rim .s,.office.night .rim .e{background:#353d57}
+.desk3 .t{background:#f4efe6;border-radius:4px}.desk3 .s{background:#d8cbb4}.desk3 .e{background:#c9baa0}
+.office.night .desk3 .t{background:#6b6454}.office.night .desk3 .s{background:#524c3f}.office.night .desk3 .e{background:#48423a}
+.mon3 .t{background:#3a3d46}.mon3 .s{background:#2b2e36;border:3px solid #3a3d46}.mon3 .e{background:#23262d}
+.mon3.working .s{background:#0f3b2a;box-shadow:0 0 18px 4px rgba(0,211,122,.55);background-image:linear-gradient(90deg,#00D37A 0 60%,transparent 60%),linear-gradient(90deg,#00D37A 0 40%,transparent 40%);background-size:100% 3px,100% 3px;background-position:4px 5px,4px 12px;background-repeat:no-repeat}
+.mon3.idle .s{background:#28413a}
+.chair3 .t{background:#9aa3b5;border-radius:6px}.chair3 .s{background:#7d8699}.chair3 .e{background:#737c8f}
+.table3 .t{background:#e9d3ae;border-radius:40px}.table3 .s{background:#cdb38a}.table3 .e{background:#c1a67c}
+.mat{position:absolute;width:68px;height:16px;border-radius:6px;background:#cfc3ab;opacity:.8}
+.mat.entry{width:80px;height:68px;background:#b9dcc8}
+.entry-sign,.plate3,.plant3{position:absolute;left:0;top:0;transform-origin:0 0}
+.entry-sign{background:#1f1f1f;color:#fff;font-size:15px;font-weight:800;padding:4px 12px;border-radius:999px;white-space:nowrap}
+.plant3 i{display:block;width:34px;height:52px;border-radius:50% 50% 10px 10px;background:radial-gradient(circle at 40% 35%,#8fd19e,#4a9e63 70%);box-shadow:0 22px 0 -10px #c79a6b}
+.plate3{display:grid;justify-items:center;gap:1px;background:rgba(255,255,255,.94);color:#141414;border:none;border-radius:999px;padding:4px 10px;font-family:inherit;box-shadow:0 6px 16px rgba(0,0,0,.14);cursor:pointer;white-space:nowrap}
+.plate3 b{font-size:13.5px;letter-spacing:-.02em;display:flex;align-items:center;gap:5px}
+.plate3 small{font-size:12px;color:#7a7466}
+.plate3 .lv{font-size:10px;padding:0 4px;background:#141414;color:#fff;border-radius:4px;margin-left:2px}
+.plate3 .dot{width:8px;height:8px;border-radius:50%;background:#bdb7ab;display:inline-block}
+.plate3.working .dot{background:var(--o-glow);box-shadow:0 0 0 3px rgba(0,211,122,.25)}.plate3.idle .dot{background:#f3b23f}.plate3.meeting .dot{background:#5aa2ff}
+.plate3.off{opacity:.62}
+.plate3 .qm{position:absolute;top:-12px;right:-10px;width:24px;height:24px;border-radius:50%;background:#ffd23f;color:#3c2a00;font-weight:900;font-size:15px;display:grid;place-items:center;box-shadow:0 2px 0 #c79a00;animation:hop .9s ease-in-out infinite}
+.plate3 .qm.msg{background:#fff;color:#141414;box-shadow:0 2px 0 #c9c6bd;animation:none}
+.say3{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);max-width:220px;width:max-content;white-space:normal;background:#141414;color:#fff;font-size:12.5px;line-height:1.35;padding:6px 10px;border-radius:10px;text-align:left}
+.say3::after{content:"";position:absolute;top:100%;left:50%;margin-left:-5px;border:5px solid transparent;border-top-color:#141414}
+.sprites3{position:absolute;left:0;top:0;transform-style:preserve-3d}
+.sp.sp3{margin:0;width:44px;height:62px;transform-origin:0 0}
+.sp3 .fig{transform-origin:50% 100%}
+.sp3 .hd{left:9px;width:26px;height:24px}.sp3 .hr{left:8px;width:28px}.sp3 .bd{left:7px;top:22px;width:30px;height:22px}
+.sp3 .lg{top:42px;height:14px}.sp3 .lg.l{left:13px}.sp3 .lg.r{right:13px}
+.sp3 .ck.l{left:12px}.sp3 .ck.r{right:12px}.sp3 .ck{top:14px}
+.sp3 .tag{top:27px;font-size:8.5px}
+.sp3.sit .fig{translate:0 6px}
+.iso .board{position:absolute;left:12px;top:12px;width:min(240px,46%);margin:0;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.12);border:none;border-radius:12px}
+@media(max-width:640px){.iso .board{display:none}}
+
 /* 카카오톡식 알림 */
 .noti-stack{position:fixed;top:12px;right:12px;z-index:80;display:grid;gap:8px;width:min(340px,calc(100% - 24px))}
 .noti{display:flex;gap:10px;align-items:center;background:rgba(40,40,40,.94);color:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.28);cursor:pointer;animation:notiIn .28s ease-out;border:none;text-align:left;font-family:inherit;width:100%}
@@ -988,15 +1043,6 @@ function officeHtml(){
   const minutes = k.h*60 + k.m; const nowPct = minutes / 1440 * 100;
   const evs = SHIFTS.map(([id, t, nm]) => { const [hh, mm] = t.split(":").map(Number); return `<span class="ev" style="left:${(hh*60+mm)/1440*100}%">${t} ${nm}</span>`; }).join("");
   const phase = running ? `${(last.kind === "night" ? "🌙 " : "")}${esc(last.title || "근무 중")}` : counts.idle ? "근무 시간 · 지시 대기 중" : night ? "퇴근 · 야간 근무 대기" : "업무 외 · 다음 근무 대기";
-  const desk = code => { if (code === "KWAN") return kwanDesk(); const a = AG[code]; if (!a) return ""; const p = pres(code); const {lv} = level(a); const q = pendingReq(code);
-    const t = p.status === "off" ? (p.clock_out ? `퇴근 ${fmtTime(p.clock_out)}` : "퇴근") : p.status === "meeting" ? "회의실에 있음" : p.status === "idle" ? "대기 중" : `출근 ${p.clock_in ? fmtTime(p.clock_in) : ""}`;
-    return `<button class="desk ${p.status}" data-agent="${code}" aria-label="${esc(a.name)} ${t}">
-      ${q ? `<span class="quest" title="채팅 요청 ${q}건">!</span>` : unreadMsg(code) ? `<span class="quest msg" title="남긴 말이 있어요">…</span>` : ""}
-      ${(p.status === "working" || (p.status === "idle" && code === "PM")) && p.activity ? `<span class="say">${esc(p.activity)}</span>` : ""}
-      <span class="monitor"></span><span class="table"></span>
-      <span class="who"><span class="chair"></span><span class="seat" data-seat="${code}"></span></span>
-      <span class="plate"><span class="lamp"></span>${esc(a.name)}<span class="lv">Lv.${lv}</span><small>${esc(a.role)}</small><small>${t}</small></span></button>`; };
-  const rooms = ROOMS.map(([area, nm, codes, cls, dx]) => `<div class="room ${cls}" style="grid-area:${area}"><span class="rl">${nm}</span><div class="desks">${codes.map(desk).join("")}</div><span class="dw" style="left:${dx}%"></span></div>`).join("");
   const inMeet = Object.keys(AG).filter(c => pres(c).status === "meeting");
   const steps = (last && (last.meta||{}).steps) || [];
   const board = steps.length ? `<div class="board"><b>${running ? "진행 중" : "지난 근무"} · ${esc(last.title || "")}</b><ol>${steps.map(x => `<li class="${x.s}"><i></i>${esc(STEP_LABEL[x.k] || x.k)}${x.n ? ` · <span style="color:#6f6d67">${esc(x.n)}</span>` : ""}</li>`).join("")}</ol></div>` : `<div class="board"><b>화이트보드</b><ol><li><i></i>다음 근무: ${nextShiftText()}</li></ol></div>`;
@@ -1011,11 +1057,8 @@ function officeHtml(){
       ${summonBusy() ? `<span class="hud-chip live"><span class="dot"></span>출근 요청 처리 중</span>` : `<button class="hud-chip go" id="summonBtn">출근시키기</button>`}</div>
       <div class="hud-r"><span class="seg" role="group" aria-label="야간 근무 강도">${[["off","야간 끄기"],["light","가볍게"],["normal","보통"],["bold","과감"]].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${mode === v}">${l}</button>`).join("")}</span></div></div>
     <div class="dayline"><span class="bar"></span>${evs}<span class="now" style="left:${nowPct}%"></span></div>
-    <div class="map">
-      <div class="room meetroom" style="grid-area:meet"><span class="rl">회의실</span><span class="dw" style="left:50%"></span><div class="tablewrap"><div class="tablebig"></div>${MSLOTS.map(([x,y], i) => `<span class="mslot" data-mslot="${i}" style="left:${x}%;top:${y}%"></span>`).join("")}</div>${board}</div>
-      ${rooms}
-      <div class="door" id="door"><span>입구</span></div><div class="sprites" id="sprites"></div>
-    </div></div></div>`;
+    ${isoHtml(board)}
+    </div></div>`;
 }
 function kwanDesk(){ const on = kwanIn();
   const t = on ? `출근 ${fmtTime(ATT.clock_in)}` : ATT && ATT.clock_out ? `퇴근 ${fmtTime(ATT.clock_out)}` : "아직 출근 전";
@@ -1035,8 +1078,7 @@ function bindOffice(){
   requestAnimationFrame(() => placeSprites(true));
   const sb2 = $("#summonBtn"); if (sb2) sb2.addEventListener("click", openSummon);
   const ab = $("#attBtn"); if (ab) ab.addEventListener("click", toggleAttendance);
-  const kd = $("#kwanDesk"); if (kd) kd.addEventListener("click", toggleAttendance);
-  document.querySelectorAll(".desk[data-agent]").forEach(b => b.addEventListener("click", () => openPop(b.dataset.agent)));
+  document.querySelectorAll(".plate3[data-agent]").forEach(b => b.addEventListener("click", () => b.dataset.agent === "KWAN" ? toggleAttendance() : openPop(b.dataset.agent)));
   const rb = $("#reqBtn"); if (rb) rb.addEventListener("click", () => { const c = Object.keys(AG).find(x => pendingReq(x)); if (c) openPop(c); });
   const mb = $("#msgBtn"); if (mb) mb.addEventListener("click", () => { const c = Object.keys(AG).find(x => unreadMsg(x)); if (c) openPop(c); });
   document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", async () => {
@@ -1049,113 +1091,183 @@ function refreshOffice(){ const sec = $("#officeSec"); if (!sec) return; const k
 setInterval(() => { const c = $("#kclock"); if (c) { const k = kstNow(); c.textContent = `${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}`; } }, 20000);
 
 
-// ===== 걸어 다니는 캐릭터 =====
-// 사무실 평면을 격자로 보고, 방 벽·책상·회의 탁자를 피해 복도와 방문으로만 걷는다(A*).
-// 사람마다 선호하는 길(비용 가중치), 걸음 속도, 출발 시각이 달라 동선이 모두 다르다.
-const MSLOTS = [[10,-8],[30,-18],[50,-22],[70,-18],[90,-8],[10,150],[30,160],[50,164],[70,160],[90,150],[-6,70],[106,70]];
+// ===== 3D 사무실 (아이소메트릭) =====
+// 평면도는 좌표 데이터로 고정한다(단위: 평면 px). 화면 크기가 바뀌어도 동선이 그대로라 걷는 길이 깨지지 않는다.
+// 방은 모두 가운데 복도를 향해 문이 나 있고, 입구는 복도 오른쪽 끝이다. 사람은 A*로 복도와 문만 지나 자기 자리로 간다.
+const ISO = { W:1400, H:820, C:0.7071 };
+const ROOMS3 = [
+  {id:"yk",    name:"검증실 · KWAN",     x:40,   y:40,  w:300, h:300, desks:["KWAN","YK"],     door:["s",150], tone:"#ebe7ff"},
+  {id:"meet",  name:"회의실",            x:370,  y:40,  w:490, h:300, desks:[],                door:["s",245], tone:"#fff3df"},
+  {id:"ops",   name:"비서실",            x:890,  y:40,  w:160, h:300, desks:["PM"],            door:["s",80],  tone:"#e9f4ff"},
+  {id:"scout", name:"스카우트팀",        x:1080, y:40,  w:280, h:300, desks:["SS","LS"],       door:["s",140], tone:"#ffe9f1"},
+  {id:"cre",   name:"크리에이티브팀",    x:40,   y:480, w:480, h:300, desks:["AE","AD","PD"],  door:["n",240], tone:"#e6f0ff"},
+  {id:"con",   name:"콘텐츠팀",          x:550,  y:480, w:280, h:300, desks:["WR","CP"],       door:["n",140], tone:"#f1eaff"},
+  {id:"data",  name:"데이터·인사이트팀", x:860,  y:480, w:500, h:300, desks:["GR","IN","SO"],  door:["n",250], tone:"#e5f7ee"},
+];
+const DOOR3 = {x:ISO.W - 12, y:410}, OUTSIDE3 = {x:ISO.W + 70, y:410};
+const TABLE3 = {x:470, y:150, w:290, h:100, z:26};
+const DESK = {w:92, d:46, z:30};
+// 책상 위치와 의자(앉는 자리)
+const DESKS3 = {}, SEATS3 = {};
+ROOMS3.forEach(r => r.desks.forEach((code, i) => {
+  const cx = r.x + r.w * (i + 1) / (r.desks.length + 1), cy = r.y + r.h * 0.42;
+  DESKS3[code] = {x: cx - DESK.w / 2, y: cy - DESK.d / 2, room: r.id};
+  SEATS3[code] = {x: cx, y: cy + DESK.d / 2 + 26};
+}));
+const MSLOTS3 = [0,1,2,3,4].map(i => ({x: TABLE3.x + 30 + i * 57.5, y: TABLE3.y - 28}))
+  .concat([0,1,2,3,4].map(i => ({x: TABLE3.x + 30 + i * 57.5, y: TABLE3.y + TABLE3.h + 34})))
+  .concat([{x: TABLE3.x - 30, y: TABLE3.y + 55}, {x: TABLE3.x + TABLE3.w + 30, y: TABLE3.y + 55}]);
+const BB = "rotateZ(-45deg) rotateX(-60deg)"; // 화면을 바라보게 세우는 변환(캐릭터·이름표)
 const HAIR = {YK:"#1f1f1f",AE:"#3a2a20",AD:"#6b3f2a",PD:"#222",WR:"#8a5a3c",CP:"#2d2d2d",GR:"#5a3b28",IN:"#1c1c1c",SO:"#a0522d",PM:"#3b2b1f",SS:"#c0392b",LS:"#2c3e50",KWAN:"#111"};
-let SPOS = {}, SUMMON = null;
+let SPOS = {}, SUMMON = null, ISO_S = 0.7;
 function summonBusy(){ return SUMMON && ["queued","fired","running"].includes(SUMMON.status) && Date.now() - new Date(SUMMON.requested_at).getTime() < 25*60e3; }
-function spriteMarks(code){ return code === "KWAN" ? "" : pendingReq(code) ? `<span class="q">!</span>` : unreadMsg(code) ? `<span class="q msg">…</span>` : ""; }
-function spriteHtml(code){ return `<div class="sp${code === "KWAN" ? " kw" : ""}" data-sp="${code}" hidden style="--team:${TEAM_COLOR[code]||"#8a8780"};--hair:${HAIR[code]||"#333"}" title="${esc(code === "KWAN" ? "KWAN" : AG[code]?.name || code)}"><div class="fig"><span class="lg l"></span><span class="lg r"></span><span class="bd"></span><span class="hd"></span><span class="hr"></span><span class="ck l"></span><span class="ck r"></span></div><span class="tag">${esc(code === "KWAN" ? "나" : lbl(code))}</span><span class="mk">${spriteMarks(code)}</span></div>`; }
-function anchorOf(el, base){ const r = el.getBoundingClientRect(), b = base.getBoundingClientRect(); return {x: r.left - b.left + r.width/2, y: r.top - b.top + r.height/2}; }
-const hashN = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; };
-
-const CELL = 8;
-function buildGrid(map){
-  const b = map.getBoundingClientRect(); const W = Math.ceil(b.width / CELL), H = Math.ceil(b.height / CELL);
-  const g = new Uint8Array(W * H); // 0 통로, 1 막힘, 2 지나갈 수 있지만 피하고 싶음
-  const rel = el => { const r = el.getBoundingClientRect(); return {l:r.left - b.left, t:r.top - b.top, r:r.right - b.left, b:r.bottom - b.top}; };
-  const mark = (R, v, pad = 0) => { const x0 = Math.max(0, Math.floor((R.l - pad) / CELL)), x1 = Math.min(W - 1, Math.floor((R.r + pad) / CELL)), y0 = Math.max(0, Math.floor((R.t - pad) / CELL)), y1 = Math.min(H - 1, Math.floor((R.b + pad) / CELL));
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (v === 0 || g[y*W + x] < v || (v === 2 && g[y*W + x] === 0)) g[y*W + x] = v; };
-  map.querySelectorAll(".room").forEach(room => {
-    const R = rel(room); mark(R, 1, 4);                                   // 벽
-    mark({l:R.l + 8, t:R.t + 8, r:R.r - 8, b:R.b - 8}, 0);                // 방 안은 걸을 수 있다
-    room.querySelectorAll(":scope > .dw").forEach(d => { const D = rel(d); mark({l:D.l + 4, t:D.t - 14, r:D.r - 4, b:D.b + 14}, 0); }); // 문
-  });
-  map.querySelectorAll(".monitor,.table,.tablebig,.board").forEach(el => mark(rel(el), 1, 3));
-  map.querySelectorAll(".plate").forEach(el => { const R = rel(el); for (let y = Math.floor(R.t / CELL); y <= Math.floor(R.b / CELL); y++) for (let x = Math.floor(R.l / CELL); x <= Math.floor(R.r / CELL); x++) if (x >= 0 && y >= 0 && x < W && y < H && g[y*W + x] === 0) g[y*W + x] = 2; });
-  return {g, W, H};
+const box3 = (x, y, w, d, h, cls, z = 0) => `<div class="b3 ${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px;--h:${h}px;--z:${z}px"><i class="t"></i><i class="s"></i><i class="e"></i></div>`;
+function isoHtml(board){
+  const pres = code => code === "KWAN" ? {status: kwanIn() ? "idle" : "off"} : (PRES[code] || {status:"off"});
+  const rooms = ROOMS3.map(r => {
+    const [side, at] = r.door; const dx = r.x + at - 34;
+    // 뒤쪽 벽(북·서)은 높게, 앞쪽(남·동)은 낮은 턱으로 — 안이 들여다보이는 컷어웨이 방식
+    const walls = [
+      side === "n" ? box3(r.x, r.y - 8, at - 34, 8, 56, "wall") + box3(dx + 68, r.y - 8, r.w - at - 34, 8, 56, "wall") : box3(r.x, r.y - 8, r.w, 8, 56, "wall"),
+      box3(r.x - 8, r.y - 8, 8, r.h + 8, 56, "wall"),
+      side === "s" ? box3(r.x, r.y + r.h, at - 34, 6, 10, "rim") + box3(dx + 68, r.y + r.h, r.w - at - 34, 6, 10, "rim") : box3(r.x, r.y + r.h, r.w, 6, 10, "rim"),
+      box3(r.x + r.w, r.y - 8, 6, r.h + 14, 10, "rim"),
+    ].join("");
+    const mat = `<div class="mat" style="left:${dx}px;top:${side === "s" ? r.y + r.h - 4 : r.y - 12}px"></div>`;
+    const desks = r.desks.map(code => { const d = DESKS3[code]; const st = pres(code).status;
+      return box3(d.x, d.y, DESK.w, DESK.d, DESK.z, "desk3") + box3(d.x + DESK.w / 2 - 22, d.y + 8, 44, 6, 28, "mon3 " + st, DESK.z) +
+        box3(SEATS3[code].x - 14, SEATS3[code].y - 8, 28, 22, 12, "chair3"); }).join("");
+    return `<div class="floor3" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;--tone:${r.tone}"><span class="flabel">${esc(r.name)}</span></div>${walls}${mat}${desks}`;
+  }).join("");
+  const table = box3(TABLE3.x, TABLE3.y, TABLE3.w, TABLE3.h, TABLE3.z, "table3");
+  const plants = [[20, 400], [ISO.W - 60, 360], [ISO.W - 60, 460], [360, 780]].map(([x, y]) => `<div class="plant3" style="transform:translate3d(${x}px,${y}px,0) ${BB} translate(-50%,-100%)"><i></i></div>`).join("");
+  const plates = Object.keys(DESKS3).map(code => {
+    const d = DESKS3[code]; const p = pres(code); const q = code !== "KWAN" && pendingReq(code); const msg = code !== "KWAN" && !q && unreadMsg(code);
+    const a = code === "KWAN" ? {name:"KWAN", role:"나"} : AG[code]; if (!a) return "";
+    const st = p.status === "working" ? "근무" : p.status === "idle" ? (code === "PM" ? "당직" : "대기") : p.status === "meeting" ? "회의" : "퇴근";
+    const say = (p.status === "working" || (p.status === "idle" && code === "PM")) && p.activity ? `<span class="say3">${esc(p.activity)}</span>` : "";
+    return `<button class="plate3 ${p.status}" data-agent="${code}" style="transform:translate3d(${d.x + DESK.w / 2}px,${d.y + 4}px,58px) ${BB} scale(var(--ls)) translate(-50%,-100%)" aria-label="${esc(a.name)} ${st}" title="${esc(a.name)} · ${esc(a.role || "")} · ${st}">${say}${q ? `<span class="qm">!</span>` : msg ? `<span class="qm msg">…</span>` : ""}<b><i class="dot"></i>${esc(a.name)}</b></button>`;
+  }).join("");
+  return `<div class="iso" id="iso"><div class="iso-spacer" id="isoSpacer"></div><div class="iso-floor" id="isoFloor" style="width:${ISO.W}px;height:${ISO.H}px">
+      <div class="ground"></div>${rooms}${table}${plants}
+      <div class="mat entry" style="left:${DOOR3.x - 40}px;top:${DOOR3.y - 34}px"></div>
+      <div class="entry-sign" style="transform:translate3d(${DOOR3.x + 10}px,${DOOR3.y - 60}px,50px) ${BB} scale(var(--ls)) translate(-50%,-100%)">입구</div>
+      ${plates}<div class="sprites3" id="sprites"></div>
+    </div>${board}</div>`;
 }
-function findPath(grid, from, to, code){
-  const {g, W, H} = grid; const N = W * H;
+// 화면 폭에 맞춰 3D 평면 크기를 맞춘다(평면 좌표는 그대로)
+function layoutIso(){
+  const wrap = $("#iso"), floor = $("#isoFloor"); if (!wrap || !floor) return;
+  const bw = (ISO.W + ISO.H) * ISO.C, bh = bw * 0.5;
+  // 좁은 화면에서는 너무 작아지지 않게 두고 좌우로 밀어서 본다
+  const fit = (wrap.clientWidth - 16) / bw, s = Math.min(0.9, Math.max(0.44, fit)); ISO_S = s;
+  const sp = $("#isoSpacer"); if (sp) sp.style.width = (bw * s + 16) + "px";
+  if (s > fit && !wrap.dataset.centered) { wrap.dataset.centered = "1"; requestAnimationFrame(() => { wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2; }); }
+  const top = 90 * s;
+  floor.style.transform = `translate(${ISO.H * ISO.C * s + 8}px, ${top}px) scale(${s}) rotateX(60deg) rotateZ(45deg)`;
+  wrap.style.height = (bh * s + top + 40 * s + 20) + "px";
+  const cs = Math.min(1.6, Math.max(1, 0.62 / s)), ls = Math.min(1.8, Math.max(1, 0.78 / s));
+  wrap.style.setProperty("--cs", cs); wrap.style.setProperty("--ls", ls);
+}
+window.addEventListener("resize", () => layoutIso());
+
+// ---- 사람 ----
+function spriteMarks(code){ return code === "KWAN" ? "" : pendingReq(code) ? `<span class="q">!</span>` : unreadMsg(code) ? `<span class="q msg">…</span>` : ""; }
+function spriteHtml(code){ return `<div class="sp sp3${code === "KWAN" ? " kw" : ""}" data-sp="${code}" hidden style="--team:${TEAM_COLOR[code]||"#8a8780"};--hair:${HAIR[code]||"#333"}" title="${esc(code === "KWAN" ? "KWAN" : AG[code]?.name || code)}"><div class="fig"><span class="lg l"></span><span class="lg r"></span><span class="bd"></span><span class="hd"></span><span class="hr"></span><span class="ck l"></span><span class="ck r"></span></div><span class="tag">${esc(code === "KWAN" ? "나" : lbl(code))}</span><span class="mk">${spriteMarks(code)}</span></div>`; }
+const spT = p => `translate3d(${p.x}px,${p.y}px,0) ${BB} scale(var(--cs)) translate(-50%,-100%)`;
+const hashN = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; };
+// 평면 격자(10px 칸): 벽·책상·탁자는 막힘, 문은 열림
+const CELL = 10; let GRID3 = null;
+function grid3(){
+  if (GRID3) return GRID3;
+  const W = Math.ceil((ISO.W + 90) / CELL), H = Math.ceil(ISO.H / CELL), g = new Uint8Array(W * H);
+  const mark = (x0, y0, x1, y1, v) => { for (let y = Math.max(0, Math.floor(y0 / CELL)); y <= Math.min(H - 1, Math.floor(y1 / CELL)); y++) for (let x = Math.max(0, Math.floor(x0 / CELL)); x <= Math.min(W - 1, Math.floor(x1 / CELL)); x++) g[y*W + x] = v; };
+  ROOMS3.forEach(r => {
+    mark(r.x - 12, r.y - 12, r.x + r.w + 10, r.y + r.h + 10, 1);        // 벽 두께 포함 전체를 막고
+    mark(r.x + 6, r.y + 6, r.x + r.w - 6, r.y + r.h - 6, 0);           // 안쪽은 열고
+    const [side, at] = r.door; const dx = r.x + at;
+    if (side === "s") mark(dx - 26, r.y + r.h - 12, dx + 26, r.y + r.h + 14, 0); else mark(dx - 26, r.y - 14, dx + 26, r.y + 12, 0);
+  });
+  Object.values(DESKS3).forEach(d => mark(d.x - 6, d.y - 6, d.x + DESK.w + 6, d.y + DESK.d + 6, 1));
+  mark(TABLE3.x - 8, TABLE3.y - 8, TABLE3.x + TABLE3.w + 8, TABLE3.y + TABLE3.h + 8, 1);
+  return GRID3 = {g, W, H};
+}
+function findPath(from, to, code){
+  const {g, W, H} = grid3(); const N = W * H;
   const cellOf = p => { let cx = Math.max(0, Math.min(W - 1, Math.floor(p.x / CELL))), cy = Math.max(0, Math.min(H - 1, Math.floor(p.y / CELL)));
-    if (g[cy*W + cx] !== 1) return cy*W + cx;
-    for (let r = 1; r < 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const x = cx + dx, y = cy + dy; if (x >= 0 && y >= 0 && x < W && y < H && g[y*W + x] !== 1) return y*W + x; }
+    if (!g[cy*W + cx]) return cy*W + cx;
+    for (let r = 1; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const x = cx + dx, y = cy + dy; if (x >= 0 && y >= 0 && x < W && y < H && !g[y*W + x]) return y*W + x; }
     return cy*W + cx; };
   const s = cellOf(from), t = cellOf(to); if (s === t) return [from, to];
   const tx = t % W, ty = (t / W) | 0;
   const G = new Float32Array(N).fill(Infinity), P = new Int32Array(N).fill(-1), D = new Int8Array(N).fill(-1), closed = new Uint8Array(N);
-  // 사람마다 다른 "선호 지도": 5x5칸 단위로 조금씩 다른 비용
-  const pref = i => hashN(code + ":" + (((i % W) / 5) | 0) + ":" + (((i / W) | 0) / 5 | 0)) * 1.6;
+  const pref = i => hashN(code + ":" + (((i % W) / 6) | 0) + ":" + ((((i / W) | 0) / 6) | 0)) * 1.4; // 사람마다 다른 선호 길
   const heap = []; const push = (f, i) => { heap.push([f, i]); let k = heap.length - 1; while (k) { const q = (k - 1) >> 1; if (heap[q][0] <= heap[k][0]) break; [heap[q], heap[k]] = [heap[k], heap[q]]; k = q; } };
   const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let k = 0; for (;;) { const l = 2*k + 1, r = l + 1; let m = k; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === k) break; [heap[m], heap[k]] = [heap[k], heap[m]]; k = m; } } return top; };
   G[s] = 0; push(0, s); const DIR = [[1,0],[-1,0],[0,1],[0,-1]]; let guard = 0;
-  while (heap.length && guard++ < 60000) {
+  while (heap.length && guard++ < 40000) {
     const [, i] = pop(); if (closed[i]) continue; closed[i] = 1; if (i === t) break;
     const x = i % W, y = (i / W) | 0;
     for (let d = 0; d < 4; d++) { const nx = x + DIR[d][0], ny = y + DIR[d][1]; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const j = ny*W + nx;
-      if (g[j] === 1 && j !== t) continue;
-      const c = G[i] + 1 + (g[j] === 2 ? 4 : 0) + pref(j) + (D[i] !== -1 && D[i] !== d ? 1.2 : 0);
+      if (g[j] && j !== t) continue;
+      const c = G[i] + 1 + pref(j) + (D[i] !== -1 && D[i] !== d ? 1.5 : 0);
       if (c < G[j]) { G[j] = c; P[j] = i; D[j] = d; push(c + Math.abs(nx - tx) + Math.abs(ny - ty), j); } }
   }
-  if (P[t] === -1) return [from, {x: from.x, y: to.y}, to];
+  if (P[t] === -1) return [from, to];
   const cells = []; for (let i = t; i !== -1; i = P[i]) cells.push(i); cells.reverse();
-  const pts = [from]; let lastDir = null;
-  for (let k = 1; k < cells.length - 1; k++) { const a = cells[k-1], c = cells[k], n = cells[k+1]; const d1 = c - a, d2 = n - c; if (d1 !== d2) pts.push({x:(c % W) * CELL + CELL/2, y:((c / W) | 0) * CELL + CELL/2}); }
+  const pts = [from];
+  for (let k = 1; k < cells.length - 1; k++) { const a = cells[k-1], c = cells[k], n = cells[k+1]; if (c - a !== n - c) pts.push({x:(c % W) * CELL + CELL/2, y:((c / W) | 0) * CELL + CELL/2}); }
   pts.push(to); return pts;
 }
 function walkTo(el, pts, speed, delay, onDone){
   el.classList.add("walk"); let i = 0, cancelled = false;
   const step = () => {
-    if (cancelled) return; if (i >= pts.length - 1) { el.classList.remove("walk", "flip"); onDone(); return; }
+    if (cancelled) return; if (i >= pts.length - 1) { el.classList.remove("walk"); onDone(); return; }
     const a = pts[i], b = pts[i + 1]; const len = Math.hypot(b.x - a.x, b.y - a.y);
-    if (Math.abs(b.x - a.x) > 1) el.classList.toggle("flip", b.x < a.x);
-    const an = el.animate([{transform:`translate(${a.x}px,${a.y}px)`},{transform:`translate(${b.x}px,${b.y}px)`}], {duration: Math.max(60, len / speed * 1000), easing:"linear", fill:"forwards"});
-    el.style.transform = `translate(${b.x}px,${b.y}px)`; i++; an.onfinish = () => { an.cancel(); step(); };
+    const sx = (b.x - a.x) - (b.y - a.y); if (Math.abs(sx) > 1) el.classList.toggle("flip", sx < 0); // 화면 기준 왼쪽으로 가면 뒤집기
+    const an = el.animate([{transform: spT(a)}, {transform: spT(b)}], {duration: Math.max(60, len / speed * 1000), easing:"linear", fill:"forwards"});
+    el.style.transform = spT(b); i++; an.onfinish = () => { an.cancel(); step(); };
   };
   const tm = setTimeout(step, delay); return () => { cancelled = true; clearTimeout(tm); };
 }
 function placeSprites(animate){
-  const map = document.querySelector(".map"), layer = $("#sprites"), door = $("#door"); if (!map || !layer || !door) return;
-  const dp = anchorOf(door, map); const doorPt = {x: dp.x, y: dp.y + 22};
-  const codes = [...Object.keys(AG), "KWAN"]; let grid = null, order = 0;
+  layoutIso();
+  const layer = $("#sprites"); if (!layer) return;
+  const codes = [...Object.keys(AG), "KWAN"]; let order = 0;
   codes.forEach(code => {
     let el = layer.querySelector(`[data-sp="${code}"]`);
     if (!el) { layer.insertAdjacentHTML("beforeend", spriteHtml(code)); el = layer.lastElementChild; el.addEventListener("click", () => code === "KWAN" ? toggleAttendance() : openPop(code)); }
     else { const mk = el.querySelector(".mk"); const h = spriteMarks(code); if (mk.innerHTML !== h) mk.innerHTML = h; }
     const st = code === "KWAN" ? (kwanIn() ? "idle" : "off") : (PRES[code]||{}).status || "off";
-    let place = "door", tgt = doorPt;
-    if (st === "working" || st === "idle") { const s = map.querySelector(`[data-seat="${code}"]`); if (s) { place = "seat"; tgt = anchorOf(s, map); } }
-    if (st === "meeting") { const i = Object.keys(AG).indexOf(code); const s = map.querySelector(`[data-mslot="${i % MSLOTS.length}"]`); if (s) { place = "meet"; tgt = anchorOf(s, map); } }
+    let place = "door", tgt = DOOR3;
+    if ((st === "working" || st === "idle") && SEATS3[code]) { place = "seat"; tgt = SEATS3[code]; }
+    if (st === "meeting") { const i = Object.keys(AG).indexOf(code); place = "meet"; tgt = MSLOTS3[i % MSLOTS3.length]; }
     const prev = SPOS[code];
     const mode = () => { el.classList.toggle("sit", place !== "door"); el.classList.toggle("work", place === "seat" && st === "working"); el.classList.toggle("meet", place === "meet"); };
-    const snap = () => { if (prev && prev.stop) prev.stop(); el.getAnimations().forEach(a => a.cancel()); el.classList.remove("walk", "flip"); el.style.transform = `translate(${tgt.x}px,${tgt.y}px)`; el.style.opacity = ""; el.hidden = place === "door"; mode(); SPOS[code] = {...tgt, place}; };
+    const snap = () => { if (prev && prev.stop) prev.stop(); el.getAnimations().forEach(a => a.cancel()); el.classList.remove("walk"); el.style.transform = spT(tgt); el.style.opacity = ""; el.hidden = place === "door"; mode(); SPOS[code] = {...tgt, place}; };
     if (!prev || !animate) return snap();
     if (prev.place === place) { if (prev.walking) return; if (Math.hypot(prev.x - tgt.x, prev.y - tgt.y) > 2) snap(); return; }
     if (prev.walking && prev.goal === place) return;
     if (prev.stop) prev.stop();
-    grid = grid || buildGrid(map);
-    const from = prev.place === "door" ? doorPt : {x: prev.x, y: prev.y};
-    const pts = findPath(grid, from, tgt, code);
-    // 문 밖에서 들어오거나 문 밖으로 나갈 때는 입구 바깥까지 한 걸음 더
-    if (prev.place === "door") pts.unshift({x: doorPt.x + (hashN(code) - .5) * 30, y: doorPt.y + 24});
-    if (place === "door") pts.push({x: doorPt.x + (hashN(code + "o") - .5) * 30, y: doorPt.y + 24});
-    const speed = 170 + hashN(code + "v") * 80; // px/s
+    const from = prev.place === "door" ? DOOR3 : {x: prev.x, y: prev.y};
+    const pts = findPath(from, tgt, code);
+    const lane = (hashN(code + "l") - .5) * 40; // 입구에서도 사람마다 조금씩 다른 줄로
+    if (prev.place === "door") pts.unshift({x: OUTSIDE3.x, y: OUTSIDE3.y + lane});
+    if (place === "door") pts.push({x: OUTSIDE3.x, y: OUTSIDE3.y + lane});
+    const speed = 190 + hashN(code + "v") * 90;
     const delay = Math.min(3000, order++ * (250 + hashN(code + "d") * 350));
     el.classList.remove("sit", "work", "meet");
-    if (prev.place === "door") { el.style.transform = `translate(${pts[0].x}px,${pts[0].y}px)`; el.style.opacity = "0"; setTimeout(() => { el.hidden = false; el.animate([{opacity:0},{opacity:1}], {duration:300, fill:"forwards"}).onfinish = e => { el.style.opacity = ""; e.target.cancel(); }; }, delay); }
+    if (prev.place === "door") { el.style.transform = spT(pts[0]); el.style.opacity = "0"; setTimeout(() => { el.hidden = false; el.animate([{opacity:0},{opacity:1}], {duration:300, fill:"forwards"}).onfinish = e => { el.style.opacity = ""; e.target.cancel(); }; }, delay); }
     else el.hidden = false;
     const rec = {x: tgt.x, y: tgt.y, place: prev.place, goal: place, walking: true};
     rec.stop = walkTo(el, pts, speed, delay, () => {
       SPOS[code] = {...tgt, place}; mode();
       if (place === "door") { el.animate([{opacity:1},{opacity:0}], {duration:350, fill:"forwards"}).onfinish = e => { el.hidden = true; e.target.cancel(); }; }
-      setTimeout(() => placeSprites(true), 50); // 걷는 동안 바뀐 상태가 있으면 다시 반영
+      setTimeout(() => placeSprites(true), 50);
     });
     SPOS[code] = rec;
   });
 }
-window.addEventListener("resize", () => placeSprites(false));
 // 대기 중인 캐릭터가 가끔 기지개를 켠다
 setInterval(() => { const els = [...document.querySelectorAll(".sp.sit:not(.walk)")]; if (!els.length) return; const el = els[Math.floor(Math.random()*els.length)]; el.classList.add("hop"); setTimeout(() => el.classList.remove("hop"), 800); }, 9000);
 
