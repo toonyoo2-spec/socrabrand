@@ -434,7 +434,7 @@ tr.new td{background:var(--green-tint)}
 .dr-top{display:flex;gap:12px;align-items:center}
 .dr-top .av{width:44px;height:44px;font-size:12px}
 .xp{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden}.xp i{display:block;height:100%;background:var(--green)}
-.dr-body{overflow-y:auto;background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start}
+.dr-body{overflow-y:auto;background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .dr-foot{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
 .dr-foot textarea{flex:1;min-height:42px;resize:none;font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:10px;padding:8px 10px}
 .x{background:none;border:none;font-size:22px;line-height:1;margin-left:auto;color:var(--muted)}
@@ -467,7 +467,9 @@ tr.new td{background:var(--green-tint)}
 .room-mem .sub{margin-left:6px}
 .sheet .in{font-family:inherit;font-size:15px;border:1px solid var(--border);border-radius:10px;padding:10px 12px}
 .team{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
-.team-body{background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start;height:min(78vh,860px);min-height:420px;overflow-y:auto;resize:vertical}
+.team-body{background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start;height:min(78vh,860px);min-height:420px;overflow-y:auto;resize:vertical;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* 휴대폰: 채팅창 안에서만 스크롤되게(페이지로 번지지 않게), 모서리 크기조절 손잡이 제거, 주소창이 접혀도 높이가 흔들리지 않게 */
+@media (pointer:coarse), (max-width:720px){ .team-body{resize:none;height:calc(100svh - 250px);min-height:320px;max-height:none} }
 .team .dr-foot{background:var(--surface)}
 .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
 .note{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:grid;gap:6px;font-size:13.5px;line-height:1.55}
@@ -1626,24 +1628,33 @@ function bindAttach(fid){
 }
 // ===== 🎤 말로 입력: 브라우저 음성 인식(한국어)으로 입력창을 채운다. 보내기는 KWAN이 확인 후 직접 =====
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+// 휴대폰(안드로이드·아이폰)은 연속 인식에서 같은 문장을 누적해 여러 번 보내는 문제가 있어, 한 문장씩 짧게 듣고 자동으로 다시 시작한다
+const MIC_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 let MIC = null; // { rec, btn }
-function micStop(){ if (MIC) { try { MIC.rec.stop(); } catch (e) {} MIC.btn.classList.remove("on"); MIC = null; } }
+function micStop(){ if (MIC) { const m = MIC; MIC = null; try { m.rec.stop(); } catch (e) {} m.btn.classList.remove("on"); } }
 function bindMic(f){
   const btn = f.querySelector(".mic-btn"), ta = f.querySelector("textarea"); if (!btn || !ta) return;
   if (!SR) { btn.title = "이 브라우저는 음성 입력을 지원하지 않아요 (크롬·사파리에서 사용)"; btn.style.opacity = ".4"; btn.addEventListener("click", () => toast(btn.title)); return; }
   btn.addEventListener("click", () => {
     if (MIC && MIC.btn === btn) { micStop(); return; }
     micStop();
-    const rec = new SR(); rec.lang = "ko-KR"; rec.continuous = true; rec.interimResults = true;
+    const rec = new SR(); rec.lang = "ko-KR"; rec.continuous = !MIC_MOBILE; rec.interimResults = true;
     const base = ta.value.replace(/\s+$/, ""), sep = base ? (base.endsWith("\n") ? "" : " ") : "";
-    let done = "";
+    let committed = "", seg = ""; // committed: 앞서 끝난 문장들, seg: 지금 듣는 문장
+    const show = () => { ta.value = base + sep + [committed, seg].filter(Boolean).join(" ").replace(/\s+/g, " ").trim(); ta.dispatchEvent(new Event("input", { bubbles: true })); };
     rec.onresult = e => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) done += t; else interim += t; }
-      ta.value = base + sep + (done + interim).trim(); ta.dispatchEvent(new Event("input", { bubbles: true }));
+      // 매번 결과 목록 전체로 다시 만든다(이어 붙이지 않음) — 같은 문장이 반복돼 쌓이는 것 방지
+      if (MIC_MOBILE) { const r = e.results[e.results.length - 1]; seg = r ? r[0].transcript.trim() : ""; }
+      else { let t = ""; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; seg = t.trim(); }
+      show();
     };
-    rec.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("마이크 권한을 허용해 주세요 (주소창 왼쪽 자물쇠 → 마이크)"); else if (e.error !== "no-speech" && e.error !== "aborted") toast("음성 입력 오류: " + e.error); };
-    rec.onend = () => { if (MIC && MIC.rec === rec) { btn.classList.remove("on"); MIC = null; ta.focus(); } };
+    rec.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { toast("마이크 권한을 허용해 주세요 (주소창 왼쪽 자물쇠 → 마이크)"); micStop(); } else if (e.error !== "no-speech" && e.error !== "aborted") toast("음성 입력 오류: " + e.error); };
+    rec.onend = () => {
+      if (MIC && MIC.rec === rec) {
+        if (MIC_MOBILE) { if (seg) { committed = [committed, seg].filter(Boolean).join(" "); seg = ""; } show(); try { rec.start(); return; } catch (x) {} }
+        btn.classList.remove("on"); MIC = null; ta.focus();
+      }
+    };
     try { rec.start(); MIC = { rec, btn }; btn.classList.add("on"); toast("듣고 있어요 · 다 말하면 🎤를 한 번 더 누르세요"); } catch (e) { toast("음성 입력을 시작하지 못했어요"); }
   });
 }
@@ -1715,7 +1726,7 @@ function teamHtml(){
 }
 function renderTeam(){
   const box = $("#teamBody"); if (!box) return;
-  const near = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  const near = box.scrollHeight - box.scrollTop - box.clientHeight < 80, prevTop = box.scrollTop;
   const today = kstNow().date;
   const th = CHAT.filter(c => c.code === ROOM_CUR);
   let lastDay = "";
@@ -1723,7 +1734,7 @@ function renderTeam(){
       const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day;
       return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c)); }).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
-  if (near || !box.dataset.init) box.scrollTop = box.scrollHeight; box.dataset.init = "1";
+  if (near || !box.dataset.init) box.scrollTop = box.scrollHeight; else box.scrollTop = prevTop; box.dataset.init = "1";
   hydrateAtt(box);
   const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#teamSec").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
 }
