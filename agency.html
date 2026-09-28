@@ -276,8 +276,8 @@ tr.new td{background:var(--green-tint)}
 .dayline .ev{position:absolute;top:0;transform:translateX(-50%);font-size:10px;font-family:var(--mono);color:var(--o-sub);white-space:nowrap}
 .dayline .ev::after{content:"";display:block;width:2px;height:8px;margin:1px auto 0;background:var(--o-sub)}
 .dayline .now{position:absolute;top:6px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#fff;border:3px solid var(--o-glow);box-shadow:0 0 0 3px rgba(0,211,122,.25)}
-.map{display:grid;gap:12px;padding:14px;grid-template-columns:1fr 1.25fr 1fr;grid-template-areas:"yk meet ops" "cre cre con" "data data data"}
-@media(max-width:860px){.map{grid-template-columns:1fr;grid-template-areas:"meet" "yk" "ops" "cre" "con" "data"}}
+.map{display:grid;gap:12px;padding:14px;grid-template-columns:1fr 1.25fr 1fr;grid-template-areas:"yk meet ops" "cre cre con" "data data scout"}
+@media(max-width:860px){.map{grid-template-columns:1fr;grid-template-areas:"meet" "yk" "ops" "cre" "con" "data" "scout"}}
 .room{position:relative;border:3px solid var(--o-wall);border-radius:10px;padding:26px 10px 12px;background-color:var(--o-floor);background-image:linear-gradient(var(--o-tile) 1px,transparent 1px),linear-gradient(90deg,var(--o-tile) 1px,transparent 1px);background-size:22px 22px;min-height:150px}
 .room > .rl{position:absolute;top:-2px;left:10px;transform:translateY(-50%);background:var(--o-wall);color:var(--o-ink);font-size:11px;font-weight:800;padding:2px 9px;border-radius:6px}
 .room.glass{border-style:double;border-width:4px}
@@ -391,6 +391,24 @@ tr.new td{background:var(--green-tint)}
 .sheet textarea{min-height:70px;font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:10px;padding:9px 11px;resize:vertical}
 .sheet .acts{display:flex;justify-content:flex-end;gap:8px}
 
+
+.quest.msg,.sp .q.msg{background:#fff;color:#141414;box-shadow:0 2px 0 #c9c6bd;animation:none}
+/* 오늘의 레퍼런스 */
+.refs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.ref{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:grid;grid-template-rows:auto 1fr}
+.ref a.th{position:relative;display:block;aspect-ratio:16/9;background:#111;max-width:100%}
+.ref a.th img{width:100%;height:100%;object-fit:cover;display:block}
+.ref a.th .k{position:absolute;left:8px;top:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.7);color:#fff}
+.ref a.th .sc{position:absolute;right:8px;top:8px;font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:#ffd23f;color:#3c2a00}
+.ref .rb{padding:12px 14px;display:grid;gap:6px;align-content:start}
+.ref h4{margin:0;font-size:14px;line-height:1.35;letter-spacing:-.02em}
+.ref .nums{display:flex;flex-wrap:wrap;gap:4px 10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ref .nums b{color:var(--text)}
+.ref p{margin:0;font-size:12.5px;line-height:1.5}
+.ref .lbl{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.ref ul{margin:0;padding-left:16px;font-size:12.5px;display:grid;gap:2px}
+.ref-tabs{display:flex;gap:6px}
+
 @media (prefers-reduced-motion:no-preference){.tab,.pick,.ag{transition:background .15s,border-color .15s,color .15s}}
 </style>
 </head>
@@ -448,7 +466,7 @@ tr.new td{background:var(--green-tint)}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="today" aria-selected="true">오늘 회의</button>
       <button class="tab" role="tab" data-tab="minutes" aria-selected="false">회의록</button>
-      <button class="tab" role="tab" data-tab="agents" aria-selected="false">에이전트<span class="n">10</span></button>
+      <button class="tab" role="tab" data-tab="agents" aria-selected="false">에이전트<span class="n">12</span></button>
       <button class="tab" role="tab" data-tab="auto" aria-selected="false">자동화</button>
       <button class="tab" role="tab" data-tab="profile" aria-selected="false">KWAN 프로필</button>
     </div>
@@ -575,7 +593,7 @@ async function boot(){
   const { data: own } = await sb.from("agency_owners").select("user_id").limit(1).maybeSingle();
   if (!own) return show("denied");
   show("app");
-  const [ag, mt, pf, iv, pr, ch, cf, sm] = await Promise.all([
+  const [ag, mt, pf, iv, pr, ch, cf, sm, sc] = await Promise.all([
     sb.from("agency_agents").select("*").order("sort"),
     sb.from("agency_meetings").select("*").order("meeting_date", {ascending:false}).order("created_at", {ascending:false}).limit(60),
     sb.from("agency_profile").select("*").order("created_at"),
@@ -583,9 +601,11 @@ async function boot(){
     sb.from("agency_presence").select("*"),
     sb.from("agency_chat").select("*").order("created_at").limit(500),
     sb.from("agency_config").select("key,value"),
-    sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1)
+    sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1),
+    sb.from("agency_scout").select("*").order("collected_date", {ascending:false}).order("id").limit(30)
   ]);
   SUMMON = (sm.data || [])[0] || null;
+  SCOUT = sc.data || [];
   (pr.data || []).forEach(x => PRES[x.code] = x);
   CHAT = ch.data || [];
   (cf.data || []).forEach(x => CFG[x.key] = x.value);
@@ -799,26 +819,27 @@ function bindIvPanel(){
 
 // ===== 사무실 (게임형) =====
 let PRES = {}, CHAT = [], CFG = {};
-const TEAM_COLOR = {YK:"#B86E00", AE:"#2F6FDB", AD:"#2F6FDB", PD:"#2F6FDB", WR:"#7a4fd6", CP:"#7a4fd6", GR:"#0E955C", IN:"#0E955C", SO:"#0E955C", PM:"#444"};
-const ROOMS = [["yk","검증실",["YK"],"glass"],["ops","비서실",["PM"],""],["cre","크리에이티브팀",["AE","AD","PD"],""],["con","콘텐츠팀",["WR","CP"],""],["data","데이터·인사이트팀",["GR","IN","SO"],""]];
+const TEAM_COLOR = {YK:"#B86E00", AE:"#2F6FDB", AD:"#2F6FDB", PD:"#2F6FDB", WR:"#7a4fd6", CP:"#7a4fd6", GR:"#0E955C", IN:"#0E955C", SO:"#0E955C", PM:"#444", SS:"#D9467A", LS:"#D9467A"};
+const ROOMS = [["yk","검증실",["YK"],"glass"],["ops","비서실",["PM"],""],["cre","크리에이티브팀",["AE","AD","PD"],""],["con","콘텐츠팀",["WR","CP"],""],["data","데이터·인사이트팀",["GR","IN","SO"],""],["scout","스카우트팀",["SS","LS"],""]];
 const SHIFTS = [["night1","01:17","야간 작업"],["night2","04:17","새벽 검토"],["morning","07:27","아침 회의"]];
 const STEP_LABEL = {trigger:"트리거",holiday:"공휴일 확인",memory:"기억 불러오기",intervene:"KWAN 개입",learn:"학습 반영",agenda:"안건 선정",meeting:"회의",verify:"YK 검증",save:"저장",dm:"DM 발송",clockin:"출근",load:"자료 읽기",pick:"작업 고르기",work:"작업",debate:"토론",review:"검토",clockout:"퇴근"};
 const level = a => { const st = a.stats || {}; const lv = 1 + Math.floor((st.adopted||0)/3) + Math.floor((st.meetings||0)/10); const xp = ((st.meetings||0) % 10) * 10; return {lv, xp}; };
 const charHtml = k => `<span class="char" style="--team:${TEAM_COLOR[k]||"#8a8780"}"><span class="hd"></span><span class="bd">${esc(k)}</span></span>`;
-function pendingReq(k){ return CHAT.filter(c => c.code === k && c.sender === "agent" && !c.read_by_kwan).length; }
+function pendingReq(k){ return CHAT.filter(c => c.code === k && c.sender === "agent" && c.kind === "request" && !c.read_by_kwan).length; }
+function unreadMsg(k){ return CHAT.filter(c => c.code === k && c.sender === "agent" && c.kind !== "request" && !c.read_by_kwan).length; }
 function officeHtml(){
   const k = kstNow(); const night = k.h >= 21 || k.h < 6;
   const last = MEETINGS[0]; const running = last && last.status === "running" && (Date.now() - new Date((last.meta||{}).updated || last.created_at).getTime() < 30*60e3);
   const pres = code => PRES[code] || {status:"off"};
   const counts = {working:0, meeting:0, off:0}; Object.keys(AG).forEach(c => counts[pres(c).status]++);
-  const reqs = Object.keys(AG).reduce((n, c) => n + pendingReq(c), 0);
+  const reqs = Object.keys(AG).reduce((n, c) => n + pendingReq(c), 0); const msgs = Object.keys(AG).reduce((n, c) => n + unreadMsg(c), 0);
   const minutes = k.h*60 + k.m; const nowPct = minutes / 1440 * 100;
   const evs = SHIFTS.map(([id, t, nm]) => { const [hh, mm] = t.split(":").map(Number); return `<span class="ev" style="left:${(hh*60+mm)/1440*100}%">${t} ${nm}</span>`; }).join("");
   const phase = running ? `${(last.kind === "night" ? "🌙 " : "")}${esc(last.title || "근무 중")}` : night ? "퇴근 · 야간 근무 대기" : "업무 외 · 다음 근무 대기";
   const desk = code => { const a = AG[code]; if (!a) return ""; const p = pres(code); const {lv} = level(a); const q = pendingReq(code);
     const t = p.status === "off" ? (p.clock_out ? `퇴근 ${fmtTime(p.clock_out)}` : "퇴근") : p.status === "meeting" ? "회의실에 있음" : `출근 ${p.clock_in ? fmtTime(p.clock_in) : ""}`;
     return `<button class="desk ${p.status}" data-agent="${code}" aria-label="${esc(a.name)} ${t}">
-      ${q ? `<span class="quest" title="채팅 요청 ${q}건">!</span>` : ""}
+      ${q ? `<span class="quest" title="채팅 요청 ${q}건">!</span>` : unreadMsg(code) ? `<span class="quest msg" title="남긴 말이 있어요">…</span>` : ""}
       ${p.status === "working" && p.activity ? `<span class="say">${esc(p.activity)}</span>` : ""}
       <span class="monitor"></span><span class="table"></span>
       <span class="who"><span class="chair"></span><span class="seat" data-seat="${code}"></span></span>
@@ -832,7 +853,7 @@ function officeHtml(){
     <div class="hud"><div class="hud-l"><span class="hud-clock" id="kclock">${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}</span>
       <span class="hud-chip${running ? " live" : ""}"><span class="dot"></span>${phase}</span>
       <span class="hud-chip">출근 ${counts.working} · 회의 ${counts.meeting} · 퇴근 ${counts.off}</span>
-      ${reqs ? `<button class="hud-chip req" id="reqBtn">! 채팅 요청 ${reqs}</button>` : ""}
+      ${reqs ? `<button class="hud-chip req" id="reqBtn">! 채팅 요청 ${reqs}</button>` : ""}${msgs ? `<button class="hud-chip" id="msgBtn">… 남긴 말 ${msgs}</button>` : ""}
       ${summonBusy() ? `<span class="hud-chip live"><span class="dot"></span>출근 요청 처리 중</span>` : `<button class="hud-chip go" id="summonBtn">출근시키기</button>`}</div>
       <div class="hud-r"><span class="seg" role="group" aria-label="야간 근무 강도">${[["off","야간 끄기"],["light","가볍게"],["normal","보통"],["bold","과감"]].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${mode === v}">${l}</button>`).join("")}</span></div></div>
     <div class="dayline"><span class="bar"></span>${evs}<span class="now" style="left:${nowPct}%"></span></div>
@@ -849,6 +870,7 @@ function bindOffice(){
   const sb2 = $("#summonBtn"); if (sb2) sb2.addEventListener("click", openSummon);
   document.querySelectorAll(".desk[data-agent]").forEach(b => b.addEventListener("click", () => openDrawer(b.dataset.agent)));
   const rb = $("#reqBtn"); if (rb) rb.addEventListener("click", () => { const c = Object.keys(AG).find(x => pendingReq(x)); if (c) openDrawer(c); });
+  const mb = $("#msgBtn"); if (mb) mb.addEventListener("click", () => { const c = Object.keys(AG).find(x => unreadMsg(x)); if (c) openDrawer(c); });
   document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", async () => {
     const { error } = await sb.from("agency_config").update({ value: b.dataset.mode, updated_at: new Date().toISOString() }).eq("key", "night_mode");
     if (error) return toast("바꾸지 못했어요. 다시 눌러주세요.");
@@ -860,11 +882,11 @@ setInterval(() => { const c = $("#kclock"); if (c) { const k = kstNow(); c.textC
 
 
 // ===== 걸어 다니는 캐릭터 =====
-const MSLOTS = [[10,-8],[30,-18],[50,-22],[70,-18],[90,-8],[10,150],[30,160],[50,164],[70,160],[90,150]];
-const HAIR = {YK:"#1f1f1f",AE:"#3a2a20",AD:"#6b3f2a",PD:"#222",WR:"#8a5a3c",CP:"#2d2d2d",GR:"#5a3b28",IN:"#1c1c1c",SO:"#a0522d",PM:"#3b2b1f"};
+const MSLOTS = [[10,-8],[30,-18],[50,-22],[70,-18],[90,-8],[10,150],[30,160],[50,164],[70,160],[90,150],[-6,70],[106,70]];
+const HAIR = {YK:"#1f1f1f",AE:"#3a2a20",AD:"#6b3f2a",PD:"#222",WR:"#8a5a3c",CP:"#2d2d2d",GR:"#5a3b28",IN:"#1c1c1c",SO:"#a0522d",PM:"#3b2b1f",SS:"#c0392b",LS:"#2c3e50"};
 let SPOS = {}, SUMMON = null;
 function summonBusy(){ return SUMMON && ["queued","fired","running"].includes(SUMMON.status) && Date.now() - new Date(SUMMON.requested_at).getTime() < 25*60e3; }
-function spriteHtml(code){ return `<div class="sp" data-sp="${code}" style="--team:${TEAM_COLOR[code]||"#8a8780"};--hair:${HAIR[code]||"#333"}" title="${esc(AG[code]?.name || code)}"><div class="fig"><span class="lg l"></span><span class="lg r"></span><span class="bd"></span><span class="hd"></span><span class="hr"></span><span class="ck l"></span><span class="ck r"></span></div><span class="tag">${esc(code)}</span>${pendingReq(code) ? `<span class="q">!</span>` : ""}</div>`; }
+function spriteHtml(code){ return `<div class="sp" data-sp="${code}" style="--team:${TEAM_COLOR[code]||"#8a8780"};--hair:${HAIR[code]||"#333"}" title="${esc(AG[code]?.name || code)}"><div class="fig"><span class="lg l"></span><span class="lg r"></span><span class="bd"></span><span class="hd"></span><span class="hr"></span><span class="ck l"></span><span class="ck r"></span></div><span class="tag">${esc(code)}</span>${pendingReq(code) ? `<span class="q">!</span>` : unreadMsg(code) ? `<span class="q msg">…</span>` : ""}</div>`; }
 function anchorOf(el, base){ const r = el.getBoundingClientRect(), b = base.getBoundingClientRect(); return {x: r.left - b.left + r.width/2, y: r.top - b.top + r.height/2}; }
 function placeSprites(animate){
   const map = document.querySelector(".map"), layer = $("#sprites"), door = $("#door"); if (!map || !layer || !door) return;
@@ -903,7 +925,7 @@ window.addEventListener("resize", () => placeSprites(false));
 setInterval(() => { const els = [...document.querySelectorAll(".sp.sit:not(.walk)")]; if (!els.length) return; const el = els[Math.floor(Math.random()*els.length)]; el.classList.add("hop"); setTimeout(() => el.classList.remove("hop"), 800); }, 9000);
 
 // ===== 강제 출근 =====
-const TEAMS = [["전원", Object.keys(TEAM_COLOR)], ["크리에이티브팀", ["AE","AD","PD"]], ["콘텐츠팀", ["WR","CP"]], ["데이터·인사이트팀", ["GR","IN","SO"]]];
+const TEAMS = [["전원", Object.keys(TEAM_COLOR)], ["크리에이티브팀", ["AE","AD","PD"]], ["콘텐츠팀", ["WR","CP"]], ["데이터·인사이트팀", ["GR","IN","SO"]], ["스카우트팀", ["SS","LS"]]];
 function openSummon(){
   const pick = new Set(["PM","YK"]);
   const bg = document.createElement("div"); bg.className = "sheet-bg";
@@ -978,11 +1000,32 @@ function bindNight(){
     if (m && ((m.transcript||{})[oid] || []).length) { box.innerHTML = kakaoHtml(m, oid); bindKakao(box, m, oid, () => { box.innerHTML = kakaoHtml(m, oid); }); } });
 }
 
+
+// 오늘의 레퍼런스 (Ruby · Noah)
+let SCOUT = [], REF_KIND = "all";
+const nfmt = n => n == null ? "-" : n >= 1e4 ? (n/1e4).toFixed(n >= 1e5 ? 0 : 1) + "만" : Number(n).toLocaleString("ko-KR");
+function refsHtml(){
+  if (!SCOUT.length) return "";
+  const date = SCOUT[0].collected_date;
+  const list = SCOUT.filter(r => r.collected_date === date && (REF_KIND === "all" || r.kind === REF_KIND));
+  return `<div class="sec" id="refSec"><div class="sec-h"><h2>오늘의 레퍼런스</h2><span class="sub">${fmtDate(date)} · Ruby(숏폼)와 Noah(롱폼)가 유튜브에서 찾아 Gemini로 직접 보고 분석했어요</span></div>
+    <div class="ref-tabs">${[["all","전체"],["short","숏폼"],["long","롱폼"]].map(([k, l]) => `<button class="pk" data-refk="${k}" aria-pressed="${REF_KIND === k}">${l}</button>`).join("")}</div>
+    <div class="refs">${list.map(r => { const a = r.analysis || {}; return `<article class="ref">
+      <a class="th" href="${esc(r.url)}" target="_blank" rel="noopener"><img src="${esc(r.thumbnail || "")}" alt="" loading="lazy"><span class="k">${r.kind === "short" ? "숏폼 · Ruby" : "롱폼 · Noah"}</span>${a.score ? `<span class="sc">적합 ${esc(a.score)}/10</span>` : ""}</a>
+      <div class="rb"><h4>${esc(r.title)}</h4>
+        <div class="nums"><span>${esc(r.channel)}</span><span>조회 <b>${nfmt(r.views)}</b></span><span>구독자 대비 <b>${r.outlier ? r.outlier + "배" : "-"}</b></span><span>시간당 <b>${nfmt(r.views_per_hour)}</b></span></div>
+        ${a.one_line ? `<p><b>${esc(a.one_line)}</b></p>` : `<p class="sub">${r.status === "failed" ? "분석 실패" : "분석 대기"}</p>`}
+        ${a.hook ? `<span class="lbl">후킹</span><p>${esc(a.hook)}</p>` : ""}
+        ${(a.apply || []).length ? `<span class="lbl">우리에게 적용</span><ul>${a.apply.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+      </div></article>`; }).join("")}</div></div>`;
+}
+function bindRefs(){ document.querySelectorAll("[data-refk]").forEach(b => b.addEventListener("click", () => { REF_KIND = b.dataset.refk; const sec = $("#refSec"); if (sec) { sec.outerHTML = refsHtml(); bindRefs(); } })); }
+
 // 오늘 회의
 function renderToday(){
   const el = $("#p-today");
   const m = MEETINGS.find(x => x.status !== "error" && x.status !== "running" && x.kind !== "night");
-  if (!m) { el.innerHTML = officeHtml() + nightHtml() + ivPanelHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; bindOffice(); bindNight(); bindIvPanel(); return; }
+  if (!m) { el.innerHTML = officeHtml() + nightHtml() + refsHtml() + ivPanelHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; bindOffice(); bindNight(); bindRefs(); bindIvPanel(); return; }
   const meta = m.meta || {};
   const att = meta.attendees || [...new Set((m.decisions||[]).flatMap(d => d.who || []))];
   let h = officeHtml() + nightHtml() + ivPanelHtml() + `<div class="sec"><div class="meta">
@@ -997,9 +1040,10 @@ function renderToday(){
   if ((m.escalations||[]).length) h += `<div class="sec"><div class="sec-h"><h2>비서 메모</h2><span class="sub">Grace가 챙기는 일이에요. 회의 안건과는 별개로, 확인이나 답이 필요한 것만 모았어요</span></div>
      ${m.escalations.map(e => `<div class="esc">${av(e.owner || "PM", true)}<div><strong>${esc(e.title)}</strong><br>${esc(e.body)}</div></div>`).join("")}</div>`;
   if ((m.decisions||[]).length) h += `<div class="sec"><div class="sec-h"><h2>KWAN이 결정할 것</h2><span class="sub">A·B·C는 서로 다른 전략 방향입니다</span></div>${m.decisions.map((d, i) => decCard(m, d, i)).join("")}</div>`;
+  h += refsHtml();
   if (meta.question) h += `<div class="sec"><div class="sec-h"><h2>오늘의 질문</h2></div><div class="box"><p style="margin:0">${esc(meta.question)}</p><span class="sub">KWAN 프로필 탭이나 DM으로 답해주세요</span></div></div>`;
   el.innerHTML = h;
-  bindOffice(); bindNight();
+  bindOffice(); bindNight(); bindRefs();
   bindIvPanel();
   bindChat(m, "today");
   bindPicks(m);
@@ -1069,7 +1113,7 @@ function renderTx(m, id){
 }
 
 // 에이전트
-const ORG = [["검증 · 최종 게이트",["YK"]],["크리에이티브",["AE","AD","PD"]],["콘텐츠",["WR","CP"]],["데이터 · 인사이트",["GR","IN","SO"]],["운영",["PM"]]];
+const ORG = [["검증 · 최종 게이트",["YK"]],["크리에이티브",["AE","AD","PD"]],["콘텐츠",["WR","CP"]],["데이터 · 인사이트",["GR","IN","SO"]],["스카우트",["SS","LS"]],["운영",["PM"]]];
 function renderOrg(){
   $("#org").innerHTML = ORG.map(([lbl, ks]) => `<div class="org-lbl">${lbl}</div><div class="org-row">${ks.filter(k => AG[k]).map(k => `
     <button class="ag${k==="YK"?" yk":""}" data-ag="${k}" aria-pressed="false">${av(k)}<span><span class="nm">${esc(AG[k].name)}</span><br><span class="rl">${esc(AG[k].role)}</span></span></button>`).join("")}</div>`).join("");
