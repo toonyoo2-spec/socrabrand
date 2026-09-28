@@ -1087,9 +1087,10 @@ function notify(code, body, onClick, label){
   try { if (document.hidden && window.Notification && Notification.permission === "granted") new Notification(name, { body: String(body || "").slice(0, 120) }); } catch (e) {}
 }
 // 메인 화면에 끼워진 상태에서도 서랍·알림이 보이는 영역 안에 들어오게 맞춘다
-const FITS = new Set();
+// 요소마다 한 번만 기록한다(같은 요소를 매번 새로 넣으면 refit이 도는 중에 목록이 끝없이 늘어나 화면이 멈춘다)
+const FITS = new Map();
 function fitOverlay(el, topOnly, bottomDock){
-  FITS.add([el, topOnly, bottomDock]);
+  FITS.set(el, [topOnly, bottomDock]);
   try { const fe = window.frameElement; if (!fe) return; const r = fe.getBoundingClientRect(); const vh = window.parent.innerHeight;
     const top = Math.max(0, -r.top), bottom = Math.min(r.height, vh - r.top);
     if (bottomDock) { el.style.bottom = "auto"; const h = Math.min(560, bottom - top - 32); el.style.height = Math.max(300, h) + "px"; el.style.top = (bottom - Math.max(300, h) - 16) + "px"; return; }
@@ -1097,7 +1098,7 @@ function fitOverlay(el, topOnly, bottomDock){
     if (!topOnly) { el.style.bottom = "auto"; el.style.height = Math.max(320, bottom - top) + "px"; }
   } catch (e) {}
 }
-function refit(){ FITS.forEach(x => { if (!x[0].isConnected) FITS.delete(x); else fitOverlay(x[0], x[1], x[2]); }); }
+function refit(){ for (const [el, [t, b]] of [...FITS]) { if (!el.isConnected) FITS.delete(el); else fitOverlay(el, t, b); } }
 try { if (window.frameElement) { window.parent.addEventListener("scroll", refit, {passive:true}); window.parent.addEventListener("resize", refit); } } catch (e) {}
 // Enter로 보내기, Shift+Enter 줄바꿈 (한글 조합 중에는 보내지 않는다)
 document.addEventListener("keydown", e => {
