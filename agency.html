@@ -761,7 +761,8 @@ const WD = ["일","월","화","수","목","금","토"];
 const fmtDate = d => { const x = new Date(d + "T00:00:00"); return `${x.getMonth()+1}/${x.getDate()}(${WD[x.getDay()]})`; };
 function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v);}catch(e){ return null; } }
 const linkify = t => esc(t).replace(/https?:\/\/[^\s<)"]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.length > 60 ? u.slice(0, 57) + "…" : u}</a>`);
-function dutyNow(){ const d = new Date(Date.now() + 9*3600e3); const wd = d.getUTCDay(), m = d.getUTCHours()*60 + d.getUTCMinutes(); return wd >= 1 && wd <= 5 && m >= 510 && m < 1050; }
+// 비서실장 당직: 기본 24시간(KWAN 확정 9/28), duty_mode="work"면 평일 08:30~17:30만
+function dutyNow(){ if (CFG.duty_mode !== "work") return true; const d = new Date(Date.now() + 9*3600e3); const wd = d.getUTCDay(), m = d.getUTCHours()*60 + d.getUTCMinutes(); return wd >= 1 && wd <= 5 && m >= 510 && m < 1050; }
 function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t);
   // 메인 화면 안에 끼워져 있으면, 지금 보이는 영역 아래쪽에 띄운다
   try { const fe = window.frameElement; if (fe) { const r = fe.getBoundingClientRect(); const bottom = Math.min(r.height, window.parent.innerHeight - r.top); t.style.bottom = "auto"; t.style.top = Math.max(12, bottom - 64) + "px"; } } catch (e) {}
