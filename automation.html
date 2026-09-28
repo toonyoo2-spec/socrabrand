@@ -59,9 +59,10 @@
     .node .port.left { left:-7px; top:calc(50% - 6px); } .node .port.right { right:-7px; top:calc(50% - 6px); }
     .node .port.top { top:-8px; left:calc(50% - 6px); } .node .port.bottom { bottom:-8px; left:calc(50% - 6px); }
     .node-top { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--muted); font-size:11px; font-weight:600; font-family:var(--mono); }
-    .check-node { position:absolute; z-index:5; width:64px; height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:1px solid #76c9a5; border-radius:12px; background:#f2fff8; color:#0B6B44; text-decoration:none; box-shadow:0 5px 14px -8px rgba(11,107,68,.55); font-size:10px; font-weight:800; line-height:1.15; text-align:center; }
-    .check-node::before { content:""; position:absolute; right:100%; top:50%; width:9px; border-top:2px solid #76c9a5; }
-    .check-node span:first-child { font-size:15px; line-height:1; }
+    .check-node { position:absolute; z-index:5; width:124px; min-height:62px; padding:9px 12px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:5px; border:1px solid #76c9a5; border-top:4px solid var(--green); border-radius:12px; background:#f2fff8; color:#0B6B44; text-decoration:none; box-shadow:0 5px 14px -8px rgba(11,107,68,.55); line-height:1.15; text-align:left; }
+    .check-node::before { content:""; position:absolute; bottom:100%; left:50%; height:18px; border-left:2px solid #76c9a5; }
+    .check-node .check-kicker { color:#55806d; font-family:var(--mono); font-size:8px; font-weight:700; letter-spacing:.08em; }
+    .check-node strong { font-size:11px; font-weight:850; word-break:keep-all; }
     .check-node:hover { transform:translateY(-2px); border-color:#0B6B44; box-shadow:0 9px 18px -9px rgba(11,107,68,.7); }
     .check-node:focus-visible,.node-open:focus-visible { outline:2px solid #0B6B44; outline-offset:3px; }
     .node-open { display:block; width:100%; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
@@ -121,7 +122,7 @@
   <div class="toolbar">
     <div class="tabs" role="group" aria-label="노드 필터"><button class="active" data-filter="all">전체</button><button data-filter="ok">자동 진행</button><button data-filter="human">담당자 확인</button><button data-filter="gap">보완 필요</button></div>
     <div class="zoom" role="group" aria-label="캔버스 확대"><button id="zoom-out" aria-label="축소">−</button><button id="fit">화면 맞춤</button><button id="zoom-in" aria-label="확대">＋</button></div>
-    <span class="note">공정 카드 오른쪽의 ‘확인’ 노드에서 해당 상태의 결과를 엽니다</span>
+    <span class="note">사람이 열어봐야 하는 선택·검수·승인·완료 결과에만 하위 노드가 표시됩니다</span>
   </div>
   <main class="canvas-wrap" id="viewport" aria-label="콘텐츠 자동화 노드 흐름도">
     <div class="canvas" id="canvas">
@@ -229,15 +230,15 @@
     ];
     const currentArticle = "https://app.notion.com/p/3e85bc5f63078121821dca2e33e661cf";
     const checkById = {
-      research:["후보 확인","https://app.notion.com/p/d21afe4b8ca2413ebd825b0fb723ecf7"],
-      select:["후보 확인","https://app.notion.com/p/d21afe4b8ca2413ebd825b0fb723ecf7"],
-      draft:["원고 확인",currentArticle], review:["원고 확인",currentArticle],
-      image:["이미지 확인",currentArticle], github:["보관함 확인","https://github.com/toonyoo2-spec/socraauto-blog-images"],
-      cms:["초안 확인",currentArticle], preview:["검수 링크 확인",currentArticle],
-      revise:["요청 확인",currentArticle], final:["검증 확인",currentArticle],
-      cardtemplate:["샘플 확인",canonicalFigmaSample],
-      cardnews:["결과 확인","#content-status"], cardreview:["결과 확인","#content-status"],
-      done:["완성본 확인","#content-status"], archive:["기록 확인",notionPipeline], publish:["발행 상태 확인",notionPipeline]
+      select:["선택 화면","후보함 열기","https://app.notion.com/p/d21afe4b8ca2413ebd825b0fb723ecf7"],
+      review:["승인 화면","초안 검토하기",currentArticle],
+      preview:["검수 화면","미리보기 확인",currentArticle],
+      revise:["수정 화면","요청 확인하기",currentArticle],
+      final:["승인 화면","최종 검수하기",currentArticle],
+      cardtemplate:["선택 화면","샘플 선택하기",canonicalFigmaSample],
+      cardreview:["검수 화면","결과물 검수하기","#content-status"],
+      done:["완료 결과","완성본 보기","#content-status"],
+      publish:["승인 화면","게시 상태 보기",notionPipeline]
     };
     const nodeContainer = document.getElementById("nodes");
     const width = 290, height = 168;
@@ -248,18 +249,20 @@
       const stepLabel = n.num === "완료 후" ? n.num : n.num + "단계";
       el.innerHTML = ports + '<div class="node-top"><span>' + stepLabel + '</span><span class="status">' + n.badge + '</span></div>';
       const check = checkById[n.id];
-      const a = document.createElement("a");
-      a.className = "check-node"; a.href = check[1];
-      if (!check[1].startsWith("#")) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      a.style.left = (n.x + 299) + "px"; a.style.top = (n.y + 55) + "px";
-      a.innerHTML = '<span>↗</span><span>확인</span>';
-      a.setAttribute("aria-label",n.title + " · " + check[0]); a.title = check[0];
       const open = document.createElement("button"); open.type = "button"; open.className = "node-open";
       open.innerHTML = '<h2>' + n.title + '</h2><p>' + n.sub + '</p><small>' + actionById[n.id] + '</small>';
       open.setAttribute("aria-label",n.title + " 상세 설명");
       open.addEventListener("click",function(){openNode(n);}); el.appendChild(open);
       nodeContainer.appendChild(el);
-      nodeContainer.appendChild(a);
+      if (check) {
+        const a = document.createElement("a");
+        a.className = "check-node"; a.href = check[2];
+        if (!check[2].startsWith("#")) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+        a.style.left = (n.x + 83) + "px"; a.style.top = (n.y + 186) + "px";
+        a.innerHTML = '<span class="check-kicker">' + check[0] + '</span><strong>' + check[1] + '</strong>';
+        a.setAttribute("aria-label",n.title + " · " + check[1]); a.title = check[1];
+        nodeContainer.appendChild(a);
+      }
     });
     function point(n,side) {
       if(side === "left") return [n.x,n.y+height/2];
