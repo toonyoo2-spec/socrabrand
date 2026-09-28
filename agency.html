@@ -338,12 +338,26 @@ tr.new td{background:var(--green-tint)}
 .sp3 .ck.l{left:12px}.sp3 .ck.r{right:12px}.sp3 .ck{top:14px}
 .sp3 .tag{top:27px;font-size:8.5px}
 .sp3.sit .fig{translate:0 6px}
-.board3{position:absolute;left:12px;top:12px;max-width:min(300px,70%);margin:0;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);border:none;border-radius:14px;padding:0;background:rgba(255,255,255,.92);backdrop-filter:blur(6px)}
+.board3{position:absolute;left:12px;top:12px;max-width:min(300px,70%);margin:0;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);border:none!important;border-radius:14px;padding:0;background:rgba(255,255,255,.92);backdrop-filter:blur(6px)}
 .board3 summary{list-style:none;cursor:pointer;padding:7px 12px;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .board3 summary::-webkit-details-marker{display:none}
 .board3 summary::after{content:" ▾";color:#8a857b}.board3[open] summary::after{content:" ▴"}
 .board3 ol{margin:0;padding:0 12px 10px}
 
+
+/* ===== WebGL 3D 사무실 ===== */
+.o3d-wrap{position:relative}
+.o3d.gl{position:relative;background:radial-gradient(110% 90% at 50% 10%,#fffdf8 0%,#efe8da 75%);overflow:hidden;touch-action:none}
+.office.night .o3d.gl{background:radial-gradient(110% 90% at 50% 10%,#27304c 0%,#121829 75%)}
+.o3d.gl canvas{display:block}
+.o3d-labels{position:absolute;inset:0}
+.o3d-labels > div{pointer-events:none}
+.o3d-plate{pointer-events:auto!important}
+.o3d-plate .plate3{position:relative;transform:translateY(-60%);box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.o3d-room{font-size:12px;font-weight:800;color:rgba(40,36,30,.5);white-space:nowrap;letter-spacing:-.01em}
+.office.night .o3d-room{color:rgba(255,255,255,.55)}
+.o3d-sign{background:#141414;color:#fff;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px}
+.o3d-hint{position:absolute;right:12px;bottom:10px;font-size:11px;color:#8a857b;pointer-events:none}
 
 /* 카카오톡식 알림 */
 .noti-stack{position:fixed;top:12px;right:12px;z-index:80;display:grid;gap:8px;width:min(340px,calc(100% - 24px))}
@@ -533,6 +547,8 @@ tr.new td{background:var(--green-tint)}
 
 @media (prefers-reduced-motion:no-preference){.tab,.pick,.ag{transition:background .15s,border-color .15s,color .15s}}
 </style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module" src="agency-office3d.js"></script>
 </head>
 <body>
 <style>
@@ -1064,7 +1080,7 @@ function officeHtml(){
       ${summonBusy() ? `<span class="hud-chip live"><span class="dot"></span>출근 요청 처리 중</span>` : `<button class="hud-chip go" id="summonBtn">출근시키기</button>`}</div>
       <div class="hud-r"><span class="seg" role="group" aria-label="야간 근무 강도">${[["off","야간 끄기"],["light","가볍게"],["normal","보통"],["bold","과감"]].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${mode === v}">${l}</button>`).join("")}</span></div></div>
     <div class="dayline"><span class="bar"></span>${evs}<span class="now" style="left:${nowPct}%"></span></div>
-    ${isoHtml(board)}
+    <div class="o3d-wrap"><div class="o3d" id="o3d">${isoHtml("")}</div>${board}</div>
     </div></div>`;
 }
 function kwanDesk(){ const on = kwanIn();
@@ -1085,7 +1101,7 @@ function bindOffice(){
   requestAnimationFrame(() => placeSprites(true));
   const sb2 = $("#summonBtn"); if (sb2) sb2.addEventListener("click", openSummon);
   const ab = $("#attBtn"); if (ab) ab.addEventListener("click", toggleAttendance);
-  document.querySelectorAll(".plate3[data-agent]").forEach(b => b.addEventListener("click", () => b.dataset.agent === "KWAN" ? toggleAttendance() : openPop(b.dataset.agent)));
+  document.querySelectorAll("#iso .plate3[data-agent]").forEach(b => b.addEventListener("click", () => b.dataset.agent === "KWAN" ? toggleAttendance() : openPop(b.dataset.agent)));
   const rb = $("#reqBtn"); if (rb) rb.addEventListener("click", () => { const c = Object.keys(AG).find(x => pendingReq(x)); if (c) openPop(c); });
   const mb = $("#msgBtn"); if (mb) mb.addEventListener("click", () => { const c = Object.keys(AG).find(x => unreadMsg(x)); if (c) openPop(c); });
   document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", async () => {
@@ -1094,7 +1110,7 @@ function bindOffice(){
     CFG.night_mode = b.dataset.mode; refreshOffice(); toast(`야간 근무: ${b.textContent}`);
   }));
 }
-function refreshOffice(){ const sec = $("#officeSec"); if (!sec) return; const keep = $("#sprites"); sec.outerHTML = officeHtml(); if (keep) $("#sprites").replaceWith(keep); bindOffice(); }
+function refreshOffice(){ const sec = $("#officeSec"); if (!sec) return; const gl = $("#o3d.gl"); const keep = gl ? null : $("#sprites"); sec.outerHTML = officeHtml(); if (gl) $("#o3d").replaceWith(gl); else if (keep) $("#sprites").replaceWith(keep); bindOffice(); }
 setInterval(() => { const c = $("#kclock"); if (c) { const k = kstNow(); c.textContent = `${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}`; } }, 20000);
 
 
@@ -1119,7 +1135,7 @@ const DESKS3 = {}, SEATS3 = {};
 ROOMS3.forEach(r => r.desks.forEach((code, i) => {
   const cx = r.x + r.w * (i + 1) / (r.desks.length + 1), cy = r.y + r.h * 0.42;
   DESKS3[code] = {x: cx - DESK.w / 2, y: cy - DESK.d / 2, room: r.id};
-  SEATS3[code] = {x: cx, y: cy + DESK.d / 2 + 26};
+  SEATS3[code] = {x: cx, y: cy - DESK.d / 2 - 24}; // 책상 안쪽에 앉아 화면(카메라)을 바라본다
 }));
 const MSLOTS3 = [0,1,2,3,4].map(i => ({x: TABLE3.x + 30 + i * 57.5, y: TABLE3.y - 28}))
   .concat([0,1,2,3,4].map(i => ({x: TABLE3.x + 30 + i * 57.5, y: TABLE3.y + TABLE3.h + 34})))
@@ -1129,6 +1145,14 @@ const HAIR = {YK:"#1f1f1f",AE:"#3a2a20",AD:"#6b3f2a",PD:"#222",WR:"#8a5a3c",CP:"
 let SPOS = {}, SUMMON = null, ISO_S = 0.7;
 function summonBusy(){ return SUMMON && ["queued","fired","running"].includes(SUMMON.status) && Date.now() - new Date(SUMMON.requested_at).getTime() < 25*60e3; }
 const box3 = (x, y, w, d, h, cls, z = 0) => `<div class="b3 ${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px;--h:${h}px;--z:${z}px"><i class="t"></i><i class="s"></i><i class="e"></i></div>`;
+function presOf(code){ return code === "KWAN" ? {status: kwanIn() ? "idle" : "off"} : (PRES[code] || {status:"off"}); }
+function plateHtml(code, style){
+  const p = presOf(code); const q = code !== "KWAN" && pendingReq(code); const msg = code !== "KWAN" && !q && unreadMsg(code);
+  const a = code === "KWAN" ? {name:"KWAN", role:"나"} : AG[code]; if (!a) return "";
+  const st = p.status === "working" ? "근무" : p.status === "idle" ? (code === "PM" ? "당직" : "대기") : p.status === "meeting" ? "회의" : "퇴근";
+  const say = (p.status === "working" || (p.status === "idle" && code === "PM")) && p.activity ? `<span class="say3">${esc(p.activity)}</span>` : "";
+  return `<button class="plate3 ${p.status}" data-agent="${code}"${style ? ` style="${style}"` : ""} aria-label="${esc(a.name)} ${st}" title="${esc(a.name)} · ${esc(a.role || "")} · ${st}">${say}${q ? `<span class="qm">!</span>` : msg ? `<span class="qm msg">…</span>` : ""}<b><i class="dot"></i>${esc(a.name)}</b></button>`;
+}
 function isoHtml(board){
   const pres = code => code === "KWAN" ? {status: kwanIn() ? "idle" : "off"} : (PRES[code] || {status:"off"});
   const rooms = ROOMS3.map(r => {
@@ -1148,13 +1172,7 @@ function isoHtml(board){
   }).join("");
   const table = box3(TABLE3.x, TABLE3.y, TABLE3.w, TABLE3.h, TABLE3.z, "table3");
   const plants = [[20, 400], [ISO.W - 60, 360], [ISO.W - 60, 460], [360, 780]].map(([x, y]) => `<div class="plant3" style="transform:translate3d(${x}px,${y}px,0) ${BB} translate(-50%,-100%)"><i></i></div>`).join("");
-  const plates = Object.keys(DESKS3).map(code => {
-    const d = DESKS3[code]; const p = pres(code); const q = code !== "KWAN" && pendingReq(code); const msg = code !== "KWAN" && !q && unreadMsg(code);
-    const a = code === "KWAN" ? {name:"KWAN", role:"나"} : AG[code]; if (!a) return "";
-    const st = p.status === "working" ? "근무" : p.status === "idle" ? (code === "PM" ? "당직" : "대기") : p.status === "meeting" ? "회의" : "퇴근";
-    const say = (p.status === "working" || (p.status === "idle" && code === "PM")) && p.activity ? `<span class="say3">${esc(p.activity)}</span>` : "";
-    return `<button class="plate3 ${p.status}" data-agent="${code}" style="transform:translate3d(${d.x + DESK.w / 2}px,${d.y + 4}px,58px) ${BB} scale(var(--ls)) translate(-50%,-100%)" aria-label="${esc(a.name)} ${st}" title="${esc(a.name)} · ${esc(a.role || "")} · ${st}">${say}${q ? `<span class="qm">!</span>` : msg ? `<span class="qm msg">…</span>` : ""}<b><i class="dot"></i>${esc(a.name)}</b></button>`;
-  }).join("");
+  const plates = Object.keys(DESKS3).map(code => { const d = DESKS3[code]; return plateHtml(code, `transform:translate3d(${d.x + DESK.w / 2}px,${d.y + 4}px,58px) ${BB} scale(var(--ls)) translate(-50%,-100%)`); }).join("");
   return `<div class="iso" id="iso"><div class="iso-spacer" id="isoSpacer"></div><div class="iso-floor" id="isoFloor" style="width:${ISO.W}px;height:${ISO.H}px">
       <div class="ground"></div>${rooms}${table}${plants}
       <div class="mat entry" style="left:${DOOR3.x - 40}px;top:${DOOR3.y - 34}px"></div>
@@ -1237,7 +1255,44 @@ function walkTo(el, pts, speed, delay, onDone){
   };
   const tm = setTimeout(step, delay); return () => { cancelled = true; clearTimeout(tm); };
 }
+// ---- WebGL 3D 사무실(가능하면) ----
+function ensure3D(){
+  const O = window.Office3D; const c = $("#o3d"); if (!O || !c) return false;
+  if (O.ready) { if (O.container !== c) c.replaceWith(O.container); return true; }
+  if (O.failed) return false;
+  const ok = O.mount(c, {ISO, ROOMS3, DESKS3, SEATS3, MSLOTS3, TABLE3, DOOR3, OUTSIDE3, DESK});
+  if (!ok) { O.failed = true; c.innerHTML = isoHtml(""); return false; }
+  O.onPick = code => code === "KWAN" ? toggleAttendance() : openPop(code);
+  c.addEventListener("click", e => { const b = e.target.closest(".plate3[data-agent]"); if (!b) return; e.stopPropagation(); b.dataset.agent === "KWAN" ? toggleAttendance() : openPop(b.dataset.agent); });
+  SPOS = {}; return true;
+}
+window.addEventListener("office3d-ready", () => { if ($("#o3d")) placeSprites(false); });
+function place3D(animate){
+  const O = window.Office3D; const k = kstNow(); O.night(k.h >= 21 || k.h < 6);
+  const codes = [...Object.keys(AG), "KWAN"]; let order = 0;
+  codes.forEach(code => {
+    const st = presOf(code).status;
+    O.setDesk(code, st, plateHtml(code));
+    const look = {team: parseInt((TEAM_COLOR[code] || (code === "KWAN" ? "#fee500" : "#8a8780")).slice(1), 16), hair: parseInt((HAIR[code] || "#333").slice(1), 16), working: st === "working"};
+    let place = "door", tgt = DOOR3;
+    if ((st === "working" || st === "idle") && SEATS3[code]) { place = "seat"; tgt = SEATS3[code]; }
+    if (st === "meeting") { const i = Object.keys(AG).indexOf(code); place = "meet"; tgt = MSLOTS3[i % MSLOTS3.length]; }
+    const prev = SPOS[code];
+    if (!prev || !animate) { O.place(code, look, tgt, place !== "door", place); SPOS[code] = {...tgt, place}; return; }
+    if (prev.place === place) { if (!prev.walking) { O.place(code, look, tgt, place !== "door", place); SPOS[code] = {...tgt, place}; } return; }
+    if (prev.walking && prev.goal === place) return;
+    const from = prev.place === "door" ? DOOR3 : {x: prev.x, y: prev.y};
+    const pts = findPath(from, tgt, code);
+    const lane = (hashN(code + "l") - .5) * 40;
+    if (prev.place === "door") pts.unshift({x: OUTSIDE3.x, y: OUTSIDE3.y + lane});
+    if (place === "door") pts.push({x: OUTSIDE3.x, y: OUTSIDE3.y + lane});
+    const speed = 170 + hashN(code + "v") * 80, delay = Math.min(3000, order++ * (250 + hashN(code + "d") * 350));
+    SPOS[code] = {x: tgt.x, y: tgt.y, place: prev.place, goal: place, walking: true};
+    O.walk(code, look, pts, speed, delay, place, () => { SPOS[code] = {...tgt, place}; setTimeout(() => placeSprites(true), 50); });
+  });
+}
 function placeSprites(animate){
+  if (ensure3D()) return place3D(animate);
   layoutIso();
   const layer = $("#sprites"); if (!layer) return;
   const codes = [...Object.keys(AG), "KWAN"]; let order = 0;
