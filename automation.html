@@ -59,10 +59,11 @@
     .node .port.left { left:-7px; top:calc(50% - 6px); } .node .port.right { right:-7px; top:calc(50% - 6px); }
     .node .port.top { top:-8px; left:calc(50% - 6px); } .node .port.bottom { bottom:-8px; left:calc(50% - 6px); }
     .node-top { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--muted); font-size:11px; font-weight:600; font-family:var(--mono); }
-    .node-actions { display:flex; align-items:center; gap:6px; }
-    .node-check { color:#0B6B44; font-family:var(--font); font-size:10px; font-weight:800; text-decoration:none; white-space:nowrap; padding:3px 5px; border-radius:5px; }
-    .node-check:hover { background:var(--green-tint); text-decoration:underline; }
-    .node-check:focus-visible,.node-open:focus-visible { outline:2px solid #0B6B44; outline-offset:3px; }
+    .check-node { position:absolute; z-index:5; width:64px; height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:1px solid #76c9a5; border-radius:12px; background:#f2fff8; color:#0B6B44; text-decoration:none; box-shadow:0 5px 14px -8px rgba(11,107,68,.55); font-size:10px; font-weight:800; line-height:1.15; text-align:center; }
+    .check-node::before { content:""; position:absolute; right:100%; top:50%; width:9px; border-top:2px solid #76c9a5; }
+    .check-node span:first-child { font-size:15px; line-height:1; }
+    .check-node:hover { transform:translateY(-2px); border-color:#0B6B44; box-shadow:0 9px 18px -9px rgba(11,107,68,.7); }
+    .check-node:focus-visible,.node-open:focus-visible { outline:2px solid #0B6B44; outline-offset:3px; }
     .node-open { display:block; width:100%; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
     .status { border-radius:99px; padding:3px 8px; font-size:10px; white-space:nowrap; background:#f1f0ec; color:var(--text); font-family:var(--font); font-weight:700; }
     .ok .status { background:var(--green-tint); } .human .status { background:var(--amber-tint); }
@@ -120,7 +121,7 @@
   <div class="toolbar">
     <div class="tabs" role="group" aria-label="노드 필터"><button class="active" data-filter="all">전체</button><button data-filter="ok">자동 진행</button><button data-filter="human">담당자 확인</button><button data-filter="gap">보완 필요</button></div>
     <div class="zoom" role="group" aria-label="캔버스 확대"><button id="zoom-out" aria-label="축소">−</button><button id="fit">화면 맞춤</button><button id="zoom-in" aria-label="확대">＋</button></div>
-    <span class="note">단계 선택: 담당 업무와 관련 링크 확인</span>
+    <span class="note">공정 카드 오른쪽의 ‘확인’ 노드에서 해당 상태의 결과를 엽니다</span>
   </div>
   <main class="canvas-wrap" id="viewport" aria-label="콘텐츠 자동화 노드 흐름도">
     <div class="canvas" id="canvas">
@@ -245,18 +246,20 @@
       el.className = "node " + n.state; el.style.left = n.x + "px"; el.style.top = n.y + "px"; el.dataset.state = n.state;
       const ports = ["left","right","top","bottom"].map(function(side){ return '<span class="port ' + side + '"></span>'; }).join("");
       const stepLabel = n.num === "완료 후" ? n.num : n.num + "단계";
-      el.innerHTML = ports + '<div class="node-top"><span>' + stepLabel + '</span><div class="node-actions"><span class="status">' + n.badge + '</span></div></div>';
+      el.innerHTML = ports + '<div class="node-top"><span>' + stepLabel + '</span><span class="status">' + n.badge + '</span></div>';
       const check = checkById[n.id];
       const a = document.createElement("a");
-      a.className = "node-check"; a.href = check[1];
+      a.className = "check-node"; a.href = check[1];
       if (!check[1].startsWith("#")) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      a.textContent = "확인 ↗"; a.setAttribute("aria-label",n.title + " · " + check[0]); a.title = check[0];
-      el.querySelector(".node-actions").appendChild(a);
+      a.style.left = (n.x + 299) + "px"; a.style.top = (n.y + 55) + "px";
+      a.innerHTML = '<span>↗</span><span>확인</span>';
+      a.setAttribute("aria-label",n.title + " · " + check[0]); a.title = check[0];
       const open = document.createElement("button"); open.type = "button"; open.className = "node-open";
       open.innerHTML = '<h2>' + n.title + '</h2><p>' + n.sub + '</p><small>' + actionById[n.id] + '</small>';
       open.setAttribute("aria-label",n.title + " 상세 설명");
       open.addEventListener("click",function(){openNode(n);}); el.appendChild(open);
       nodeContainer.appendChild(el);
+      nodeContainer.appendChild(a);
     });
     function point(n,side) {
       if(side === "left") return [n.x,n.y+height/2];
