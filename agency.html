@@ -1710,7 +1710,7 @@ function teamHtml(){
   const cur = roomOf(ROOM_CUR);
   return `<div class="sec" id="teamSec"><div class="sec-h"><h2>채팅방</h2><span class="sub">방마다 참여자가 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. Grace가 직접 참여할지 물어봐요. 모든 대화는 회의록에 저장돼요</span></div>
     <div class="rooms">${list.map(r => { const n = r.code === ROOM_CUR ? 0 : roomUnread(r.code); return `<button class="pk" data-room-tab="${r.code}" aria-pressed="${r.code === ROOM_CUR}">${esc(r.title)}${n ? ` <span class="cnt">${n}</span>` : ""}</button>`; }).join("")}<button class="pk add" id="newRoom">+ 새 채팅방</button></div>
-    <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span></div><div class="team-body" id="teamBody"></div>
+    <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span>${cur.code !== "TEAM" ? `<button type="button" class="btn ghost" id="endRoom" style="margin-left:auto" title="대화는 회의록에 남고 방은 닫혀요">회의 종료</button>` : ""}</div><div class="team-body" id="teamBody"></div>
     <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
 }
 function renderTeam(){
@@ -1731,11 +1731,24 @@ function bindTeam(){
   renderTeam();
   document.querySelectorAll("[data-room-tab]").forEach(b => b.addEventListener("click", () => { ROOM_CUR = b.dataset.roomTab; store("agency-room", ROOM_CUR); const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); }));
   const nb = $("#newRoom"); if (nb) nb.addEventListener("click", openNewRoom);
+  const eb = $("#endRoom"); if (eb) eb.addEventListener("click", endRoom);
   const f = $("#teamForm"); if (!f) return;
   bindAttach("teamForm");
   f.addEventListener("submit", async e => { e.preventDefault();
     const data = await sendChat(ROOM_CUR, "teamForm", "teamIn"); if (!data) return;
     renderTeam(); toast((data.attachments || []).length ? "Gemini가 파일을 본 뒤 Grace가 답해요" : dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
+}
+// 회의 종료: 대화는 이미 회의록(agency_meetings, kind='chat')에 복제돼 있으니 방만 닫는다
+async function endRoom(){
+  const r = roomOf(ROOM_CUR); if (!r || r.code === "TEAM") return;
+  if (!confirm(`'${r.title}' 회의를 끝낼까요?\n대화는 회의록에 남고, 채팅방은 목록에서 사라져요.`)) return;
+  micStop();
+  const { error } = await sb.from("agency_rooms").update({ archived: true }).eq("code", r.code);
+  if (error) return toast("닫지 못했어요: " + (error.message || ""));
+  const x = CROOMS.find(c => c.code === r.code); if (x) x.archived = true;
+  ROOM_CUR = "TEAM"; store("agency-room", "TEAM");
+  const sec = $("#teamSec"); if (sec) { sec.outerHTML = teamHtml(); bindTeam(); }
+  toast(`'${r.title}' 회의를 끝냈어요. 회의록 탭에서 다시 볼 수 있어요`);
 }
 function openNewRoom(){
   const pick = new Set(["PM"]);
