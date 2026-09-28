@@ -170,6 +170,47 @@ tr.new td{background:var(--green-tint)}
 .q:last-child{border-bottom:none}
 .q .mono{color:var(--muted);font-size:12px;padding-top:2px}
 
+
+/* 작동 상태 노드 */
+.pipe-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:grid;gap:14px}
+.pipe-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted)}
+.pipe-head b{color:var(--text)}
+.pipe{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;row-gap:12px;overflow-x:auto}
+.node{display:flex;align-items:center}
+.node-b{display:grid;gap:3px;min-width:96px;max-width:132px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg)}
+.node-b .nm{font-size:12.5px;font-weight:700;line-height:1.25}
+.node-b .nd{font-size:11px;color:var(--muted);line-height:1.3}
+.node-b .st{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase}
+.node-b .st::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.node.ok .node-b{border-color:var(--green-line);background:var(--green-tint)} .node.ok .st{color:var(--green-line)}
+.node.skip .node-b{border-style:dashed} .node.skip .st{color:var(--faint)}
+.node.fail .node-b{border-color:var(--red);background:var(--red-tint)} .node.fail .st{color:var(--red)}
+.node.none .st{color:var(--faint)}
+.node:not(:last-child)::after{content:"";width:18px;height:2px;background:var(--border);margin:0 2px;flex:none}
+.node.ok:not(:last-child)::after{background:var(--green-line)}
+.pipe-alert{background:var(--red-tint);color:var(--red);border-radius:var(--r);padding:10px 14px;font-size:13.5px;font-weight:600}
+@media(max-width:620px){.pipe{flex-direction:column;align-items:stretch}.node{flex-direction:column;align-items:stretch}.node-b{max-width:none}.node:not(:last-child)::after{width:2px;height:12px;margin:2px auto}}
+
+/* 카카오톡식 대화 */
+.kk{background:#bacee0;border-radius:var(--r);padding:16px 12px;display:grid;gap:10px}
+@media(min-width:768px){.kk{padding:20px 22px}}
+.kk-day{justify-self:center;background:rgba(0,0,0,.18);color:#fff;font-size:11.5px;padding:3px 12px;border-radius:999px}
+.kk-row{display:flex;gap:8px;align-items:flex-start;max-width:100%}
+.kk-row .av{background:#fff;border-color:transparent}
+.kk-col{display:grid;gap:4px;min-width:0;max-width:min(560px,82%)}
+.kk-name{font-size:12px;color:#3a4652}
+.kk-name small{color:#5d6a77;margin-left:4px}
+.kk-bub{background:#fff;color:#141414;border-radius:4px 14px 14px 14px;padding:9px 12px;font-size:14px;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
+.kk-meta{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.kk-meta .ev{font-family:var(--mono);font-size:10.5px;color:#3a4652;background:rgba(255,255,255,.55);border-radius:4px;padding:1px 6px}
+.kk-row.me{flex-direction:row-reverse}
+.kk-row.me .kk-col{justify-items:end}
+.kk-row.me .kk-bub{background:#fee500;border-radius:14px 4px 14px 14px}
+.kk-row.me .av{background:#fee500;color:#3c1e1e}
+.kk-nav{display:flex;flex-wrap:wrap;gap:6px}
+.kk-nav button{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted)}
+.kk-nav button[aria-current="true"]{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600}
+
 @media (prefers-reduced-motion:no-preference){.tab,.pick,.ag{transition:background .15s,border-color .15s,color .15s}}
 </style>
 </head>
@@ -239,7 +280,7 @@ tr.new td{background:var(--green-tint)}
         <div class="sec-h"><h2 id="mtitle">회의록</h2><div class="datesel" id="datesel"></div></div>
         <div class="tx-layout">
           <nav class="tx-nav" id="txnav" aria-label="안건"></nav>
-          <div class="tx" id="tx"></div>
+          <div id="tx"></div>
         </div>
       </div>
     </section>
@@ -351,14 +392,80 @@ $("#loginForm").addEventListener("submit", async e => {
 });
 for (const b of ["#logout","#logout2"]) $(b).addEventListener("click", async () => { await sb.auth.signOut(); show("login"); });
 
+
+// 작동 상태 노드
+const STEPS = [
+  ["trigger","트리거","평일 07:27"],["holiday","공휴일 확인",""],["memory","기억 불러오기","Supabase"],["learn","학습 반영",""],
+  ["agenda","안건 선정","Notion"],["meeting","회의",""],["verify","YK 검증",""],["save","저장","Supabase"],["dm","DM 발송","Slack"]];
+const ST_LABEL = {ok:"정상", skip:"건너뜀", fail:"실패", none:"기록 없음"};
+function kstNow(){ const d = new Date(Date.now() + 9*3600e3); return { date:d.toISOString().slice(0,10), h:d.getUTCHours(), m:d.getUTCMinutes(), wd:d.getUTCDay() }; }
+function pipelineHtml(){
+  const last = MEETINGS[0];
+  const k = kstNow();
+  const workday = k.wd >= 1 && k.wd <= 5;
+  const pastRun = k.h > 7 || (k.h === 7 && k.m >= 50);
+  const missingToday = !!last && workday && pastRun && last.meeting_date !== k.date;
+  let steps = {};
+  if (last) {
+    const raw = (last.meta || {}).steps;
+    if (raw) raw.forEach(x => steps[x.k] = x);
+    else { // steps 기록 전 회의: 남아 있는 결과로 추정
+      const has = (last.decisions||[]).length > 0;
+      ["trigger","holiday","memory","agenda","save"].forEach(key => steps[key] = {s:"ok"});
+      steps.meeting = steps.verify = {s: has ? "ok" : "skip"};
+    }
+  }
+  const nodes = STEPS.map(([key, nm, sub]) => {
+    const x = missingToday ? {s: key === "trigger" ? "fail" : "none"} : (steps[key] || {s:"none"});
+    return `<div class="node ${x.s}"><div class="node-b"><span class="nm">${nm}</span><span class="nd">${esc(x.n || sub)}</span><span class="st">${ST_LABEL[x.s] || x.s}</span></div></div>`;
+  }).join("");
+  const fails = Object.values(steps).filter(x => x.s === "fail").length;
+  const state = missingToday ? `<b style="color:var(--red)">오늘 실행 기록 없음</b>` : !last ? `<b>첫 실행 대기</b>` : fails ? `<b style="color:var(--red)">실패 ${fails}단계</b>` : `<b style="color:var(--green-line)">정상 작동</b>`;
+  const lastTxt = last ? `마지막 실행 <b>${fmtDate(last.meeting_date)} ${new Date(last.created_at).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:"Asia/Seoul"})}</b>` : "아직 실행 기록 없음";
+  const alert = missingToday ? `<div class="pipe-alert">평일 07:27 자동회의가 아직 기록되지 않았어요. 루틴이 꺼졌거나 커넥터(Notion · Supabase · Slack)가 빠졌을 수 있어요.</div>`
+    : (last && last.status === "error") ? `<div class="pipe-alert">${esc((last.meta||{}).error || "실행 중 오류가 있었어요.")}</div>` : "";
+  return `<div class="sec"><div class="sec-h"><h2>작동 상태</h2><span class="sub">자동회의가 단계별로 제대로 돌았는지 먼저 확인하세요</span></div>
+    <div class="pipe-wrap"><div class="pipe-head"><span>${state}</span><span>${lastTxt}</span></div><div class="pipe">${nodes}</div>${alert}</div></div>`;
+}
+
+// 카카오톡식 대화
+function kakaoHtml(m, id){
+  const msgs = (m.transcript || {})[id] || [];
+  if (!msgs.length) return `<div class="empty">이 안건의 대화 기록이 없어요.</div>`;
+  return `<div class="kk">` + msgs.map(x => {
+    if (x.st) return `<div class="kk-day">${esc(x.st)}</div>`;
+    const me = x.a === "YK";
+    const tags = (x.tag||[]).map(t => `<span class="chip ${tagCls[t]||""}">${esc(t)}</span>`).join("");
+    const ev = (x.ev||[]).map(e => `<span class="ev">${esc(e)}</span>`).join("");
+    return `<div class="kk-row${me?" me":""}">${av(x.a)}<div class="kk-col">
+      <span class="kk-name">${esc(AG[x.a]?.name || x.a)}<small>${esc(AG[x.a]?.role || "")}</small></span>
+      <div class="kk-bub">${esc(x.p)}</div>
+      ${tags || ev ? `<div class="kk-meta">${tags}${ev}</div>` : ""}
+    </div></div>`;
+  }).join("") + `</div>`;
+}
+function chatBlock(m, prefix){
+  const decs = m.decisions || [];
+  if (!decs.length) return "";
+  return `<div class="sec"><div class="sec-h"><h2>회의 대화</h2><span class="sub">노란 말풍선이 YK(KWAN 미러)의 검증입니다</span></div>
+    <div class="kk-nav" id="${prefix}-nav">${decs.map((d, i) => `<button data-id="${esc(d.id)}">결정 ${i+1}${d.proj?` · ${esc(d.proj)}`:""}</button>`).join("")}</div>
+    <div id="${prefix}-chat"></div></div>`;
+}
+function bindChat(m, prefix, first){
+  const nav = $("#" + prefix + "-nav"); if (!nav) return;
+  const go = id => { nav.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id ? "true" : "false")); $("#" + prefix + "-chat").innerHTML = kakaoHtml(m, id); };
+  nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => go(b.dataset.id)));
+  go(first || m.decisions[0].id);
+}
+
 // 오늘 회의
 function renderToday(){
   const el = $("#p-today");
   const m = MEETINGS.find(x => x.status !== "error");
-  if (!m) { el.innerHTML = `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; return; }
+  if (!m) { el.innerHTML = pipelineHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; return; }
   const meta = m.meta || {};
   const att = meta.attendees || [...new Set((m.decisions||[]).flatMap(d => d.who || []))];
-  let h = `<div class="sec"><div class="meta">
+  let h = pipelineHtml() + `<div class="sec"><div class="meta">
      <span><b>${fmtDate(m.meeting_date)}</b> ${m.kind==="auto"?"자동회의":m.kind==="deep"?"깊은 회의":"수동 회의"}</span>
      ${m.title ? `<span><b>${esc(m.title)}</b></span>` : ""}
      <span>결정 <b>${(m.decisions||[]).length}건</b></span>
@@ -366,11 +473,13 @@ function renderToday(){
      ${meta.agenda_reason ? `<span>${esc(meta.agenda_reason)}</span>` : ""}
    </div></div>`;
   if (m.status === "no_agenda") h += `<div class="empty">${esc(meta.note || "오늘은 회의할 만한 변화가 없어서 회의를 열지 않았어요.")}</div>`;
+  h += chatBlock(m, "today");
   if ((m.escalations||[]).length) h += `<div class="sec"><div class="sec-h"><h2>막힘 알림</h2><span class="sub">결정과 별도로, 진행이 멈춘 건은 개수 제한 없이 올립니다</span></div>
      ${m.escalations.map(e => `<div class="esc">${av(e.owner || "PM", true)}<div><strong>${esc(e.title)}</strong><br>${esc(e.body)}</div></div>`).join("")}</div>`;
   if ((m.decisions||[]).length) h += `<div class="sec"><div class="sec-h"><h2>KWAN이 결정할 것</h2><span class="sub">A·B·C는 서로 다른 전략 방향입니다</span></div>${m.decisions.map((d, i) => decCard(m, d, i)).join("")}</div>`;
   if (meta.question) h += `<div class="sec"><div class="sec-h"><h2>오늘의 질문</h2></div><div class="box"><p style="margin:0">${esc(meta.question)}</p><span class="sub">KWAN 프로필 탭이나 DM으로 답해주세요</span></div></div>`;
   el.innerHTML = h;
+  bindChat(m, "today");
   bindPicks(m);
 }
 function decCard(m, d, i){
@@ -393,7 +502,7 @@ function decCard(m, d, i){
     </div>`).join("")}
    </div>
    ${d.yk ? `<div class="yk-note">${av("YK", true)}<p>${esc(d.yk)}</p></div>` : ""}
-   <div class="dec-foot"><span>참석 ${(d.who||[]).map(k => esc(AG[k]?.name || k)).join(" · ")}</span><button class="linkbtn" data-goto="${esc(d.id)}">회의록에서 근거 보기</button></div>
+   <div class="dec-foot"><span>참석 ${(d.who||[]).map(k => esc(AG[k]?.name || k)).join(" · ")}</span><button class="linkbtn" data-goto="${esc(d.id)}">대화에서 근거 보기</button></div>
   </article>`;
 }
 function bindPicks(m){
@@ -403,7 +512,7 @@ function bindPicks(m){
     if (error) { toast("저장하지 못했어요. 다시 눌러주세요."); return; }
     m.choices = choices; renderToday(); toast(`${b.dataset.plan}안으로 기록했어요. 다음 회의에 반영됩니다`);
   }));
-  document.querySelectorAll("#p-today [data-goto]").forEach(b => b.addEventListener("click", () => { CUR = m; showTab("minutes"); renderMinutes(m, b.dataset.goto); window.scrollTo({top:0}); }));
+  document.querySelectorAll("#p-today [data-goto]").forEach(b => b.addEventListener("click", () => { bindChat(m, "today", b.dataset.goto); $("#today-nav").scrollIntoView({behavior:"smooth", block:"start"}); }));
 }
 
 // 회의록
@@ -424,15 +533,7 @@ function renderMinutes(m, decId){
 }
 function renderTx(m, id){
   $("#txnav").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id ? "true" : "false"));
-  const msgs = (m.transcript || {})[id] || [];
-  $("#tx").innerHTML = msgs.length ? msgs.map(x => x.st
-    ? `<div class="stage"><b>${esc(x.st)}</b></div>`
-    : `<div class="msg${x.a==="YK"?" yk":""}">${av(x.a)}
-        <div class="msg-b">
-         <div class="msg-h"><span class="who">${esc(AG[x.a]?.name || x.a)}</span><span class="role">${esc(AG[x.a]?.role || "")}</span>${(x.tag||[]).map(t => `<span class="chip ${tagCls[t]||""}">${esc(t)}</span>`).join("")}</div>
-         <p>${esc(x.p)}</p>
-         ${(x.ev||[]).length ? `<div class="ev">${x.ev.map(e => `<span>${esc(e)}</span>`).join("")}</div>` : ""}
-        </div></div>`).join("") : `<div class="empty">이 안건의 발언 기록이 없어요.</div>`;
+  $("#tx").innerHTML = kakaoHtml(m, id);
 }
 
 // 에이전트
