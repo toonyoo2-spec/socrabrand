@@ -460,6 +460,12 @@ tr.new td{background:var(--green-tint)}
 @media(max-width:760px){.msg-app{grid-template-columns:1fr}.msg-app.open .msg-list{display:none}.msg-app:not(.open) .msg-room{display:none}.mr-head .back{display:block}.msg-list{border-right:none}}
 
 /* 팀 채팅방 · 준비 노트 · 팝업 메신저 */
+.rooms{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.rooms .cnt{background:#ff5a4f;color:#fff;border-radius:999px;padding:0 6px;font-size:11px;font-weight:800;margin-left:2px}
+.rooms .add{border-style:dashed}
+.room-mem{display:flex;gap:4px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.room-mem .sub{margin-left:6px}
+.sheet .in{font-family:inherit;font-size:15px;border:1px solid var(--border);border-radius:10px;padding:10px 12px}
 .team{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
 .team-body{background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start;max-height:520px;min-height:180px;overflow-y:auto}
 .team .dr-foot{background:var(--surface)}
@@ -739,7 +745,7 @@ async function boot(){
   const { data: own } = await sb.from("agency_owners").select("user_id").limit(1).maybeSingle();
   if (!own) return show("denied");
   show("app");
-  const [ag, mt, pf, iv, pr, ch, cf, sm, sc, at, nt] = await Promise.all([
+  const [ag, mt, pf, iv, pr, ch, cf, sm, sc, at, nt, rm] = await Promise.all([
     sb.from("agency_agents").select("*").order("sort"),
     sb.from("agency_meetings").select("*").order("meeting_date", {ascending:false}).order("created_at", {ascending:false}).limit(60),
     sb.from("agency_profile").select("*").order("created_at"),
@@ -750,8 +756,10 @@ async function boot(){
     sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1),
     sb.from("agency_scout").select("*").order("collected_date", {ascending:false}).order("id").limit(60),
     sb.from("agency_attendance").select("*").order("work_date", {ascending:false}).limit(1),
-    sb.from("agency_notes").select("*").order("id", {ascending:false}).limit(40)
+    sb.from("agency_notes").select("*").order("id", {ascending:false}).limit(40),
+    sb.from("agency_rooms").select("*").order("created_at")
   ]);
+  CROOMS = (rm.data || []);
   NOTES = (nt.data || []);
   ATT = (at.data || [])[0] || null; if (ATT && ATT.work_date !== kstNow().date) ATT = ATT.clock_out ? null : ATT;
   SUMMON = (sm.data || [])[0] || null;
@@ -898,9 +906,10 @@ function startRealtime(){
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_chat"}, ({eventType, new:row}) => {
       if (!row || !row.id) return; const fresh = eventType === "INSERT" && !CHAT.some(c => c.id === row.id);
       upsertBy(CHAT, row); CHAT.sort((a, b) => a.id - b.id);
-      if (fresh && row.sender === "agent") row.code === "TEAM" ? notify(row.speaker || "PM", row.body, () => { showTab("today"); const t = $("#teamSec"); if (t) t.scrollIntoView({behavior:"smooth"}); }, "팀 채팅방") : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
-      if (row.code === "TEAM") renderTeam();
+      if (fresh && row.sender === "agent") isRoom(row.code) ? notify(row.speaker || "PM", row.body, () => { showTab("today"); ROOM_CUR = row.code; const t = $("#teamSec"); if (t) { t.outerHTML = teamHtml(); bindTeam(); $("#teamSec").scrollIntoView({behavior:"smooth"}); } }, roomOf(row.code).title) : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
+      if (isRoom(row.code)) { if (row.code === ROOM_CUR) renderTeam(); else { const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } }
       rtDirty.office = true; rtFlush(); })
+    .on("postgres_changes", {event:"*", schema:"public", table:"agency_rooms"}, ({new:row}) => { if (row && row.code) { upsertBy(CROOMS, row, "code"); const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } })
     .on("postgres_changes", {event:"INSERT", schema:"public", table:"agency_notes"}, ({new:row}) => { if (row && row.id && !NOTES.some(n => n.id === row.id)) { NOTES.unshift(row); rtDirty.today = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_presence"}, ({new:row}) => { if (row && row.code) { PRES[row.code] = row; rtDirty.office = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_interventions"}, ({new:row, old}) => {
@@ -1477,30 +1486,61 @@ function refsHtml(){
 function bindRefs(){ document.querySelectorAll("[data-refk]").forEach(b => b.addEventListener("click", () => { REF_KIND = b.dataset.refk; const sec = $("#refSec"); if (sec) { sec.outerHTML = refsHtml(); bindRefs(); } })); }
 
 // 팀 채팅방 (12명 전원 단톡방, code='TEAM') — 모든 말은 DB가 회의록에 자동 복제한다
+let CROOMS = [], ROOM_CUR = (() => { try { return localStorage.getItem("agency-room") || "TEAM"; } catch (e) { return "TEAM"; } })();
+const isRoom = c => c === "TEAM" || /^R\d+$/.test(c || "");
+const roomOf = c => CROOMS.find(r => r.code === c) || {code:"TEAM", title:"팀 전체", members:Object.keys(AG)};
+function roomUnread(c){ const seen = Number(store("agency-room-seen-" + c) || 0); return CHAT.filter(x => x.code === c && x.sender === "agent" && x.id > seen).length; }
 function teamHtml(){
-  return `<div class="sec" id="teamSec"><div class="sec-h"><h2>팀 채팅방</h2><span class="sub">여기 남기면 관련 에이전트들이 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. 모든 대화는 회의록에 저장돼요</span></div>
-    <div class="team"><div class="team-body" id="teamBody"></div>
-    <form class="dr-foot" id="teamForm"><textarea id="teamIn" placeholder="모두에게 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
+  const list = CROOMS.filter(r => !r.archived); if (!list.some(r => r.code === ROOM_CUR)) ROOM_CUR = "TEAM";
+  const cur = roomOf(ROOM_CUR);
+  return `<div class="sec" id="teamSec"><div class="sec-h"><h2>채팅방</h2><span class="sub">방마다 참여자가 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. Grace가 직접 참여할지 물어봐요. 모든 대화는 회의록에 저장돼요</span></div>
+    <div class="rooms">${list.map(r => { const n = r.code === ROOM_CUR ? 0 : roomUnread(r.code); return `<button class="pk" data-room-tab="${r.code}" aria-pressed="${r.code === ROOM_CUR}">${esc(r.title)}${n ? ` <span class="cnt">${n}</span>` : ""}</button>`; }).join("")}<button class="pk add" id="newRoom">+ 새 채팅방</button></div>
+    <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span></div><div class="team-body" id="teamBody"></div>
+    <form class="dr-foot" id="teamForm"><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
 }
 function renderTeam(){
   const box = $("#teamBody"); if (!box) return;
   const near = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   const today = kstNow().date;
-  const th = CHAT.filter(c => c.code === "TEAM" && new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10) >= new Date(Date.now() + 9*3600e3 - 2*864e5).toISOString().slice(0,10));
+  const th = CHAT.filter(c => c.code === ROOM_CUR);
   let lastDay = "";
   box.innerHTML = th.length ? th.map(c => { const day = new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10);
       const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day;
       return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "")); }).join("")
-    : `<div class="kk-day">아직 대화가 없어요. 팀 전체에게 말을 걸어보세요</div>`;
+    : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`;
   if (near || !box.dataset.init) box.scrollTop = box.scrollHeight; box.dataset.init = "1";
+  const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#teamSec").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
 }
 function bindTeam(){
   renderTeam();
+  document.querySelectorAll("[data-room-tab]").forEach(b => b.addEventListener("click", () => { ROOM_CUR = b.dataset.roomTab; store("agency-room", ROOM_CUR); const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); }));
+  const nb = $("#newRoom"); if (nb) nb.addEventListener("click", openNewRoom);
   const f = $("#teamForm"); if (!f) return;
   f.addEventListener("submit", async e => { e.preventDefault(); const body = $("#teamIn").value.trim(); if (!body) return;
-    const { data, error } = await sb.from("agency_chat").insert({ code:"TEAM", sender:"kwan", body }).select().single();
-    if (error) return toast("보내지 못했어요. 다시 시도해주세요.");
+    const { data, error } = await sb.from("agency_chat").insert({ code:ROOM_CUR, sender:"kwan", body }).select().single();
+    if (error) return toast("보내지 못했어요: " + (error.message || "다시 시도해주세요"));
     upsertBy(CHAT, data); $("#teamIn").value = ""; renderTeam(); toast(dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
+}
+function openNewRoom(){
+  const pick = new Set(["PM"]);
+  const bg = document.createElement("div"); bg.className = "sheet-bg";
+  const draw = () => { const title = bg.querySelector("#roomTitle")?.value || "";
+    bg.innerHTML = `<form class="sheet" id="roomForm" role="dialog" aria-label="새 채팅방"><h3>새 채팅방</h3>
+    <input id="roomTitle" class="in" placeholder="방 이름 (예: Q&A 스크립트, 산타 광고)" maxlength="40" value="${esc(title)}">
+    <div class="pick-row">${TEAMS.map(([nm, cs]) => `<button type="button" class="pk" data-team="${cs.join(",")}" aria-pressed="${cs.every(c => pick.has(c))}">${nm}</button>`).join("")}</div>
+    <div class="pick-row">${Object.keys(AG).map(c => `<button type="button" class="pk" data-one="${c}" aria-pressed="${pick.has(c)}">${esc(AG[c].name)}</button>`).join("")}</div>
+    <span class="sub">Grace는 항상 함께 있어요</span>
+    <div class="acts"><button type="button" class="btn ghost" id="roomCancel">취소</button><button class="btn" type="submit">만들기</button></div></form>`;
+    bg.querySelectorAll("[data-team]").forEach(b => b.addEventListener("click", () => { const cs = b.dataset.team.split(","); const all = cs.every(c => pick.has(c)); cs.forEach(c => all ? pick.delete(c) : pick.add(c)); pick.add("PM"); draw(); }));
+    bg.querySelectorAll("[data-one]").forEach(b => b.addEventListener("click", () => { const c = b.dataset.one; if (c === "PM") return; pick.has(c) ? pick.delete(c) : pick.add(c); draw(); }));
+    bg.querySelector("#roomCancel").addEventListener("click", () => bg.remove());
+    bg.querySelector("#roomForm").addEventListener("submit", async e => { e.preventDefault(); const t = bg.querySelector("#roomTitle").value.trim(); if (!t) return toast("방 이름을 적어주세요");
+      const { data, error } = await sb.rpc("agency_new_room", { p_title: t, p_members: [...pick] });
+      if (error) return toast("만들지 못했어요: " + (error.message || ""));
+      CROOMS.push({ code: data, title: t, members: [...pick] }); ROOM_CUR = data; store("agency-room", data); bg.remove();
+      const sec = $("#teamSec"); if (sec) { sec.outerHTML = teamHtml(); bindTeam(); } toast(`'${t}' 방을 만들었어요`); });
+  };
+  draw(); document.body.appendChild(bg); fitOverlay(bg); bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
 }
 // 회의 준비 노트 (근무 시간에 에이전트들이 남긴 인사이트)
 function notesHtml(){
