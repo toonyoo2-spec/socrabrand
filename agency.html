@@ -338,8 +338,12 @@ tr.new td{background:var(--green-tint)}
 .sp3 .ck.l{left:12px}.sp3 .ck.r{right:12px}.sp3 .ck{top:14px}
 .sp3 .tag{top:27px;font-size:8.5px}
 .sp3.sit .fig{translate:0 6px}
-.iso .board{position:absolute;left:12px;top:12px;width:min(240px,46%);margin:0;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.12);border:none;border-radius:12px}
-@media(max-width:640px){.iso .board{display:none}}
+.board3{position:absolute;left:12px;top:12px;max-width:min(300px,70%);margin:0;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);border:none;border-radius:14px;padding:0;background:rgba(255,255,255,.92);backdrop-filter:blur(6px)}
+.board3 summary{list-style:none;cursor:pointer;padding:7px 12px;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board3 summary::-webkit-details-marker{display:none}
+.board3 summary::after{content:" ▾";color:#8a857b}.board3[open] summary::after{content:" ▴"}
+.board3 ol{margin:0;padding:0 12px 10px}
+
 
 /* 카카오톡식 알림 */
 .noti-stack{position:fixed;top:12px;right:12px;z-index:80;display:grid;gap:8px;width:min(340px,calc(100% - 24px))}
@@ -548,7 +552,7 @@ tr.new td{background:var(--green-tint)}
 .qa:last-child{border-bottom:none}
 .qa textarea{width:100%;min-height:56px;font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;background:var(--bg);color:var(--text);resize:vertical}
 .qa .row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px}
+.toast{z-index:90;position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .topbar a{color:var(--muted);font-size:12px;font-family:var(--mono)}
 </style>
@@ -690,7 +694,10 @@ const fmtDate = d => { const x = new Date(d + "T00:00:00"); return `${x.getMonth
 function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v);}catch(e){ return null; } }
 const linkify = t => esc(t).replace(/https?:\/\/[^\s<)"]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.length > 60 ? u.slice(0, 57) + "…" : u}</a>`);
 function dutyNow(){ const d = new Date(Date.now() + 9*3600e3); const wd = d.getUTCDay(), m = d.getUTCHours()*60 + d.getUTCMinutes(); return wd >= 1 && wd <= 5 && m >= 510 && m < 1050; }
-function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
+function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t);
+  // 메인 화면 안에 끼워져 있으면, 지금 보이는 영역 아래쪽에 띄운다
+  try { const fe = window.frameElement; if (fe) { const r = fe.getBoundingClientRect(); const bottom = Math.min(r.height, window.parent.innerHeight - r.top); t.style.bottom = "auto"; t.style.top = Math.max(12, bottom - 64) + "px"; } } catch (e) {}
+  setTimeout(() => t.remove(), 2600); }
 
 let AG = {}, MEETINGS = [], CUR = null, IV = [];
 const LABEL = {YK:"NAWK"}; const lbl = k => LABEL[k] || k;
@@ -1045,7 +1052,7 @@ function officeHtml(){
   const phase = running ? `${(last.kind === "night" ? "🌙 " : "")}${esc(last.title || "근무 중")}` : counts.idle ? "근무 시간 · 지시 대기 중" : night ? "퇴근 · 야간 근무 대기" : "업무 외 · 다음 근무 대기";
   const inMeet = Object.keys(AG).filter(c => pres(c).status === "meeting");
   const steps = (last && (last.meta||{}).steps) || [];
-  const board = steps.length ? `<div class="board"><b>${running ? "진행 중" : "지난 근무"} · ${esc(last.title || "")}</b><ol>${steps.map(x => `<li class="${x.s}"><i></i>${esc(STEP_LABEL[x.k] || x.k)}${x.n ? ` · <span style="color:#6f6d67">${esc(x.n)}</span>` : ""}</li>`).join("")}</ol></div>` : `<div class="board"><b>화이트보드</b><ol><li><i></i>다음 근무: ${nextShiftText()}</li></ol></div>`;
+  const board = steps.length ? `<details class="board board3"${running ? " open" : ""}><summary>${running ? "● 진행 중" : "지난 근무"} · ${esc(last.title || "")}</summary><ol>${steps.map(x => `<li class="${x.s}"><i></i>${esc(STEP_LABEL[x.k] || x.k)}${x.n ? ` · <span style="color:#6f6d67">${esc(x.n)}</span>` : ""}</li>`).join("")}</ol></details>` : `<details class="board board3"><summary>다음 근무: ${nextShiftText()}</summary></details>`;
   const mode = (CFG.night_mode || "normal");
   return `<div class="sec" id="officeSec"><div class="office${night ? " night" : ""}"><span class="stars"></span>
     <div class="hud"><div class="hud-l"><span class="hud-clock" id="kclock">${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}</span>
