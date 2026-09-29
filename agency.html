@@ -501,6 +501,26 @@ tr.new td{background:var(--green-tint)}
 .rs-c ul{margin:2px 0 0;padding:0;list-style:none;display:grid;gap:2px}
 .rs-c li button{border:none;background:none;text-align:left;font:inherit;font-size:12.5px;color:var(--text);cursor:pointer;padding:2px 0;line-height:1.45}
 .rs-c li button:hover{text-decoration:underline}
+.rh-link{border:1px solid var(--border);background:var(--bg);border-radius:8px;padding:2px 8px;font:inherit;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.rh-link:hover{color:var(--text);border-color:var(--border-hover)}
+/* 카드형 대화 */
+.kk-row.card .kk-col{max-width:min(780px,92%);width:100%}
+.cd-head{display:flex;align-items:baseline;gap:6px;font-size:13px;color:#1d2a36;min-width:0}
+.cd-head b{font-weight:800}.cd-head small{color:#5d6a77;font-size:11.5px}
+.cd-time,.kk-meta .cd-time{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:#3a4652}
+.kk-row.me .cd-time{margin-left:0}
+.cd-card{background:#fff;border-radius:4px 12px 12px 12px;border-left:3px solid var(--tc);padding:10px 14px;display:grid;gap:6px;color:#141414;min-width:0}
+.cd-hl{font-weight:750;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere}
+.md{font-size:13.8px;line-height:1.62;overflow-wrap:anywhere;word-break:keep-all}
+.md p{margin:0}.md .md-gap{height:6px}
+.md .md-h{font-weight:800;margin:8px 0 2px;font-size:13.8px}
+.md .md-h:first-child{margin-top:0}
+.md ul,.md ol{margin:2px 0;padding-left:20px}.md li{margin:1px 0}
+.md hr{border:none;border-top:1px dashed #d9d5cc;margin:8px 0}
+.md code{background:#f1efe9;border-radius:4px;padding:0 4px;font-size:12.5px}
+.cd-txt.fold,.kk-bub.md.fold{max-height:9.2em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+.cd-card .kk-more{justify-self:start;background:#f1efe9}
+.kk-row.card.yk .cd-card{background:#fff8e6}
 .kk-tag{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;padding:0 6px;border-radius:5px;background:#141414;color:#fff;vertical-align:1px}
 .rs-c .kk-tag{margin:0 5px 0 0}
 .kk-bub.fold{max-height:9.6em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
@@ -951,6 +971,21 @@ const WD = ["일","월","화","수","목","금","토"];
 const fmtDate = d => { const x = new Date(d + "T00:00:00"); return `${x.getMonth()+1}/${x.getDate()}(${WD[x.getDay()]})`; };
 function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v);}catch(e){ return null; } }
 const linkify = t => esc(t).replace(/https?:\/\/[^\s<)"]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.length > 60 ? u.slice(0, 57) + "…" : u}</a>`);
+// 에이전트 글의 간단한 서식(**굵게**, 제목, 목록, 줄바꿈)을 실제 모양으로
+function mdLite(t){
+  const lines = String(t || "").replace(/\r/g, "").split("\n"); let h = "", list = null, gap = false;
+  const inline = x => linkify(x).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>");
+  const close = () => { if (list) { h += `</${list}>`; list = null; } };
+  for (const raw of lines) { const l = raw.replace(/\s+$/, ""); let m;
+    if (!l.trim()) { close(); if (!gap && h) h += `<div class="md-gap"></div>`; gap = true; continue; } gap = false;
+    if (/^\s*(-{3,}|_{3,}|={3,})\s*$/.test(l)) { close(); h += "<hr>"; continue; }
+    if ((m = l.match(/^\s*#{1,4}\s+(.*)$/)) || (m = l.match(/^\s*[■▶◆]\s*(.*)$/))) { close(); h += `<div class="md-h">${inline(m[1].replace(/\*\*/g, ""))}</div>`; continue; }
+    if ((m = l.match(/^\s*[-•·*]\s+(.*)$/))) { if (list !== "ul") { close(); h += "<ul>"; list = "ul"; } h += `<li>${inline(m[1])}</li>`; continue; }
+    if ((m = l.match(/^\s*(\d{1,2})[.)]\s+(.*)$/))) { if (list !== "ol") { close(); h += "<ol>"; list = "ol"; } h += `<li value="${m[1]}">${inline(m[2])}</li>`; continue; }
+    close(); h += `<p>${inline(l)}</p>`;
+  }
+  close(); return h;
+}
 // 비서실장 당직: 기본 24시간(KWAN 확정 9/28), duty_mode="work"면 평일 08:30~17:30만
 function dutyNow(){ if (CFG.duty_mode !== "work") return true; const d = new Date(Date.now() + 9*3600e3); const wd = d.getUTCDay(), m = d.getUTCHours()*60 + d.getUTCMinutes(); return wd >= 1 && wd <= 5 && m >= 510 && m < 1050; }
 function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t);
@@ -1630,7 +1665,7 @@ function renderMsgList(){
   const codes = Object.keys(AG).sort((x, y) => { const a = last(x), b = last(y); return (b ? +new Date(b.created_at) : 0) - (a ? +new Date(a.created_at) : 0); });
   box.innerHTML = codes.map(code => { const l = last(code); const n = chatUnread(code); const on = (PRES[code] || {}).status && PRES[code].status !== "off";
     return `<button class="ml-item" data-room="${code}" aria-current="${CHAT_CUR === code}">${av(code)}<span class="ml-mid"><b>${esc(AG[code].name)}</b><small>${esc(AG[code].role)}</small>
-      <p>${pendingReq(code) ? "❗ " : ""}${l ? esc((l.sender === "kwan" ? "나: " : "") + l.body.replace(/\s+/g, " ")) : `<span class="ml-dot${on ? " on" : ""}"></span>${esc(statusLine(code))}`}</p></span>
+      <p>${pendingReq(code) ? "❗ " : ""}${l ? esc((l.sender === "kwan" ? "나: " : "") + splitTag(l.body).text.replace(/\s+/g, " ")) : `<span class="ml-dot${on ? " on" : ""}"></span>${esc(statusLine(code))}`}</p></span>
       <span class="ml-end">${l ? `<span>${fmtTime(l.created_at)}</span>` : ""}${n ? `<span class="cnt">${n}</span>` : ""}</span></button>`; }).join("");
   box.querySelectorAll("[data-room]").forEach(b => b.addEventListener("click", () => openDrawer(b.dataset.room)));
 }
@@ -1675,8 +1710,8 @@ function openChatPicker(){
   const item = (attr, left, name, sub, n) => `<button type="button" class="pi" ${attr}>${left}<span class="mid"><b>${esc(name)}</b><small>${esc(sub)}</small></span>${n ? `<span class="cnt">${n}</span>` : ""}</button>`;
   const draw = (q = "") => {
     const ql = q.trim().toLowerCase(), hit = t => !ql || t.toLowerCase().includes(ql);
-    const rs = rooms.filter(r => hit(r.title)).map(r => { const l = last(r.code); return item(`data-pick-room="${r.code}"`, `<span class="av">💬</span>`, r.title, l ? l.body.replace(/\s+/g, " ").slice(0, 60) : "대화 없음", roomUnread(r.code)); }).join("");
-    const ps = people.filter(c => hit(AG[c].name + AG[c].role)).map(c => { const l = last(c); return item(`data-pick-one="${c}"`, av(c), AG[c].name + " · " + AG[c].role, l ? (l.sender === "kwan" ? "나: " : "") + l.body.replace(/\s+/g, " ").slice(0, 60) : statusLine(c), chatUnread(c)); }).join("");
+    const rs = rooms.filter(r => hit(r.title)).map(r => { const l = last(r.code); return item(`data-pick-room="${r.code}"`, `<span class="av">💬</span>`, r.title, l ? splitTag(l.body).text.replace(/\s+/g, " ").slice(0, 60) : "대화 없음", roomUnread(r.code)); }).join("");
+    const ps = people.filter(c => hit(AG[c].name + AG[c].role)).map(c => { const l = last(c); return item(`data-pick-one="${c}"`, av(c), AG[c].name + " · " + AG[c].role, l ? (l.sender === "kwan" ? "나: " : "") + splitTag(l.body).text.replace(/\s+/g, " ").slice(0, 60) : statusLine(c), chatUnread(c)); }).join("");
     bg.querySelector(".pk-list").innerHTML = (rs ? `<h4>채팅방</h4>${rs}` : "") + (ps ? `<h4>1:1 대화</h4>${ps}` : "") || `<div class="sub" style="padding:8px">찾는 이름이 없어요</div>`;
     bg.querySelectorAll("[data-pick-one]").forEach(b => b.addEventListener("click", () => { bg.remove(); openPop(b.dataset.pickOne); }));
     bg.querySelectorAll("[data-pick-room]").forEach(b => b.addEventListener("click", () => { bg.remove(); closePop(); openRoom(b.dataset.pickRoom); }));
@@ -1725,10 +1760,13 @@ function renderThread(code, target){
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80, prevTop = box.scrollTop;
   if (box.dataset.code !== code) { box.dataset.code = code; box.dataset.limit = String(MSG_WINDOW); delete box.dataset.init; }
   const all = CHAT.filter(c => c.code === code), lim = Number(box.dataset.limit) || MSG_WINDOW, th = all.slice(-lim);
-  box.innerHTML = (all.length > th.length ? moreBtn(all.length - th.length) : "") + (th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "Grace 확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c))).join("")
+  let lastDay = ""; const today = kstNow().date;
+  box.innerHTML = (all.length > th.length ? moreBtn(all.length - th.length) : "") + (th.length ? th.map(c => { const day = new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10);
+      const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day; return sep + roomBubble(c); }).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`);
   if (nearBottom || !box.dataset.init || STICK > Date.now()) toBottom(box); else box.scrollTop = prevTop; box.dataset.init = "1";
   bindMore(box, () => renderThread(code, target));
+  bindUnfold(box);
   hydrateAtt(box);
 }
 // 긴 대화는 최근 것만 그린다(휴대폰에서 전체를 한 번에 그리면 화면이 잠깐 멈춤). 위로 올려 '이전 대화 더 보기'로 불러온다
@@ -1909,28 +1947,49 @@ function teamHtml(){
     <div class="room-wrap"><aside class="room-list" aria-label="채팅방 목록"><button type="button" class="rl-new" id="newRoom">+ 새 채팅방</button>
       ${open.map(roomItem).join("")}
       ${arch.length ? `<button type="button" class="rl-arch" id="archToggle" aria-expanded="${ROOM_ARCH_OPEN || isArch}">보관함 ${arch.length}</button>${ROOM_ARCH_OPEN || isArch ? arch.map(roomItem).join("") : ""}` : ""}</aside>
-    <div class="team"><div class="room-head"><div class="rh-title"><b id="roomTitle">${esc(cur.title)}</b>${cur.code !== "TEAM" ? `<button type="button" class="rh-ic" id="renameRoom" title="방 이름 바꾸기" aria-label="방 이름 바꾸기">✎</button>` : ""}<span class="sub">${(cur.members || []).length}명</span></div>
-      <div class="rh-acts"><button type="button" class="btn ghost" id="roomSum" title="누가 무엇을 말했는지 사람별로 정리">요약</button>${cur.code !== "TEAM" ? (isArch ? `<button type="button" class="btn" id="unarchRoom">다시 열기</button>` : `<button type="button" class="btn ghost" id="archRoom" title="목록에서 숨기고 보관함으로. 언제든 다시 열 수 있어요">보관</button>`) : ""}</div>
+    <div class="team"><div class="room-head"><div class="rh-title"><b id="roomTitle">${esc(cur.title)}</b>${cur.code !== "TEAM" ? `<button type="button" class="rh-link" id="renameRoom" title="방 이름 바꾸기">✎ 이름 수정</button>` : ""}<span class="sub">${(cur.members || []).length}명</span></div>
+      <div class="rh-acts"><button type="button" class="btn ghost" id="roomSum" title="누가 무엇을 말했는지 사람별로 정리">요약</button>${cur.code !== "TEAM" ? (isArch ? `<button type="button" class="btn" id="unarchRoom">다시 열기</button>` : `<button type="button" class="btn ghost" id="archRoom" title="대화는 회의록에 남고 방은 보관함으로 가요. 언제든 다시 열어 이어서 쓸 수 있어요">회의 종료</button>`) : ""}</div>
       <div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}</div></div>
-    ${isArch ? `<div class="room-arch">보관된 방이에요. 대화는 그대로 볼 수 있고, <b>다시 열기</b>를 누르면 이어서 쓸 수 있어요</div>` : ""}
+    ${isArch ? `<div class="room-arch">회의가 끝난 방이에요. 대화는 그대로 볼 수 있고, <b>다시 열기</b>를 누르면 이어서 쓸 수 있어요</div>` : ""}
     <div class="room-sum" id="roomSumBox" hidden></div>
     <div class="team-body" id="teamBody"></div><div class="room-grip" id="roomGrip" role="separator" aria-orientation="horizontal" title="끌어서 대화창 높이 조절 · 더블클릭하면 화면에 맞춤"><span></span></div>
     <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"${isArch ? " hidden" : ""}><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div></div>`;
 }
 // 말머리 "[제안 · Hannah]" "[바로 답해요 · Leo]"를 이름 옆 칩으로 빼고, 긴 글은 접어서 보여준다
 const LONG_MSG = 420;
-function splitTag(body){ const m = String(body || "").match(/^\s*\[([^\]·]{1,20})·\s*([^\]]{1,20})\]\s*/); if (!m) return { tag: "", text: String(body || "") }; const t = m[1].trim(); return { tag: /바로 답해요/.test(t) ? "" : t, text: String(body).slice(m[0].length) }; }
-function roomBubble(c){
-  const code = c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), me = code === "KWAN";
-  const { tag, text } = me ? { tag: "", text: c.body } : splitTag(c.body);
-  const long = String(text).length > LONG_MSG || String(text).split("\n").length > 8;
-  const name = me ? "KWAN" : (AG[code]?.name || code), role = me ? "" : (AG[code]?.role || "");
-  const meta = `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (me ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "");
-  return `<div class="kk-row${me ? " me" : ""}${code === "YK" ? " yk" : ""}" data-cid="${c.id}">${av(code)}<div class="kk-col">
-    ${me ? "" : `<span class="kk-name">${esc(name)}<small>${esc(role)}</small>${tag ? `<span class="kk-tag">${esc(tag)}</span>` : ""}</span>`}
-    <div class="kk-bub${long ? " fold" : ""}">${linkify(text)}${attHtml(c)}</div>${long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}
-    <div class="kk-meta">${meta}</div></div></div>`;
+function splitTag(body){
+  const b = String(body || ""); const m = b.match(/^\s*\[([^\]·]{1,24})(?:·\s*([^\]]{1,24}))?\]\s*/); if (!m) return { tag: "", text: b };
+  const t = m[1].trim(), who = (m[2] || "").trim();
+  const isName = x => !!x && Object.entries(AG).some(([k, a]) => k === x || a.name === x || x.startsWith(a.name) || x === "YK NAWK");
+  if (!m[2] && !/^(바로 답해요|제안|반론|보완|분석|검증|재설계|정리|시안|회의 시작|답|검증 \d)/.test(t)) return { tag: "", text: b }; // [002] 같은 일반 대괄호는 그대로
+  const tag = /바로 답해요/.test(t) || isName(t) ? "" : t.replace(/\s*\d+$/, "");
+  return { tag, text: b.slice(m[0].length) };
 }
+// 카드형 말풍선: 이름·태그·시간 → 핵심 한 줄(굵게) → 본문(서식 적용, 길면 접기)
+function headSplit(text){
+  const t = String(text || "").replace(/^\s+/, ""); const nl = t.indexOf("\n"); const first = (nl < 0 ? t : t.slice(0, nl)); const rest = nl < 0 ? "" : t.slice(nl + 1);
+  const clean = x => x.replace(/^\s*(#{1,4}|[■▶◆])\s*/, "").replace(/\*\*/g, "").trim();
+  if (/^\s*(#{1,4}\s|[■▶◆])/.test(first) || first.length <= 90) return { hl: clean(first), rest };
+  const m = first.match(/^(.{10,140}?[.?!])(\s|$)/);
+  return m ? { hl: clean(m[1]), rest: first.slice(m[1].length).trim() + (rest ? "\n" + rest : "") } : { hl: "", rest: t };
+}
+function roomBubble(c){
+  const code = c.sender === "kwan" ? "KWAN" : (c.speaker || (isRoom(c.code) ? "PM" : c.code)), me = code === "KWAN";
+  const time = `<span class="cd-time">${fmtTime(c.created_at)}</span>`;
+  const meta = docBtnChat(c) + (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + (me ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "");
+  if (me) {
+    const long = String(c.body).length > 600;
+    return `<div class="kk-row me" data-cid="${c.id}">${av(code)}<div class="kk-col"><div class="kk-bub md${long ? " fold" : ""}">${mdLite(c.body)}${attHtml(c)}</div>${long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}<div class="kk-meta">${time}${meta}</div></div></div>`;
+  }
+  const { tag, text } = splitTag(c.body), { hl, rest } = headSplit(text);
+  const long = rest.length > 380 || rest.split("\n").length > 8;
+  const name = AG[code]?.name || code, role = AG[code]?.role || "";
+  return `<div class="kk-row card${code === "YK" ? " yk" : ""}" data-cid="${c.id}" style="--tc:${TEAM_COLOR[code] || "#8a8780"}">${av(code)}<div class="kk-col">
+    <div class="cd-head"><b>${esc(name)}</b><small>${esc(role)}</small>${tag ? `<span class="kk-tag">${esc(tag)}</span>` : ""}${time}</div>
+    <div class="cd-card">${hl ? `<div class="cd-hl">${linkify(hl)}</div>` : ""}${rest.trim() ? `<div class="cd-txt md${long ? " fold" : ""}">${mdLite(rest)}</div>` : ""}${attHtml(c)}${long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}</div>
+    ${meta ? `<div class="kk-meta">${meta}</div>` : ""}</div></div>`;
+}
+function bindUnfold(box){ box.querySelectorAll("[data-unfold]").forEach(b => b.addEventListener("click", () => { let el = b.previousElementSibling; while (el && !el.classList.contains("md")) el = el.previousElementSibling; if (!el) return; const on = el.classList.toggle("fold"); b.textContent = on ? "전체 보기" : "접기"; })); }
 // 요약: 사람별로 무엇을 말했는지(각 말의 첫 문장), 누르면 그 말로 이동
 function roomSummaryHtml(){
   const all = CHAT.filter(c => c.code === ROOM_CUR);
@@ -1957,7 +2016,7 @@ function renderTeam(){
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`);
   if (near || !box.dataset.init || STICK > Date.now()) toBottom(box); else box.scrollTop = prevTop; box.dataset.init = "1";
   bindMore(box, renderTeam);
-  box.querySelectorAll("[data-unfold]").forEach(b => b.addEventListener("click", () => { const bub = b.previousElementSibling; const on = bub.classList.toggle("fold"); b.textContent = on ? "전체 보기" : "접기"; }));
+  bindUnfold(box);
   const sb2 = $("#roomSumBox"); if (sb2 && !sb2.hidden) { sb2.innerHTML = roomSummaryHtml(); bindRoomSum(); }
   hydrateAtt(box);
   const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#p-rooms").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
@@ -2009,14 +2068,14 @@ function bindRoomSum(){
 // 보관: 목록에서 숨기고 보관함으로(대화·회의록은 그대로, 언제든 다시 열기). 회의가 끝나도 방은 계속 쓸 수 있다
 async function setArchived(on){
   const r = roomOf(ROOM_CUR); if (!r || r.code === "TEAM") return;
-  if (on && !confirm(`'${r.title}' 방을 보관할까요?\n대화는 그대로 남고, 보관함에서 언제든 다시 열 수 있어요.`)) return;
+  if (on && !confirm(`'${r.title}' 회의를 끝낼까요?\n대화는 회의록에 남고, 방은 목록 아래 보관함으로 가요. 언제든 다시 열어 이어서 쓸 수 있어요.`)) return;
   micStop();
   const { error } = await sb.from("agency_rooms").update({ archived: on }).eq("code", r.code);
   if (error) return toast("바꾸지 못했어요: " + (error.message || ""));
   const x = CROOMS.find(c => c.code === r.code); if (x) x.archived = on;
   if (on) { ROOM_CUR = "TEAM"; store("agency-room", "TEAM"); }
   const sec = $("#teamSec"); if (sec) { sec.outerHTML = teamHtml(); bindTeam(); }
-  toast(on ? `'${r.title}' 방을 보관했어요. 목록 아래 보관함에 있어요` : `'${r.title}' 방을 다시 열었어요`);
+  toast(on ? `'${r.title}' 회의를 끝냈어요. 목록 아래 보관함에서 다시 열 수 있어요` : `'${r.title}' 방을 다시 열었어요`);
 }
 async function renameRoom(){
   const r = roomOf(ROOM_CUR); if (!r || r.code === "TEAM") return;
