@@ -714,6 +714,19 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
 .rep-fb .done{font-size:12px;color:var(--muted)}
 .datesel button{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:12px;font-family:var(--mono);color:var(--muted)}
 .datesel button[aria-current="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.min-dates{margin:0 0 10px}
+.min-dates button{font-size:13px;padding:6px 14px}
+.min-dates .cnt{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--border);color:var(--text);font-size:11px;text-align:center}
+.min-dates button[aria-current="true"] .cnt{background:var(--bg);color:var(--text)}
+.min-list{display:grid;gap:6px;margin:0 0 16px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.min-list button{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;color:var(--text);cursor:pointer;min-width:0}
+.min-list button:hover{border-color:var(--border-hover)}
+.min-list button[aria-current="true"]{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.min-list b{flex-basis:100%;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.min-list .mk{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:#eef3ff;color:#2f5bd3}
+.min-list .mk.chat{background:#fff5d6;color:#8a6200}.min-list .mk.deep{background:#f1e9ff;color:#6b3fc4}.min-list .mk.auto{background:#e8f7ef;color:#127a4a}
+.min-list .tm{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.min-list .nd{margin-left:auto;font-size:11.5px;color:var(--muted)}
 .qa{display:grid;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)}
 .qa:last-child{border-bottom:none}
 .qa textarea{width:100%;min-height:56px;font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;background:var(--bg);color:var(--text);resize:vertical}
@@ -777,7 +790,9 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
     <section id="p-chat" class="panel" hidden><div class="msg-app" id="msgApp"><aside class="msg-list" id="msgList" aria-label="대화 목록"></aside><div class="msg-room" id="msgRoom"></div></div></section>
     <section id="p-minutes" class="panel" hidden>
       <div class="sec">
-        <div class="sec-h"><h2 id="mtitle">회의록</h2><div class="datesel" id="datesel"></div></div>
+        <div class="sec-h"><h2 id="mtitle">회의록</h2></div>
+        <div class="datesel min-dates" id="datesel" aria-label="날짜"></div>
+        <div class="min-list" id="msel" aria-label="이 날의 회의"></div>
         <div class="tx-layout">
           <nav class="tx-nav" id="txnav" aria-label="안건"></nav>
           <div id="tx"></div>
@@ -2065,17 +2080,29 @@ function openDocFromHash(){ const h = (location.hash || "").slice(1); if (!h.sta
 const docBtnChat = c => String(c.body || "").length > DOC_MIN ? `<button class="docbtn" type="button" data-doc="chat|${c.id}">문서 보기</button>` : "";
 
 // 회의록
+// 회의록: 날짜 줄(회의 수) → 그 날의 회의 목록(시간·종류·제목) → 안건
+let MIN_LIST = [], MIN_DAY = "";
+const MIN_KIND = {auto:"자동회의", manual:"수동 회의", deep:"깊은 회의", chat:"팀 채팅"};
 function renderMinutesNav(){
-  const list = MEETINGS.filter(m => m.status !== "running" && m.kind !== "night" && ((m.decisions||[]).length || Object.keys(m.transcript || {}).length));
-  const KL = {auto:"", manual:" · 수동", deep:" · 깊은 회의", chat:" · 팀 채팅"};
-  $("#datesel").innerHTML = list.slice(0, 30).map(m => `<button data-id="${m.id}">${fmtDate(m.meeting_date)}${KL[m.kind] || ""}</button>`).join("");
-  $("#datesel").querySelectorAll("button").forEach(b => b.addEventListener("click", () => renderMinutes(MEETINGS.find(m => m.id === b.dataset.id))));
-  if (list[0]) renderMinutes(list[0]); else { $("#tx").innerHTML = `<div class="empty">회의록이 아직 없어요.</div>`; }
+  MIN_LIST = MEETINGS.filter(m => m.status !== "running" && m.kind !== "night" && ((m.decisions||[]).length || Object.keys(m.transcript || {}).length));
+  const days = []; MIN_LIST.forEach(m => { const d = days.find(x => x.d === m.meeting_date); d ? d.n++ : days.push({d: m.meeting_date, n: 1}); });
+  $("#datesel").innerHTML = days.slice(0, 21).map(x => `<button data-day="${esc(x.d)}">${fmtDate(x.d)}${x.n > 1 ? ` <span class="cnt">${x.n}</span>` : ""}</button>`).join("");
+  $("#datesel").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { const m = MIN_LIST.find(x => x.meeting_date === b.dataset.day); if (m) renderMinutes(m); }));
+  if (MIN_LIST[0]) renderMinutes(MIN_LIST[0]); else { MIN_DAY = ""; $("#msel").innerHTML = ""; $("#tx").innerHTML = `<div class="empty">회의록이 아직 없어요.</div>`; }
+}
+function renderMinDay(day){
+  MIN_DAY = day; const list = MIN_LIST.filter(m => m.meeting_date === day);
+  $("#msel").innerHTML = list.map(m => { const n = (m.decisions || []).length;
+    return `<button data-id="${esc(m.id)}"><span class="mk ${esc(m.kind)}">${MIN_KIND[m.kind] || "회의"}</span><span class="tm">${m.created_at ? fmtTime(m.created_at) : ""}</span><b>${esc(m.title || (m.kind === "chat" ? "팀 채팅방 대화" : "회의"))}</b>${n ? `<span class="nd">결정 ${n}</span>` : ""}</button>`; }).join("");
+  $("#msel").querySelectorAll("button").forEach(b => b.addEventListener("click", () => renderMinutes(MIN_LIST.find(m => m.id === b.dataset.id) || MEETINGS.find(m => m.id === b.dataset.id))));
 }
 function renderMinutes(m, decId){
   CUR = m;
-  $("#datesel").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === m.id ? "true" : "false"));
-  $("#mtitle").textContent = `${m.kind === "chat" ? "팀 채팅방" : "회의록"} · ${fmtDate(m.meeting_date)}${m.title && m.kind !== "chat" ? " · " + m.title : ""}`;
+  if (!MIN_LIST.includes(m)) MIN_LIST.push(m);
+  if (MIN_DAY !== m.meeting_date || !$("#msel").querySelector(`[data-id="${CSS.escape(m.id)}"]`)) renderMinDay(m.meeting_date);
+  $("#datesel").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.day === m.meeting_date ? "true" : "false"));
+  $("#msel").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b.dataset.id === m.id ? "true" : "false"));
+  $("#mtitle").textContent = `회의록 · ${fmtDate(m.meeting_date)}`;
   const decs = (m.decisions || []).length ? m.decisions : Object.keys(m.transcript || {}).map(k => ({ id:k, q: k === "chat" ? "팀 채팅방 대화" : k }));
   $("#txnav").innerHTML = decs.map((d, i) => `<button data-id="${esc(d.id)}">결정 ${i+1}${d.proj?` · ${esc(d.proj)}`:""}<br><span style="font-weight:400">${esc(d.task || d.q)}</span></button>`).join("");
   $("#txnav").querySelectorAll("button").forEach(b => b.addEventListener("click", () => renderTx(m, b.dataset.id)));
