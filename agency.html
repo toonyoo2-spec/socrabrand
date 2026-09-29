@@ -481,6 +481,18 @@ tr.new td{background:var(--green-tint)}
 /* 휴대폰: 채팅창 안에서만 스크롤되게(페이지로 번지지 않게), 모서리 크기조절 손잡이 제거, 주소창이 접혀도 높이가 흔들리지 않게 */
 @media (pointer:coarse), (max-width:720px){ .team-body{resize:none;height:calc(100svh - 250px);min-height:320px;max-height:none} }
 .team .dr-foot{background:var(--surface)}
+#p-rooms .team-body{resize:none;min-height:300px;max-height:none}
+#p-rooms .sec{margin-bottom:0}
+#p-rooms .sec-h .sub{font-size:12px}
+@media (max-width:720px){
+  body.tab-rooms .head p, body.tab-rooms .topbar{display:none}
+  body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
+  #p-rooms .sec-h{display:none}
+  #p-rooms .room-mem{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  #p-rooms .room-mem .sub{white-space:nowrap}
+  #p-rooms .rooms{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-bottom:8px}
+  #p-rooms .rooms .pk{flex:none}
+}
 .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
 .note{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:grid;gap:6px;font-size:13.5px;line-height:1.55}
 .note .nh{display:flex;gap:8px;align-items:center}.note .nh b{font-size:14px}
@@ -737,6 +749,7 @@ tr.new td{background:var(--green-tint)}
 
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="today" aria-selected="true">오늘 회의</button>
+      <button class="tab" role="tab" data-tab="rooms" aria-selected="false">채팅방<span class="n badge" id="roomBadge" hidden></span></button>
       <button class="tab" role="tab" data-tab="reports" aria-selected="false">일일 보고<span class="n badge" id="repBadge" hidden></span></button>
       <button class="tab" role="tab" data-tab="chat" aria-selected="false">메신저<span class="n badge" id="chatBadge" hidden></span></button>
       <button class="tab" role="tab" data-tab="minutes" aria-selected="false">회의록</button>
@@ -747,6 +760,7 @@ tr.new td{background:var(--green-tint)}
 
     <section id="p-today" class="panel"></section>
 
+    <section id="p-rooms" class="panel" hidden></section>
     <section id="p-reports" class="panel" hidden>
       <div class="sec">
         <div class="sec-h"><h2 id="repTitle">일일 보고</h2><div class="datesel" id="repDates"></div></div>
@@ -914,9 +928,9 @@ async function boot(){
   MEETINGS = mt.data || [];
   const ac = $("#agentCount"); if (ac) ac.textContent = Object.keys(AG).length;
   renderReports(); bindRepDir();
-  renderToday(); renderMinutesNav(); $("#autoPipe").innerHTML = pipelineHtml(); renderOrg(); renderProfile(pf.data || []); renderMsgList(); renderRoom();
+  renderToday(); renderRooms(); renderMinutesNav(); $("#autoPipe").innerHTML = pipelineHtml(); renderOrg(); renderProfile(pf.data || []); renderMsgList(); renderRoom();
   const h = (location.hash || "").slice(1);
-  showTab(["today","reports","chat","minutes","agents","auto","profile"].includes(h) ? h : (store("agency-tab") || "today"));
+  showTab(["today","rooms","reports","chat","minutes","agents","auto","profile"].includes(h) ? h : (store("agency-tab") || "today"));
   schedulePoll(); startRealtime(); openDocFromHash();
 }
 
@@ -1050,7 +1064,7 @@ function startRealtime(){
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_chat"}, ({eventType, new:row}) => {
       if (!row || !row.id) return; const fresh = eventType === "INSERT" && !CHAT.some(c => c.id === row.id);
       upsertBy(CHAT, row); CHAT.sort((a, b) => a.id - b.id);
-      if (fresh && row.sender === "agent") isRoom(row.code) ? notify(row.speaker || "PM", row.body, () => { showTab("today"); ROOM_CUR = row.code; const t = $("#teamSec"); if (t) { t.outerHTML = teamHtml(); bindTeam(); $("#teamSec").scrollIntoView({behavior:"smooth"}); } }, roomOf(row.code).title) : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
+      if (fresh && row.sender === "agent") isRoom(row.code) ? notify(row.speaker || "PM", row.body, () => { openRoom(row.code); }, roomOf(row.code).title) : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
       if (isRoom(row.code)) { if (row.code === ROOM_CUR) renderTeam(); else { const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } }
       rtDirty.office = true; rtFlush(); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_media"}, ({new:row}) => { if (!row || !row.id) return; const prev = MEDIA.find(x => x.id === row.id); const wasDone = prev && prev.status === "done"; upsertBy(MEDIA, row); if (row.status === "done" && !wasDone) notify("PM", `Gemini가 '${row.name || "첨부 파일"}'을 다 봤어요`, () => {}, "첨부 분석"); updateAttAi(row); })
@@ -1566,8 +1580,9 @@ function openDrawer(code){
 function fabBadge(total){
   const fab = $("#chatFab"), c = $("#chatFabCnt"); if (!fab) return;
   if (fab.hidden && Object.keys(AG).length) { fab.hidden = false; fitOverlay(fab, true); fab.addEventListener("click", openChatPicker); }
-  const n = (total ?? Object.keys(AG).reduce((k, x) => k + chatUnread(x), 0)) + CROOMS.filter(r => !r.archived).concat([{code:"TEAM"}]).reduce((k, r) => k + (r.code === ROOM_CUR ? 0 : roomUnread(r.code)), 0);
+  const n = (total ?? Object.keys(AG).reduce((k, x) => k + chatUnread(x), 0)) + CROOMS.filter(r => !r.archived).concat(CROOMS.some(r => r.code === "TEAM") ? [] : [{code:"TEAM"}]).reduce((k, r) => k + ($("#p-rooms")?.hidden === false && r.code === ROOM_CUR ? 0 : roomUnread(r.code)), 0);
   if (c) { c.hidden = !n; c.textContent = n > 99 ? "99+" : n; }
+  const rb = $("#roomBadge"); if (rb) { const rn = CROOMS.filter(r => !r.archived).concat(CROOMS.some(r => r.code === "TEAM") ? [] : [{code:"TEAM"}]).reduce((k, r) => k + ($("#p-rooms")?.hidden === false && r.code === ROOM_CUR ? 0 : roomUnread(r.code)), 0); rb.hidden = !rn; rb.textContent = rn > 99 ? "99+" : rn; }
 }
 function openChatPicker(){
   const bg = document.createElement("div"); bg.className = "sheet-bg";
@@ -1581,8 +1596,7 @@ function openChatPicker(){
     const ps = people.filter(c => hit(AG[c].name + AG[c].role)).map(c => { const l = last(c); return item(`data-pick-one="${c}"`, av(c), AG[c].name + " · " + AG[c].role, l ? (l.sender === "kwan" ? "나: " : "") + l.body.replace(/\s+/g, " ").slice(0, 60) : statusLine(c), chatUnread(c)); }).join("");
     bg.querySelector(".pk-list").innerHTML = (rs ? `<h4>채팅방</h4>${rs}` : "") + (ps ? `<h4>1:1 대화</h4>${ps}` : "") || `<div class="sub" style="padding:8px">찾는 이름이 없어요</div>`;
     bg.querySelectorAll("[data-pick-one]").forEach(b => b.addEventListener("click", () => { bg.remove(); openPop(b.dataset.pickOne); }));
-    bg.querySelectorAll("[data-pick-room]").forEach(b => b.addEventListener("click", () => { bg.remove(); closePop(); showTab("today"); ROOM_CUR = b.dataset.pickRoom; store("agency-room", ROOM_CUR);
-      const t = $("#teamSec"); if (t) { t.outerHTML = teamHtml(); bindTeam(); $("#teamSec").scrollIntoView({ behavior: "smooth", block: "start" }); } }));
+    bg.querySelectorAll("[data-pick-room]").forEach(b => b.addEventListener("click", () => { bg.remove(); closePop(); openRoom(b.dataset.pickRoom); }));
   };
   bg.innerHTML = `<div class="sheet pick-sheet" role="dialog" aria-label="채팅 고르기"><div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0">채팅</h3><button type="button" class="btn ghost" data-x>닫기</button></div><input type="search" placeholder="이름·직무로 찾기" aria-label="찾기"><div class="pk-list"></div></div>`;
   document.body.appendChild(bg); fitOverlay(bg); draw();
@@ -1816,11 +1830,19 @@ function renderTeam(){
   if (near || !box.dataset.init || STICK > Date.now()) toBottom(box); else box.scrollTop = prevTop; box.dataset.init = "1";
   bindMore(box, renderTeam);
   hydrateAtt(box);
-  const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#teamSec").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
+  const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#p-rooms").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
   fabBadge();
 }
+// 채팅방 탭: 방 목록 + 대화창(탭 화면 높이에 딱 맞춤, 페이지는 스크롤되지 않게)
+function renderRooms(){ const el = $("#p-rooms"); if (!el) return; el.innerHTML = teamHtml(); bindTeam(); }
+function openRoom(code){ closePop(); ROOM_CUR = code; store("agency-room", code); showTab("rooms"); renderRooms(); }
+function fitRooms(){ const p = $("#p-rooms"), box = $("#teamBody"), sec = $("#teamSec"); if (!p || p.hidden || !box || !sec) return;
+  const top = box.getBoundingClientRect().top + window.scrollY, below = sec.getBoundingClientRect().bottom - box.getBoundingClientRect().bottom;
+  box.style.height = Math.max(300, Math.round(window.innerHeight - top - below - 14)) + "px";
+  const over = document.documentElement.scrollHeight - window.innerHeight; if (over > 0) box.style.height = Math.max(300, box.offsetHeight - over - 2) + "px"; }
+window.addEventListener("resize", () => { fitRooms(); });
 function bindTeam(){
-  renderTeam();
+  renderTeam(); fitRooms();
   document.querySelectorAll("[data-room-tab]").forEach(b => b.addEventListener("click", () => { ROOM_CUR = b.dataset.roomTab; store("agency-room", ROOM_CUR); const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); }));
   const nb = $("#newRoom"); if (nb) nb.addEventListener("click", openNewRoom);
   const eb = $("#endRoom"); if (eb) eb.addEventListener("click", endRoom);
@@ -1878,10 +1900,10 @@ function notesHtml(){
 function renderToday(){
   const el = $("#p-today");
   const m = MEETINGS.find(x => x.status !== "error" && x.status !== "running" && x.kind !== "night" && x.kind !== "chat");
-  if (!m) { el.innerHTML = officeHtml() + teamHtml() + nightHtml() + notesHtml() + refsHtml() + ivPanelHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; bindOffice(); bindTeam(); bindNight(); bindRefs(); bindIvPanel(); return; }
+  if (!m) { el.innerHTML = officeHtml() + nightHtml() + notesHtml() + refsHtml() + ivPanelHtml() + `<div class="empty">아직 회의 기록이 없어요. 평일 07:27에 첫 자동회의가 열립니다.</div>`; bindOffice(); bindNight(); bindRefs(); bindIvPanel(); return; }
   const meta = m.meta || {};
   const att = meta.attendees || [...new Set((m.decisions||[]).flatMap(d => d.who || []))];
-  let h = officeHtml() + teamHtml() + nightHtml() + ivPanelHtml() + `<div class="sec"><div class="meta">
+  let h = officeHtml() + nightHtml() + ivPanelHtml() + `<div class="sec"><div class="meta">
      <span><b>${fmtDate(m.meeting_date)}</b> ${m.kind==="auto"?"자동회의":m.kind==="deep"?"깊은 회의":"수동 회의"}</span>
      ${m.title ? `<span><b>${esc(m.title)}</b></span>` : ""}
      <span>결정 <b>${(m.decisions||[]).length}건</b></span>
@@ -1899,7 +1921,7 @@ function renderToday(){
   h += notesHtml() + refsHtml();
   if (meta.question) h += `<div class="sec"><div class="sec-h"><h2>오늘의 질문</h2></div><div class="box"><p style="margin:0">${esc(meta.question)}</p><span class="sub">KWAN 프로필 탭이나 DM으로 답해주세요</span></div></div>`;
   el.innerHTML = h;
-  bindOffice(); bindTeam(); bindNight(); bindRefs();
+  bindOffice(); bindNight(); bindRefs();
   bindIvPanel();
   bindPicks(m);
   const tm = $("#toMinutes"); if (tm) tm.addEventListener("click", () => { showTab("minutes"); renderMinutes(m); });
@@ -2178,8 +2200,9 @@ function bindRepDir(){
 function showTab(t){
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t ? "true" : "false"));
   document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "p-" + t);
-  store("agency-tab", t);
+  store("agency-tab", t); document.body.classList.toggle("tab-rooms", t === "rooms");
   if (t === "reports") setTimeout(markRepRead, 4000);
+  if (t === "rooms") { window.scrollTo(0, 0); fitRooms(); renderTeam(); }
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
