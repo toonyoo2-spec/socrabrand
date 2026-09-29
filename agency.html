@@ -709,6 +709,27 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
 .vote button[aria-pressed="true"]{filter:none;opacity:1;border-color:var(--text)}
 .rep details{font-size:12px;color:var(--muted)}
 .rep details a{color:var(--muted)}
+.rep-fbw{display:grid;gap:8px;border-top:1px dashed var(--border);padding-top:12px}
+.rep-guide{display:grid;gap:6px}
+.rep-guide > span{font-size:12px;color:var(--muted)}
+.fb-opt{text-align:left;font:inherit;font-size:13px;line-height:1.45;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 30px;cursor:pointer;color:var(--text);position:relative}
+.fb-opt::before{content:"";position:absolute;left:10px;top:11px;width:12px;height:12px;border-radius:4px;border:1.5px solid #bdb7ab}
+.fb-opt:hover{border-color:var(--border-hover)}
+.fb-opt[aria-pressed="true"]{border-color:var(--text);background:var(--surface)}
+.fb-opt[aria-pressed="true"]::before{background:var(--green);border-color:var(--green)}
+.rep-grp{grid-column:1/-1;font-size:13px;font-weight:700;color:var(--muted);margin:6px 0 -4px}
+.rep-grp b{color:var(--text)}
+.rep-grp.ok{color:#0b7a4b}
+.rep-donelist{grid-column:1/-1;display:grid;gap:8px}
+.rep-done{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);min-width:0}
+.rep-done summary{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;list-style:none}
+.rep-done summary::-webkit-details-marker{display:none}
+.rep-done .rd-mid{display:grid;min-width:0;flex:1}
+.rep-done .rd-mid b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-done .rd-fb{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-done .rd-open{font-size:12px;color:var(--muted);white-space:nowrap}
+.rep-done[open] .rd-open{visibility:hidden}
+.rep-done > .rep{border:none;border-top:1px solid var(--border);border-radius:0 0 var(--r) var(--r)}
 .rep-fb{display:flex;gap:8px;align-items:stretch}
 .rep-fb textarea{flex:1;min-height:40px;resize:vertical;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit;font-size:13.5px;background:var(--bg)}
 .rep-fb .done{font-size:12px;color:var(--muted)}
@@ -2167,6 +2188,20 @@ function renderProfile(rows){
 let REPORTS = [], REP_DATE = null;
 function repBadge(){ const n = REPORTS.filter(r => r.status === "new").length, b = $("#repBadge"); if (b) { b.hidden = !n; b.textContent = n; } }
 function voteBtns(r, key){ const v = (r.votes || {})[key] || 0; return `<span class="vote"><button type="button" data-vote="${key}" data-v="1" aria-pressed="${v === 1}" title="좋아요 · 이 방향으로 더">👍</button><button type="button" data-vote="${key}" data-v="-1" aria-pressed="${v === -1}" title="별로예요 · 이런 건 피하기">👎</button></span>`; }
+// 예시 피드백 2~3개: 보고 내용을 보고 고르기 쉬운 문장으로 만든다(고르면 입력칸에 들어가고, 고쳐서 보냄)
+function repFbOptions(r){
+  const idea = (r.ideas || [])[0], ins = r.insight || {}, weakRef = (r.refs || []).some(x => !x.ok);
+  const o = [];
+  o.push(idea ? `좋아요. "${idea.t}" 방향으로 더 파서, 다음 보고엔 바로 실행할 수 있는 안(무엇을 · 누가 · 언제)까지 가져와줘` : `좋아요. 이 방향 그대로 더 깊게 파서 다음 보고에 실행안까지 가져와줘`);
+  o.push(`${ins.title ? `"${ins.title}"는 ` : ""}방향은 맞는데 너무 넓어요. 초등 학부모 · 우리 튜토리얼/서비스 영상에 바로 쓸 수 있게 좁혀줘`);
+  o.push(weakRef ? `레퍼런스 출처가 불확실해요. 실제 링크가 확인되는 사례로만 다시 찾아줘` : `우리와는 결이 안 맞아요. 이 주제는 빼고 다른 각도로 찾아줘`);
+  return o;
+}
+function repFbForm(r, a){
+  const opts = repFbOptions(r);
+  return `<div class="rep-fbw"><div class="rep-guide"><span>빠른 피드백 · 고르면 아래 칸에 들어가요. 고치거나 덧붙여서 보내세요</span>${opts.map((t, i) => `<button type="button" class="fb-opt" data-opt="${i}">${esc(t)}</button>`).join("")}</div>
+    <form class="rep-fb" data-fb="${r.id}"><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea placeholder="${esc(a.name)}에게 직접 쓰기 · 위 예시에 없으면 여기에 적어주세요">${esc(r.feedback || "")}</textarea><button class="btn" type="submit">${r.feedback ? "고치기" : "보내기"}</button></form></div>`;
+}
 function repCard(r){
   const a = AG[r.code] || {name: r.code, role: ""}, ins = r.insight || {};
   const refs = (r.refs || []).map((x, i) => `<div class="rep-it"><div><b>${x.u ? `<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</b>${x.ok ? "" : `<span class="warn">출처 확인 필요</span>`}<p class="why">${esc(x.why)}</p></div>${voteBtns(r, "ref" + i)}</div>`).join("");
@@ -2181,8 +2216,13 @@ function repCard(r){
     ${refs ? `<div class="rep-sec"><h4>Reference</h4>${refs}</div>` : ""}
     ${ideas ? `<div class="rep-sec"><h4>Ideation</h4>${ideas}</div>` : ""}
     ${src}
-    <form class="rep-fb" data-fb="${r.id}"><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea placeholder="${esc(a.name)}에게 피드백 · 방향을 알려주세요">${esc(r.feedback || "")}</textarea><button class="btn" type="submit">${r.feedback ? "고치기" : "보내기"}</button></form>
+    ${repFbForm(r, a)}
   </article>`;
+}
+// 피드백 남긴 보고: 접힌 요약(내 피드백이 보이고, 누르면 보고 전체와 고치기 칸)
+function repDoneCard(r){
+  const a = AG[r.code] || {name: r.code, role: ""};
+  return `<details class="rep-done" data-rid="${r.id}"><summary><span class="av sm" style="background:${TEAM_COLOR[r.code] || "#8a8780"};color:#fff;border:none">${esc(lbl(r.code))}</span><span class="rd-mid"><b>${esc(a.name)} · ${esc(r.headline || "")}</b><span class="rd-fb">내 피드백 · ${esc(r.feedback || "")}</span></span><span class="rd-open">보고 보기</span></summary>${repCard(r)}</details>`;
 }
 function renderReports(){
   const grid = $("#repGrid"); if (!grid) return;
@@ -2192,9 +2232,20 @@ function renderReports(){
   $("#repDates").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { REP_DATE = b.dataset.d; renderReports(); setTimeout(markRepRead, 4000); }));
   const order = code => (AG[code] ? AG[code].sort : 99);
   const list = REPORTS.filter(r => r.report_date === REP_DATE).sort((x, y) => order(x.code) - order(y.code));
+  const todo = list.filter(r => r.status !== "replied"), done = list.filter(r => r.status === "replied").sort((x, y) => String(y.feedback_at || "").localeCompare(String(x.feedback_at || "")));
   const total = Object.values(AG).filter(a => !a.on_call).length;
   $("#repTitle").textContent = REP_DATE ? `일일 보고 · ${fmtDate(REP_DATE)} · ${list.length}/${total}명` : "일일 보고";
-  grid.innerHTML = list.length ? list.map(repCard).join("") : `<div class="empty">아직 올라온 보고가 없어요. 매일 아침 8시부터 차례로 올라와요.</div>`;
+  const open = new Set([...grid.querySelectorAll(".rep-done[open]")].map(d => d.dataset.rid));
+  grid.innerHTML = !list.length ? `<div class="empty">아직 올라온 보고가 없어요. 매일 아침 8시부터 차례로 올라와요.</div>`
+    : (todo.length ? `<div class="rep-grp">피드백 기다리는 보고 <b>${todo.length}</b></div>` + todo.map(repCard).join("") : `<div class="rep-grp ok">오늘 보고에 모두 피드백을 남겼어요 👏</div>`)
+      + (done.length ? `<div class="rep-grp">피드백 완료 <b>${done.length}</b></div><div class="rep-donelist">${done.map(repDoneCard).join("")}</div>` : "");
+  grid.querySelectorAll(".rep-done").forEach(d => { if (open.has(d.dataset.rid)) d.open = true; });
+  grid.querySelectorAll(".fb-opt").forEach(b => b.addEventListener("click", () => {
+    const ta = b.closest(".rep-fbw").querySelector("textarea"), t = b.textContent, cur = ta.value.trim();
+    const on = b.getAttribute("aria-pressed") === "true";
+    if (on) { ta.value = cur.split("\n").filter(l => l.trim() !== t).join("\n"); b.setAttribute("aria-pressed", "false"); }
+    else { ta.value = cur ? cur + "\n" + t : t; b.setAttribute("aria-pressed", "true"); }
+    ta.style.height = "auto"; ta.style.height = Math.min(260, ta.scrollHeight + 2) + "px"; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }));
   grid.querySelectorAll("[data-vote]").forEach(b => b.addEventListener("click", () => repVote(b)));
   grid.querySelectorAll(".rep-fb").forEach(f => { bindMic(f); f.addEventListener("submit", e => { e.preventDefault(); repFeedback(f); });
     f.querySelector("textarea").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); f.requestSubmit(); } }); });
@@ -2216,7 +2267,7 @@ async function repFeedback(f){
   const patch = { feedback: text, feedback_at: new Date().toISOString(), status: "replied" };
   const { error } = await sb.from("agency_reports").update(patch).eq("id", r.id);
   if (error) return toast("저장하지 못했어요: " + error.message);
-  Object.assign(r, patch); renderReports(); toast(`${AG[r.code]?.name || r.code}에게 전달했어요. 다음 보고부터 반영돼요`);
+  Object.assign(r, patch); renderReports(); toast(`${AG[r.code]?.name || r.code}에게 전달했어요. 아래 '피드백 완료'로 옮겼어요`);
 }
 async function markRepRead(){
   if ($("#p-reports")?.hidden) return;
