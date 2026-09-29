@@ -89,7 +89,7 @@ const Office3D = {
     const aspect = w / h, cxv = (minX + maxX) / 2, cyv = (minY + maxY) / 2;
     let hw = (maxX - minX) / 2, hh = (maxY - minY) / 2; if (hw / hh > aspect) hh = hw / aspect; else hw = hh * aspect;
     Object.assign(cam, { left: cxv - hw, right: cxv + hw, top: cyv + hh, bottom: cyv - hh });
-    if (!this.zoomed) { cam.zoom = w < 640 ? 1.9 : 1.22; this.zoomed = true; }
+    if (!this.zoomed) { cam.zoom = w < 640 ? 1.15 : 1.12; this.zoomed = true; } // 처음엔 AI랩(오른쪽 끝)까지 사무실 전체가 보이게
     cam.updateProjectionMatrix();
   },
 

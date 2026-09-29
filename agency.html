@@ -363,6 +363,7 @@ tr.new td{background:var(--green-tint)}
 .o3d-labels > div{pointer-events:none}
 .o3d-plate{pointer-events:auto!important}
 .o3d-plate .plate3{position:relative;transform:translateY(-60%);box-shadow:0 4px 14px rgba(0,0,0,.14)}
+@media(max-width:640px){.o3d-plate .plate3{padding:2px 7px;transform:translateY(-60%) scale(.78)}.o3d-plate .plate3 small{display:none}.o3d-room{font-size:10px!important}}
 .o3d-room{font-size:12px;font-weight:800;color:rgba(40,36,30,.5);white-space:nowrap;letter-spacing:-.01em}
 .office.night .o3d-room{color:rgba(255,255,255,.55)}
 .o3d-sign{background:#141414;color:#fff;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px}
@@ -464,7 +465,7 @@ tr.new td{background:var(--green-tint)}
 .msg-room{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);min-height:0;min-width:0}
 .mr-head{display:flex;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
 .mr-head .back{display:none;background:none;border:none;font-size:22px;padding:0 6px 0 0;color:var(--text)}
-.mr-body{overflow-y:auto;background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start}
+.mr-body{overflow-y:auto;overscroll-behavior:contain;background:#bacee0;padding:14px 12px;display:grid;gap:8px;align-content:start}
 .mr-empty{display:grid;place-items:center;color:var(--muted);font-size:14px;grid-row:1/-1}
 @media(max-width:760px){.msg-app{grid-template-columns:minmax(0,1fr)}.msg-app.open .msg-list{display:none}.msg-app:not(.open) .msg-room{display:none}.mr-head .back{display:block}.msg-list{border-right:none}}
 
@@ -581,7 +582,8 @@ tr.new td{background:var(--green-tint)}
 @media (prefers-reduced-motion:no-preference){.tab,.pick,.ag{transition:background .15s,border-color .15s,color .15s}}
 
 /* 문서 보기 · PDF 저장 (A4 인쇄용) */
-.docv{position:fixed;inset:0;z-index:80;background:rgba(20,20,20,.45);overflow:auto;padding:16px}
+.docv{position:fixed;inset:0;z-index:80;background:rgba(20,20,20,.45);overflow:auto;padding:16px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media screen{html:has(body.doc-open),body.doc-open{overflow:hidden}}
 .doc-bar{position:sticky;top:0;z-index:1;display:flex;gap:8px;justify-content:flex-end;align-items:center;max-width:210mm;margin:0 auto 12px;padding:8px 0}
 .doc-bar .sub{margin-right:auto;color:#fff;font-size:12.5px}
 .doc-bar .btn.ghost{background:var(--surface)}
@@ -646,7 +648,7 @@ tr.new td{background:var(--green-tint)}
 .att-ai.bad{color:var(--red)}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="agency-office3d.js"></script>
+<script type="module" src="agency-office3d.js?v=20260929"></script>
 </head>
 <body>
 <style>
@@ -1610,6 +1612,17 @@ function closePop(){ if (POP) { POP.el.remove(); POP = null; } }
 document.addEventListener("keydown", e => { if (e.key === "Escape") closePop(); });
 function refreshChat(){ if (POP && POP.el.isConnected) { renderThread(POP.code, $("#popBody")); const st = $("#popStatus"); if (st) st.textContent = `${AG[POP.code].role} · ${statusLine(POP.code)}`; markRead(POP.code); }
  renderMsgList(); if (CHAT_CUR) { renderThread(CHAT_CUR); const st = $("#roomStatus"); if (st) st.textContent = `${AG[CHAT_CUR].role} · ${statusLine(CHAT_CUR)}`; if (!$("#p-chat").hidden) markRead(CHAT_CUR); } }
+// 맨 아래로: 화면 밖 말풍선은 높이가 추정값이라 레이아웃이 잡힌 뒤 몇 번 더 내려준다
+let STICK = 0;
+function toBottom(box){ const go = () => { box.scrollTop = box.scrollHeight; }; go(); requestAnimationFrame(() => { go(); requestAnimationFrame(go); }); setTimeout(go, 200); setTimeout(go, 600);
+  box.querySelectorAll("img:not([data-bt]),video:not([data-bt])").forEach(m => { m.dataset.bt = "1"; m.addEventListener(m.tagName === "IMG" ? "load" : "loadedmetadata", () => { if (box.scrollHeight - box.scrollTop - box.clientHeight < 400) go(); }, {once: true}); }); }
+// 안쪽 스크롤이 끝에 닿아도 바깥(페이지·부모 창)으로 넘어가지 않게
+function trapScroll(el){
+  el.addEventListener("wheel", e => { const t = e.target.closest ? e.target : el; let n = t; while (n && n !== el) { if (n.scrollHeight > n.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(n).overflowY)) break; n = n.parentElement; } const sc = n || el;
+    const up = e.deltaY < 0, atTop = sc.scrollTop <= 0, atEnd = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1; if ((up && atTop) || (!up && atEnd)) e.preventDefault(); }, {passive: false});
+  let y0 = 0, x0 = 0; el.addEventListener("touchstart", e => { y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; }, {passive: true});
+  el.addEventListener("touchmove", e => { const dy = e.touches[0].clientY - y0; if (Math.abs(e.touches[0].clientX - x0) > Math.abs(dy)) return; const atTop = el.scrollTop <= 0, atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1; if ((dy > 0 && atTop) || (dy < 0 && atEnd) || el.scrollHeight <= el.clientHeight) e.preventDefault(); }, {passive: false});
+}
 function renderThread(code, target){
   const box = target || $("#drBody"); if (!box) return;
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80, prevTop = box.scrollTop;
@@ -1617,7 +1630,7 @@ function renderThread(code, target){
   const all = CHAT.filter(c => c.code === code), lim = Number(box.dataset.limit) || MSG_WINDOW, th = all.slice(-lim);
   box.innerHTML = (all.length > th.length ? moreBtn(all.length - th.length) : "") + (th.length ? th.map(c => bubble(c.sender === "kwan" ? "KWAN" : code, c.body, (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + `<span class="ev">${fmtDate(new Date(c.created_at).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "Grace 확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c))).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`);
-  if (nearBottom || !box.dataset.init) box.scrollTop = box.scrollHeight; else box.scrollTop = prevTop; box.dataset.init = "1";
+  if (nearBottom || !box.dataset.init || STICK > Date.now()) toBottom(box); else box.scrollTop = prevTop; box.dataset.init = "1";
   bindMore(box, () => renderThread(code, target));
   hydrateAtt(box);
 }
@@ -1741,7 +1754,7 @@ async function sendChat(code, fid, taid){
     if (!body) body = attachments.length ? `(첨부 ${attachments.map(a => a.name).join(", ")})` : "";
     const { data, error } = await sb.from("agency_chat").insert({ code, sender: "kwan", body, attachments }).select().single();
     if (error) { toast("보내지 못했어요: " + (error.message || "다시 시도해주세요")); return null; }
-    upsertBy(CHAT, data); ta.value = ""; ATT_FILES[fid] = []; const l = $("#" + fid + "-att"); if (l) l.innerHTML = "";
+    STICK = Date.now() + 1500; upsertBy(CHAT, data); ta.value = ""; ATT_FILES[fid] = []; const l = $("#" + fid + "-att"); if (l) l.innerHTML = "";
     return data;
   } finally { if (btn) btn.disabled = false; }
 }
@@ -1800,7 +1813,7 @@ function renderTeam(){
       const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day;
       return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c)); }).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`);
-  if (near || !box.dataset.init) box.scrollTop = box.scrollHeight; else box.scrollTop = prevTop; box.dataset.init = "1";
+  if (near || !box.dataset.init || STICK > Date.now()) toBottom(box); else box.scrollTop = prevTop; box.dataset.init = "1";
   bindMore(box, renderTeam);
   hydrateAtt(box);
   const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#teamSec").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
@@ -1998,7 +2011,7 @@ function openDoc(kind, a, b){
   closeDoc();
   const el = document.createElement("div"); el.id = "docView"; el.className = "docv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "문서 보기");
   el.innerHTML = `<div class="doc-bar"><span class="sub">크롬 인쇄창에서 '대상: PDF로 저장'을 고르세요</span><button class="btn" type="button" id="docPrint">PDF 저장</button><button class="btn ghost" type="button" id="docClose">닫기</button></div><article class="a4">${html}</article>`;
-  document.body.appendChild(el); document.body.classList.add("doc-open"); fitOverlay(el);
+  document.body.appendChild(el); document.body.classList.add("doc-open"); fitOverlay(el); trapScroll(el);
   DOC = { title: document.title }; document.title = name.replace(/[\\/:*?"<>|]/g, " ").slice(0, 80);
   try { history.replaceState(null, "", "#doc/" + (kind === "dec" ? `${a}/${b}` : `chat/${a}`)); } catch (e) {}
   el.querySelector("#docPrint").addEventListener("click", () => window.print());
