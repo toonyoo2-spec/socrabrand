@@ -481,18 +481,22 @@ tr.new td{background:var(--green-tint)}
 /* 휴대폰: 채팅창 안에서만 스크롤되게(페이지로 번지지 않게), 모서리 크기조절 손잡이 제거, 주소창이 접혀도 높이가 흔들리지 않게 */
 @media (pointer:coarse), (max-width:720px){ .team-body{resize:none;height:calc(100svh - 250px);min-height:320px;max-height:none} }
 .team .dr-foot{background:var(--surface)}
-#p-rooms .team-body{resize:none;min-height:300px;max-height:none}
+#p-rooms .team-body{resize:none;min-height:200px;max-height:none}
+.room-grip{display:none}
+#p-rooms .room-grip{display:grid;place-items:center;height:16px;cursor:ns-resize;touch-action:none;background:var(--surface);border-top:1px solid var(--border);user-select:none}
+#p-rooms .room-grip span{width:44px;height:4px;border-radius:4px;background:#c9c4b8}
+#p-rooms .room-grip:hover span,#p-rooms .room-grip.on span{background:#141414}
 #p-rooms .sec{margin-bottom:0}
-#p-rooms .sec-h .sub{font-size:12px}
-@media (max-width:720px){
-  body.tab-rooms .head p, body.tab-rooms .topbar{display:none}
-  body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
-  #p-rooms .sec-h{display:none}
-  #p-rooms .room-mem{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-  #p-rooms .room-mem .sub{white-space:nowrap}
-  #p-rooms .rooms{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-bottom:8px}
-  #p-rooms .rooms .pk{flex:none}
-}
+/* 채팅방 탭: 대화창을 최대한 길게 — 소개·설명은 숨기고 머리 부분을 한 줄로 */
+body.tab-rooms .head p, body.tab-rooms .topbar, #p-rooms .sec-h{display:none}
+body.tab-rooms .head{margin-top:4px}
+body.tab-rooms .head h1{font-size:28px}
+body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
+#p-rooms .rooms{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-bottom:8px}
+#p-rooms .rooms .pk{flex:none}
+#p-rooms .room-mem{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:6px 12px}
+#p-rooms .room-mem .sub{white-space:nowrap}
+@media (max-width:720px){ body.tab-rooms .head h1{font-size:22px} }
 .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
 .note{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:grid;gap:6px;font-size:13.5px;line-height:1.55}
 .note .nh{display:flex;gap:8px;align-items:center}.note .nh b{font-size:14px}
@@ -1813,7 +1817,7 @@ function teamHtml(){
   const cur = roomOf(ROOM_CUR);
   return `<div class="sec" id="teamSec"><div class="sec-h"><h2>채팅방</h2><span class="sub">방마다 참여자가 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. Grace가 직접 참여할지 물어봐요. 모든 대화는 회의록에 저장돼요</span></div>
     <div class="rooms">${list.map(r => { const n = r.code === ROOM_CUR ? 0 : roomUnread(r.code); return `<button class="pk" data-room-tab="${r.code}" aria-pressed="${r.code === ROOM_CUR}">${esc(r.title)}${n ? ` <span class="cnt">${n}</span>` : ""}</button>`; }).join("")}<button class="pk add" id="newRoom">+ 새 채팅방</button></div>
-    <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span>${cur.code !== "TEAM" ? `<button type="button" class="btn ghost" id="endRoom" style="margin-left:auto" title="대화는 회의록에 남고 방은 닫혀요">회의 종료</button>` : ""}</div><div class="team-body" id="teamBody"></div>
+    <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span>${cur.code !== "TEAM" ? `<button type="button" class="btn ghost" id="endRoom" style="margin-left:auto" title="대화는 회의록에 남고 방은 닫혀요">회의 종료</button>` : ""}</div><div class="team-body" id="teamBody"></div><div class="room-grip" id="roomGrip" role="separator" aria-orientation="horizontal" title="끌어서 대화창 높이 조절 · 더블클릭하면 화면에 맞춤"><span></span></div>
     <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
 }
 function renderTeam(){
@@ -1836,13 +1840,25 @@ function renderTeam(){
 // 채팅방 탭: 방 목록 + 대화창(탭 화면 높이에 딱 맞춤, 페이지는 스크롤되지 않게)
 function renderRooms(){ const el = $("#p-rooms"); if (!el) return; el.innerHTML = teamHtml(); bindTeam(); }
 function openRoom(code){ closePop(); ROOM_CUR = code; store("agency-room", code); showTab("rooms"); renderRooms(); }
+// 대화창 높이: 기본은 화면에 맞춤, 아래 손잡이를 끌면 KWAN이 정한 높이로 고정(기억함), 손잡이 더블클릭 = 자동으로 되돌리기
+const roomH = () => { const v = Number(store("agency-room-h")); return v >= 200 ? v : 0; };
 function fitRooms(){ const p = $("#p-rooms"), box = $("#teamBody"), sec = $("#teamSec"); if (!p || p.hidden || !box || !sec) return;
+  const mine = roomH(); if (mine) { box.style.height = mine + "px"; return; }
   const top = box.getBoundingClientRect().top + window.scrollY, below = sec.getBoundingClientRect().bottom - box.getBoundingClientRect().bottom;
-  box.style.height = Math.max(300, Math.round(window.innerHeight - top - below - 14)) + "px";
-  const over = document.documentElement.scrollHeight - window.innerHeight; if (over > 0) box.style.height = Math.max(300, box.offsetHeight - over - 2) + "px"; }
+  box.style.height = Math.max(360, Math.round(window.innerHeight - top - below - 14)) + "px";
+  const over = document.documentElement.scrollHeight - window.innerHeight; if (over > 0) box.style.height = Math.max(360, box.offsetHeight - over - 2) + "px"; }
+function bindRoomGrip(){
+  const g = $("#roomGrip"), box = $("#teamBody"); if (!g || !box) return;
+  g.addEventListener("pointerdown", e => { e.preventDefault(); g.setPointerCapture(e.pointerId); g.classList.add("on");
+    const y0 = e.clientY, h0 = box.offsetHeight, atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    const mv = ev => { box.style.height = Math.max(200, Math.min(4000, h0 + ev.clientY - y0)) + "px"; if (atBottom) box.scrollTop = box.scrollHeight; };
+    const up = () => { g.classList.remove("on"); g.removeEventListener("pointermove", mv); g.removeEventListener("pointerup", up); g.removeEventListener("pointercancel", up); store("agency-room-h", String(box.offsetHeight)); };
+    g.addEventListener("pointermove", mv); g.addEventListener("pointerup", up); g.addEventListener("pointercancel", up); });
+  g.addEventListener("dblclick", () => { store("agency-room-h", ""); fitRooms(); toast("대화창 높이를 화면에 맞췄어요"); });
+}
 window.addEventListener("resize", () => { fitRooms(); });
 function bindTeam(){
-  renderTeam(); fitRooms();
+  renderTeam(); fitRooms(); bindRoomGrip(); { const bx = $("#teamBody"); if (bx && !$("#p-rooms").hidden) toBottom(bx); }
   document.querySelectorAll("[data-room-tab]").forEach(b => b.addEventListener("click", () => { ROOM_CUR = b.dataset.roomTab; store("agency-room", ROOM_CUR); const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); }));
   const nb = $("#newRoom"); if (nb) nb.addEventListener("click", openNewRoom);
   const eb = $("#endRoom"); if (eb) eb.addEventListener("click", endRoom);
@@ -2202,7 +2218,7 @@ function showTab(t){
   document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "p-" + t);
   store("agency-tab", t); document.body.classList.toggle("tab-rooms", t === "rooms");
   if (t === "reports") setTimeout(markRepRead, 4000);
-  if (t === "rooms") { window.scrollTo(0, 0); fitRooms(); renderTeam(); }
+  if (t === "rooms") { fitRooms(); renderTeam(); const bx = $("#teamBody"); if (bx) toBottom(bx); }
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
