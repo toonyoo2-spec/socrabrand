@@ -1917,7 +1917,7 @@ async function endRoom(){
   toast(`'${r.title}' 회의를 끝냈어요. 회의록 탭에서 다시 볼 수 있어요`);
 }
 function openNewRoom(){
-  const pick = new Set(["PM"]);
+  const pick = new Set(["PM", ...Object.keys(AG).filter(c => !isOnCall(c))]); // 기본: 상시 근무자 전원(빼고 싶은 사람만 끄기)
   const bg = document.createElement("div"); bg.className = "sheet-bg";
   const draw = () => { const title = bg.querySelector("#roomTitle")?.value || "";
     bg.innerHTML = `<form class="sheet" id="roomForm" role="dialog" aria-label="새 채팅방"><h3>새 채팅방</h3>
