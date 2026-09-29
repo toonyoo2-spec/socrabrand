@@ -471,6 +471,49 @@ tr.new td{background:var(--green-tint)}
 
 /* 팀 채팅방 · 준비 노트 · 팝업 메신저 */
 .rooms{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.room-wrap{display:grid;grid-template-columns:240px minmax(0,1fr);gap:12px;align-items:start}
+.room-list{display:grid;gap:4px;align-content:start;max-height:calc(100svh - 160px);overflow-y:auto;overscroll-behavior:contain}
+.rl-new{border:1px dashed var(--border-hover);background:transparent;border-radius:10px;padding:8px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)}
+.rl-item{position:relative;display:grid;gap:2px;text-align:left;border:1px solid transparent;background:var(--surface);border-radius:10px;padding:8px 10px;font:inherit;cursor:pointer;color:var(--text);min-width:0}
+.rl-item:hover{border-color:var(--border)}
+.rl-item[aria-current="true"]{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.rl-top{display:flex;gap:6px;align-items:baseline;min-width:0}
+.rl-top b{font-size:13.5px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rl-top small{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.rl-pv{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:22px}
+.rl-pv i{font-style:normal;color:var(--text)}
+.rl-item .cnt{position:absolute;right:8px;bottom:8px;min-width:18px;padding:0 5px;border-radius:9px;background:#e5484d;color:#fff;font-size:11px;text-align:center}
+.rl-arch{border:none;background:none;text-align:left;font:inherit;font-size:12px;font-weight:700;color:var(--muted);padding:8px 4px 2px;cursor:pointer}
+.rl-arch::before{content:"▸ "}.rl-arch[aria-expanded="true"]::before{content:"▾ "}
+.room-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border)}
+.rh-title{display:flex;gap:6px;align-items:baseline;min-width:0}
+.rh-title b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh-ic{border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px}
+.rh-acts{display:flex;gap:6px}
+.rh-acts .btn{padding:6px 12px;font-size:13px}
+.room-head .room-mem{grid-column:1/-1;border:none;padding:0}
+.room-arch{background:#fff7e0;color:#6b4e00;font-size:12.5px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.room-sum{border-bottom:1px solid var(--border);padding:10px 12px;max-height:40svh;overflow-y:auto;overscroll-behavior:contain;background:var(--surface)}
+.rs-h{display:flex;gap:8px;align-items:baseline;margin-bottom:6px}.rs-h .rh-ic{margin-left:auto}
+.rs-list{display:grid;gap:8px}
+.rs-p{display:flex;gap:8px;align-items:flex-start}
+.rs-c{min-width:0;flex:1;font-size:13px}.rs-c small{color:var(--muted)}
+.rs-c ul{margin:2px 0 0;padding:0;list-style:none;display:grid;gap:2px}
+.rs-c li button{border:none;background:none;text-align:left;font:inherit;font-size:12.5px;color:var(--text);cursor:pointer;padding:2px 0;line-height:1.45}
+.rs-c li button:hover{text-decoration:underline}
+.kk-tag{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;padding:0 6px;border-radius:5px;background:#141414;color:#fff;vertical-align:1px}
+.rs-c .kk-tag{margin:0 5px 0 0}
+.kk-bub.fold{max-height:9.6em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+.kk-more{justify-self:start;border:none;background:rgba(255,255,255,.75);border-radius:999px;padding:2px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:#141414}
+.kk-row.hl .kk-bub{box-shadow:0 0 0 3px #ffd23f}
+@media (max-width:900px){
+  .room-wrap{grid-template-columns:minmax(0,1fr)}
+  .room-list{display:flex;overflow-x:auto;overflow-y:hidden;max-height:none;gap:6px;scrollbar-width:none;padding-bottom:2px}
+  .rl-item,.rl-new,.rl-arch{flex:none;width:auto;max-width:180px}
+  .rl-pv{display:none}.rl-item{padding:6px 12px;border-color:var(--border)}.rl-item .cnt{position:static;display:inline-block;margin-left:4px}
+  .rl-item{grid-auto-flow:column;align-items:center}
+  .rs-h .sub{display:none}
+}
 .rooms .cnt{background:#ff5a4f;color:#fff;border-radius:999px;padding:0 6px;font-size:11px;font-weight:800;margin-left:2px}
 .rooms .add{border-style:dashed}
 .room-mem{display:flex;gap:4px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
@@ -1848,13 +1891,58 @@ let CROOMS = [], ROOM_CUR = (() => { try { return localStorage.getItem("agency-r
 const isRoom = c => c === "TEAM" || /^R\d+$/.test(c || "");
 const roomOf = c => CROOMS.find(r => r.code === c) || {code:"TEAM", title:"팀 전체", members:Object.keys(AG).filter(k => !isOnCall(k))};
 function roomUnread(c){ const seen = Number(store("agency-room-seen-" + c) || 0); return CHAT.filter(x => x.code === c && x.sender === "agent" && x.id > seen).length; }
+function roomLast(c){ for (let i = CHAT.length - 1; i >= 0; i--) if (CHAT[i].code === c) return CHAT[i]; return null; }
+let ROOM_ARCH_OPEN = false;
+function roomItem(r){
+  const l = roomLast(r.code), n = r.code === ROOM_CUR ? 0 : roomUnread(r.code);
+  const who = l ? (l.sender === "kwan" ? "나" : (AG[l.speaker || "PM"]?.name || "")) : "";
+  const pv = l ? String(l.body || "").replace(/^\s*\[[^\]]{1,40}\]\s*/, "").replace(/\s+/g, " ").slice(0, 44) : "대화 없음";
+  return `<button type="button" class="rl-item" data-room-tab="${esc(r.code)}" aria-current="${r.code === ROOM_CUR}"><span class="rl-top"><b>${esc(r.title)}</b>${l ? `<small>${fmtTime(l.created_at)}</small>` : ""}</span><span class="rl-pv">${who ? `<i>${esc(who)}</i> ` : ""}${esc(pv)}</span>${n ? `<span class="cnt">${n > 99 ? "99+" : n}</span>` : ""}</button>`;
+}
 function teamHtml(){
-  const list = CROOMS.filter(r => !r.archived); if (!list.some(r => r.code === ROOM_CUR)) ROOM_CUR = "TEAM";
-  const cur = roomOf(ROOM_CUR);
-  return `<div class="sec" id="teamSec"><div class="sec-h"><h2>채팅방</h2><span class="sub">방마다 참여자가 답해요. 회의를 열고 싶으면 "회의 열어: 주제"처럼 남기세요. Grace가 직접 참여할지 물어봐요. 모든 대화는 회의록에 저장돼요</span></div>
-    <div class="rooms">${list.map(r => { const n = r.code === ROOM_CUR ? 0 : roomUnread(r.code); return `<button class="pk" data-room-tab="${r.code}" aria-pressed="${r.code === ROOM_CUR}">${esc(r.title)}${n ? ` <span class="cnt">${n}</span>` : ""}</button>`; }).join("")}<button class="pk add" id="newRoom">+ 새 채팅방</button></div>
-    <div class="team"><div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}<span class="sub">${esc(cur.title)} · ${(cur.members || []).length}명</span>${cur.code !== "TEAM" ? `<button type="button" class="btn ghost" id="endRoom" style="margin-left:auto" title="대화는 회의록에 남고 방은 닫혀요">회의 종료</button>` : ""}</div><div class="team-body" id="teamBody"></div><div class="room-grip" id="roomGrip" role="separator" aria-orientation="horizontal" title="끌어서 대화창 높이 조절 · 더블클릭하면 화면에 맞춤"><span></span></div>
-    <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div>`;
+  const byRecent = (a, b) => (+new Date(roomLast(b.code)?.created_at || b.created_at || 0)) - (+new Date(roomLast(a.code)?.created_at || a.created_at || 0));
+  const open = [{code:"TEAM", title:"팀 전체"}, ...CROOMS.filter(r => !r.archived && r.code !== "TEAM").sort(byRecent)];
+  const arch = CROOMS.filter(r => r.archived && r.code !== "TEAM").sort(byRecent);
+  if (ROOM_CUR !== "TEAM" && !CROOMS.some(r => r.code === ROOM_CUR)) ROOM_CUR = "TEAM";
+  const cur = roomOf(ROOM_CUR), isArch = !!cur.archived;
+  return `<div class="sec" id="teamSec"><div class="sec-h"><h2>채팅방</h2><span class="sub">방마다 참여자가 답해요. "회의 열어: 주제"처럼 남기면 회의가 열려요. 모든 대화는 회의록에 저장돼요</span></div>
+    <div class="room-wrap"><aside class="room-list" aria-label="채팅방 목록"><button type="button" class="rl-new" id="newRoom">+ 새 채팅방</button>
+      ${open.map(roomItem).join("")}
+      ${arch.length ? `<button type="button" class="rl-arch" id="archToggle" aria-expanded="${ROOM_ARCH_OPEN || isArch}">보관함 ${arch.length}</button>${ROOM_ARCH_OPEN || isArch ? arch.map(roomItem).join("") : ""}` : ""}</aside>
+    <div class="team"><div class="room-head"><div class="rh-title"><b id="roomTitle">${esc(cur.title)}</b>${cur.code !== "TEAM" ? `<button type="button" class="rh-ic" id="renameRoom" title="방 이름 바꾸기" aria-label="방 이름 바꾸기">✎</button>` : ""}<span class="sub">${(cur.members || []).length}명</span></div>
+      <div class="rh-acts"><button type="button" class="btn ghost" id="roomSum" title="누가 무엇을 말했는지 사람별로 정리">요약</button>${cur.code !== "TEAM" ? (isArch ? `<button type="button" class="btn" id="unarchRoom">다시 열기</button>` : `<button type="button" class="btn ghost" id="archRoom" title="목록에서 숨기고 보관함으로. 언제든 다시 열 수 있어요">보관</button>`) : ""}</div>
+      <div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}</div></div>
+    ${isArch ? `<div class="room-arch">보관된 방이에요. 대화는 그대로 볼 수 있고, <b>다시 열기</b>를 누르면 이어서 쓸 수 있어요</div>` : ""}
+    <div class="room-sum" id="roomSumBox" hidden></div>
+    <div class="team-body" id="teamBody"></div><div class="room-grip" id="roomGrip" role="separator" aria-orientation="horizontal" title="끌어서 대화창 높이 조절 · 더블클릭하면 화면에 맞춤"><span></span></div>
+    <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"${isArch ? " hidden" : ""}><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div></div>`;
+}
+// 말머리 "[제안 · Hannah]" "[바로 답해요 · Leo]"를 이름 옆 칩으로 빼고, 긴 글은 접어서 보여준다
+const LONG_MSG = 420;
+function splitTag(body){ const m = String(body || "").match(/^\s*\[([^\]·]{1,20})·\s*([^\]]{1,20})\]\s*/); if (!m) return { tag: "", text: String(body || "") }; const t = m[1].trim(); return { tag: /바로 답해요/.test(t) ? "" : t, text: String(body).slice(m[0].length) }; }
+function roomBubble(c){
+  const code = c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), me = code === "KWAN";
+  const { tag, text } = me ? { tag: "", text: c.body } : splitTag(c.body);
+  const long = String(text).length > LONG_MSG || String(text).split("\n").length > 8;
+  const name = me ? "KWAN" : (AG[code]?.name || code), role = me ? "" : (AG[code]?.role || "");
+  const meta = `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (me ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "");
+  return `<div class="kk-row${me ? " me" : ""}${code === "YK" ? " yk" : ""}" data-cid="${c.id}">${av(code)}<div class="kk-col">
+    ${me ? "" : `<span class="kk-name">${esc(name)}<small>${esc(role)}</small>${tag ? `<span class="kk-tag">${esc(tag)}</span>` : ""}</span>`}
+    <div class="kk-bub${long ? " fold" : ""}">${linkify(text)}${attHtml(c)}</div>${long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}
+    <div class="kk-meta">${meta}</div></div></div>`;
+}
+// 요약: 사람별로 무엇을 말했는지(각 말의 첫 문장), 누르면 그 말로 이동
+function roomSummaryHtml(){
+  const all = CHAT.filter(c => c.code === ROOM_CUR);
+  if (!all.length) return `<div class="sub">아직 대화가 없어요</div>`;
+  const day = all[all.length - 1].created_at.slice(0, 10);
+  const recent = all.filter(c => c.created_at.slice(0, 10) === day || all.indexOf(c) >= all.length - 60);
+  const by = new Map();
+  recent.forEach(c => { const k = c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"); if (!by.has(k)) by.set(k, []); by.get(k).push(c); });
+  const first = t => { const s = splitTag(t).text.replace(/[*#>]+/g, "").replace(/\s+/g, " ").trim(); const m = s.match(/^.{8,}?[.?!。]|^.{1,90}/); return (m ? m[0] : s).slice(0, 110); };
+  return `<div class="rs-h"><b>누가 무엇을 말했나</b><span class="sub">최근 대화 ${recent.length}개 · 누르면 그 말로 이동</span><button type="button" class="rh-ic" id="roomSumClose" aria-label="닫기">✕</button></div>
+    <div class="rs-list">${[...by.entries()].map(([k, list]) => `<div class="rs-p">${av(k, true)}<div class="rs-c"><b>${esc(k === "KWAN" ? "KWAN" : (AG[k]?.name || k))}</b> <small>${list.length}번</small>
+      <ul>${list.slice(-4).map(c => { const tg = splitTag(c.body).tag; return `<li><button type="button" data-jump="${c.id}">${tg ? `<span class="kk-tag">${esc(tg)}</span>` : ""}${esc(first(c.body))}</button></li>`; }).join("")}</ul></div></div>`).join("")}</div>`;
 }
 function renderTeam(){
   const box = $("#teamBody"); if (!box) return;
@@ -1865,10 +1953,12 @@ function renderTeam(){
   let lastDay = "";
   box.innerHTML = (all.length > th.length ? moreBtn(all.length - th.length) : "") + (th.length ? th.map(c => { const day = new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10);
       const sep = day !== lastDay ? `<div class="kk-day">${fmtDate(day)}${day === today ? " · 오늘" : ""}</div>` : ""; lastDay = day;
-      return sep + bubble(c.sender === "kwan" ? "KWAN" : (c.speaker || "PM"), c.body, `<span class="ev">${fmtTime(c.created_at)}</span>` + docBtnChat(c) + (c.sender === "kwan" ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : ""), undefined, attHtml(c)); }).join("")
+      return sep + roomBubble(c); }).join("")
     : `<div class="kk-day">아직 대화가 없어요. 먼저 말을 걸어보세요</div>`);
   if (near || !box.dataset.init || STICK > Date.now()) toBottom(box); else box.scrollTop = prevTop; box.dataset.init = "1";
   bindMore(box, renderTeam);
+  box.querySelectorAll("[data-unfold]").forEach(b => b.addEventListener("click", () => { const bub = b.previousElementSibling; const on = bub.classList.toggle("fold"); b.textContent = on ? "전체 보기" : "접기"; }));
+  const sb2 = $("#roomSumBox"); if (sb2 && !sb2.hidden) { sb2.innerHTML = roomSummaryHtml(); bindRoomSum(); }
   hydrateAtt(box);
   const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#p-rooms").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
   fabBadge();
@@ -1897,24 +1987,44 @@ function bindTeam(){
   renderTeam(); fitRooms(); bindRoomGrip(); { const bx = $("#teamBody"); if (bx && !$("#p-rooms").hidden) toBottom(bx); }
   document.querySelectorAll("[data-room-tab]").forEach(b => b.addEventListener("click", () => { ROOM_CUR = b.dataset.roomTab; store("agency-room", ROOM_CUR); const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); }));
   const nb = $("#newRoom"); if (nb) nb.addEventListener("click", openNewRoom);
-  const eb = $("#endRoom"); if (eb) eb.addEventListener("click", endRoom);
+  const ab = $("#archRoom"); if (ab) ab.addEventListener("click", () => setArchived(true));
+  const ub = $("#unarchRoom"); if (ub) ub.addEventListener("click", () => setArchived(false));
+  const rn = $("#renameRoom"); if (rn) rn.addEventListener("click", renameRoom);
+  const at = $("#archToggle"); if (at) at.addEventListener("click", () => { ROOM_ARCH_OPEN = !ROOM_ARCH_OPEN; const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); });
+  const sm = $("#roomSum"); if (sm) sm.addEventListener("click", () => { const bx = $("#roomSumBox"); bx.hidden = !bx.hidden; if (!bx.hidden) { bx.innerHTML = roomSummaryHtml(); bindRoomSum(); } fitRooms(); });
   const f = $("#teamForm"); if (!f) return;
   bindAttach("teamForm");
   f.addEventListener("submit", async e => { e.preventDefault();
     const data = await sendChat(ROOM_CUR, "teamForm", "teamIn"); if (!data) return;
     renderTeam(); toast((data.attachments || []).length ? "Gemini가 파일을 본 뒤 Grace가 답해요" : dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
 }
-// 회의 종료: 대화는 이미 회의록(agency_meetings, kind='chat')에 복제돼 있으니 방만 닫는다
-async function endRoom(){
+function bindRoomSum(){
+  const bx = $("#roomSumBox"); if (!bx) return;
+  const cl = $("#roomSumClose"); if (cl) cl.addEventListener("click", () => { bx.hidden = true; fitRooms(); });
+  bx.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.jump, box = $("#teamBody"); let row = box.querySelector(`[data-cid="${id}"]`);
+    if (!row) { box.dataset.limit = String(CHAT.filter(c => c.code === ROOM_CUR).length); renderTeam(); row = box.querySelector(`[data-cid="${id}"]`); }
+    if (!row) return; box.scrollTop = row.offsetTop - box.offsetTop - 12; row.classList.add("hl"); setTimeout(() => row.classList.remove("hl"), 1600); }));
+}
+// 보관: 목록에서 숨기고 보관함으로(대화·회의록은 그대로, 언제든 다시 열기). 회의가 끝나도 방은 계속 쓸 수 있다
+async function setArchived(on){
   const r = roomOf(ROOM_CUR); if (!r || r.code === "TEAM") return;
-  if (!confirm(`'${r.title}' 회의를 끝낼까요?\n대화는 회의록에 남고, 채팅방은 목록에서 사라져요.`)) return;
+  if (on && !confirm(`'${r.title}' 방을 보관할까요?\n대화는 그대로 남고, 보관함에서 언제든 다시 열 수 있어요.`)) return;
   micStop();
-  const { error } = await sb.from("agency_rooms").update({ archived: true }).eq("code", r.code);
-  if (error) return toast("닫지 못했어요: " + (error.message || ""));
-  const x = CROOMS.find(c => c.code === r.code); if (x) x.archived = true;
-  ROOM_CUR = "TEAM"; store("agency-room", "TEAM");
+  const { error } = await sb.from("agency_rooms").update({ archived: on }).eq("code", r.code);
+  if (error) return toast("바꾸지 못했어요: " + (error.message || ""));
+  const x = CROOMS.find(c => c.code === r.code); if (x) x.archived = on;
+  if (on) { ROOM_CUR = "TEAM"; store("agency-room", "TEAM"); }
   const sec = $("#teamSec"); if (sec) { sec.outerHTML = teamHtml(); bindTeam(); }
-  toast(`'${r.title}' 회의를 끝냈어요. 회의록 탭에서 다시 볼 수 있어요`);
+  toast(on ? `'${r.title}' 방을 보관했어요. 목록 아래 보관함에 있어요` : `'${r.title}' 방을 다시 열었어요`);
+}
+async function renameRoom(){
+  const r = roomOf(ROOM_CUR); if (!r || r.code === "TEAM") return;
+  const t = (prompt("방 이름", r.title) || "").trim().slice(0, 40); if (!t || t === r.title) return;
+  const { error } = await sb.from("agency_rooms").update({ title: t }).eq("code", r.code);
+  if (error) return toast("이름을 바꾸지 못했어요: " + (error.message || ""));
+  const x = CROOMS.find(c => c.code === r.code); if (x) x.title = t;
+  const sec = $("#teamSec"); if (sec) { sec.outerHTML = teamHtml(); bindTeam(); } toast("방 이름을 바꿨어요");
 }
 function openNewRoom(){
   const pick = new Set(["PM", ...Object.keys(AG).filter(c => !isOnCall(c))]); // 기본: 상시 근무자 전원(빼고 싶은 사람만 끄기)
