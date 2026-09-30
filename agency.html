@@ -941,6 +941,20 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
 .kk-row.me .att-doc{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.08);margin-top:6px}
 .cd-prev{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13.5px;line-height:1.5;color:#3d3a34}
 .kk-row.me .cd-prev{color:inherit}
+.pick-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:2px;padding-top:8px;border-top:1px dashed #ece8df}
+.pick-b{font:inherit;font-size:12px;font-weight:700;border:1px solid #e3ded3;background:#faf8f4;color:#4a463e;border-radius:999px;padding:4px 11px;cursor:pointer}
+.pick-b:hover{border-color:#cfc8b8}
+.pick-b.adopt[aria-pressed="true"]{background:#e3f6ea;border-color:#3dbe6e;color:#16723b}
+.pick-b.hold[aria-pressed="true"]{background:#fff4d6;border-color:#e6b33d;color:#8a6200}
+.pick-b.reject[aria-pressed="true"]{background:#fde7ea;border-color:#e26d8d;color:#a3243f}
+.pick-b.note[aria-pressed="true"]{background:#e8edff;border-color:#7c8bf2;color:#3b47a8}
+.pick-b.ghost{background:none;border-color:transparent;text-decoration:underline;color:#6f6d67}
+.pick-note{flex-basis:100%;min-height:54px;font:inherit;font-size:13px;border:1px solid #d9d4c8;border-radius:10px;padding:8px 10px;resize:vertical}
+.pick-done{font-size:12px;font-weight:800;padding:4px 11px;border-radius:999px;background:#f1efe9}
+.pick-done.adopt{background:#e3f6ea;color:#16723b}.pick-done.hold{background:#fff4d6;color:#8a6200}.pick-done.reject{background:#fde7ea;color:#a3243f}.pick-done.note{background:#e8edff;color:#3b47a8}
+.pick-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:#fffbea;border-top:2px solid #f2c14e}
+.pick-bar b{font-size:13.5px}.pick-sum{font-size:12.5px;color:#5b5446;flex:1 1 200px;min-width:0}
+.pick-bar input{flex:1 1 220px;min-width:0;font:inherit;font-size:13px;border:1px solid #e3ded3;border-radius:10px;padding:7px 10px}
 </style>
 
 <div class="wrap">
@@ -1156,6 +1170,7 @@ async function boot(){
   ]);
   CROOMS = (rm.data || []);
   try { REPORTS = (await sb.from("agency_reports").select("*").order("report_date", {ascending:false}).limit(300)).data || []; } catch (x) { REPORTS = []; }
+  try { PICKS = (await sb.from("agency_picks").select("*").order("id", {ascending:false}).limit(800)).data || []; } catch (x) { PICKS = []; }
   try { SIGNALS = (await sb.from("agency_signals").select("*").order("id", {ascending:false}).limit(800)).data || []; } catch (x) { SIGNALS = []; }
   try { MEDIA = (await sb.from("agency_media").select("*").order("id", {ascending:false}).limit(200)).data || []; } catch (x) { MEDIA = []; }
   NOTES = (nt.data || []);
@@ -2085,7 +2100,7 @@ function teamHtml(){
     ${isArch ? `<div class="room-arch">회의가 끝난 방이에요. 대화는 그대로 볼 수 있고, <b>다시 열기</b>를 누르면 이어서 쓸 수 있어요</div>` : ""}
     <div class="room-sum" id="roomSumBox" hidden></div>
     <div class="team-body" id="teamBody"></div><div class="room-grip" id="roomGrip" role="separator" aria-orientation="horizontal" title="끌어서 대화창 높이 조절 · 더블클릭하면 화면에 맞춤"><span></span></div>
-    <div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"${isArch ? " hidden" : ""}><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div></div>`;
+    ${pickBarHtml()}<div class="att-list" id="teamForm-att"></div><form class="dr-foot" id="teamForm"${isArch ? " hidden" : ""}><label class="att-btn" title="파일 첨부 (영상·이미지·PDF·오디오)">📎<input type="file" multiple hidden accept="video/*,image/*,audio/*,application/pdf,text/plain"></label><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="teamIn" placeholder="${esc(cur.title)}에 말하기 · Enter 보내기, Shift+Enter 줄바꿈"></textarea><button class="btn" type="submit">보내기</button></form></div></div></div>`;
 }
 // 말머리 "[제안 · Hannah]" "[바로 답해요 · Leo]"를 이름 옆 칩으로 빼고, 긴 글은 접어서 보여준다
 const LONG_MSG = 420;
@@ -2100,6 +2115,55 @@ function splitTag(body){
 // KWAN 신호: 에이전트 말에 💡(생각 못한 의견)·👍·👎 — 금요일 성장 리뷰의 근거
 let SIGNALS = [];
 const SIG = [["novel","💡","생각 못한 의견"],["good","👍","좋아요"],["weak","👎","별로예요"]];
+// 결정: 제안 카드마다 채택·보류·반려·피드백을 고르고, 모아서 한 번에 팀에게 보낸다(KWAN 메시지로 → 담당이 바로 반영)
+let PICKS = []; const DRAFT = new Map(); // chat_id → {pick, note, code, hl}
+const PICK = [["adopt","✅","채택"],["hold","⏸","보류"],["reject","✖","반려"]];
+const PICK_TXT = {adopt:"✅ 채택", hold:"⏸ 보류", reject:"✖ 반려", note:"✍ 피드백"};
+function pickBtns(c, code, hl){
+  const sent = PICKS.find(x => x.chat_id === c.id), d = DRAFT.get(c.id);
+  if (sent && !d) return `<div class="pick-row sent"><span class="pick-done ${sent.pick}">${PICK_TXT[sent.pick]}${sent.note ? ` · ${esc(String(sent.note).slice(0, 60))}` : ""}</span><button type="button" class="pick-b ghost" data-pick-redo="${c.id}" data-pick-code="${esc(code)}" data-pick-hl="${esc(hl)}">다시 고르기</button></div>`;
+  return `<div class="pick-row">${PICK.map(([k, e, t]) => `<button type="button" class="pick-b ${k}" data-pick="${k}" data-pick-chat="${c.id}" data-pick-code="${esc(code)}" data-pick-hl="${esc(hl)}" aria-pressed="${d && d.pick === k ? "true" : "false"}">${e} ${t}</button>`).join("")}<button type="button" class="pick-b note" data-pick-note="${c.id}" data-pick-code="${esc(code)}" data-pick-hl="${esc(hl)}" aria-pressed="${d && d.note ? "true" : "false"}">✍ 피드백</button>${d && d.open ? `<textarea class="pick-note" data-pick-text="${c.id}" placeholder="이 제안에 대한 의견 (예: 해요체로 통일해줘, 대치동 문구는 빼)">${esc(d.note || "")}</textarea>` : ""}</div>`;
+}
+function pickBarHtml(){
+  const items = [...DRAFT.entries()].filter(([id, d]) => d.room === ROOM_CUR && (d.pick || d.note));
+  if (!items.length) return "";
+  return `<div class="pick-bar" id="pickBar"><b>결정 ${items.length}개</b><span class="pick-sum">${items.map(([id, d]) => `${PICK_TXT[d.pick || "note"]} ${esc((AG[d.code] || ALUM[d.code])?.name || d.code)}`).join(" · ")}</span><input id="pickAll" placeholder="전체 코멘트 (선택)"><button type="button" class="btn ghost" id="pickClear">취소</button><button type="button" class="btn" id="pickSend">결정 보내기</button></div>`;
+}
+function refreshPickBar(){ const old = $("#pickBar"); const html = pickBarHtml(); const f = $("#teamForm"); if (old) old.outerHTML = html || ""; else if (html && f) f.insertAdjacentHTML("beforebegin", html); bindPickBar(); fitRooms(); }
+function bindPickBar(){
+  const c = $("#pickClear"); if (c) c.onclick = () => { [...DRAFT.keys()].forEach(k => DRAFT.get(k).room === ROOM_CUR && DRAFT.delete(k)); renderTeam(); refreshPickBar(); };
+  const s = $("#pickSend"); if (s) s.onclick = sendPicks;
+}
+async function sendPicks(){
+  const items = [...DRAFT.entries()].filter(([id, d]) => d.room === ROOM_CUR && (d.pick || d.note)); if (!items.length) return;
+  const all = ($("#pickAll")?.value || "").trim();
+  const lines = items.map(([id, d]) => `${PICK_TXT[d.pick || "note"]} — ${(AG[d.code] || ALUM[d.code])?.name || d.code}: ${String(d.hl || "").slice(0, 90)} (#${id})${d.note ? `\n   ↳ ${d.note.trim()}` : ""}`);
+  const body = `[결정 · KWAN]\n${lines.join("\n")}${all ? `\n\n코멘트: ${all}` : ""}\n\n채택안은 담당이 바로 반영해서 고친 버전을 올리고, 반려안은 다시 내지 말고, 보류안은 다음 회의로 넘겨요. 피드백이 붙은 건 그 의견대로 고쳐 주세요.`;
+  const ta = $("#teamIn"); if (!ta) return; const keep = ta.value; ta.value = body;
+  const btn = $("#pickSend"); if (btn) btn.disabled = true;
+  const data = await sendChat(ROOM_CUR, "teamForm", "teamIn");
+  if (!data) { ta.value = keep; if (btn) btn.disabled = false; return; }
+  const rows = items.map(([id, d]) => ({ chat_id: id, code: d.code, pick: d.pick || "note", note: d.note || null, sent_chat_id: data.id || null }));
+  const { data: saved, error } = await sb.from("agency_picks").upsert(rows, { onConflict: "chat_id" }).select();
+  if (!error) { PICKS = (saved && saved.length ? saved : rows).concat(PICKS.filter(x => !rows.some(r => r.chat_id === x.chat_id))); }
+  // Iris 평가 근거: 채택은 👍, 반려는 👎 로도 남긴다
+  for (const r of rows) { const kind = r.pick === "adopt" ? "good" : r.pick === "reject" ? "weak" : null; if (!kind || SIGNALS.some(x => x.chat_id === r.chat_id && x.kind === kind)) continue;
+    const { data: sg } = await sb.from("agency_signals").insert({ code: r.code, chat_id: r.chat_id, kind, note: r.note }).select().single(); if (sg) SIGNALS.unshift(sg); }
+  items.forEach(([id]) => DRAFT.delete(id));
+  renderTeam(); refreshPickBar(); toast(`결정 ${rows.length}개를 보냈어요. 담당이 반영해서 답해요`);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-pick],[data-pick-note],[data-pick-redo]"); if (!b) return; e.preventDefault();
+  const id = Number(b.dataset.pickChat || b.dataset.pickNote || b.dataset.pickRedo);
+  const d = DRAFT.get(id) || { code: b.dataset.pickCode, hl: b.dataset.pickHl, room: ROOM_CUR };
+  if (b.dataset.pick) d.pick = d.pick === b.dataset.pick ? null : b.dataset.pick;
+  if (b.dataset.pickNote) d.open = !d.open;
+  if (b.dataset.pickRedo) { d.pick = null; }
+  if (!d.pick && !d.note && !d.open && !b.dataset.pickRedo) DRAFT.delete(id); else DRAFT.set(id, d);
+  const row = b.closest(".pick-row"); if (row) { row.outerHTML = pickBtns({ id }, d.code, d.hl); const ta = document.querySelector(`[data-pick-text="${id}"]`); if (ta && d.open) ta.focus(); }
+  refreshPickBar();
+});
+document.addEventListener("input", e => { const t = e.target.closest("[data-pick-text]"); if (!t) return; const id = Number(t.dataset.pickText); const d = DRAFT.get(id); if (!d) return; d.note = t.value; const nb = t.parentElement.querySelector("[data-pick-note]"); if (nb) nb.setAttribute("aria-pressed", t.value.trim() ? "true" : "false"); refreshPickBar(); });
 function sigBtns(c, code){ return `<span class="sig">${SIG.map(([k, e, t]) => `<button type="button" data-sig="${k}" data-sig-chat="${c.id}" data-sig-code="${esc(code)}" aria-pressed="${SIGNALS.some(x => x.chat_id === c.id && x.kind === k)}" title="${t}">${e}</button>`).join("")}</span>`; }
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-sig]"); if (!b) return; e.preventDefault();
@@ -2141,7 +2205,7 @@ function roomBubble(c){
   const name = (AG[code] || ALUM[code])?.name || code, role = AG[code]?.role || "";
   return `<div class="kk-row card${code === "YK" ? " yk" : ""}" data-cid="${c.id}" style="--tc:${TEAM_COLOR[code] || "#8a8780"}">${av(code)}<div class="kk-col">
     <div class="cd-head"><b>${esc(name)}</b><small>${esc(role)}</small>${tag ? `<span class="kk-tag">${esc(tag)}</span>` : ""}${time}</div>
-    <div class="cd-card">${hl ? `<div class="cd-hl">${linkify(hl)}</div>` : ""}${asDoc ? `<span class="cd-prev">${esc(plainOf(rest).slice(0, 220))}</span>${attDoc(c, rest, hl)}` : rest.trim() ? `<div class="cd-txt md${long ? " fold" : ""}">${mdLite(rest)}</div>` : ""}${attHtml(c)}${!asDoc && long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}</div>
+    <div class="cd-card">${hl ? `<div class="cd-hl">${linkify(hl)}</div>` : ""}${asDoc ? `<span class="cd-prev">${esc(plainOf(rest).slice(0, 220))}</span>${attDoc(c, rest, hl)}` : rest.trim() ? `<div class="cd-txt md${long ? " fold" : ""}">${mdLite(rest)}</div>` : ""}${attHtml(c)}${!asDoc && long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}${isRoom(c.code) ? pickBtns(c, code, hl || plainOf(rest).slice(0, 80)) : ""}</div>
     <div class="kk-meta">${meta}${sigBtns(c, code)}</div></div></div>`;
 }
 function bindUnfold(box){ box.querySelectorAll("[data-unfold]").forEach(b => b.addEventListener("click", () => { let el = b.previousElementSibling; while (el && !el.classList.contains("md")) el = el.previousElementSibling; if (!el) return; const on = el.classList.toggle("fold"); b.textContent = on ? "전체 보기" : "접기"; })); }
@@ -2206,6 +2270,7 @@ function bindTeam(){
   const rn = $("#renameRoom"); if (rn) rn.addEventListener("click", renameRoom);
   const at = $("#archToggle"); if (at) at.addEventListener("click", () => { ROOM_ARCH_OPEN = !ROOM_ARCH_OPEN; const sec = $("#teamSec"); sec.outerHTML = teamHtml(); bindTeam(); });
   const sm = $("#roomSum"); if (sm) sm.addEventListener("click", () => { const bx = $("#roomSumBox"); bx.hidden = !bx.hidden; if (!bx.hidden) { bx.innerHTML = roomSummaryHtml(); bindRoomSum(); } fitRooms(); });
+  bindPickBar();
   const f = $("#teamForm"); if (!f) return;
   bindAttach("teamForm");
   f.addEventListener("submit", async e => { e.preventDefault();
