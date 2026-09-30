@@ -1107,6 +1107,32 @@ const tagCls = {근거:"b",사실:"b",추정:"a",의견:"",반론:"r",흡수:"g"
 const WD = ["일","월","화","수","목","금","토"];
 const fmtDate = d => { const x = new Date(d + "T00:00:00"); return `${x.getMonth()+1}/${x.getDate()}(${WD[x.getDay()]})`; };
 function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v);}catch(e){ return null; } }
+// ===== 입력 중인 글 임시저장: 다른 탭·방에 갔다 오거나 새로고침해도 쓰던 글이 남는다 (이 브라우저에만, 7일) =====
+const DRAFT_KEY = "agency-drafts";
+function draftAll(){ try { const o = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"), now = Date.now(); for (const k in o) if (now - o[k].t > 7 * 864e5) delete o[k]; return o; } catch (e) { return {}; } }
+function draftSave(o){ try { localStorage.setItem(DRAFT_KEY, JSON.stringify(o)); } catch (e) {} }
+function draftKeyOf(ta){
+  if (!ta || ta.tagName !== "TEXTAREA") return null;
+  if (ta.id === "teamIn") return "room:" + ROOM_CUR;
+  if (ta.id === "drIn") return CHAT_CUR ? "dm:" + CHAT_CUR : null;
+  if (ta.id === "popIn") return POP ? "dm:" + POP.code : null;
+  if (ta.id) return "id:" + ta.id;
+  const fb = ta.closest("[data-fb]"); if (fb) return "fb:" + fb.dataset.fb;
+  return null;
+}
+function draftPut(k, v){ const o = draftAll(); if (v && v.trim()) o[k] = { v, t: Date.now() }; else delete o[k]; draftSave(o); }
+function draftDrop(ta){ const k = draftKeyOf(ta); if (k) draftPut(k, ""); }
+function draftRestore(root){
+  const tas = root.tagName === "TEXTAREA" ? [root] : root.querySelectorAll ? root.querySelectorAll("textarea") : []; if (!tas.length) return;
+  const o = draftAll();
+  tas.forEach(ta => { const k = draftKeyOf(ta); if (k && o[k] && !ta.value.trim()) ta.value = o[k].v; });
+}
+document.addEventListener("input", e => { const k = draftKeyOf(e.target); if (k) draftPut(k, e.target.value); });
+// 보내면 지우고, 보내기에 실패해서 글이 그대로 남아 있으면 다시 저장한다
+document.addEventListener("submit", e => { e.target.querySelectorAll?.("textarea").forEach(ta => { const k = draftKeyOf(ta); if (!k) return; draftPut(k, "");
+  setTimeout(() => { if (ta.isConnected && ta.value.trim()) draftPut(k, ta.value); }, 4000); }); }, true);
+new MutationObserver(ms => { for (const m of ms) m.addedNodes.forEach(n => { if (n.nodeType === 1) draftRestore(n); }); }).observe(document.documentElement, { childList: true, subtree: true });
+setTimeout(() => draftRestore(document.body), 0);
 const linkify = t => esc(t).replace(/https?:\/\/[^\s<)"]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.length > 60 ? u.slice(0, 57) + "…" : u}</a>`);
 // 에이전트 글의 간단한 서식(**굵게**, 제목, 목록, 줄바꿈)을 실제 모양으로
 function mdLite(t){
@@ -2036,7 +2062,7 @@ async function sendChat(code, fid, taid){
     if (!body) body = attachments.length ? `(첨부 ${attachments.map(a => a.name).join(", ")})` : "";
     const { data, error } = await sb.from("agency_chat").insert({ code, sender: "kwan", body, attachments }).select().single();
     if (error) { toast("보내지 못했어요: " + (error.message || "다시 시도해주세요")); return null; }
-    STICK = Date.now() + 1500; upsertBy(CHAT, data); ta.value = ""; ATT_FILES[fid] = []; const l = $("#" + fid + "-att"); if (l) l.innerHTML = "";
+    STICK = Date.now() + 1500; upsertBy(CHAT, data); draftDrop(ta); ta.value = ""; ATT_FILES[fid] = []; const l = $("#" + fid + "-att"); if (l) l.innerHTML = "";
     return data;
   } finally { if (btn) btn.disabled = false; }
 }
@@ -2143,6 +2169,7 @@ async function sendPicks(){
   const btn = $("#pickSend"); if (btn) btn.disabled = true;
   const data = await sendChat(ROOM_CUR, "teamForm", "teamIn");
   if (!data) { ta.value = keep; if (btn) btn.disabled = false; return; }
+  if (keep.trim()) draftPut("room:" + ROOM_CUR, keep);
   const rows = items.map(([id, d]) => ({ chat_id: id, code: d.code, pick: d.pick || "note", note: d.note || null, sent_chat_id: data.id || null }));
   const { data: saved, error } = await sb.from("agency_picks").upsert(rows, { onConflict: "chat_id" }).select();
   if (!error) { PICKS = (saved && saved.length ? saved : rows).concat(PICKS.filter(x => !rows.some(r => r.chat_id === x.chat_id))); }
