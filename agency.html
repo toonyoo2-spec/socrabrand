@@ -1346,7 +1346,10 @@ function startRealtime(){
   RT = sb.channel("agency-live")
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_chat"}, ({eventType, new:row}) => {
       if (!row || !row.id) return; const fresh = eventType === "INSERT" && !CHAT.some(c => c.id === row.id);
+      const prev = eventType === "UPDATE" ? CHAT.find(c => c.id === row.id) : null;
       upsertBy(CHAT, row); CHAT.sort((a, b) => a.id - b.id);
+      // 읽음 표시만 바뀐 경우(다른 기기에서 읽음 등)는 숫자만 고친다 — 방 전체를 다시 그리지 않음
+      if (prev && prev.body === row.body && isRoom(row.code)) { clearTimeout(ROOM_RD_T); ROOM_RD_T = setTimeout(refreshRoomCounts, 300); return; }
       if (fresh && row.sender === "agent") isRoom(row.code) ? notify(row.speaker || "PM", row.body, () => { openRoom(row.code); }, roomOf(row.code).title) : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
       if (isRoom(row.code)) { if (row.code === ROOM_CUR) renderTeam(); else { const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } }
       rtDirty.office = true; rtFlush(); })
@@ -2101,7 +2104,23 @@ function updateAttAi(m){
 let CROOMS = [], ROOM_CUR = (() => { try { return localStorage.getItem("agency-room") || "TEAM"; } catch (e) { return "TEAM"; } })();
 const isRoom = c => c === "TEAM" || /^R\d+$/.test(c || "");
 const roomOf = c => CROOMS.find(r => r.code === c) || {code:"TEAM", title:"팀 전체", members:Object.keys(AG).filter(k => !isOnCall(k) && !isNoMeet(k))};
-function roomUnread(c){ const seen = Number(store("agency-room-seen-" + c) || 0); return CHAT.filter(x => x.code === c && x.sender === "agent" && x.id > seen).length; }
+// 안 읽은 수: 읽음은 DB(read_by_kwan)에 남겨서 PC·휴대폰 어디서 읽어도 같이 사라진다. 예전 이 기기 기록(seen)도 함께 인정
+function roomUnread(c){ const seen = Number(store("agency-room-seen-" + c) || 0); return CHAT.filter(x => x.code === c && x.sender === "agent" && !x.read_by_kwan && x.id > seen).length; }
+let ROOM_RD_T = null, ROOM_RD_BUSY = {};
+async function markRoomRead(code){
+  const ids = CHAT.filter(x => x.code === code && x.sender === "agent" && !x.read_by_kwan).map(x => x.id); if (!ids.length) return;
+  const max = Math.max(...ids); store("agency-room-seen-" + code, String(Math.max(max, Number(store("agency-room-seen-" + code) || 0))));
+  CHAT.forEach(x => { if (x.code === code && x.sender === "agent" && x.id <= max) x.read_by_kwan = true; });
+  refreshRoomCounts();
+  if (ROOM_RD_BUSY[code] >= max) return; ROOM_RD_BUSY[code] = max;
+  const { error } = await sb.from("agency_chat").update({ read_by_kwan: true }).eq("code", code).eq("sender", "agent").eq("read_by_kwan", false).lte("id", max);
+  if (error) ROOM_RD_BUSY[code] = 0;
+}
+function refreshRoomCounts(){
+  document.querySelectorAll(".rl-item[data-room-tab]").forEach(b => { const c = b.dataset.roomTab, n = c === ROOM_CUR ? 0 : roomUnread(c);
+    let s = b.querySelector(".cnt"); if (!n) { if (s) s.remove(); return; } if (!s) { s = document.createElement("span"); s.className = "cnt"; b.appendChild(s); } s.textContent = n > 99 ? "99+" : n; });
+  fabBadge();
+}
 function roomLast(c){ for (let i = CHAT.length - 1; i >= 0; i--) if (CHAT[i].code === c) return CHAT[i]; return null; }
 let ROOM_ARCH_OPEN = false;
 function roomItem(r){
@@ -2265,7 +2284,7 @@ function renderTeam(){
   bindUnfold(box);
   const sb2 = $("#roomSumBox"); if (sb2 && !sb2.hidden) { sb2.innerHTML = roomSummaryHtml(); bindRoomSum(); }
   hydrateAtt(box);
-  const last = th.filter(c => c.sender === "agent").slice(-1)[0]; if (last && !$("#p-rooms").hidden) store("agency-room-seen-" + ROOM_CUR, String(last.id));
+  if (!$("#p-rooms").hidden && document.visibilityState !== "hidden") markRoomRead(ROOM_CUR);
   fabBadge();
 }
 // 채팅방 탭: 방 목록 + 대화창(탭 화면 높이에 딱 맞춤, 페이지는 스크롤되지 않게)
@@ -2735,6 +2754,8 @@ function showTab(t){
   if (t === "rooms") { fitRooms(); renderTeam(); const bx = $("#teamBody"); if (bx) toBottom(bx); }
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+// 다른 앱·창에 있다가 돌아왔을 때 보고 있던 방은 읽음 처리
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && $("#p-rooms") && !$("#p-rooms").hidden) markRoomRead(ROOM_CUR); });
 
 boot();
 </script>
