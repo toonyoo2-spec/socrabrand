@@ -934,6 +934,13 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
 .o3d-wrap .board3{position:static;margin:10px 14px 0;max-width:none;box-shadow:none;background:rgba(255,255,255,.7)}
 .office.night .o3d-wrap .board3{background:rgba(255,255,255,.08);color:#e9ecf5}
 .iso2 .sprites3{transform-style:flat}
+.att-doc{display:flex;gap:10px;align-items:center;text-align:left;justify-self:start;max-width:min(440px,100%);background:#f6f4ef;border:1px solid #e6e1d6;border-radius:12px;padding:8px 14px 8px 8px;cursor:pointer;font-family:inherit;color:#141414}
+.att-doc:hover{border-color:#cfc8b8;background:#f1eee6}
+.att-doc i{font-style:normal;font-size:20px;flex:0 0 38px;height:38px;border-radius:9px;background:#fff;display:grid;place-items:center;box-shadow:inset 0 0 0 1px #e6e1d6}
+.att-doc span{display:grid;min-width:0}.att-doc b{font-size:13.5px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.att-doc small{font-size:11.5px;color:#6f6d67}
+.kk-row.me .att-doc{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.08);margin-top:6px}
+.cd-prev{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13.5px;line-height:1.5;color:#3d3a34}
+.kk-row.me .cd-prev{color:inherit}
 </style>
 
 <div class="wrap">
@@ -1570,7 +1577,7 @@ const at = (x, y, cls, inner = "", st = "") => `<div class="o2 ${cls}" style="le
 // 방마다 소품
 function propsOf(r){
   const R = r.x + r.w, B = r.y + r.h;
-  if (r.id === "ceo") return at(r.x + 22, r.y + 60, "shelf") + at(R - 70, r.y + 56, "plant big") + at(r.x + 18, B - 92, "sofa") + at(R - 118, B - 84, "frame", "<b>₩100B</b><small>투자 유치 🎉</small>") + at(r.x + 120, r.y + 52, "trophy", "🏆");
+  if (r.id === "ceo") return at(r.x + 22, r.y + 60, "shelf") + at(R - 70, r.y + 56, "plant big") + at(r.x + 18, B - 92, "sofa") + at(r.x + 120, r.y + 52, "trophy", "🏆");
   if (r.id === "meet") return at(TABLE3.x, TABLE3.y, "mtable", "", `width:${TABLE3.w}px;height:${TABLE3.h}px;z-index:${TABLE3.y + 10}`) + at(r.x + 24, r.y + 50, "board", "<i></i><i></i><i></i>") + at(R - 60, r.y + 52, "plant") + at(R - 60, B - 70, "plant");
   if (r.id === "lounge") return at(r.x + 34, r.y + 64, "cafe", "<i></i><b>COFFEE</b>") + at(r.x + 200, r.y + 70, "fridge") + at(r.x + 60, B - 130, "rug") + at(r.x + 70, B - 150, "sofa long") + at(r.x + 300, B - 120, "bean") + at(R - 90, B - 170, "bean pink") + at(R - 64, r.y + 60, "plant big") + at(r.x + 250, B - 84, "cat", "<i></i>") + at(R - 150, r.y + 64, "arcade", "<i></i>");
   if (r.id === "hr") return at(R - 64, r.y + 56, "plant") + at(r.x + 24, r.y + 60, "files") + at(r.x + 30, B - 72, "sign", "회의 불참 · KWAN 1:1");
@@ -1599,7 +1606,8 @@ function isoHtml(board){
 // 화면 폭에 맞춰 평면을 줄인다(평면 좌표는 그대로)
 function layoutIso(){
   const wrap = $("#iso"), floor = $("#isoFloor"); if (!wrap || !floor) return;
-  const fit = (wrap.clientWidth - 16) / ISO.W, s = Math.min(1, Math.max(0.34, fit)); ISO_S = s;
+  if (!wrap.clientWidth) return; // 숨은 탭에서는 재지 않는다(보일 때 ResizeObserver가 다시 맞춘다)
+  const fit = (wrap.clientWidth - 16) / ISO.W, s = Math.min(2, Math.max(0.34, fit)); ISO_S = s; // 가로에 꽉 차게
   const sp = $("#isoSpacer"); if (sp) sp.style.width = (ISO.W * s + 16) + "px";
   if (s > fit && !wrap.dataset.centered) { wrap.dataset.centered = "1"; requestAnimationFrame(() => { wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2; }); }
   floor.style.transform = `translate(8px, 8px) scale(${s})`;
@@ -1608,6 +1616,10 @@ function layoutIso(){
   wrap.style.setProperty("--cs", cs); wrap.style.setProperty("--ls", ls);
 }
 window.addEventListener("resize", () => layoutIso());
+// 탭이 열리거나 창 폭이 바뀌면 사무실 크기를 다시 맞춘다
+const ISO_RO = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => layoutIso()) : null;
+let ISO_OBS = null;
+setInterval(() => { const w = $("#iso"); if (ISO_RO && w && w !== ISO_OBS) { ISO_RO.observe(w); ISO_OBS = w; } }, 500);
 
 // ---- 사람 ----
 function spriteMarks(code){ return code === "KWAN" ? "" : pendingReq(code) ? `<span class="q">!</span>` : unreadMsg(code) ? `<span class="q msg">…</span>` : ""; }
@@ -2108,20 +2120,28 @@ function headSplit(text){
   const m = first.match(/^(.{10,140}?[.?!])(\s|$)/);
   return m ? { hl: clean(m[1]), rest: first.slice(m[1].length).trim() + (rest ? "\n" + rest : "") } : { hl: "", rest: t };
 }
+// 긴 글은 카톡 첨부파일처럼: 한두 줄 미리보기 + 📄 카드(누르면 문서 보기)
+const plainOf = t => String(t || "").replace(/^#{1,4}\s+/gm, "").replace(/\*\*|__|`/g, "").replace(/^\s*[-*•]\s+/gm, "").replace(/\s+/g, " ").trim();
+function attDoc(c, text, hl){
+  const m = String(text).match(/^#{1,4}\s+(.+)$/m) || String(text).match(/^\s*\*\*(.{4,80}?)\*\*\s*$/m);
+  const title = plainOf(m ? m[1] : hl || text).slice(0, 60) || "긴 글", n = String(c.body || "").length;
+  return `<button type="button" class="att-doc" data-doc="chat|${c.id}"><i>📄</i><span><b>${esc(title)}</b><small>${n.toLocaleString()}자 · 약 ${Math.max(1, Math.round(n / 500))}분 · 눌러서 열기</small></span></button>`;
+}
 function roomBubble(c){
   const code = c.sender === "kwan" ? "KWAN" : (c.speaker || (isRoom(c.code) ? "PM" : c.code)), me = code === "KWAN";
   const time = `<span class="cd-time">${fmtTime(c.created_at)}</span>`;
-  const meta = docBtnChat(c) + (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + (me ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "");
+  const bodyLen = String(c.body || "").length, asDoc = bodyLen > (c.sender === "kwan" ? 600 : 500);
+  const meta = (asDoc ? "" : docBtnChat(c)) + (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + (me ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "");
   if (me) {
-    const long = String(c.body).length > 600;
-    return `<div class="kk-row me" data-cid="${c.id}">${av(code)}<div class="kk-col"><div class="kk-bub md${long ? " fold" : ""}">${mdLite(c.body)}${attHtml(c)}</div>${long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}<div class="kk-meta">${time}${meta}</div></div></div>`;
+    if (asDoc) return `<div class="kk-row me" data-cid="${c.id}">${av(code)}<div class="kk-col"><div class="kk-bub"><span class="cd-prev">${esc(plainOf(c.body).slice(0, 160))}</span>${attDoc(c, c.body, "")}${attHtml(c)}</div><div class="kk-meta">${time}${meta}</div></div></div>`;
+    return `<div class="kk-row me" data-cid="${c.id}">${av(code)}<div class="kk-col"><div class="kk-bub md">${mdLite(c.body)}${attHtml(c)}</div><div class="kk-meta">${time}${meta}</div></div></div>`;
   }
   const { tag, text } = splitTag(c.body), { hl, rest } = headSplit(text);
   const long = rest.length > 380 || rest.split("\n").length > 8;
   const name = (AG[code] || ALUM[code])?.name || code, role = AG[code]?.role || "";
   return `<div class="kk-row card${code === "YK" ? " yk" : ""}" data-cid="${c.id}" style="--tc:${TEAM_COLOR[code] || "#8a8780"}">${av(code)}<div class="kk-col">
     <div class="cd-head"><b>${esc(name)}</b><small>${esc(role)}</small>${tag ? `<span class="kk-tag">${esc(tag)}</span>` : ""}${time}</div>
-    <div class="cd-card">${hl ? `<div class="cd-hl">${linkify(hl)}</div>` : ""}${rest.trim() ? `<div class="cd-txt md${long ? " fold" : ""}">${mdLite(rest)}</div>` : ""}${attHtml(c)}${long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}</div>
+    <div class="cd-card">${hl ? `<div class="cd-hl">${linkify(hl)}</div>` : ""}${asDoc ? `<span class="cd-prev">${esc(plainOf(rest).slice(0, 220))}</span>${attDoc(c, rest, hl)}` : rest.trim() ? `<div class="cd-txt md${long ? " fold" : ""}">${mdLite(rest)}</div>` : ""}${attHtml(c)}${!asDoc && long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}</div>
     <div class="kk-meta">${meta}${sigBtns(c, code)}</div></div></div>`;
 }
 function bindUnfold(box){ box.querySelectorAll("[data-unfold]").forEach(b => b.addEventListener("click", () => { let el = b.previousElementSibling; while (el && !el.classList.contains("md")) el = el.previousElementSibling; if (!el) return; const on = el.classList.toggle("fold"); b.textContent = on ? "전체 보기" : "접기"; })); }
@@ -2493,7 +2513,7 @@ function renderProfile(rows){
   const label = {pref:["확정","g"], rule:["규칙","k"], pattern:["패턴",""]};
   const prefs = rows.filter(r => r.kind !== "question" && r.status === "active");
   $("#prefs").innerHTML = prefs.map(r => `<div class="pref-i"><span>${esc(r.body)}</span><span class="chip ${label[r.kind][1]}">${label[r.kind][0]}${r.kind==="pattern"&&r.confidence?` · ${r.confidence}`:""}</span><small>${esc(r.source || "")}</small></div>`).join("") || `<div class="q">아직 없음</div>`;
-  const qs = rows.filter(r => r.kind === "question" && r.status !== "retired");
+  const qs = rows.filter(r => r.kind === "question" && !["retired","answered"].includes(r.status)); // 답한 질문은 목록에서 사라진다(답은 DB에 남아 다음 회의에서 반영)
   $("#questions").innerHTML = qs.map(r => `<div class="qa" data-id="${r.id}">
      <span>${esc(r.body)}</span>
      <textarea id="qa-${r.id}" placeholder="답변을 적어주세요">${esc(r.answer || "")}</textarea>
@@ -2502,8 +2522,8 @@ function renderProfile(rows){
   document.querySelectorAll("[data-save]").forEach(b => b.addEventListener("click", async () => {
     const id = b.dataset.save; const answer = $("#qa-" + id).value.trim(); if (!answer) return;
     const { error } = await sb.from("agency_profile").update({ answer, status:"answered", updated_at:new Date().toISOString() }).eq("id", id);
-    toast(error ? "저장하지 못했어요. 다시 눌러주세요." : "답변을 저장했어요");
-    if (!error) b.closest(".qa").querySelector(".sub").textContent = "답변 완료 · 다음 회의에서 프로필에 반영";
+    toast(error ? "저장하지 못했어요. 다시 눌러주세요." : "답변을 저장했어요. 다음 회의에서 프로필에 반영돼요");
+    if (!error) { const qa = b.closest(".qa"), box = qa.parentElement; qa.remove(); if (!box.querySelector(".qa")) box.innerHTML = `<div class="q">지금은 질문이 없어요.</div>`; }
   }));
 }
 
