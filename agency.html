@@ -1146,7 +1146,7 @@ async function boot(){
     sb.from("agency_profile").select("*").order("created_at"),
     sb.from("agency_interventions").select("*").order("created_at", {ascending:false}).limit(300),
     sb.from("agency_presence").select("*"),
-    sb.from("agency_chat").select("*").order("created_at").limit(500),
+    sb.from("agency_chat").select("*").order("created_at", {ascending:false}).limit(1000), // 최신 1000개(오래된 500개만 불러와 새 말이 사라지던 문제)
     sb.from("agency_config").select("key,value"),
     sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1),
     sb.from("agency_scout").select("*").order("collected_date", {ascending:false}).order("id").limit(60),
@@ -1163,7 +1163,7 @@ async function boot(){
   SUMMON = (sm.data || [])[0] || null;
   SCOUT = sc.data || [];
   (pr.data || []).forEach(x => PRES[x.code] = x);
-  CHAT = ch.data || [];
+  CHAT = (ch.data || []).slice().reverse();
   (cf.data || []).forEach(x => CFG[x.key] = x.value);
   IV = iv.data || [];
   (ag.data || []).forEach(a => (a.active === false ? ALUM : AG)[a.code] = a); // 은퇴(9/30 개편)한 사람은 지난 기록의 이름에만 쓴다
@@ -1265,14 +1265,14 @@ async function pollRun(){
   const [mr, pr, ch, smr] = await Promise.all([
     sb.from("agency_meetings").select("*").order("created_at", {ascending:false}).limit(1),
     sb.from("agency_presence").select("*"),
-    sb.from("agency_chat").select("*").order("created_at").limit(500),
+    sb.from("agency_chat").select("*").order("created_at", {ascending:false}).limit(1000), // 최신 1000개(오래된 500개만 불러와 새 말이 사라지던 문제)
     sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1)
   ]);
   const prevSum = SUMMON ? SUMMON.id + SUMMON.status : ""; SUMMON = (smr.data || [])[0] || SUMMON;
   const row = mr.data && mr.data[0]; const cur = MEETINGS[0];
   const sig = r => r ? r.id + r.status + JSON.stringify((r.meta||{}).steps || []) : "";
   const psig = JSON.stringify(PRES) + CHAT.length + CHAT.filter(c => c.handled).length;
-  (pr.data || []).forEach(x => PRES[x.code] = x); if (ch.data) CHAT = ch.data;
+  (pr.data || []).forEach(x => PRES[x.code] = x); if (ch.data) CHAT = ch.data.slice().reverse();
   const changedMeeting = row && sig(row) !== sig(cur);
   if (changedMeeting) { const i = MEETINGS.findIndex(x => x.id === row.id); if (i >= 0) MEETINGS[i] = row; else MEETINGS.unshift(row); }
   if (changedMeeting && row.status !== "running") { renderToday(); renderMinutesNav(); }
