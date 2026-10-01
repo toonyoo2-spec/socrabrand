@@ -1237,7 +1237,15 @@ const GROUPS = [
 ];
 const ST_LABEL = {ok:"정상", run:"진행 중", skip:"건너뜀", fail:"실패", none:"대기"};
 function kstNow(){ const d = new Date(Date.now() + 9*3600e3); return { date:d.toISOString().slice(0,10), h:d.getUTCHours(), m:d.getUTCMinutes(), wd:d.getUTCDay(), ms:d.getTime() }; }
+function codexConnectionText(){
+  const bridge = CFG.codex_bridge || {};
+  const fresh = bridge.heartbeat_at && Date.now() - new Date(bridge.heartbeat_at).getTime() < 90000;
+  if (CFG.execution_provider !== 'codex') return 'Codex 연결 준비 중';
+  if (!fresh || bridge.state === 'offline') return 'Codex 연결 끊김 · 요청은 대기열에 보관됩니다';
+  return bridge.state === 'working' ? 'Codex 처리 중' : 'Codex 연결됨 · 요청 대기 중';
+}
 function nextRunText(){
+  if (CFG.execution_provider === 'codex') return codexConnectionText();
   const k = kstNow(); const base = new Date(k.ms); let d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate(), 7, 27));
   if (d.getTime() <= k.ms) d = new Date(d.getTime() + 864e5);
   while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d = new Date(d.getTime() + 864e5);
@@ -1250,7 +1258,7 @@ function pipelineHtml(){
   const k = kstNow();
   const workday = k.wd >= 1 && k.wd <= 5;
   const pastRun = k.h > 7 || (k.h === 7 && k.m >= 50);
-  const missingToday = !!last && workday && pastRun && last.meeting_date !== k.date;
+  const missingToday = CFG.execution_provider !== 'codex' && !!last && workday && pastRun && last.meeting_date !== k.date;
   const meta = (last && last.meta) || {};
   let running = last && last.status === "running";
   // 30분 넘게 진행 표시가 갱신되지 않으면 중단된 것으로 본다
@@ -1353,7 +1361,7 @@ function startRealtime(){
       if (fresh && row.sender === "agent") isRoom(row.code) ? notify(row.speaker || "PM", row.body, () => { openRoom(row.code); }, roomOf(row.code).title) : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
       if (isRoom(row.code)) { if (row.code === ROOM_CUR) renderTeam(); else { const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } }
       rtDirty.office = true; rtFlush(); })
-    .on("postgres_changes", {event:"*", schema:"public", table:"agency_media"}, ({new:row}) => { if (!row || !row.id) return; const prev = MEDIA.find(x => x.id === row.id); const wasDone = prev && prev.status === "done"; upsertBy(MEDIA, row); if (row.status === "done" && !wasDone) notify("PM", `Gemini가 '${row.name || "첨부 파일"}'을 다 봤어요`, () => {}, "첨부 분석"); updateAttAi(row); })
+    .on("postgres_changes", {event:"*", schema:"public", table:"agency_media"}, ({new:row}) => { if (!row || !row.id) return; const prev = MEDIA.find(x => x.id === row.id); const wasDone = prev && prev.status === "done"; upsertBy(MEDIA, row); if (row.status === "done" && !wasDone) notify("PM", `'${row.name || "첨부 파일"}' 분석이 완료됐어요`, () => {}, "첨부 분석"); updateAttAi(row); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_rooms"}, ({new:row}) => { if (row && row.code) { upsertBy(CROOMS, row, "code"); const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } })
     .on("postgres_changes", {event:"INSERT", schema:"public", table:"agency_notes"}, ({new:row}) => { if (row && row.id && !NOTES.some(n => n.id === row.id)) { NOTES.unshift(row); rtDirty.today = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_reports"}, ({new:row}) => { if (row && row.id) { upsertBy(REPORTS, row); if (!document.activeElement || !document.activeElement.closest(".rep-fb, .rep-dir")) renderReports(); else repBadge(); } })
@@ -1820,8 +1828,8 @@ function openSummon(){
       const btn = e.submitter; btn.disabled = true; btn.textContent = "부르는 중…";
       const { data, error } = await sb.functions.invoke("agency-summon", { body: { team:[...pick], note: bg.querySelector("#sumNote").value.trim() } });
       if (error) { let msg = "출근시키지 못했어요. 잠시 뒤 다시 눌러주세요"; try { const j = await error.context.json(); if (j.error) msg = j.error; } catch (_) {} toast(msg); btn.disabled = false; btn.textContent = "출근시키기"; return; }
-      SUMMON = { id: data.id, status:"fired", requested_at: new Date().toISOString() };
-      bg.remove(); refreshOffice(); schedulePoll(); toast("출근 요청을 보냈어요. 1~2분 안에 입구로 들어와요");
+      SUMMON = { id: data.id, status:data.status || "queued", requested_at: new Date().toISOString() };
+      bg.remove(); refreshOffice(); schedulePoll(); toast("Codex에 요청을 저장했어요. 연결된 컴퓨터에서 순서대로 처리해요");
     });
   };
   draw(); document.body.appendChild(bg); fitOverlay(bg); bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
@@ -2070,10 +2078,10 @@ async function sendChat(code, fid, taid){
   } finally { if (btn) btn.disabled = false; }
 }
 function aiBox(m){
-  if (!m) return `<div class="att-ai wait">Gemini에 보내는 중…</div>`;
-  const W = {queued:"Gemini에 보내는 중…", uploading:`Gemini에 올리는 중… ${m.size ? Math.round((m.uploaded||0)/m.size*100) + "%" : ""}`, processing:"Gemini가 영상을 읽는 중…", analyzing:"Gemini가 분석하는 중…"};
+  if (!m) return `<div class="att-ai wait">첨부 분석 대기 중…</div>`;
+  const W = {queued:"첨부 분석 대기 중…", uploading:`첨부 파일 준비 중… ${m.size ? Math.round((m.uploaded||0)/m.size*100) + "%" : ""}`, processing:"첨부 파일 확인 중…", analyzing:"첨부 분석 중…"};
   if (W[m.status]) return `<div class="att-ai wait" data-mid="${m.id}">${W[m.status]}</div>`;
-  if (m.status === "done") return `<details class="att-ai" data-mid="${m.id}"><summary>Gemini 분석 보기</summary><pre>${linkify(m.result || "")}</pre></details>`;
+  if (m.status === "done") return `<details class="att-ai" data-mid="${m.id}"><summary>첨부 분석 보기</summary><pre>${linkify(m.result || "")}</pre></details>`;
   return `<div class="att-ai bad" data-mid="${m.id}">${esc(m.error || "분석하지 못했어요")}</div>`;
 }
 function attHtml(c){
@@ -2321,7 +2329,7 @@ function bindTeam(){
   bindAttach("teamForm");
   f.addEventListener("submit", async e => { e.preventDefault();
     const data = await sendChat(ROOM_CUR, "teamForm", "teamIn"); if (!data) return;
-    renderTeam(); toast((data.attachments || []).length ? "Gemini가 파일을 본 뒤 Grace가 답해요" : dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
+    renderTeam(); toast((data.attachments || []).length ? "Codex가 첨부 파일을 확인한 뒤 Grace가 답해요" : dutyNow() ? "Grace가 바로 확인해요" : "다음 근무 때 답해요"); });
 }
 function bindRoomSum(){
   const bx = $("#roomSumBox"); if (!bx) return;
