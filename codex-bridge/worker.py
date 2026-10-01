@@ -1,4 +1,4 @@
-"""One local Codex process at a time; no inference API keys or idle model calls."""
+"""One Codex process per fixed reception/interactive/background lane; no idle inference."""
 import argparse
 import datetime as dt
 import fcntl
@@ -26,6 +26,19 @@ def model_environment():
 
 def prompt_for(job):
     source = {'id':job['id'],'kind':job['kind'],'source_table':job.get('source_table'),'source_id':job.get('source_id'),'payload':job.get('payload',{})}
+    if job.get('payload', {}).get('lane') == 'reception':
+        return ('Read OPERATING.md and GRACE_PERSONAL.md. You are Grace, KWAN personal secretary, responding in PM 1:1. '
+                'Use the connected Supabase plugin. In one focused query read the exact source message, recent PM conversation, '
+                'current grace_personal_policy, explicit user preferences and codex_bridge/queued-running job counts. '
+                'Do not read every config/spec, all employee profiles, daily reports or unrelated rooms for an ordinary greeting or status check. '
+                'Reply naturally and briefly as soon as that relevant context is checked; do not turn small talk into an organization audit. '
+                'No reference research, formal report, meeting, review note or multi-step project unless the user actually requests one. '
+                'If a problem is visible, tell the fact and next action without claiming all systems are verified. '
+                'Preserve scope, permissions, credentials and truthful tool outcomes. '
+                'For payload.mode=smalltalk, recheck unread/pending messages and current personal policy; quietly skip if inappropriate. '
+                'Write only to PM, verify the saved answer, and mark the exact user message handled only after the answer is saved. '
+                'Keep PM idle on completion, 24-hour duty. Finish with result.schema.json JSON. Job metadata:\n'
+                + json.dumps(source, ensure_ascii=False))
     return ('Read OPERATING.md before doing anything. This is a KWAN-authorized Agency job. '
             'Use the connected Supabase plugin for Agency DB rows and connected Notion/Figma/Slack tools only within OPERATING.md. '
             'Read current spec_codex, spec_senior and reference_policy through the database, then the assigned active agent guideline, self, skill and study. '
@@ -35,6 +48,8 @@ def prompt_for(job):
             'spawn unrelated chats, or read .env/runtime credential files. '
             'For source IDs cast integer IDs to numbers in exact JSON filters; meeting IDs remain strings. '
             'Do not claim output success before reading back the saved result. '
+            'For a reception lane job, read grace_personal_policy and the PM context. Simple conversational/status messages need a short answer without unrelated browsing or formal reports. '
+            'For payload.mode=smalltalk, check grace_personal_policy, recent PM chat and user availability again; only write a natural useful opener if appropriate, otherwise quietly finish as skipped in the summary. '
             'If this job is test, only read the active agents and reply with a JSON done status; do not change any Agency content. '
             'Finish with exactly the JSON required by result.schema.json. Job metadata follows:\n'+json.dumps(source,ensure_ascii=False))
 
@@ -86,22 +101,21 @@ def stop(_signum,_frame):
     STOP=True
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--once',action='store_true');parser.add_argument('--check',action='store_true')
+    parser=argparse.ArgumentParser();parser.add_argument('--once',action='store_true');parser.add_argument('--check',action='store_true');parser.add_argument('--lane',choices=('reception','interactive','background'),default='background')
     args=parser.parse_args();config=settings();db=Database(config)
+    if args.check:
+        print(json.dumps(db.rpc('health'),ensure_ascii=False));return
     RUNTIME.mkdir(mode=0o700,parents=True,exist_ok=True)
-    lock=(RUNTIME/'worker.lock').open('a')
+    lock=(RUNTIME/('worker-'+args.lane+'.lock')).open('a')
     try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     except BlockingIOError:raise SystemExit('A worker is already running')
     signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop)
-    if args.check:
-        db.rpc('heartbeat',{'state':'ready'})
-        print(json.dumps(db.rpc('health'),ensure_ascii=False));return
     interval=max(3,int(config.get('POLL_SECONDS','5')))
-    log('worker_started',poll_seconds=interval)
+    log('worker_started',poll_seconds=interval,lane=args.lane)
     try:
         while not STOP:
             try:
-                job=db.rpc('claim',{'state':'idle'})
+                job=db.rpc('claim',{'state':'idle','lane':args.lane})
                 if job:
                     run_job(db,job,config)
                 if args.once:

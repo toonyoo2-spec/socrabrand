@@ -19,7 +19,7 @@ declare a record; d text:=(now() at time zone 'Asia/Seoul')::date::text; k times
 begin
  if (select value#>>'{}' from agency_config where key='execution_provider') is distinct from 'codex' then return; end if;
  if p_kind in ('report','study') then
-  for a in select code from agency_agents where active and not on_call order by sort loop
+  for a in select code from agency_agents where active and not on_call and (p_kind<>'report' or code<>'PM') order by sort loop
    perform agency_codex_enqueue(p_kind,p_kind||':'||d||':'||a.code,'agency_agents',a.code,jsonb_build_object('date',d,'code',a.code),case when p_kind='report' then 50 else 70 end);
   end loop;
  elsif p_kind in ('growth','hr_scout','scout') then
