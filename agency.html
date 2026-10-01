@@ -1215,7 +1215,7 @@ async function boot(){
   renderToday(); renderRooms(); renderMinutesNav(); $("#autoPipe").innerHTML = pipelineHtml(); renderOrg(); renderProfile(pf.data || []); renderMsgList(); renderRoom();
   const h = (location.hash || "").slice(1);
   showTab(["today","rooms","reports","chat","minutes","agents","auto","profile"].includes(h) ? h : (store("agency-tab") || "today"));
-  schedulePoll(); startRealtime(); openDocFromHash();
+  schedulePoll(); startRealtime(); syncChat(); openDocFromHash();
 }
 
 $("#loginForm").addEventListener("submit", async e => {
@@ -1331,7 +1331,7 @@ async function pollRun(){
   const row = mr.data && mr.data[0]; const cur = MEETINGS[0];
   const sig = r => r ? r.id + r.status + JSON.stringify((r.meta||{}).steps || []) : "";
   const psig = JSON.stringify(PRES) + CHAT.length + CHAT.filter(c => c.handled).length;
-  (pr.data || []).forEach(x => PRES[x.code] = x); if (ch.data) CHAT = ch.data.slice().reverse();
+  (pr.data || []).forEach(x => PRES[x.code] = x); if (ch.data) ingestChat(ch.data);
   const changedMeeting = row && sig(row) !== sig(cur);
   if (changedMeeting) { const i = MEETINGS.findIndex(x => x.id === row.id); if (i >= 0) MEETINGS[i] = row; else MEETINGS.unshift(row); }
   if (changedMeeting && row.status !== "running") { renderToday(); renderMinutesNav(); }
@@ -1341,6 +1341,42 @@ async function pollRun(){
   schedulePoll();
 }
 function schedulePoll(){ clearTimeout(pollTimer); const busy = !LIVE && ((MEETINGS[0] && MEETINGS[0].status === "running") || Object.values(PRES).some(p => p.status === "working" || p.status === "meeting") || summonBusy()); pollTimer = setTimeout(pollRun, busy ? 15000 : 60000); }
+
+// 웹소켓에서 놓친 메시지도 수신한다. 기존 메시지를 다시 알리지 않는다.
+let chatTimer = null, chatSyncBusy = false;
+function ingestChat(rows){
+  let changed = false, roomChanged = false;
+  for (const row of rows) {
+    if (!row || !row.id) continue;
+    const prev = CHAT.find(c => c.id === row.id);
+    if (prev && JSON.stringify(prev) === JSON.stringify(row)) continue;
+    const contentChanged = !prev || prev.body !== row.body || prev.code !== row.code || prev.media_ids !== row.media_ids;
+    upsertBy(CHAT, row); changed = true;
+    if (isRoom(row.code) && contentChanged && row.code === ROOM_CUR) roomChanged = true;
+    if (!prev && row.sender === "agent") {
+      if (isRoom(row.code)) notify(row.speaker || "PM", row.body, () => openRoom(row.code), roomOf(row.code).title);
+      else notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
+    }
+  }
+  if (!changed) return;
+  CHAT.sort((a, b) => a.id - b.id);
+  // 본문만 갱신해 작성 중인 입력과 스크롤 위치를 유지한다.
+  if (roomChanged) renderTeam();
+  refreshRoomCounts(); refreshChat(); refreshOffice();
+}
+async function syncChat(){
+  if (chatSyncBusy) return;
+  clearTimeout(chatTimer); chatSyncBusy = true;
+  try {
+    const result = await sb.from("agency_chat").select("*").order("created_at", {ascending:false}).limit(1000);
+    if (result.error) throw result.error;
+    if (result.data) ingestChat(result.data);
+  } catch (e) { console.warn("채팅 동기화 재시도 예정", e.message || e); }
+  finally { chatSyncBusy = false; chatTimer = setTimeout(syncChat, document.hidden ? 15000 : 5000); }
+}
+window.addEventListener("focus", () => { if (RT) syncChat(); });
+window.addEventListener("online", () => { if (RT) syncChat(); });
+document.addEventListener("visibilitychange", () => { if (RT) syncChat(); });
 
 // ===== 실시간 연동 (새로고침 없이) =====
 let RT = null, rtTimer = null, rtDirty = {};
@@ -1364,13 +1400,8 @@ function startRealtime(){
   RT = sb.channel("agency-live")
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_config"}, ({new:row}) => { if(row && row.key) { CFG[row.key] = row.value; rtDirty.pipe = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_chat"}, ({eventType, new:row}) => {
-      if (!row || !row.id) return; const fresh = eventType === "INSERT" && !CHAT.some(c => c.id === row.id);
-      const prev = eventType === "UPDATE" ? CHAT.find(c => c.id === row.id) : null;
-      upsertBy(CHAT, row); CHAT.sort((a, b) => a.id - b.id);
-      // 읽음 표시만 바뀐 경우(다른 기기에서 읽음 등)는 숫자만 고친다 — 방 전체를 다시 그리지 않음
-      if (prev && prev.body === row.body && isRoom(row.code)) { clearTimeout(ROOM_RD_T); ROOM_RD_T = setTimeout(refreshRoomCounts, 300); return; }
-      if (fresh && row.sender === "agent") isRoom(row.code) ? notify(row.speaker || "PM", row.body, () => { openRoom(row.code); }, roomOf(row.code).title) : notify(row.code, row.body, () => openPop(row.code), row.kind === "request" ? "채팅 요청" : "");
-      if (isRoom(row.code)) { if (row.code === ROOM_CUR) renderTeam(); else { const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } }
+      if (!row || !row.id) return;
+      ingestChat([row]);
       rtDirty.office = true; rtFlush(); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_media"}, ({new:row}) => { if (!row || !row.id) return; const prev = MEDIA.find(x => x.id === row.id); const wasDone = prev && prev.status === "done"; upsertBy(MEDIA, row); if (row.status === "done" && !wasDone) notify("PM", `'${row.name || "첨부 파일"}' 분석이 완료됐어요`, () => {}, "첨부 분석"); updateAttAi(row); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_rooms"}, ({new:row}) => { if (row && row.code) { upsertBy(CROOMS, row, "code"); const t = $("#teamSec"); if (t && document.activeElement?.id !== "teamIn") { t.outerHTML = teamHtml(); bindTeam(); } } })
@@ -1389,11 +1420,28 @@ function startRealtime(){
       rtDirty.pipe = true; if (row.status !== "running") { rtDirty.today = true; rtDirty.minutes = true; } else rtDirty.office = true; rtFlush(); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_summons"}, ({new:row}) => { if (row && row.id) { SUMMON = row; rtDirty.office = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_attendance"}, ({new:row}) => { if (row && row.work_date === kstNow().date) { ATT = row; rtDirty.office = true; rtFlush(); } })
-    .subscribe(status => { const on = status === "SUBSCRIBED"; if (on !== LIVE) { LIVE = on; refreshOffice(); schedulePoll(); } });
+    .subscribe(status => { const on = status === "SUBSCRIBED"; if (on !== LIVE) { LIVE = on; refreshOffice(); schedulePoll(); } if (on) syncChat(); });
 }
 
 // ===== 카카오톡식 알림 =====
 let audioCtx = null;
+document.addEventListener("click", async e => {
+  const button = e.target.closest("[data-enable-alerts]"); if (!button) return;
+  unlockChatAudio();
+  try {
+    if (!window.Notification) return toast("이 브라우저에서는 화면 알림과 소리로 알려드려요");
+    const permission = await Notification.requestPermission();
+    toast(permission === "granted" ? "새 메시지 알림을 켰어요" : "화면 알림과 소리는 유지돼요. 브라우저 알림 권한을 확인해주세요");
+  } catch (e) { toast("브라우저 설정에서 이 사이트의 알림을 허용해주세요"); }
+});
+function unlockChatAudio(){
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  } catch (e) {}
+}
+document.addEventListener("pointerdown", unlockChatAudio, {passive:true});
+document.addEventListener("keydown", unlockChatAudio);
 function ding(){ try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); const t = audioCtx.currentTime;
   [[880, 0], [1320, .11]].forEach(([f, d]) => { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(.0001, t + d); g.gain.exponentialRampToValueAtTime(.18, t + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d + .22); o.connect(g).connect(audioCtx.destination); o.start(t + d); o.stop(t + d + .25); });
 } catch (e) {} }
@@ -2158,7 +2206,7 @@ function teamHtml(){
     <div class="room-wrap"><aside class="room-list" aria-label="채팅방 목록"><button type="button" class="rl-new" id="newRoom">+ 새 채팅방</button>
       ${open.map(roomItem).join("")}
       ${arch.length ? `<button type="button" class="rl-arch" id="archToggle" aria-expanded="${ROOM_ARCH_OPEN || isArch}">보관함 ${arch.length}</button>${ROOM_ARCH_OPEN || isArch ? arch.map(roomItem).join("") : ""}` : ""}</aside>
-    <div class="team"><div class="room-head"><div class="rh-title"><b id="roomTitle">${esc(cur.title)}</b>${cur.code !== "TEAM" ? `<button type="button" class="rh-link" id="renameRoom" title="방 이름 바꾸기">✎ 이름 수정</button>` : ""}<span class="sub">${(cur.members || []).length}명</span></div>
+    <div class="team"><div class="room-head"><div class="rh-title"><b id="roomTitle">${esc(cur.title)}</b><button type="button" class="rh-link" data-enable-alerts>알림 켜기</button>${cur.code !== "TEAM" ? `<button type="button" class="rh-link" id="renameRoom" title="방 이름 바꾸기">✎ 이름 수정</button>` : ""}<span class="sub">${(cur.members || []).length}명</span></div>
       <div class="rh-acts"><button type="button" class="btn ghost" id="roomSum" title="누가 무엇을 말했는지 사람별로 정리">요약</button>${cur.code !== "TEAM" ? (isArch ? `<button type="button" class="btn" id="unarchRoom">다시 열기</button>` : `<button type="button" class="btn ghost" id="archRoom" title="대화는 회의록에 남고 방은 보관함으로 가요. 언제든 다시 열어 이어서 쓸 수 있어요">회의 종료</button>`) : ""}</div>
       <div class="room-mem">${(cur.members || []).map(c => av(c, true)).join("")}</div></div>
     ${isArch ? `<div class="room-arch">회의가 끝난 방이에요. 대화는 그대로 볼 수 있고, <b>다시 열기</b>를 누르면 이어서 쓸 수 있어요</div>` : ""}
