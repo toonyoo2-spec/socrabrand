@@ -28,7 +28,9 @@ def prompt_for(job):
     source = {'id':job['id'],'kind':job['kind'],'source_table':job.get('source_table'),'source_id':job.get('source_id'),'payload':job.get('payload',{})}
     return ('Read OPERATING.md before doing anything. This is a KWAN-authorized Agency job. '
             'Use the connected Supabase plugin for Agency DB rows and connected Notion/Figma/Slack tools only within OPERATING.md. '
-            'Read current spec_morning/spec_night through the database for workflow details, but never use an external model API. '
+            'Read current spec_codex, spec_senior and reference_policy through the database, then the assigned active agent guideline, self, skill and study. '
+            'Follow senior_role and execution_contract. Verify, produce real outputs, review outcomes and apply relevant references from Pinterest, YouTube, Instagram and role communities. '
+            'Use legacy spec_morning/spec_night only for needed compatible data formats. Never use an external model API. '
             'Do not operate on socraauto blog/cardnews pipelines, change server configuration, create schedules, '
             'spawn unrelated chats, or read .env/runtime credential files. '
             'For source IDs cast integer IDs to numbers in exact JSON filters; meeting IDs remain strings. '

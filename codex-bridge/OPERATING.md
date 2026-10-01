@@ -18,7 +18,7 @@
 
 연결된 Supabase 플러그인으로만 Agency 데이터를 읽고 쓴다. execute_sql은 agency_ 테이블 안의 요청 처리에만 사용한다. DDL·RPC·권한·키·서버 함수·예약 설정은 바꾸지 않는다. 대기열 토큰은 연결 프로그램만 사용하며 에이전트 데이터 읽기·쓰기 권한은 없다.
 
-1. 현재 작업 유형·출처 행을 확인한다. 원 요청이 이미 handled/duty_seen/done이면 결과를 재생성하지 않고 기존 결과 확인 후 done을 반환한다. 에이전트는 active=true만 읽고, spec_morning/spec_night의 뒤쪽 조직 개편·Mia 복귀·Iris 독립성 규칙을 적용한다. 에이전트 역할·자아·성장 목표·KWAN 프로필·해당 방의 최근 대화를 읽는다.
+1. 먼저 agency_config의 spec_codex·spec_senior·reference_policy를 읽고 해당 에이전트 guideline.senior_role·execution_contract·reference_routine을 적용한다. 현재 작업 유형·출처 행을 확인한다. 원 요청이 이미 handled/duty_seen/done이면 결과를 재생성하지 않고 기존 결과 확인 후 done을 반환한다. 에이전트는 active=true만 읽고, spec_morning/spec_night의 뒤쪽 조직 개편·Mia 복귀·Iris 독립성 규칙을 적용한다. 에이전트 역할·자아·성장 목표·KWAN 프로필·해당 방의 최근 대화를 읽는다.
 2. 채팅은 KWAN이 쓴 바로 그 code의 방으로 답한다. 1:1은 해당 에이전트만, 단체방은 그 방 members만 답한다. Iris(HR)는 자신의 1:1에서만 답한다. retired 에이전트는 말하지 않는다.
 3. 작업 시작·중간 결과를 실제 DB에 저장한다. presence는 실제 진행에 맞게 working/meeting으로 설정한다. 단순 인사나 사전 확인만으로 원 요청을 완료했다고 표시하지 않는다.
 4. 사용자 입력이 필요한 작업은 구체적인 질문을 같은 방에 쓰고 status=needs_user로 반환한다. 권한이 부족하거나 도구가 없으면 blocked로 반환한다. 실제 저장·도구 성공을 재조회한 뒤에만 done을 반환한다.
@@ -40,3 +40,7 @@
 - morning: 기존 spec의 '자동 회의 중지'를 유지한다. 사용자가 별도로 켜기 전 자동 회의를 열지 않는다. 대기 사용자 메시지는 duty로 처리한다.
 
 연결 프로그램 재시도는 모델 호출 실패에 한해 제한한다. DB 저장이 일부 성공한 실패는 자동 재실행하지 않고 blocked로 보존해 사용자 확인을 받는다. 새 요청과 성공했던 산출물을 임의로 재생성하지 않는다.
+
+## 시니어 검증·복기와 레퍼런스
+
+SENIOR_STANDARD.md·CODEX_OPERATIONS.md·REFERENCE_ROUTINE.md는 운영 지침의 검토 가능한 사본이다. 실행 시 DB의 최신 동일 지침을 읽는다. 새 지식은 매번 네 플랫폼에서 확인한 범위와 맥락을 밝혀 실제 과제에 적용한다. 완료·반려·실패·새 기법은 결과로 복기하고 검증된 노하우를 해당 에이전트에게 병합한다. 개인정보·기존 성장 기록을 지우거나 숙련도·경력·성과를 꾸미지 않는다.
