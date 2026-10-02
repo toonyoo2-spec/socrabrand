@@ -23,6 +23,7 @@
       --s-navy:#14306b; --s-blue:#1f4fb4; --s-hl:#e5392b; --s-card:#eef2fb;
     }
     * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
     body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 var(--font); -webkit-font-smoothing:antialiased; }
     button, input, select { font:inherit; }
     button { cursor:pointer; }
@@ -47,6 +48,10 @@
     .step-no { width:20px; height:20px; border-radius:50%; background:var(--text); color:#fff; font:700 11px/20px var(--mono); text-align:center; flex-shrink:0; }
     .hint { color:var(--muted); font-size:11.5px; line-height:1.55; }
     .row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .pickers { display:flex; flex-direction:column; gap:6px; }
+    .pick { width:100%; border:1px solid var(--border); border-radius:10px; padding:8px 10px; background:var(--panel); font-size:12.5px; color:var(--text); min-width:0; }
+    .pick:focus { outline:2px solid var(--green-line); outline-offset:1px; }
+    input.pick { background:var(--bg); }
     .lesson-list { display:flex; flex-direction:column; gap:4px; max-height:46vh; overflow:auto; padding-right:2px; }
     .lesson { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:8px; align-items:center; text-align:left; width:100%; border:1px solid transparent; background:transparent; border-radius:10px; padding:7px 8px; color:var(--text); }
     .lesson:hover { background:var(--panel); border-color:var(--border); }
@@ -144,20 +149,26 @@
     <div class="header-right">
       <span class="pill" id="authPill"><span class="dot" style="color:#b9b6ad"></span> 구글 로그인 전</span>
       <button class="btn" id="btnLogin">구글로 로그인</button>
-      <button class="btn" id="btnSettings">설정</button>
+      <button class="btn" id="btnSettings">고급 설정</button>
     </div>
   </header>
 
   <main>
     <aside class="side">
       <div class="step">
-        <div class="step-title"><span class="step-no">1</span>커리큘럼 불러오기</div>
+        <div class="step-title"><span class="step-no">1</span>커리큘럼 시트</div>
+        <div class="row" id="sheetLogin"><button class="btn primary" data-login>구글로 로그인하고 시트 고르기</button></div>
+        <div class="pickers" id="sheetPicker" hidden>
+          <select class="pick" id="sheetSelect" aria-label="커리큘럼 시트"></select>
+          <select class="pick" id="tabSelect" aria-label="시트 탭"></select>
+          <input class="pick" id="sheetSearch" placeholder="다른 시트: 이름 검색 또는 주소 붙여넣기 ↵">
+        </div>
+        <div class="hint" id="sourceHint">로그인하면 내 드라이브에서 이름에 "커리큘럼"이 들어간 시트를 찾아 보여 줍니다.</div>
         <div class="row">
-          <button class="btn primary" id="btnLoadSheet">시트에서 불러오기</button>
-          <button class="btn" id="btnCsv">CSV 올리기</button>
+          <button class="btn small" id="btnReload" hidden>다시 불러오기</button>
+          <button class="btn small" id="btnCsv">CSV 올리기</button>
           <input type="file" id="csvInput" accept=".csv,text/csv" hidden>
         </div>
-        <div class="hint" id="sourceHint">구글 로그인 후 설정에 넣은 시트를 읽습니다. 로그인 없이 보려면 시트에서 <b>파일 → 다운로드 → CSV</b>로 받은 파일을 올리세요. 파일은 이 브라우저 밖으로 나가지 않습니다.</div>
       </div>
       <div class="step">
         <div class="step-title"><span class="step-no">2</span>강 선택</div>
@@ -165,6 +176,10 @@
       </div>
       <div class="step">
         <div class="step-title"><span class="step-no">3</span>템플릿</div>
+        <div class="pickers" id="tplPicker" hidden>
+          <select class="pick" id="tplSelect" aria-label="자동화용 템플릿"></select>
+          <input class="pick" id="tplSearch" placeholder="다른 템플릿: 이름 검색 또는 주소 붙여넣기 ↵">
+        </div>
         <div class="row">
           <button class="btn small" id="btnCheckTpl">템플릿 점검</button>
           <button class="btn small" id="btnGuide">토큰 안내</button>
@@ -183,10 +198,8 @@
 
   <dialog id="settingsDlg">
     <form class="dlg" method="dialog" id="settingsForm">
-      <h3>설정</h3>
-      <div class="hint">이 브라우저에만 저장됩니다. 아래 "설정 링크 복사"로 팀원에게 같은 설정을 넘길 수 있습니다.</div>
-      <label class="f">커리큘럼 시트 주소 (탭 gid 포함)<input name="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…"></label>
-      <label class="f">자동화용 템플릿 슬라이드 주소<input name="templateUrl" placeholder="https://docs.google.com/presentation/d/…/edit"></label>
+      <h3>고급 설정</h3>
+      <div class="hint">시트와 템플릿은 왼쪽 목록에서 고릅니다. 여기 값은 이 브라우저에만 저장되고, "설정 링크 복사"로 지금 고른 시트·템플릿까지 팀원에게 넘길 수 있습니다.</div>
       <label class="f">만든 PPT를 넣을 폴더 주소 (비우면 내 드라이브)<input name="folderUrl" placeholder="https://drive.google.com/drive/folders/…"></label>
       <label class="f">파일 이름 형식 ({no}, {title}, {date} 사용)<input name="nameFormat" placeholder="[자동생성] CNN 10_{no}강_{title}"></label>
       <label class="f">워드월·퀴즈앤 코드 앞부분<input name="series" placeholder="CNN 10"></label>
@@ -201,8 +214,8 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="ppt-automation/ppt-core.js?v=20261002-1"></script>
-  <script src="ppt-automation/slides-builder.js?v=20261002-1"></script>
+  <script src="ppt-automation/ppt-core.js?v=20261002-2"></script>
+  <script src="ppt-automation/slides-builder.js?v=20261002-2"></script>
   <script>
   (function () {
     'use strict';
@@ -211,6 +224,7 @@
     const GOOGLE_CLIENT_ID = '43041548577-s4cgqtv0fle3njshdgljnh34quuet4od.apps.googleusercontent.com';
     const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/presentations https://www.googleapis.com/auth/spreadsheets.readonly';
     const SETTINGS_KEY = 'ppt_auto_settings_v1';
+    const DIALOG_KEYS = ['folderUrl', 'nameFormat', 'series', 'highlightColor'];
     const DEFAULTS = { sheetUrl: '', templateUrl: '', folderUrl: '', nameFormat: '[자동생성] CNN 10_{no}강_{title}', series: 'CNN 10', highlightColor: '#E5392B' };
 
     const $ = (s) => document.querySelector(s);
@@ -240,13 +254,13 @@
 
     $('#btnSettings').onclick = () => {
       const f = $('#settingsForm');
-      Object.keys(DEFAULTS).forEach((k) => { f.elements[k].value = settings[k] || ''; });
+      DIALOG_KEYS.forEach((k) => { f.elements[k].value = settings[k] || ''; });
       $('#settingsDlg').showModal();
     };
     $('#settingsForm').addEventListener('submit', (e) => {
       if (e.submitter && e.submitter.value === 'save') {
         const f = e.target;
-        Object.keys(DEFAULTS).forEach((k) => { settings[k] = f.elements[k].value.trim() || DEFAULTS[k]; });
+        DIALOG_KEYS.forEach((k) => { settings[k] = f.elements[k].value.trim() || DEFAULTS[k]; });
         saveSettings(settings);
         toast('설정을 저장했습니다');
       }
@@ -255,8 +269,8 @@
       const f = $('#settingsForm');
       const u = new URL(location.href.split('#')[0].split('?')[0].replace(/index\.html$/, ''));
       if (!/ppt-automation\.html$/.test(u.pathname)) u.pathname = u.pathname.replace(/\/?$/, '/') + 'ppt-automation.html';
-      if (f.elements.sheetUrl.value) u.searchParams.set('sheet', f.elements.sheetUrl.value.trim());
-      if (f.elements.templateUrl.value) u.searchParams.set('template', f.elements.templateUrl.value.trim());
+      if (settings.sheetUrl) u.searchParams.set('sheet', settings.sheetUrl);
+      if (settings.templateUrl) u.searchParams.set('template', settings.templateUrl);
       if (f.elements.folderUrl.value) u.searchParams.set('folder', f.elements.folderUrl.value.trim());
       try { await navigator.clipboard.writeText(u.toString()); toast('설정 링크를 복사했습니다'); } catch (_) { prompt('아래 링크를 복사하세요', u.toString()); }
     };
@@ -299,7 +313,8 @@
         tokenClient.requestAccessToken({ prompt: force ? 'select_account' : '' });
       });
     }
-    $('#btnLogin').onclick = () => login(true).then(() => toast('로그인했습니다')).catch((e) => toast(e.message));
+    $('#btnLogin').onclick = () => login(true).then(() => { toast('로그인했습니다'); initPickers(); }).catch((e) => toast(e.message));
+    document.querySelectorAll('[data-login]').forEach((b) => { b.onclick = () => login(false).then(() => initPickers()).catch((e) => toast(e.message)); });
     setAuthUi();
 
     async function gapi(url, opts) {
@@ -340,14 +355,63 @@
       e.target.value = '';
     };
 
-    $('#btnLoadSheet').onclick = async () => {
-      const id = idFrom(settings.sheetUrl);
-      if (!id) { toast('설정에서 커리큘럼 시트 주소를 넣어 주세요'); $('#btnSettings').click(); return; }
-      const btn = $('#btnLoadSheet'); btn.disabled = true; btn.textContent = '불러오는 중…';
+    // ---------------- 드라이브에서 고르기 (주소를 직접 넣지 않아도 되게) ----------------
+    const SHEET_MIME = 'application/vnd.google-apps.spreadsheet', SLIDES_MIME = 'application/vnd.google-apps.presentation';
+    async function driveList(mime, nameTerms, order) {
+      const names = nameTerms.length ? ' and (' + nameTerms.map((t) => `name contains '${t.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`).join(' or ') + ')' : '';
+      const q = encodeURIComponent(`mimeType='${mime}' and trashed=false${names}`);
+      const r = await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=${encodeURIComponent(order || 'modifiedTime desc')}&pageSize=40&corpora=allDrives&includeItemsFromAllDrives=true&supportsAllDrives=true&fields=files(id,name,modifiedTime)`);
+      return r.files || [];
+    }
+    function fillSelect(sel, files, currentId, emptyText) {
+      if (currentId && !files.some((f) => f.id === currentId)) files = [{ id: currentId, name: sel.dataset.currentName || '(지금 쓰는 파일)' }].concat(files);
+      sel.innerHTML = files.length
+        ? '<option value="">— 고르세요 —</option>' + files.map((f) => `<option value="${esc(f.id)}"${f.id === currentId ? ' selected' : ''}>${esc(f.name)}</option>`).join('')
+        : `<option value="">${esc(emptyText)}</option>`;
+    }
+    const sheetUrlOf = (id, gid) => `https://docs.google.com/spreadsheets/d/${id}/edit${gid != null ? '?gid=' + gid : ''}`;
+    const tplUrlOf = (id) => `https://docs.google.com/presentation/d/${id}/edit`;
+    const looksLikeFile = (v) => /docs\.google\.com|^[\w-]{30,}$/.test(v);
+
+    let pickersReady = false;
+    async function initPickers() {
+      $('#sheetLogin').hidden = true; $('#sheetPicker').hidden = false; $('#tplPicker').hidden = false;
       try {
-        const meta = await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}?fields=properties(title),sheets(properties(sheetId,title))`);
-        const gid = gidFrom(settings.sheetUrl);
-        const sheet = meta.sheets.find((s) => s.properties.sheetId === gid) || meta.sheets[0];
+        await Promise.all([searchSheets(''), searchTemplates('')]);
+        const id = idFrom(settings.sheetUrl);
+        if (id && !pickersReady) await chooseSheet(id, gidFrom(settings.sheetUrl));
+        pickersReady = true;
+      } catch (e) { toast(explain(e)); }
+    }
+    async function searchSheets(keyword) {
+      let files = await driveList(SHEET_MIME, keyword ? [keyword] : ['커리큘럼', 'Curriculum', 'curriculum']);
+      if (!files.length && !keyword) files = await driveList(SHEET_MIME, [], 'viewedByMeTime desc');
+      fillSelect($('#sheetSelect'), files, idFrom(settings.sheetUrl), keyword ? `"${keyword}" 시트가 없습니다` : '시트가 없습니다');
+      if (!state.lessons.length) $('#sourceHint').textContent = keyword ? `"${keyword}" 검색 결과 ${files.length}개` : `시트 ${files.length}개를 찾았습니다. 고르면 바로 불러옵니다.`;
+    }
+    async function searchTemplates(keyword) {
+      let files = await driveList(SLIDES_MIME, keyword ? [keyword] : ['템플릿', 'template', 'Template', '자동화']);
+      if (!files.length && !keyword) files = await driveList(SLIDES_MIME, [], 'viewedByMeTime desc');
+      fillSelect($('#tplSelect'), files, idFrom(settings.templateUrl), '템플릿이 없습니다');
+    }
+    async function sheetMeta(id) {
+      return gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}?fields=properties(title),sheets(properties(sheetId,title))`);
+    }
+    async function chooseSheet(id, gid) {
+      const meta = await sheetMeta(id);
+      const sel = $('#sheetSelect');
+      if (![...sel.options].some((o) => o.value === id)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(id)}">${esc(meta.properties.title)}</option>`);
+      sel.value = id;
+      const tabs = meta.sheets.map((x) => x.properties);
+      const pick = tabs.find((t) => t.sheetId === gid) || tabs.find((t) => /reading|listening|커리큘럼|curriculum/i.test(t.title)) || tabs[0];
+      $('#tabSelect').innerHTML = tabs.map((t) => `<option value="${t.sheetId}"${t === pick ? ' selected' : ''}>${esc(t.title)}</option>`).join('');
+      await loadSheet(id, pick.sheetId, meta);
+    }
+    async function loadSheet(id, gid, meta) {
+      $('#sourceHint').textContent = '불러오는 중…';
+      try {
+        meta = meta || await sheetMeta(id);
+        const sheet = meta.sheets.find((x) => x.properties.sheetId === gid) || meta.sheets[0];
         const range = encodeURIComponent(`'${sheet.properties.title.replace(/'/g, "''")}'`);
         const data = await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}?includeGridData=true&ranges=${range}&fields=sheets(data(rowData(values(formattedValue,hyperlink,textFormatRuns(format(link(uri)))))))`);
         const rowData = (((data.sheets || [])[0] || {}).data || [])[0] || {};
@@ -357,11 +421,42 @@
           rows.push(vals.map((v) => v.formattedValue || ''));
           links.push(vals.map((v) => v.hyperlink || ((v.textFormatRuns || []).map((t) => t.format && t.format.link && t.format.link.uri).find(Boolean)) || ''));
         });
+        settings.sheetUrl = sheetUrlOf(id, sheet.properties.sheetId); saveSettings(settings);
+        $('#btnReload').hidden = false;
         setLessons(rows, links, `${meta.properties.title} › ${sheet.properties.title}`);
-        toast('시트를 불러왔습니다');
-      } catch (e) { toast(explain(e)); }
-      btn.disabled = false; btn.textContent = '시트에서 불러오기';
+      } catch (e) {
+        $('#sourceHint').textContent = /머리글|필수 열/.test(e.message) ? '이 탭은 커리큘럼 형식이 아닙니다. 다른 탭을 골라 주세요.' : explain(e);
+      }
+    }
+    $('#sheetSelect').onchange = (e) => { if (e.target.value) chooseSheet(e.target.value, null).catch((err) => toast(explain(err))); };
+    $('#tabSelect').onchange = (e) => loadSheet($('#sheetSelect').value, Number(e.target.value));
+    $('#btnReload').onclick = () => { const id = idFrom(settings.sheetUrl); if (id) loadSheet(id, gidFrom(settings.sheetUrl)); };
+    $('#sheetSearch').onkeydown = (e) => {
+      if (e.key !== 'Enter') return;
+      const v = e.target.value.trim(); e.target.value = '';
+      (looksLikeFile(v) ? chooseSheet(idFrom(v), gidFrom(v)) : searchSheets(v)).catch((err) => toast(explain(err)));
     };
+    function chooseTemplate(id, name) {
+      settings.templateUrl = tplUrlOf(id); saveSettings(settings);
+      if (name) $('#tplSelect').dataset.currentName = name;
+      toast('템플릿을 골랐습니다');
+      if (state.current && state.view === 'create') renderContent();
+    }
+    $('#tplSelect').onchange = (e) => { if (e.target.value) chooseTemplate(e.target.value, e.target.selectedOptions[0].textContent); };
+    $('#tplSearch').onkeydown = async (e) => {
+      if (e.key !== 'Enter') return;
+      const v = e.target.value.trim(); e.target.value = '';
+      try {
+        if (looksLikeFile(v)) {
+          const id = idFrom(v);
+          const f = await gapi(`https://www.googleapis.com/drive/v3/files/${id}?supportsAllDrives=true&fields=id,name`);
+          chooseTemplate(id, f.name);
+          await searchTemplates('');
+        } else await searchTemplates(v);
+      } catch (err) { toast(explain(err)); }
+    };
+    // 이미 로그인된 채로 열면 바로 목록을 채운다
+    if (token && tokenExp > Date.now() + 60000) setTimeout(() => initPickers(), 0);
 
     function renderLessonList() {
       const box = $('#lessonList');
@@ -532,7 +627,7 @@
         <div class="card" style="display:flex;flex-direction:column;gap:10px">
           <div><b>${l.no}강 PPT 만들기</b> · 슬라이드 ${state.plan.length}장</div>
           <div class="hint">템플릿을 복사한 새 파일을 만들고, 원본 슬라이드를 순서대로 복제해 글자를 채웁니다. 템플릿과 기존 PPT는 바뀌지 않습니다. 만든 사람은 로그인한 계정으로 기록됩니다.</div>
-          ${!tplId ? '<div class="issue error"><span class="lv">필요</span><span class="col"></span><span class="where">템플릿</span><span class="msg">설정에서 자동화용 템플릿 주소를 넣어 주세요.</span></div>' : ''}
+          ${!tplId ? '<div class="issue error"><span class="lv">필요</span><span class="col"></span><span class="where">템플릿</span><span class="msg">왼쪽 3번에서 자동화용 템플릿을 골라 주세요.</span></div>' : ''}
           ${c.error ? `<div class="issue error"><span class="lv">오류</span><span class="col"></span><span class="where">검수</span><span class="msg">검수 오류 ${c.error}개가 있습니다. 그대로 만들면 해당 칸이 비거나 정답 박스가 옮겨지지 않습니다.</span></div>` : ''}
           <div class="row"><button class="btn green" id="btnCreate" ${tplId ? '' : 'disabled'}>구글 슬라이드 만들기</button></div>
           <div id="createOut"></div>
@@ -624,7 +719,7 @@
 
     $('#btnCheckTpl').onclick = async () => {
       const tplId = idFrom(settings.templateUrl);
-      if (!tplId) { toast('설정에서 템플릿 주소를 넣어 주세요'); $('#btnSettings').click(); return; }
+      if (!tplId) { toast('왼쪽 3번에서 템플릿을 먼저 골라 주세요'); return; }
       try {
         const tpl = await gapi(`https://slides.googleapis.com/v1/presentations/${tplId}`);
         const needed = [...new Set(state.lessons.filter((l) => !l.empty).flatMap((l) => C.planSlides(l, { series: settings.series }).map((p) => p.type)))];
