@@ -811,9 +811,9 @@ body.rep-open{overflow:hidden}
 .rep-view-nav button[aria-current="true"]{background:var(--green-tint);color:var(--green-line);font-weight:700}
 .rep-view-nav button:hover{border-color:var(--border)}
 .rep-view-nav small{font-size:10px;white-space:nowrap}
-.rep-view-content{overflow:auto;overscroll-behavior:contain;padding:24px;min-width:0;scrollbar-gutter:stable}
-.rep-paper{max-width:760px;margin:0 auto;padding:28px 36px;min-height:100%;background:var(--surface);border:1px solid var(--border);box-shadow:0 3px 12px rgba(80,75,60,.04);overflow-wrap:anywhere;font-size:14px;line-height:1.8}
-.rep-paper .rep-page-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--green-line);margin-bottom:12px}
+.rep-view-content{overflow:auto;overscroll-behavior:contain;padding:16px;min-width:0;scrollbar-gutter:stable}
+.rep-paper{max-width:900px;margin:0 auto;padding:20px 24px;min-height:100%;background:var(--surface);border:1px solid var(--border);box-shadow:0 3px 12px rgba(80,75,60,.04);overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.rep-paper .rep-page-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--green-line);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rep-paper h2{font-size:24px;line-height:1.4;letter-spacing:-.04em;margin:0 0 18px}
 .rep-paper h3{font-size:16px;line-height:1.5;margin:0 0 12px}
 .rep-paper h4{margin:18px 0 6px;font-size:12px;color:var(--muted)}
@@ -839,11 +839,24 @@ body.rep-open{overflow:hidden}
 .rep-view-footer button:disabled{opacity:.35;cursor:default}
 .rep-page-count{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .rep-print{display:none}
+.doc-section + .doc-section{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.doc-section h2{font-size:18px;margin:0 0 9px;line-height:1.4}
+.doc-section[data-doc-section="요약"] > h2{font-size:22px}
+.doc-section h3{font-size:15px;margin:10px 0 5px}
+.doc-section p{margin:0 0 6px}
+.doc-section .md-h{margin:10px 0 5px}
+.doc-section .md-gap{height:3px}
+.doc-section ul,.doc-section ol{margin:4px 0 8px}
+.doc-section .rep-it{margin:0;line-height:1.65}
+.doc-section .rep-summary-lead{margin-bottom:10px;line-height:1.65}
+.doc-section .rep-summary-dl{gap:9px}
+.doc-section .rep-summary-dl dd{line-height:1.65}
+.doc-measure{position:absolute!important;left:-20000px!important;top:0!important;visibility:hidden!important;min-height:0!important;max-width:none!important;margin:0!important;height:auto!important;pointer-events:none}
 .chat-doc-title{min-width:0;display:grid;gap:2px}
 .chat-doc-title b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chat-doc-title small{font-size:11px;color:var(--muted)}
 .chat-view .rep-view-nav button{display:block;white-space:normal;line-height:1.5}
-.chat-view pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:12px;line-height:1.7;background:var(--surface-2);padding:14px;border:1px solid var(--border)}
+.chat-view pre,.chat-probe pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:12px;line-height:1.7;background:var(--surface-2);padding:14px;border:1px solid var(--border)}
 .chat-doc-topics{display:grid;grid-template-columns:1fr 1fr;gap:7px 24px;margin:16px 0;padding-left:20px;font-size:13px}
 .chat-doc-copy-help{font-size:12px;color:var(--muted);margin-top:18px}
 @media(max-width:760px){.chat-view .rep-view-bar{flex-wrap:wrap;gap:8px}.chat-doc-title{width:100%}.chat-view .rep-view-tools{width:100%;justify-content:flex-end}.chat-view .rep-view-nav button{white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}.chat-view .rep-view-footer button{padding:7px 9px;font-size:11px}.chat-doc-topics{grid-template-columns:1fr;gap:4px}}
@@ -853,13 +866,14 @@ body.rep-open{overflow:hidden}
   .rep-preview .who small{display:none}.rep-preview p{-webkit-line-clamp:3}
   .rep-view{padding:0}.rep-view-shell{border:0;border-radius:0}.rep-view-main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
   .rep-view-nav{flex-direction:row;gap:4px;padding:8px;border-right:0;border-bottom:1px solid var(--border);white-space:nowrap}.rep-view-nav .eyebrow{display:none}.rep-view-nav button{flex:none;padding:7px 9px;font-size:12px}.rep-view-nav small{display:none}
-  .rep-view-bar{padding:10px 12px}.rep-view-bar .rep-h .who small{display:none}.rep-view-tools .btn{padding:7px 10px}.rep-view-content{padding:12px}.rep-paper{padding:20px 18px}.rep-paper h2{font-size:21px}.rep-view-footer{padding:10px 12px}
+  .rep-view-bar{padding:10px 12px}.rep-view-bar .rep-h .who small{display:none}.rep-view-tools .btn{padding:7px 10px}.rep-view-content{padding:8px}.rep-paper{padding:16px}.rep-paper h2{font-size:20px}.doc-section h2{font-size:17px}.rep-view-footer{padding:10px 12px}
 }
 @media print{
   body.rep-open > :not(.rep-view){display:none!important}body.rep-open{background:white;overflow:visible}
   .rep-view{position:static!important;height:auto!important;max-height:none!important;overflow:visible!important;padding:0;background:white}
   .rep-view-shell{display:block;height:auto;border:0;overflow:visible}.rep-view-bar,.rep-view-main,.rep-view-footer{display:none!important}
-  .rep-print{display:block}.rep-print .rep-paper{min-height:0;border:0;box-shadow:none;padding:0;max-width:none;break-after:page}.rep-print .rep-paper:last-child{break-after:auto}.rep-print .vote,.rep-print button{display:none}
+  .rep-print{display:block}.rep-print .rep-paper{min-height:0;border:0;box-shadow:none;padding:0;max-width:none;break-after:auto}.rep-print .vote,.rep-print button{display:none}
+  .rep-print h2,.rep-print h3,.rep-print .md-h{break-after:avoid}.rep-print tr{break-inside:avoid}.rep-print .doc-section{break-inside:auto}
 }
 .rep{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
 .rep > *, .rep-it > div{min-width:0;overflow-wrap:anywhere}
@@ -2725,8 +2739,7 @@ function chatDocPages(c){
   for (const s of sections) {
     let fragments = [], size = 0;
     const save = () => { if (fragments.length) pages.push({section:s.title, html:fragments.join(""), textLength:size}); fragments = []; size = 0; };
-    for (const part of s.parts) for (const text of repTextPages(part.text, 1400)) {
-      if (size && size + text.length > 1400) save();
+    for (const part of s.parts) for (const text of repTextPages(part.text, Infinity)) {
       fragments.push(part.code ? `<pre><code>${esc(text)}</code></pre>` : chatDocMarkdown(text)); size += text.length;
     }
     save();
@@ -2740,20 +2753,20 @@ function chatDocCopyText(c){
 function setChatDocPage(index){
   if (!DOC?.pages) return;
   DOC.page = Math.max(0, Math.min(DOC.pages.length - 1, index));
-  const {el, pages, page, info} = DOC, p = pages[page];
-  el.querySelector("#chatDocPaper").innerHTML = `<div class="rep-page-label">${esc(info.who)} · ${esc(p.section)} · ${page + 1}/${pages.length}</div>${p.html}`;
+  const {el, pages, page, info} = DOC, p = pages[page], sections = p.sections;
+  el.querySelector("#chatDocPaper").innerHTML = `<div class="rep-page-label">${esc(info.who)} · ${page + 1}/${pages.length}</div>${p.html}`;
   el.querySelector("#chatDocContent").scrollTop = 0;
   el.querySelector("#chatDocCount").textContent = `${page + 1} / ${pages.length} 페이지`;
   el.querySelector("#chatDocPrev").disabled = page === 0; el.querySelector("#chatDocNext").disabled = page === pages.length - 1;
-  el.querySelector("#chatDocNav").innerHTML = `<span class="eyebrow">문서 목차</span>` + [...new Set(pages.map(x => x.section))].map(s => `<button type="button" data-chat-page="${pages.findIndex(x => x.section === s)}" aria-current="${s === p.section}">${esc(s)}</button>`).join("");
-  el.querySelectorAll("[data-chat-page]").forEach(b => b.addEventListener("click", () => { setChatDocPage(+b.dataset.chatPage); el.querySelector('[aria-current="true"]')?.focus(); }));
+  el.querySelector("#chatDocNav").innerHTML = `<span class="eyebrow">문서 목차</span>` + [...new Set(pages.flatMap(x => x.sections))].map(s => `<button type="button" data-chat-page="${pages.findIndex(x => x.sections.includes(s))}" data-chat-section="${esc(s)}" aria-current="${sections.includes(s)}">${esc(s)}</button>`).join("");
+  el.querySelectorAll("[data-chat-page]").forEach(b => b.addEventListener("click", () => { const section = b.dataset.chatSection; setChatDocPage(+b.dataset.chatPage); el.querySelector(`[data-chat-section="${CSS.escape(section)}"]`)?.focus(); el.querySelector(`#chatDocPaper [data-doc-section="${CSS.escape(section)}"]`)?.scrollIntoView({block:"nearest"}); }));
 }
 function openChatDoc(c){
   closeDoc(); closeRepReader();
   const {info, pages} = chatDocPages(c), focus = document.activeElement, el = document.createElement("dialog");
   el.id = "docView"; el.className = "rep-view chat-view"; el.setAttribute("aria-label", `${info.title} · 문서 보기`);
   el.innerHTML = `<div class="rep-view-shell"><header class="rep-view-bar"><div class="chat-doc-title"><b>${esc(info.title)}</b><small>${esc(info.who)} · ${esc(info.room)} · ${fmtTime(c.created_at)}</small></div><div class="rep-view-tools"><button type="button" class="btn ghost" id="chatDocCopy">전체 본문 복사</button><button type="button" class="btn ghost" id="docPrint">PDF 저장</button><button type="button" class="btn ghost" id="docClose">닫기</button></div></header><div class="rep-view-main"><nav class="rep-view-nav" id="chatDocNav" aria-label="문서 목차"></nav><div class="rep-view-content" id="chatDocContent"><article class="rep-paper" id="chatDocPaper"></article></div></div><footer class="rep-view-footer"><button type="button" id="chatDocPrev">← 이전 페이지</button><span class="rep-page-count" id="chatDocCount" aria-live="polite"></span><button type="button" id="chatDocNext">다음 페이지 →</button></footer><div class="rep-print" id="chatDocPrint"></div></div>`;
-  DOC = {el, info, pages, page:0, focus, chatId:c.id, title:document.title, hash:location.hash};
+  DOC = {el, info, blocks:pages, pages:[], page:0, focus, chatId:c.id, title:document.title, hash:location.hash};
   document.body.appendChild(el); document.body.classList.add("doc-open", "rep-open"); fitOverlay(el); el.showModal();
   try { if (window.frameElement) { DOC.parentOverflow = window.parent.document.documentElement.style.overflow; window.parent.document.documentElement.style.overflow = "hidden"; } } catch (e) {}
   document.title = info.title.slice(0, 80);
@@ -2767,8 +2780,10 @@ function openChatDoc(c){
     catch (e) { toast("복사하지 못했어요. 브라우저의 클립보드 권한을 확인해 주세요"); }
   });
   el.querySelector("#docPrint").addEventListener("click", () => {
-    el.querySelector("#chatDocPrint").innerHTML = pages.map((p, i) => `<article class="rep-paper"><div class="rep-page-label">${esc(info.title)} · ${esc(info.who)} · ${i + 1}/${pages.length} · ${esc(p.section)}</div>${p.html}</article>`).join(""); window.print();
+    el.querySelector("#chatDocPrint").innerHTML = `<article class="rep-paper"><div class="rep-page-label">${esc(info.title)} · ${esc(info.who)}</div>${docContinuousHtml(DOC.blocks)}</article>`; window.print();
   });
+  DOC.pages = docFillPages(DOC.blocks, el.querySelector("#chatDocContent"), el.querySelector("#chatDocPaper"));
+  watchDocLayout(DOC, el.querySelector("#chatDocContent"), () => { DOC.pages = docFillPages(DOC.blocks, el.querySelector("#chatDocContent"), el.querySelector("#chatDocPaper")); setChatDocPage(DOC.page); });
   setChatDocPage(0); el.querySelector("#docClose").focus();
 }
 function openDoc(kind, a, b){
@@ -2788,6 +2803,7 @@ function openDoc(kind, a, b){
   el.addEventListener("click", e => { if (e.target === el) closeDoc(); });
 }
 function closeDoc(){ const el = $("#docView"); if (!el) return; const state = DOC;
+  state?.layoutObserver?.disconnect();
   if (el.open) el.close(); el.remove(); FITS.delete(el); document.body.classList.remove("doc-open");
   if (state?.pages) document.body.classList.remove("rep-open");
   if (state) document.title = state.title; DOC = null;
@@ -2948,8 +2964,8 @@ function repOverview(list){
 function repCard(r){
   return `<article class="rep-preview ${esc(r.status)}" data-rid="${r.id}">${repWho(r)}<div class="rep-preview-copy"><h3>${esc(r.headline || r.insight?.title || "일일 보고")}</h3><p>${esc(repSummary(r))}</p><div class="rep-preview-meta"><span>레퍼런스 ${(r.refs || []).length}개</span><span>아이디어 ${(r.ideas || []).length}개</span>${r.feedback ? `<span>내 피드백 · ${esc(repShort(r.feedback, 80))}</span>` : ""}</div></div><div class="rep-preview-action">${repStatus(r)}<button class="btn ghost" type="button" data-open-report="${r.id}" aria-label="${esc(repAgent(r).name)} 보고 보기">보고 보기 ↗</button></div></article>`;
 }
-// 원문을 빠뜨리지 않고 문단·단어 경계에서 페이지를 나눈다.
-function repTextPages(t, limit = 1100){
+// 원문 분할은 복사 가능한 텍스트에만 사용한다. 읽기 페이지는 실제 렌더 높이로 채운다.
+function repTextPages(t, limit = Infinity){
   const paragraphs = String(t || "").replace(/\r/g, "").split(/\n\n/), pages = []; let page = "";
   for (let p of paragraphs) {
     while (p.length > limit) {
@@ -2961,6 +2977,91 @@ function repTextPages(t, limit = 1100){
     page = page ? page + "\n\n" + p : p;
   }
   if (page || !pages.length) pages.push(page); return pages;
+}
+function docContinuousHtml(blocks){
+  return blocks.map(b => `<section class="doc-section" data-doc-section="${esc(b.section)}">${b.html}</section>`).join("");
+}
+function docTextSlice(node, start, end){
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT), texts = []; let n, offset = 0;
+  while ((n = walker.nextNode())) { texts.push({node:n, start:offset, end:offset + n.textContent.length}); offset += n.textContent.length; }
+  const a = texts.find(x => x.end > start), b = texts.find(x => x.end >= end);
+  if (!a || !b) return node.cloneNode(true);
+  const range = document.createRange(); range.setStart(a.node, start - a.start); range.setEnd(b.node, end - b.start);
+  const copy = node.cloneNode(false); copy.appendChild(range.cloneContents()); return copy;
+}
+function docFillPages(blocks, content, paper){
+  const style = getComputedStyle(content), width = paper.getBoundingClientRect().width || Math.min(900, content.clientWidth - 32);
+  const height = Math.max(300, content.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 2);
+  const probe = document.createElement("article"); probe.className = "rep-paper doc-measure" + (paper.closest(".chat-view") ? " chat-probe" : ""); probe.style.width = width + "px"; probe.setAttribute("aria-hidden", "true"); document.body.appendChild(probe);
+  const pages = []; let current = [], units = [], tableNumber = 0;
+  const paint = items => {
+    probe.innerHTML = '<div class="rep-page-label">문서 / 페이지</div>'; let section, block;
+    for (const item of items) {
+      if (block !== item.block) { section = document.createElement("section"); section.className = "doc-section"; section.dataset.docSection = item.section; probe.appendChild(section); block = item.block; }
+      const copy = item.node.cloneNode(true), previous = section.lastElementChild;
+      if (copy.nodeType === 1 && copy.dataset.docTable && previous?.dataset.docTable === copy.dataset.docTable) previous.querySelector("tbody").append(...copy.querySelectorAll("tbody tr"));
+      else section.appendChild(copy);
+    }
+    return probe.getBoundingClientRect().height;
+  };
+  const save = () => {
+    if (!current.length) return;
+    paint(current); pages.push({sections:[...new Set(current.map(x => x.section))], html:[...probe.children].slice(1).map(x => x.outerHTML).join("")}); current = [];
+  };
+  const flatten = (node, wrap = x => x) => {
+    if (node.nodeType !== 1) return node.textContent.trim() ? [wrap(node.cloneNode(true))] : [];
+    // 문단의 서식을 유지하면서 큰 본문 컨테이너를 읽는 순서대로 나눈다.
+    if (node.tagName === "DIV" && !node.matches(".rep-it,.rep-fbw") && [...node.children].some(x => /^(P|DIV|UL|OL|TABLE|H[1-6])$/.test(x.tagName))) {
+      return [...node.childNodes].flatMap(child => flatten(child, x => { const copy = node.cloneNode(false); copy.appendChild(x); return wrap(copy); }));
+    }
+    return [wrap(node.cloneNode(true))];
+  };
+  blocks.forEach((b, block) => { const template = document.createElement("template"); template.innerHTML = b.html;
+    [...template.content.childNodes].flatMap(x => flatten(x)).forEach(node => units.push({node, block, section:b.section})); });
+  try {
+    for (let i = 0; i < units.length; i++) {
+      const unit = units[i], size = paint([...current, unit]), heading = unit.node.nodeType === 1 && (/^(H[1-6])$/.test(unit.node.tagName) || unit.node.classList.contains("md-h"));
+      if (size <= height && (!heading || i === units.length - 1 || size + 38 <= height)) { current.push(unit); continue; }
+      const oversized = size > height && paint([unit]) > height;
+      const tail = current.length && current[current.length - 1].node;
+      const tailHeading = tail?.nodeType === 1 && (/^H[1-6]$/.test(tail.tagName) || tail.classList.contains("md-h"));
+      if (current.length > 1 && size > height && tailHeading && !oversized) { const last = current.pop(); save(); current.push(last); i--; continue; }
+      if (current.length && size > height && !tailHeading && !oversized) { save(); i--; continue; }
+      if (current.length && heading) { save(); i--; continue; }
+      const node = unit.node;
+      // 긴 표는 열 제목을 유지해 행 단위로 나눈다. 입력 폼과 투표는 함께 유지한다.
+      if (node.nodeType === 1 && node.querySelector("table") && node.querySelectorAll("tbody tr").length > 1) {
+        const table = node.querySelector("table"), rows = [...table.querySelectorAll("tbody tr")];
+        const tableId = String(++tableNumber);
+        const copies = rows.map(row => { const copy = node.cloneNode(true), body = copy.querySelector("tbody"); copy.dataset.docTable = tableId; body.replaceChildren(row.cloneNode(true)); return {...unit,node:copy}; });
+        units.splice(i, 1, ...copies); i--; continue;
+      }
+      if (node.nodeType === 1 && !node.matches("P,PRE,H1,H2,H3,H4,H5,H6,FORM,.rep-fbw,.vote") && node.children.length > 1) {
+        const copies = [...node.children].map((child, k) => { const copy = node.cloneNode(false); if (node.tagName === "OL") copy.start = (node.start || 1) + k; copy.appendChild(child.cloneNode(true)); return {...unit,node:copy}; });
+        units.splice(i, 1, ...copies); i--; continue;
+      }
+      if (node.nodeType === 1 && !node.matches("FORM,.rep-fbw,.vote") && node.textContent.length > 160) {
+        const length = node.textContent.length; let low = 1, high = length - 1, end = 0;
+        while (low <= high) { const mid = (low + high) >> 1, part = {...unit,node:docTextSlice(node,0,mid)};
+          if (paint([...current,part]) <= height) { end = mid; low = mid + 1; } else high = mid - 1; }
+        if (end > 0 && end < length) {
+          const text = node.textContent, boundary = Math.max(text.lastIndexOf(" ",end),text.lastIndexOf("\n",end)); if (boundary > end * .65) end = boundary + 1;
+          units.splice(i,1,{...unit,node:docTextSlice(node,0,end)},{...unit,node:docTextSlice(node,end,length)}); i--; continue;
+        }
+        if (current.length && !end) { save(); i--; continue; }
+      }
+      current.push(unit); save();
+    }
+    save(); return pages.length ? pages : [{sections:["본문"],html:""}];
+  } finally { probe.remove(); }
+}
+function watchDocLayout(state, content, redraw){
+  let width = content.clientWidth, height = content.clientHeight;
+  if (!window.ResizeObserver) return;
+  state.layoutObserver = new ResizeObserver(() => {
+    if (Math.abs(content.clientWidth - width) < 2 && Math.abs(content.clientHeight - height) < 2) return;
+    width = content.clientWidth; height = content.clientHeight; requestAnimationFrame(() => { if (state.el.isConnected) redraw(); });
+  }); state.layoutObserver.observe(content);
 }
 function repMarkdown(t){
   const inline = raw => String(raw).split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|https?:\/\/[^\s<)"]+)/g).map(part => {
@@ -2993,12 +3094,11 @@ function repPages(r){
   add("요약", `<h2>${esc(r.headline || ins.title || "일일 보고")}</h2><p class="rep-summary-lead">${esc(repSummary(r))}</p><dl class="rep-summary-dl">${ins.why ? `<div><dt>우리에게 어떤 내용인가</dt><dd>${esc(repShort(ins.why, 240))}</dd></div>` : ""}${(r.ideas || []).length ? `<div><dt>제안하는 방향</dt><dd><ul>${r.ideas.map(x => `<li>${esc(x.t || "아이디어")}</li>`).join("")}</ul></dd></div>` : ""}${r.applied ? `<div><dt>지난 피드백 반영</dt><dd>${esc(repShort(r.applied, 220))}</dd></div>` : ""}</dl><p class="sub" style="margin-top:22px">원문의 도입부와 제안 항목을 요약한 내용입니다. 목차를 눌러 상세 내용을 확인하세요.</p>`);
   repTextPages(ins.body || "인사이트 본문이 아직 없어요.").forEach((t, i) => add("인사이트", `<h2>${esc(ins.title || "인사이트")}${i ? " · 계속" : ""}</h2><div>${repMarkdown(t)}</div>${i === 0 ? voteBtns(r, "insight") : ""}`));
   if (ins.why) repTextPages(ins.why).forEach(t => add("인사이트", `<h2>우리에게 적용할 점</h2>${repMarkdown(t)}`));
-  (r.refs || []).forEach((x, i) => repTextPages(x.why || "").forEach((t, part) => add("레퍼런스", `<h2>레퍼런스 ${i + 1}${part ? " · 계속" : ""}</h2><div class="rep-it"><div><b>${x.u ? `<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</b>${x.ok ? "" : `<span class="warn">출처 확인 필요</span>`}<div>${repMarkdown(t)}</div></div>${part === 0 ? voteBtns(r, "ref" + i) : ""}</div>`)));
+  (r.refs || []).forEach((x, i) => add("레퍼런스", `<div class="rep-it"><div><h3>${i + 1}. ${x.u ? `<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</h3>${x.ok ? "" : `<span class="warn">출처 확인 필요</span>`}<div>${repMarkdown(x.why || "")}</div></div>${voteBtns(r, "ref" + i)}</div>`));
   if ((r.sources || []).length) add("레퍼런스", `<h2>검색 근거 ${(r.sources || []).length}개</h2><ol>${r.sources.map(s => `<li><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t || s.u)}</a></li>`).join("")}</ol>`);
   if (!pages.some(p => p.section === "레퍼런스")) add("레퍼런스", `<h2>레퍼런스</h2><p class="sub">등록된 레퍼런스가 없어요.</p>`);
   (r.ideas || []).forEach((x, i) => {
-    repTextPages(x.d || "").forEach((t, part) => add("아이디어", `<h2>${esc(x.t || "아이디어 " + (i + 1))}${part ? " · 계속" : ""}</h2><div>${repMarkdown(t)}</div>${part === 0 ? voteBtns(r, "idea" + i) : ""}`));
-    if (x.how) repTextPages(x.how).forEach(t => add("아이디어", `<h2>${esc(x.t || "아이디어 " + (i + 1))}</h2><h3>다음 행동</h3>${repMarkdown(t)}`));
+    add("아이디어", `<h2>${esc(x.t || "아이디어 " + (i + 1))}</h2><div>${repMarkdown(x.d || "")}</div>${x.how ? `<h3>다음 행동</h3>${repMarkdown(x.how)}` : ""}${voteBtns(r, "idea" + i)}`);
   });
   if (!pages.some(p => p.section === "아이디어")) add("아이디어", `<h2>아이디어</h2><p class="sub">등록된 아이디어가 없어요.</p>`);
   add("피드백", `<h2>${esc(repAgent(r).name)}에게 피드백</h2>${r.applied ? `<p class="rep-applied">지난 피드백 반영 · ${esc(r.applied)}</p>` : ""}${repFbForm(r, repAgent(r))}`);
@@ -3019,15 +3119,18 @@ function bindRepActions(root){
 function setRepPage(index){
   if (!REP_READER) return;
   const r = REPORTS.find(x => String(x.id) === REP_READER.id); if (!r) return closeRepReader();
-  const pages = repPages(r); REP_READER.page = Math.max(0, Math.min(index, pages.length - 1));
-  const p = pages[REP_READER.page], el = REP_READER.el;
-  el.querySelector("#repPaper").innerHTML = `<div class="rep-page-label">${esc(fmtDate(r.report_date))} / ${esc(p.section)}</div>${p.html}`;
+  const el = REP_READER.el;
+  if (!REP_READER.pages) REP_READER.pages = docFillPages(repPages(r), el.querySelector("#repReaderContent"), el.querySelector("#repPaper"));
+  const pages = REP_READER.pages; REP_READER.page = Math.max(0, Math.min(index, pages.length - 1));
+  const p = pages[REP_READER.page];
+  el.querySelector("#repPaper").innerHTML = `<div class="rep-page-label">${esc(fmtDate(r.report_date))} / ${esc(p.sections.join(" · "))}</div>${p.html}`;
   el.querySelector("#repReaderContent").scrollTop = 0;
   el.querySelector("#repPageCount").textContent = `${REP_READER.page + 1} / ${pages.length}`;
   el.querySelector("#repPrev").disabled = !REP_READER.page; el.querySelector("#repNext").disabled = REP_READER.page === pages.length - 1;
-  el.querySelector("#repReaderNav").innerHTML = `<span class="eyebrow">보고 목차</span>` + ["요약","인사이트","레퍼런스","아이디어","피드백"].map(s => { const start = pages.findIndex(x => x.section === s), n = pages.filter(x => x.section === s).length; return `<button type="button" data-page="${start}" aria-current="${p.section === s}">${s}<small>${n}쪽</small></button>`; }).join("");
-  el.querySelectorAll("[data-page]").forEach(b => b.addEventListener("click", () => { setRepPage(+b.dataset.page); el.querySelector('[data-page][aria-current="true"]')?.focus(); }));
+  el.querySelector("#repReaderNav").innerHTML = `<span class="eyebrow">보고 목차</span>` + ["요약","인사이트","레퍼런스","아이디어","피드백"].map(s => { const start = pages.findIndex(x => x.sections.includes(s)); return `<button type="button" data-page="${start}" data-rep-section="${s}" aria-current="${p.sections.includes(s)}">${s}<small>${start + 1}쪽부터</small></button>`; }).join("");
+  el.querySelectorAll("[data-page]").forEach(b => b.addEventListener("click", () => { const section = b.dataset.repSection; setRepPage(+b.dataset.page); el.querySelector(`[data-rep-section="${section}"]`)?.focus(); el.querySelector(`#repPaper [data-doc-section="${section}"]`)?.scrollIntoView({block:"nearest"}); }));
   bindRepActions(el.querySelector("#repPaper"));
+  refreshRepReader();
 }
 function refreshRepReader(){
   if (!REP_READER) return;
@@ -3049,15 +3152,17 @@ function openRepReader(id){
   el.querySelector("#repPrev").addEventListener("click", () => setRepPage(REP_READER.page - 1));
   el.querySelector("#repNext").addEventListener("click", () => setRepPage(REP_READER.page + 1));
   el.querySelector("#repPrint").addEventListener("click", () => {
-    const current = REPORTS.find(x => String(x.id) === REP_READER.id), pages = repPages(current);
-    el.querySelector("#repPrintContent").innerHTML = pages.map((p, i) => `<article class="rep-paper"><div class="rep-page-label">${esc(repAgent(current).name)} · ${esc(fmtDate(current.report_date))} · ${i + 1}/${pages.length} · ${p.section}</div>${p.section === "피드백" ? `<h2>피드백</h2>${current.applied ? `<h3>지난 피드백 반영</h3><p>${esc(current.applied)}</p>` : ""}<h3>내 피드백</h3><p>${esc(current.feedback || "아직 남긴 피드백이 없어요.")}</p>` : p.html}</article>`).join("");
+    const current = REPORTS.find(x => String(x.id) === REP_READER.id), blocks = repPages(current).map(p => p.section === "피드백" ? {...p,html:`<h2>피드백</h2>${current.applied ? `<h3>지난 피드백 반영</h3><p>${esc(current.applied)}</p>` : ""}<h3>내 피드백</h3><p>${esc(current.feedback || "아직 남긴 피드백이 없어요.")}</p>`} : p);
+    el.querySelector("#repPrintContent").innerHTML = `<article class="rep-paper"><div class="rep-page-label">${esc(repAgent(current).name)} · ${esc(fmtDate(current.report_date))}</div>${docContinuousHtml(blocks)}</article>`;
     window.print();
   });
+  watchDocLayout(REP_READER, el.querySelector("#repReaderContent"), () => { REP_READER.pages = null; setRepPage(REP_READER.page); });
   setRepPage(0); el.querySelector("#repReaderClose").focus(); markRepRead(r.id);
 }
 function closeRepReader(){
   if (!REP_READER) return;
   const state = REP_READER, ta = state.el.querySelector("textarea"); if (ta) draftPut(draftKeyOf(ta), ta.value);
+  state.layoutObserver?.disconnect();
   micStop(); state.el.close(); state.el.remove(); FITS.delete(state.el); document.body.classList.remove("rep-open"); REP_READER = null;
   try { if (state.parentOverflow !== undefined) window.parent.document.documentElement.style.overflow = state.parentOverflow; } catch (e) {}
   const button = $("#repGrid")?.querySelector(`[data-open-report="${state.id}"]`); (button || (state.focus?.isConnected ? state.focus : null))?.focus({preventScroll:true});
@@ -3096,7 +3201,7 @@ async function repFeedback(f){
   const patch = { feedback: text, feedback_at: new Date().toISOString(), status: "replied" };
   const { error } = await sb.from("agency_reports").update(patch).eq("id", r.id);
   if (error) return toast("저장하지 못했어요: " + error.message);
-  Object.assign(r, patch); draftDrop(f.querySelector("textarea")); renderReports(); setRepPage(REP_READER?.page || 0); toast(`${repAgent(r).name}에게 전달했어요. 피드백 완료로 옮겼어요`);
+  Object.assign(r, patch); draftDrop(f.querySelector("textarea")); if (REP_READER) REP_READER.pages = null; renderReports(); setRepPage(REP_READER?.page || 0); toast(`${repAgent(r).name}에게 전달했어요. 피드백 완료로 옮겼어요`);
 }
 async function markRepRead(id){
   const r = REPORTS.find(x => String(x.id) === String(id)); if (!r || r.status !== "new") return;
