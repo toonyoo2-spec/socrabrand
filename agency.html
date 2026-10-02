@@ -712,6 +712,7 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
 .a4 .memo-li{margin:2px 0 2px 14px;text-indent:-14px;padding-left:14px}
 .docbtn{font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface);border-radius:var(--r);padding:2px 8px;color:var(--text)}
 .docbtn:hover{border-color:var(--border-hover)}
+.cd-card .docbtn{justify-self:start;padding:6px 10px;margin-top:4px}
 @page{size:A4;margin:16mm}
 @media print{
   body.doc-open>*:not(#docView){display:none!important}
@@ -838,6 +839,14 @@ body.rep-open{overflow:hidden}
 .rep-view-footer button:disabled{opacity:.35;cursor:default}
 .rep-page-count{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .rep-print{display:none}
+.chat-doc-title{min-width:0;display:grid;gap:2px}
+.chat-doc-title b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-doc-title small{font-size:11px;color:var(--muted)}
+.chat-view .rep-view-nav button{display:block;white-space:normal;line-height:1.5}
+.chat-view pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:12px;line-height:1.7;background:var(--surface-2);padding:14px;border:1px solid var(--border)}
+.chat-doc-topics{display:grid;grid-template-columns:1fr 1fr;gap:7px 24px;margin:16px 0;padding-left:20px;font-size:13px}
+.chat-doc-copy-help{font-size:12px;color:var(--muted);margin-top:18px}
+@media(max-width:760px){.chat-view .rep-view-bar{flex-wrap:wrap;gap:8px}.chat-doc-title{width:100%}.chat-view .rep-view-tools{width:100%;justify-content:flex-end}.chat-view .rep-view-nav button{white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}.chat-view .rep-view-footer button{padding:7px 9px;font-size:11px}.chat-doc-topics{grid-template-columns:1fr;gap:4px}}
 @media(max-width:760px){
   .rep-overview-topics{grid-template-columns:1fr;gap:12px}.rep-topic{border-left:0;border-top:1px solid var(--border);padding:12px 0 0}.rep-topic:first-child{border-top:0;padding:0}
   .rep-preview{grid-template-columns:minmax(0,1fr) auto;gap:10px 14px}.rep-preview .rep-h{grid-column:1}.rep-preview-copy{grid-column:1/-1;grid-row:2}.rep-preview-action{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px}
@@ -2073,7 +2082,7 @@ function openPop(code){
   const ta = $("#popIn"); if (ta) ta.focus();
 }
 function closePop(){ if (POP) { POP.el.remove(); POP = null; } }
-document.addEventListener("keydown", e => { if (e.key === "Escape") closePop(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !document.querySelector("dialog[open]")) closePop(); });
 function refreshChat(){ if (POP && POP.el.isConnected) { renderThread(POP.code, $("#popBody")); const st = $("#popStatus"); if (st) st.textContent = `${AG[POP.code].role} · ${statusLine(POP.code)}`; markRead(POP.code); }
  renderMsgList(); if (CHAT_CUR) { renderThread(CHAT_CUR); const st = $("#roomStatus"); if (st) st.textContent = `${AG[CHAT_CUR].role} · ${statusLine(CHAT_CUR)}`; if (!$("#p-chat").hidden) markRead(CHAT_CUR); } }
 // 맨 아래로: 화면 밖 말풍선은 높이가 추정값이라 레이아웃이 잡힌 뒤 몇 번 더 내려준다
@@ -2391,13 +2400,13 @@ const plainOf = t => String(t || "").replace(/^#{1,4}\s+/gm, "").replace(/\*\*|_
 function attDoc(c, text, hl){
   const m = String(text).match(/^#{1,4}\s+(.+)$/m) || String(text).match(/^\s*\*\*(.{4,80}?)\*\*\s*$/m);
   const title = plainOf(m ? m[1] : hl || text).slice(0, 60) || "긴 글", n = String(c.body || "").length;
-  return `<button type="button" class="att-doc" data-doc="chat|${c.id}"><i>📄</i><span><b>${esc(title)}</b><small>${n.toLocaleString()}자 · 약 ${Math.max(1, Math.round(n / 500))}분 · 눌러서 열기</small></span></button>`;
+  return `<button type="button" class="att-doc" data-doc="chat|${c.id}" aria-label="문서 보기 · ${esc(title)}"><i>📄</i><span><b>문서 보기 · ${esc(title)}</b><small>요약 · 목차 · 페이지 보기 · PDF 저장</small></span></button>`;
 }
 function roomBubble(c){
   const code = c.sender === "kwan" ? "KWAN" : (c.speaker || (isRoom(c.code) ? "PM" : c.code)), me = code === "KWAN";
   const time = `<span class="cd-time">${fmtTime(c.created_at)}</span>`;
   const bodyLen = String(c.body || "").length, asDoc = bodyLen > (c.sender === "kwan" ? 600 : 500);
-  const meta = (asDoc ? "" : docBtnChat(c)) + (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + (me ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "");
+  const meta = (me && !asDoc ? docBtnChat(c) : "") + (c.kind === "request" ? `<span class="chip a">채팅 요청</span>` : "") + (me ? (c.handled ? `<span class="chip g">읽음</span>` : `<span class="chip">${dutyNow() ? "확인 중" : "다음 근무 때 답변"}</span>`) : "");
   if (me) {
     if (asDoc) return `<div class="kk-row me" data-cid="${c.id}">${av(code)}<div class="kk-col"><div class="kk-bub"><span class="cd-prev">${esc(plainOf(c.body).slice(0, 160))}</span>${attDoc(c, c.body, "")}${attHtml(c)}</div><div class="kk-meta">${time}${meta}</div></div></div>`;
     return `<div class="kk-row me" data-cid="${c.id}">${av(code)}<div class="kk-col"><div class="kk-bub md">${mdLite(c.body)}${attHtml(c)}</div><div class="kk-meta">${time}${meta}</div></div></div>`;
@@ -2407,7 +2416,7 @@ function roomBubble(c){
   const name = (AG[code] || ALUM[code])?.name || code, role = AG[code]?.role || "";
   return `<div class="kk-row card${code === "YK" ? " yk" : ""}" data-cid="${c.id}" style="--tc:${TEAM_COLOR[code] || "#8a8780"}">${av(code)}<div class="kk-col">
     <div class="cd-head"><b>${esc(name)}</b><small>${esc(role)}</small>${tag ? `<span class="kk-tag">${esc(tag)}</span>` : ""}${time}</div>
-    <div class="cd-card">${hl ? `<div class="cd-hl">${linkify(hl)}</div>` : ""}${asDoc ? `<span class="cd-prev">${esc(plainOf(rest).slice(0, 220))}</span>${attDoc(c, rest, hl)}` : rest.trim() ? `<div class="cd-txt md${long ? " fold" : ""}">${mdLite(rest)}</div>` : ""}${attHtml(c)}${!asDoc && long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}${isRoom(c.code) ? pickBtns(c, code, hl || plainOf(rest).slice(0, 80)) : ""}</div>
+    <div class="cd-card">${hl ? `<div class="cd-hl">${linkify(hl)}</div>` : ""}${asDoc ? `<span class="cd-prev">${esc(plainOf(rest).slice(0, 220))}</span>${attDoc(c, rest, hl)}` : rest.trim() ? `<div class="cd-txt md${long ? " fold" : ""}">${mdLite(rest)}</div>` : ""}${!asDoc ? docBtnChat(c) : ""}${attHtml(c)}${!asDoc && long ? `<button type="button" class="kk-more" data-unfold>전체 보기</button>` : ""}${isRoom(c.code) ? pickBtns(c, code, hl || plainOf(rest).slice(0, 80)) : ""}</div>
     <div class="kk-meta">${meta}${sigBtns(c, code)}</div></div></div>`;
 }
 function bindUnfold(box){ box.querySelectorAll("[data-unfold]").forEach(b => b.addEventListener("click", () => { let el = b.previousElementSibling; while (el && !el.classList.contains("md")) el = el.previousElementSibling; if (!el) return; const on = el.classList.toggle("fold"); b.textContent = on ? "전체 보기" : "접기"; })); }
@@ -2629,7 +2638,7 @@ function bindPicks(m){
 }
 
 // 문서 보기 · PDF 저장: 결정(기획안)과 긴 채팅을 A4 문서로 보여주고 window.print()로 저장
-const DOC_MIN = 800; let DOC = null;
+const DOC_MIN = 180; let DOC = null;
 const docList = v => !v ? "" : Array.isArray(v) ? `<ul>${v.map(x => `<li>${linkify(x)}</li>`).join("")}</ul>` : `<p>${linkify(v)}</p>`;
 function docDecHtml(m, d){
   const b = d.brief || {}; const plans = d.plans || []; const links = (d.links || []).filter(x => x && x.u);
@@ -2668,7 +2677,102 @@ function docChatHtml(c){
   return `<div class="doc-meta"><span>${esc(room)}</span><span>${esc(who)}</span><span>${fmtDate(new Date(new Date(c.created_at).getTime() + 9*3600e3).toISOString().slice(0,10))} ${fmtTime(c.created_at)}</span></div>
     <h1>${esc(first.replace(/^■\s*/, "").slice(0, 80))}</h1>${docText(c.body)}`;
 }
+// 긴 답변도 보고처럼 요약에서 시작한다. 원문은 페이지로 나누고 복사는 원문 그대로 한다.
+function chatDocInfo(c){
+  const code = c.sender === "kwan" ? "KWAN" : c.speaker || c.code;
+  const who = code === "KWAN" ? "KWAN" : (AG[code] || ALUM[code])?.name || lbl(code);
+  let text = String(c.body || "").replace(/\r/g, ""), title = "";
+  const first = text.trimStart().split("\n")[0], tag = first.match(/^\[([^\]]+)\]\s*$/);
+  if (tag && /\s·\s/.test(tag[1])) { title = tag[1].replace(/\s·\s[^·]+$/, "").trim(); text = text.trimStart().slice(first.length).trimStart(); }
+  else { const parts = splitTag(text); title = parts.tag; text = parts.text; }
+  if (!title) title = plainOf(text.split("\n").find(x => x.trim()) || "답변").slice(0, 80);
+  const room = isRoom(c.code) ? roomOf(c.code).title : `${(AG[c.code] || ALUM[c.code])?.name || c.code}와 1:1`;
+  return {title, text, who, room};
+}
+function chatDocSections(text){
+  const sections = []; let section = {title:"본문", parts:[]};
+  const flush = () => { if (section.parts.some(x => x.text.trim())) sections.push(section); };
+  const prose = value => {
+    let chunk = "";
+    const save = () => { if (chunk) section.parts.push({text:chunk, code:false}); chunk = ""; };
+    for (const line of value.split("\n")) {
+      const h = line.match(/^\s*(?:#{1,2}\s+|■\s*)(.+)$/) || line.match(/^\[([^\]]{3,75})\]\s*$/);
+      if (h) { save(); flush(); section = {title:plainOf(h[1]), parts:[]}; }
+      chunk += line + "\n";
+    }
+    save();
+  };
+  const re = /```([^\n]*)\n([\s\S]*?)```/g; let m, last = 0;
+  while ((m = re.exec(text))) {
+    prose(text.slice(last, m.index));
+    if (/^(text|plaintext|markdown|md)\s*$/i.test(m[1].trim())) prose(m[2]);
+    else section.parts.push({text:m[2], code:true});
+    last = re.lastIndex;
+  }
+  prose(text.slice(last)); flush();
+  return sections.length ? sections : [{title:"본문", parts:[{text, code:false}]}];
+}
+function chatDocMarkdown(text){
+  return repMarkdown(text.replace(/^\[([^\]]+)\](.*)$/gm, (_, title, rest) => `### ${title}${rest}`));
+}
+function chatDocPages(c){
+  const info = chatDocInfo(c), sections = chatDocSections(info.text), pages = [];
+  const purpose = sections.find(x => /목적|개요|핵심 요약/.test(x.title));
+  const leadText = purpose ? purpose.parts.map(x => x.text).join("\n").split("\n").slice(1).join("\n") : info.text.split(/```|\n\s*\n/).find(x => x.trim()) || info.text;
+  const lead = plainOf(leadText).replace(/^#\d+에 답하면,\s*/, "").slice(0, 420);
+  const topics = sections.filter(x => !/^(본문|요청 끝)$/.test(x.title)).map(x => x.title);
+  pages.push({section:"요약", html:`<h2>${esc(info.title)}</h2><p class="rep-summary-lead">${esc(lead)}</p>${topics.length ? `<h3>담긴 내용</h3><ul class="chat-doc-topics">${topics.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}<p class="chat-doc-copy-help">목차에서 필요한 부분을 고르세요. ‘전체 본문 복사’로 한 번에 가져가거나 ‘PDF 저장’으로 모든 페이지를 저장할 수 있어요.</p>`});
+  for (const s of sections) {
+    let fragments = [], size = 0;
+    const save = () => { if (fragments.length) pages.push({section:s.title, html:fragments.join(""), textLength:size}); fragments = []; size = 0; };
+    for (const part of s.parts) for (const text of repTextPages(part.text, 1400)) {
+      if (size && size + text.length > 1400) save();
+      fragments.push(part.code ? `<pre><code>${esc(text)}</code></pre>` : chatDocMarkdown(text)); size += text.length;
+    }
+    save();
+  }
+  return {info, pages};
+}
+function chatDocCopyText(c){
+  const text = String(c.body || ""), blocks = [...text.matchAll(/```(?:text|plaintext|markdown|md)\s*\n([\s\S]*?)```/g)];
+  return blocks.length === 1 ? blocks[0][1] : text;
+}
+function setChatDocPage(index){
+  if (!DOC?.pages) return;
+  DOC.page = Math.max(0, Math.min(DOC.pages.length - 1, index));
+  const {el, pages, page, info} = DOC, p = pages[page];
+  el.querySelector("#chatDocPaper").innerHTML = `<div class="rep-page-label">${esc(info.who)} · ${esc(p.section)} · ${page + 1}/${pages.length}</div>${p.html}`;
+  el.querySelector("#chatDocContent").scrollTop = 0;
+  el.querySelector("#chatDocCount").textContent = `${page + 1} / ${pages.length} 페이지`;
+  el.querySelector("#chatDocPrev").disabled = page === 0; el.querySelector("#chatDocNext").disabled = page === pages.length - 1;
+  el.querySelector("#chatDocNav").innerHTML = `<span class="eyebrow">문서 목차</span>` + [...new Set(pages.map(x => x.section))].map(s => `<button type="button" data-chat-page="${pages.findIndex(x => x.section === s)}" aria-current="${s === p.section}">${esc(s)}</button>`).join("");
+  el.querySelectorAll("[data-chat-page]").forEach(b => b.addEventListener("click", () => { setChatDocPage(+b.dataset.chatPage); el.querySelector('[aria-current="true"]')?.focus(); }));
+}
+function openChatDoc(c){
+  closeDoc(); closeRepReader();
+  const {info, pages} = chatDocPages(c), focus = document.activeElement, el = document.createElement("dialog");
+  el.id = "docView"; el.className = "rep-view chat-view"; el.setAttribute("aria-label", `${info.title} · 문서 보기`);
+  el.innerHTML = `<div class="rep-view-shell"><header class="rep-view-bar"><div class="chat-doc-title"><b>${esc(info.title)}</b><small>${esc(info.who)} · ${esc(info.room)} · ${fmtTime(c.created_at)}</small></div><div class="rep-view-tools"><button type="button" class="btn ghost" id="chatDocCopy">전체 본문 복사</button><button type="button" class="btn ghost" id="docPrint">PDF 저장</button><button type="button" class="btn ghost" id="docClose">닫기</button></div></header><div class="rep-view-main"><nav class="rep-view-nav" id="chatDocNav" aria-label="문서 목차"></nav><div class="rep-view-content" id="chatDocContent"><article class="rep-paper" id="chatDocPaper"></article></div></div><footer class="rep-view-footer"><button type="button" id="chatDocPrev">← 이전 페이지</button><span class="rep-page-count" id="chatDocCount" aria-live="polite"></span><button type="button" id="chatDocNext">다음 페이지 →</button></footer><div class="rep-print" id="chatDocPrint"></div></div>`;
+  DOC = {el, info, pages, page:0, focus, chatId:c.id, title:document.title, hash:location.hash};
+  document.body.appendChild(el); document.body.classList.add("doc-open", "rep-open"); fitOverlay(el); el.showModal();
+  try { if (window.frameElement) { DOC.parentOverflow = window.parent.document.documentElement.style.overflow; window.parent.document.documentElement.style.overflow = "hidden"; } } catch (e) {}
+  document.title = info.title.slice(0, 80);
+  try { history.replaceState(null, "", `#doc/chat/${c.id}`); } catch (e) {}
+  el.querySelector("#docClose").addEventListener("click", closeDoc);
+  el.addEventListener("cancel", e => { e.preventDefault(); closeDoc(); });
+  el.querySelector("#chatDocPrev").addEventListener("click", () => setChatDocPage(DOC.page - 1));
+  el.querySelector("#chatDocNext").addEventListener("click", () => setChatDocPage(DOC.page + 1));
+  el.querySelector("#chatDocCopy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(chatDocCopyText(c)); el.querySelector("#chatDocCopy").textContent = "복사 완료"; }
+    catch (e) { toast("복사하지 못했어요. 브라우저의 클립보드 권한을 확인해 주세요"); }
+  });
+  el.querySelector("#docPrint").addEventListener("click", () => {
+    el.querySelector("#chatDocPrint").innerHTML = pages.map((p, i) => `<article class="rep-paper"><div class="rep-page-label">${esc(info.title)} · ${esc(info.who)} · ${i + 1}/${pages.length} · ${esc(p.section)}</div>${p.html}</article>`).join(""); window.print();
+  });
+  setChatDocPage(0); el.querySelector("#docClose").focus();
+}
 function openDoc(kind, a, b){
+  if (kind === "chat") { const c = CHAT.find(x => String(x.id) === String(a)); return c ? openChatDoc(c) : toast("문서를 찾지 못했어요"); }
   let html = "", name = "";
   if (kind === "dec") { const m = MEETINGS.find(x => x.id === a); const d = m && (m.decisions || []).find(x => x.id === b); if (!d) return toast("문서를 찾지 못했어요");
     html = docDecHtml(m, d); name = `${m.meeting_date} ${d.q}`; }
@@ -2683,13 +2787,16 @@ function openDoc(kind, a, b){
   el.querySelector("#docClose").addEventListener("click", closeDoc);
   el.addEventListener("click", e => { if (e.target === el) closeDoc(); });
 }
-function closeDoc(){ const el = $("#docView"); if (!el) return; el.remove(); document.body.classList.remove("doc-open");
-  if (DOC) document.title = DOC.title; DOC = null;
-  try { if (location.hash.startsWith("#doc/")) history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
+function closeDoc(){ const el = $("#docView"); if (!el) return; const state = DOC;
+  if (el.open) el.close(); el.remove(); FITS.delete(el); document.body.classList.remove("doc-open");
+  if (state?.pages) document.body.classList.remove("rep-open");
+  if (state) document.title = state.title; DOC = null;
+  try { if (state?.parentOverflow !== undefined) window.parent.document.documentElement.style.overflow = state.parentOverflow; if (location.hash.startsWith("#doc/")) history.replaceState(null, "", location.pathname + location.search + (state?.hash?.startsWith("#doc/") ? "" : state?.hash || "")); } catch (e) {}
+  const button = state?.focus?.isConnected ? state.focus : document.querySelector(`[data-doc="chat|${state?.chatId}"]`); button?.focus({preventScroll:true}); }
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeDoc(); });
 document.addEventListener("click", e => { const t = e.target.closest("[data-doc]"); if (!t) return; e.preventDefault(); const [k, a, b] = t.dataset.doc.split("|"); openDoc(k, a, b); });
 function openDocFromHash(){ const h = (location.hash || "").slice(1); if (!h.startsWith("doc/")) return; const [, a, b] = h.split("/"); a === "chat" ? openDoc("chat", b) : openDoc("dec", a, b); }
-const docBtnChat = c => String(c.body || "").length > DOC_MIN ? `<button class="docbtn" type="button" data-doc="chat|${c.id}">문서 보기</button>` : "";
+const docBtnChat = c => String(c.body || "").length > DOC_MIN ? `<button class="docbtn" type="button" data-doc="chat|${c.id}">문서 보기 · PDF 저장</button>` : "";
 
 // 회의록
 // 회의록: 날짜 줄(회의 수) → 그 날의 회의 목록(시간·종류·제목) → 안건
