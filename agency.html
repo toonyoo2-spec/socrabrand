@@ -765,7 +765,93 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
 .rep-dir ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px}
 .rep-dir li{display:flex;gap:8px;align-items:baseline}
 .rep-dir li button{border:none;background:none;color:var(--muted);cursor:pointer}
-.rep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:14px;align-items:start}
+.rep-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
+.rep-overview{border:1px solid var(--border);border-top:3px solid var(--green-line);background:var(--surface);padding:18px 20px;border-radius:var(--r)}
+.rep-overview-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.rep-overview-h h3{font-size:18px;letter-spacing:-.03em}
+.rep-overview-h span{font-size:12px;color:var(--muted)}
+.rep-overview-topics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.rep-topic{min-width:0;border-left:1px solid var(--border);padding-left:16px}
+.rep-topic:first-child{border-left:0;padding-left:0}
+.rep-topic h4{font-size:12px;color:var(--green-line);margin:0 0 8px}
+.rep-topic ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rep-topic li{font-size:13px;line-height:1.5;text-wrap:pretty}
+.rep-topic small{display:block;margin-top:8px;font-size:11px;color:var(--muted)}
+.rep-preview{display:grid;grid-template-columns:150px minmax(0,1fr) auto;align-items:center;gap:20px;padding:16px 18px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface)}
+.rep-preview.new{border-left:3px solid var(--green-line)}
+.rep-preview .rep-h{align-self:start}
+.rep-preview .who{min-width:0}
+.rep-preview .rep-h{min-width:0}
+.rep-preview .rep-h .who small{white-space:normal;line-height:1.5;margin-top:4px}
+.rep-preview-copy{min-width:0}
+.rep-preview h3{font-size:15px;line-height:1.45;margin:0 0 5px}
+.rep-preview p{font-size:13px;line-height:1.6;color:var(--muted);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rep-preview-meta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:11px;color:var(--faint)}
+.rep-preview-action{display:grid;justify-items:end;gap:10px}
+.rep-preview-action button{white-space:nowrap;padding:8px 14px;font-size:12px}
+.rep-preview-action button:hover{background:var(--green-tint)}
+.rep-direction{border:1px solid var(--border);border-radius:var(--r);background:var(--surface)}
+.rep-direction > summary{cursor:pointer;padding:10px 16px;font-size:13px;font-weight:650;color:var(--muted)}
+.rep-direction .rep-dir{border:0;border-top:1px solid var(--border)}
+.rep-view{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:16px;border:0;background:#e9e8e2;color:var(--text);z-index:81;overflow:hidden}
+.rep-view::backdrop{background:rgba(20,20,20,.4)}
+body.rep-open{overflow:hidden}
+.rep-view-shell{height:100%;max-width:1180px;margin:auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.rep-view-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:var(--surface);border-bottom:1px solid var(--border)}
+.rep-view-bar .rep-h{min-width:0}
+.rep-view-bar .rep-h .who{min-width:0}
+.rep-view-bar .rep-h .who small{white-space:normal}
+.rep-view-tools{display:flex;gap:6px;flex:none}
+.rep-view-tools .btn{padding:7px 12px;font-size:12px}
+.rep-view-main{display:grid;grid-template-columns:168px minmax(0,1fr);min-height:0}
+.rep-view-nav{padding:20px 12px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:6px;overflow:auto}
+.rep-view-nav .eyebrow{padding:0 10px 8px;font-size:10px}
+.rep-view-nav button{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;background:none;border:1px solid transparent;border-radius:4px;padding:10px;font-size:13px;color:var(--muted)}
+.rep-view-nav button[aria-current="true"]{background:var(--green-tint);color:var(--green-line);font-weight:700}
+.rep-view-nav button:hover{border-color:var(--border)}
+.rep-view-nav small{font-size:10px;white-space:nowrap}
+.rep-view-content{overflow:auto;overscroll-behavior:contain;padding:24px;min-width:0;scrollbar-gutter:stable}
+.rep-paper{max-width:760px;margin:0 auto;padding:28px 36px;min-height:100%;background:var(--surface);border:1px solid var(--border);box-shadow:0 3px 12px rgba(80,75,60,.04);overflow-wrap:anywhere;font-size:14px;line-height:1.8}
+.rep-paper .rep-page-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--green-line);margin-bottom:12px}
+.rep-paper h2{font-size:24px;line-height:1.4;letter-spacing:-.04em;margin:0 0 18px}
+.rep-paper h3{font-size:16px;line-height:1.5;margin:0 0 12px}
+.rep-paper h4{margin:18px 0 6px;font-size:12px;color:var(--muted)}
+.rep-paper p{margin:0 0 12px;white-space:pre-wrap}
+.rep-paper a{color:var(--green-line);overflow-wrap:anywhere}
+.rep-paper .md-h{font-weight:750;margin:18px 0 8px}
+.rep-paper .md-gap{height:8px}
+.rep-paper ul,.rep-paper ol{padding-left:20px}
+.rep-table-wrap{overflow-x:auto;margin:12px 0}
+.rep-paper table{border-collapse:collapse;width:100%;font-size:12px;line-height:1.65}
+.rep-paper th,.rep-paper td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top;min-width:100px}
+.rep-paper th{background:var(--surface-2);font-weight:700}
+.rep-paper .rep-it{font-size:14px;line-height:1.8;margin:18px 0}
+.rep-paper .rep-it p{margin:6px 0}
+.rep-paper .rep-it .why{font-size:13px}
+.rep-paper .rep-summary-lead{font-size:15px;line-height:1.8;border-left:3px solid var(--green-line);padding-left:14px;margin-bottom:22px}
+.rep-summary-dl{margin:0;display:grid;gap:16px}
+.rep-summary-dl dt{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.rep-summary-dl dd{margin:0;font-size:14px;line-height:1.7}
+.rep-summary-dl ul{margin:0}
+.rep-view-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 18px;background:var(--surface);border-top:1px solid var(--border)}
+.rep-view-footer button{border:1px solid var(--border);background:var(--surface);border-radius:4px;padding:7px 14px;font-size:12px;color:var(--text)}
+.rep-view-footer button:disabled{opacity:.35;cursor:default}
+.rep-page-count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rep-print{display:none}
+@media(max-width:760px){
+  .rep-overview-topics{grid-template-columns:1fr;gap:12px}.rep-topic{border-left:0;border-top:1px solid var(--border);padding:12px 0 0}.rep-topic:first-child{border-top:0;padding:0}
+  .rep-preview{grid-template-columns:minmax(0,1fr) auto;gap:10px 14px}.rep-preview .rep-h{grid-column:1}.rep-preview-copy{grid-column:1/-1;grid-row:2}.rep-preview-action{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px}
+  .rep-preview .who small{display:none}.rep-preview p{-webkit-line-clamp:3}
+  .rep-view{padding:0}.rep-view-shell{border:0;border-radius:0}.rep-view-main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .rep-view-nav{flex-direction:row;gap:4px;padding:8px;border-right:0;border-bottom:1px solid var(--border);white-space:nowrap}.rep-view-nav .eyebrow{display:none}.rep-view-nav button{flex:none;padding:7px 9px;font-size:12px}.rep-view-nav small{display:none}
+  .rep-view-bar{padding:10px 12px}.rep-view-bar .rep-h .who small{display:none}.rep-view-tools .btn{padding:7px 10px}.rep-view-content{padding:12px}.rep-paper{padding:20px 18px}.rep-paper h2{font-size:21px}.rep-view-footer{padding:10px 12px}
+}
+@media print{
+  body.rep-open > :not(.rep-view){display:none!important}body.rep-open{background:white;overflow:visible}
+  .rep-view{position:static!important;height:auto!important;max-height:none!important;overflow:visible!important;padding:0;background:white}
+  .rep-view-shell{display:block;height:auto;border:0;overflow:visible}.rep-view-bar,.rep-view-main,.rep-view-footer{display:none!important}
+  .rep-print{display:block}.rep-print .rep-paper{min-height:0;border:0;box-shadow:none;padding:0;max-width:none;break-after:page}.rep-print .rep-paper:last-child{break-after:auto}.rep-print .vote,.rep-print button{display:none}
+}
 .rep{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
 .rep > *, .rep-it > div{min-width:0;overflow-wrap:anywhere}
 .rep.new{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
@@ -1002,8 +1088,11 @@ body.tab-rooms .tabs{margin:10px 0 10px;padding-bottom:8px}
     <section id="p-reports" class="panel" hidden>
       <div class="sec">
         <div class="sec-h"><h2 id="repTitle">일일 보고</h2><div class="datesel" id="repDates"></div></div>
-        <p class="sub" style="margin:0">매일 아침 8시, 상시 근무자가 자기 직무로 인사이트 · 레퍼런스 · 아이디어를 올려요. 👍 / 👎와 코멘트를 남기면 다음 보고부터 반영되고, 코멘트는 그 사람의 성장 기록에도 남아 회의 때도 이어져요. AI팀은 필요할 때만 일해서 보고하지 않아요.</p>
+        <div id="repOverview" aria-label="전체 보고 요약"></div>
+        <p class="sub" style="margin:0">요약을 먼저 확인하고, 보고 보기를 눌러 한 편씩 읽어보세요. 본문은 페이지로 나눠 보여주며, 피드백은 다음 보고에 반영돼요.</p>
+        <details class="rep-direction"><summary>모두에게 방향 한마디</summary>
         <form class="rep-dir" id="repDir"><b style="font-size:14px">모두에게 방향 한마디</b><ul id="repDirList"></ul><div class="row"><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea id="repDirIn" placeholder="예: 이번 주는 초등 학부모가 실제로 저장하는 콘텐츠 위주로 / 경쟁사 광고보다 학부모 커뮤니티 반응을 더 봐줘"></textarea><button class="btn" type="submit">전달</button></div></form>
+        </details>
         <div class="rep-grid" id="repGrid"></div>
       </div>
     </section>
@@ -2710,7 +2799,7 @@ function renderProfile(rows){
 
 // 탭
 // ===== 일일 보고: 인사이트·레퍼런스·아이디어 + KWAN 피드백(👍/👎·코멘트) =====
-let REPORTS = [], REP_DATE = null;
+let REPORTS = [], REP_DATE = null, REP_READER = null;
 function repBadge(){ const n = REPORTS.filter(r => r.status === "new").length, b = $("#repBadge"); if (b) { b.hidden = !n; b.textContent = n; } }
 function voteBtns(r, key){ const v = (r.votes || {})[key] || 0; return `<span class="vote"><button type="button" data-vote="${key}" data-v="1" aria-pressed="${v === 1}" title="좋아요 · 이 방향으로 더">👍</button><button type="button" data-vote="${key}" data-v="-1" aria-pressed="${v === -1}" title="별로예요 · 이런 건 피하기">👎</button></span>`; }
 // 예시 피드백 2~3개: 보고 내용을 보고 고르기 쉬운 문장으로 만든다(고르면 입력칸에 들어가고, 고쳐서 보냄)
@@ -2727,57 +2816,165 @@ function repFbForm(r, a){
   return `<div class="rep-fbw"><div class="rep-guide"><span>빠른 피드백 · 고르면 아래 칸에 들어가요. 고치거나 덧붙여서 보내세요</span>${opts.map((t, i) => `<button type="button" class="fb-opt" data-opt="${i}">${esc(t)}</button>`).join("")}</div>
     <form class="rep-fb" data-fb="${r.id}"><button type="button" class="att-btn mic-btn" title="말로 입력 (한 번 더 누르면 멈춤)" aria-label="말로 입력">🎤</button><textarea placeholder="${esc(a.name)}에게 직접 쓰기 · 위 예시에 없으면 여기에 적어주세요">${esc(r.feedback || "")}</textarea><button class="btn" type="submit">${r.feedback ? "고치기" : "보내기"}</button></form></div>`;
 }
-function repCard(r){
-  const a = AG[r.code] || {name: r.code, role: ""}, ins = r.insight || {};
-  const refs = (r.refs || []).map((x, i) => `<div class="rep-it"><div><b>${x.u ? `<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</b>${x.ok ? "" : `<span class="warn">출처 확인 필요</span>`}<p class="why">${esc(x.why)}</p></div>${voteBtns(r, "ref" + i)}</div>`).join("");
-  const ideas = (r.ideas || []).map((x, i) => `<div class="rep-it"><div><b>${esc(x.t)}</b><p>${esc(x.d)}</p>${x.how ? `<p class="why">다음 행동 · ${esc(x.how)}</p>` : ""}</div>${voteBtns(r, "idea" + i)}</div>`).join("");
-  const src = (r.sources || []).length ? `<details><summary>검색 근거 ${(r.sources || []).length}개</summary>${(r.sources || []).map(s => `<div><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t)}</a></div>`).join("")}</details>` : "";
-  const st = r.status === "new" ? `<span class="chip g">새 보고</span>` : r.status === "replied" ? `<span class="chip">피드백 남김</span>` : `<span class="chip">읽음</span>`;
-  return `<article class="rep ${r.status}" data-rid="${r.id}">
-    <div class="rep-h"><span class="av" style="background:${TEAM_COLOR[r.code] || "#8a8780"};color:#fff;border:none">${esc(lbl(r.code))}</span><span class="who"><b>${esc(a.name)}</b><small>${esc(a.role || "")}</small></span>${st}</div>
-    <h3>${esc(r.headline || "")}</h3>
-    ${r.applied ? `<p class="rep-applied">↺ 지난 피드백 반영 · ${esc(r.applied)}</p>` : ""}
-    <div class="rep-sec"><h4>Insight</h4><div class="rep-it"><div><b>${esc(ins.title || "")}</b><p>${esc(ins.body || "")}</p>${ins.why ? `<p class="why">우리에게 · ${esc(ins.why)}</p>` : ""}</div>${voteBtns(r, "insight")}</div></div>
-    ${refs ? `<div class="rep-sec"><h4>Reference</h4>${refs}</div>` : ""}
-    ${ideas ? `<div class="rep-sec"><h4>Ideation</h4>${ideas}</div>` : ""}
-    ${src}
-    ${repFbForm(r, a)}
-  </article>`;
+const repAgent = r => AG[r.code] || ALUM[r.code] || { name:r.code, role:"" };
+const repStatus = r => r.status === "new" ? `<span class="chip g">새 보고</span>` : r.status === "replied" ? `<span class="chip">피드백 완료</span>` : `<span class="chip">읽음</span>`;
+const repWho = r => `<div class="rep-h"><span class="av" style="background:${TEAM_COLOR[r.code] || "#8a8780"};color:#fff;border:none">${esc(lbl(r.code))}</span><span class="who"><b>${esc(repAgent(r).name)}</b><small>${esc(repAgent(r).role)}</small></span></div>`;
+function repPlain(t){ return String(t || "").replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, "$1").replace(/https?:\/\/\S+/g, "").replace(/^\s*#{1,6}\s+/gm, "").replace(/[*`]/g, "").replace(/\s+/g, " ").trim(); }
+function repShort(t, max = 210){ const s = repPlain(t); if (s.length <= max) return s; const end = s.lastIndexOf(" ", max); return s.slice(0, end > max * .7 ? end : max).trimEnd() + "…"; }
+function repSummary(r){
+  const ins = r.insight || {};
+  if (typeof ins.summary === "string" && ins.summary.trim()) return repShort(ins.summary);
+  const first = String(ins.body || "").replace(/\r/g, "").split(/\n\s*\n/).map(p => p.split("\n").filter(l => !/^\s*#{1,6}\s/.test(l)).join(" ").trim()).find(Boolean);
+  return repShort(first || ins.why || ins.title || r.headline || "요약할 내용이 아직 없어요.");
 }
-// 피드백 남긴 보고: 접힌 요약(내 피드백이 보이고, 누르면 보고 전체와 고치기 칸)
-function repDoneCard(r){
-  const a = AG[r.code] || {name: r.code, role: ""};
-  return `<details class="rep-done" data-rid="${r.id}"><summary><span class="av sm" style="background:${TEAM_COLOR[r.code] || "#8a8780"};color:#fff;border:none">${esc(lbl(r.code))}</span><span class="rd-mid"><b>${esc(a.name)} · ${esc(r.headline || "")}</b><span class="rd-fb">내 피드백 · ${esc(r.feedback || "")}</span></span><span class="rd-open">보고 보기</span></summary>${repCard(r)}</details>`;
+function repOverview(list){
+  const box = $("#repOverview"); if (!box) return; box.hidden = !list.length; if (!list.length) { box.innerHTML = ""; return; }
+  const groups = [
+    { title:"기획 · 콘텐츠", codes:["AE","CP","WR","LS"] },
+    { title:"디자인 · 영상", codes:["AD","DS","PD","IN"] },
+    { title:"검증 · 성과", codes:["YK","HR","GR","SO","PM"] }
+  ].map(g => ({...g, reports:list.filter(r => g.codes.includes(r.code))})).filter(g => g.reports.length);
+  const others = list.filter(r => !groups.some(g => g.reports.includes(r))); if (others.length) groups.push({title:"그 외 보고", reports:others});
+  const pending = list.filter(r => r.status !== "replied").length;
+  box.innerHTML = `<section class="rep-overview"><div class="rep-overview-h"><h3>${REP_DATE === kstNow().date ? "오늘" : esc(fmtDate(REP_DATE))} 보고, 한눈에 보기</h3><span>${list.length}개 보고 · 피드백 대기 ${pending}개</span></div><div class="rep-overview-topics">${groups.map(g => `<div class="rep-topic"><h4>${g.title}</h4><ul>${g.reports.map(r => `<li>${esc(repShort(r.insight?.title || r.headline, 85))}</li>`).join("")}</ul><small>${g.reports.map(r => esc(repAgent(r).name)).join(" · ")}</small></div>`).join("")}</div></section>`;
+}
+function repCard(r){
+  return `<article class="rep-preview ${esc(r.status)}" data-rid="${r.id}">${repWho(r)}<div class="rep-preview-copy"><h3>${esc(r.headline || r.insight?.title || "일일 보고")}</h3><p>${esc(repSummary(r))}</p><div class="rep-preview-meta"><span>레퍼런스 ${(r.refs || []).length}개</span><span>아이디어 ${(r.ideas || []).length}개</span>${r.feedback ? `<span>내 피드백 · ${esc(repShort(r.feedback, 80))}</span>` : ""}</div></div><div class="rep-preview-action">${repStatus(r)}<button class="btn ghost" type="button" data-open-report="${r.id}" aria-label="${esc(repAgent(r).name)} 보고 보기">보고 보기 ↗</button></div></article>`;
+}
+// 원문을 빠뜨리지 않고 문단·단어 경계에서 페이지를 나눈다.
+function repTextPages(t, limit = 1100){
+  const paragraphs = String(t || "").replace(/\r/g, "").split(/\n\n/), pages = []; let page = "";
+  for (let p of paragraphs) {
+    while (p.length > limit) {
+      if (page) { pages.push(page); page = ""; }
+      let end = Math.max(p.lastIndexOf("\n", limit), p.lastIndexOf(" ", limit)); if (end < limit * .5) end = limit;
+      pages.push(p.slice(0, end)); p = p.slice(end);
+    }
+    if (page && (page.length + p.length + 2 > limit)) { pages.push(page); page = ""; }
+    page = page ? page + "\n\n" + p : p;
+  }
+  if (page || !pages.length) pages.push(page); return pages;
+}
+function repMarkdown(t){
+  const inline = raw => String(raw).split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|https?:\/\/[^\s<)"]+)/g).map(part => {
+    const m = part.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (m) return `<a href="${esc(m[2])}" target="_blank" rel="noopener">${esc(m[1])}</a>`;
+    if (/^https?:\/\//.test(part)) return `<a href="${esc(part)}" target="_blank" rel="noopener">${esc(part)}</a>`;
+    return esc(part).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>");
+  }).join("");
+  const lines = String(t || "").split("\n"); let h = "", list = "";
+  const close = () => { if (list) { h += `</${list}>`; list = ""; } };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]; let m;
+    if (!line.trim()) { close(); h += `<div class="md-gap"></div>`; continue; }
+    if (/^\s*\|.*\|\s*$/.test(line) && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] || "")) {
+      close(); const cells = row => row.trim().slice(1, -1).split("|").map(x => x.trim());
+      h += `<div class="rep-table-wrap"><table><thead><tr>${cells(line).map(x => `<th>${inline(x)}</th>`).join("")}</tr></thead><tbody>`; i++;
+      while (/^\s*\|.*\|\s*$/.test(lines[i + 1] || "")) { i++; h += `<tr>${cells(lines[i]).map(x => `<td>${inline(x)}</td>`).join("")}</tr>`; }
+      h += `</tbody></table></div>`; continue;
+    }
+    if ((m = line.match(/^\s*(?:#{1,6}\s+|[■▶◆]\s*)(.*)$/))) { close(); h += `<div class="md-h">${inline(m[1])}</div>`; continue; }
+    if ((m = line.match(/^\s*[-•·*]\s+(.*)$/))) { if (list !== "ul") { close(); list = "ul"; h += "<ul>"; } h += `<li>${inline(m[1])}</li>`; continue; }
+    if ((m = line.match(/^\s*(\d{1,2})[.)]\s+(.*)$/))) { if (list !== "ol") { close(); list = "ol"; h += "<ol>"; } h += `<li value="${m[1]}">${inline(m[2])}</li>`; continue; }
+    close(); h += `<p>${inline(line)}</p>`;
+  }
+  close(); return h;
+}
+function repPages(r){
+  const ins = r.insight || {}, pages = [];
+  const add = (section, html) => pages.push({section, html});
+  add("요약", `<h2>${esc(r.headline || ins.title || "일일 보고")}</h2><p class="rep-summary-lead">${esc(repSummary(r))}</p><dl class="rep-summary-dl">${ins.why ? `<div><dt>우리에게 어떤 내용인가</dt><dd>${esc(repShort(ins.why, 240))}</dd></div>` : ""}${(r.ideas || []).length ? `<div><dt>제안하는 방향</dt><dd><ul>${r.ideas.map(x => `<li>${esc(x.t || "아이디어")}</li>`).join("")}</ul></dd></div>` : ""}${r.applied ? `<div><dt>지난 피드백 반영</dt><dd>${esc(repShort(r.applied, 220))}</dd></div>` : ""}</dl><p class="sub" style="margin-top:22px">원문의 도입부와 제안 항목을 요약한 내용입니다. 목차를 눌러 상세 내용을 확인하세요.</p>`);
+  repTextPages(ins.body || "인사이트 본문이 아직 없어요.").forEach((t, i) => add("인사이트", `<h2>${esc(ins.title || "인사이트")}${i ? " · 계속" : ""}</h2><div>${repMarkdown(t)}</div>${i === 0 ? voteBtns(r, "insight") : ""}`));
+  if (ins.why) repTextPages(ins.why).forEach(t => add("인사이트", `<h2>우리에게 적용할 점</h2>${repMarkdown(t)}`));
+  (r.refs || []).forEach((x, i) => repTextPages(x.why || "").forEach((t, part) => add("레퍼런스", `<h2>레퍼런스 ${i + 1}${part ? " · 계속" : ""}</h2><div class="rep-it"><div><b>${x.u ? `<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</b>${x.ok ? "" : `<span class="warn">출처 확인 필요</span>`}<div>${repMarkdown(t)}</div></div>${part === 0 ? voteBtns(r, "ref" + i) : ""}</div>`)));
+  if ((r.sources || []).length) add("레퍼런스", `<h2>검색 근거 ${(r.sources || []).length}개</h2><ol>${r.sources.map(s => `<li><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t || s.u)}</a></li>`).join("")}</ol>`);
+  if (!pages.some(p => p.section === "레퍼런스")) add("레퍼런스", `<h2>레퍼런스</h2><p class="sub">등록된 레퍼런스가 없어요.</p>`);
+  (r.ideas || []).forEach((x, i) => {
+    repTextPages(x.d || "").forEach((t, part) => add("아이디어", `<h2>${esc(x.t || "아이디어 " + (i + 1))}${part ? " · 계속" : ""}</h2><div>${repMarkdown(t)}</div>${part === 0 ? voteBtns(r, "idea" + i) : ""}`));
+    if (x.how) repTextPages(x.how).forEach(t => add("아이디어", `<h2>${esc(x.t || "아이디어 " + (i + 1))}</h2><h3>다음 행동</h3>${repMarkdown(t)}`));
+  });
+  if (!pages.some(p => p.section === "아이디어")) add("아이디어", `<h2>아이디어</h2><p class="sub">등록된 아이디어가 없어요.</p>`);
+  add("피드백", `<h2>${esc(repAgent(r).name)}에게 피드백</h2>${r.applied ? `<p class="rep-applied">지난 피드백 반영 · ${esc(r.applied)}</p>` : ""}${repFbForm(r, repAgent(r))}`);
+  return pages;
+}
+function bindRepActions(root){
+  root.querySelectorAll(".fb-opt").forEach(b => b.addEventListener("click", () => {
+    const ta = b.closest(".rep-fbw").querySelector("textarea"), t = b.textContent, cur = ta.value.trim(), on = b.getAttribute("aria-pressed") === "true";
+    ta.value = on ? cur.split("\n").filter(l => l.trim() !== t).join("\n") : (cur ? cur + "\n" + t : t);
+    b.setAttribute("aria-pressed", String(!on)); draftPut(draftKeyOf(ta), ta.value);
+    ta.style.height = "auto"; ta.style.height = Math.min(260, ta.scrollHeight + 2) + "px"; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  }));
+  root.querySelectorAll("[data-vote]").forEach(b => b.addEventListener("click", () => repVote(b)));
+  root.querySelectorAll(".rep-fb").forEach(f => { bindMic(f); f.addEventListener("submit", e => { e.preventDefault(); repFeedback(f); });
+    f.querySelector("textarea").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); f.requestSubmit(); } }); });
+  draftRestore(root);
+}
+function setRepPage(index){
+  if (!REP_READER) return;
+  const r = REPORTS.find(x => String(x.id) === REP_READER.id); if (!r) return closeRepReader();
+  const pages = repPages(r); REP_READER.page = Math.max(0, Math.min(index, pages.length - 1));
+  const p = pages[REP_READER.page], el = REP_READER.el;
+  el.querySelector("#repPaper").innerHTML = `<div class="rep-page-label">${esc(fmtDate(r.report_date))} / ${esc(p.section)}</div>${p.html}`;
+  el.querySelector("#repReaderContent").scrollTop = 0;
+  el.querySelector("#repPageCount").textContent = `${REP_READER.page + 1} / ${pages.length}`;
+  el.querySelector("#repPrev").disabled = !REP_READER.page; el.querySelector("#repNext").disabled = REP_READER.page === pages.length - 1;
+  el.querySelector("#repReaderNav").innerHTML = `<span class="eyebrow">보고 목차</span>` + ["요약","인사이트","레퍼런스","아이디어","피드백"].map(s => { const start = pages.findIndex(x => x.section === s), n = pages.filter(x => x.section === s).length; return `<button type="button" data-page="${start}" aria-current="${p.section === s}">${s}<small>${n}쪽</small></button>`; }).join("");
+  el.querySelectorAll("[data-page]").forEach(b => b.addEventListener("click", () => { setRepPage(+b.dataset.page); el.querySelector('[data-page][aria-current="true"]')?.focus(); }));
+  bindRepActions(el.querySelector("#repPaper"));
+}
+function refreshRepReader(){
+  if (!REP_READER) return;
+  const r = REPORTS.find(x => String(x.id) === REP_READER.id); if (!r) return closeRepReader();
+  REP_READER.el.querySelector("#repReaderStatus").innerHTML = repStatus(r);
+  // 투표·실시간 갱신으로 입력 중인 피드백이나 읽던 위치를 잃지 않는다.
+  REP_READER.el.querySelectorAll("[data-vote]").forEach(b => b.setAttribute("aria-pressed", String(((r.votes || {})[b.dataset.vote] || 0) === +b.dataset.v)));
+}
+function openRepReader(id){
+  const r = REPORTS.find(x => String(x.id) === String(id)); if (!r) return;
+  closeRepReader();
+  const focus = document.activeElement, el = document.createElement("dialog"); el.className = "rep-view"; el.setAttribute("aria-label", `${repAgent(r).name} 일일 보고`);
+  el.innerHTML = `<div class="rep-view-shell"><header class="rep-view-bar">${repWho(r)}<div class="rep-view-tools"><span id="repReaderStatus">${repStatus(r)}</span><button type="button" class="btn ghost" id="repPrint">PDF 저장</button><button type="button" class="btn ghost" id="repReaderClose">닫기</button></div></header><div class="rep-view-main"><nav class="rep-view-nav" id="repReaderNav" aria-label="보고 목차"></nav><div class="rep-view-content" id="repReaderContent"><article class="rep-paper" id="repPaper" data-rid="${r.id}"></article></div></div><footer class="rep-view-footer"><button type="button" id="repPrev">← 이전 페이지</button><span class="rep-page-count" id="repPageCount" aria-live="polite"></span><button type="button" id="repNext">다음 페이지 →</button></footer><div class="rep-print" id="repPrintContent"></div></div>`;
+  document.body.appendChild(el); REP_READER = {id:String(r.id), page:0, el, focus};
+  document.body.classList.add("rep-open"); fitOverlay(el); el.showModal();
+  try { if (window.frameElement) { REP_READER.parentOverflow = window.parent.document.documentElement.style.overflow; window.parent.document.documentElement.style.overflow = "hidden"; } } catch (e) {}
+  el.querySelector("#repReaderClose").addEventListener("click", closeRepReader);
+  el.addEventListener("cancel", e => { e.preventDefault(); closeRepReader(); });
+  el.querySelector("#repPrev").addEventListener("click", () => setRepPage(REP_READER.page - 1));
+  el.querySelector("#repNext").addEventListener("click", () => setRepPage(REP_READER.page + 1));
+  el.querySelector("#repPrint").addEventListener("click", () => {
+    const current = REPORTS.find(x => String(x.id) === REP_READER.id), pages = repPages(current);
+    el.querySelector("#repPrintContent").innerHTML = pages.map((p, i) => `<article class="rep-paper"><div class="rep-page-label">${esc(repAgent(current).name)} · ${esc(fmtDate(current.report_date))} · ${i + 1}/${pages.length} · ${p.section}</div>${p.section === "피드백" ? `<h2>피드백</h2>${current.applied ? `<h3>지난 피드백 반영</h3><p>${esc(current.applied)}</p>` : ""}<h3>내 피드백</h3><p>${esc(current.feedback || "아직 남긴 피드백이 없어요.")}</p>` : p.html}</article>`).join("");
+    window.print();
+  });
+  setRepPage(0); el.querySelector("#repReaderClose").focus(); markRepRead(r.id);
+}
+function closeRepReader(){
+  if (!REP_READER) return;
+  const state = REP_READER, ta = state.el.querySelector("textarea"); if (ta) draftPut(draftKeyOf(ta), ta.value);
+  micStop(); state.el.close(); state.el.remove(); FITS.delete(state.el); document.body.classList.remove("rep-open"); REP_READER = null;
+  try { if (state.parentOverflow !== undefined) window.parent.document.documentElement.style.overflow = state.parentOverflow; } catch (e) {}
+  const button = $("#repGrid")?.querySelector(`[data-open-report="${state.id}"]`); (button || (state.focus?.isConnected ? state.focus : null))?.focus({preventScroll:true});
 }
 function renderReports(){
   const grid = $("#repGrid"); if (!grid) return;
   const dates = [...new Set(REPORTS.map(r => r.report_date))].sort().reverse();
   if (!REP_DATE || !dates.includes(REP_DATE)) REP_DATE = dates[0] || null;
   $("#repDates").innerHTML = dates.slice(0, 21).map(d => { const n = REPORTS.filter(r => r.report_date === d && r.status === "new").length; return `<button data-d="${d}" aria-current="${d === REP_DATE}">${fmtDate(d)}${n ? ` · 새 ${n}` : ""}</button>`; }).join("");
-  $("#repDates").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { REP_DATE = b.dataset.d; renderReports(); setTimeout(markRepRead, 4000); }));
+  $("#repDates").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { closeRepReader(); REP_DATE = b.dataset.d; renderReports(); }));
   const order = code => (AG[code] ? AG[code].sort : 99);
   const list = REPORTS.filter(r => r.report_date === REP_DATE).sort((x, y) => order(x.code) - order(y.code));
   const todo = list.filter(r => r.status !== "replied"), done = list.filter(r => r.status === "replied").sort((x, y) => String(y.feedback_at || "").localeCompare(String(x.feedback_at || "")));
   const total = Object.values(AG).filter(a => !a.on_call).length;
   $("#repTitle").textContent = REP_DATE ? `일일 보고 · ${fmtDate(REP_DATE)} · ${list.length}/${total}명` : "일일 보고";
-  const open = new Set([...grid.querySelectorAll(".rep-done[open]")].map(d => d.dataset.rid));
+  repOverview(list);
   grid.innerHTML = !list.length ? `<div class="empty">아직 올라온 보고가 없어요. 매일 아침 8시부터 차례로 올라와요.</div>`
-    : (todo.length ? `<div class="rep-grp">피드백 기다리는 보고 <b>${todo.length}</b></div>` + todo.map(repCard).join("") : `<div class="rep-grp ok">오늘 보고에 모두 피드백을 남겼어요 👏</div>`)
-      + (done.length ? `<div class="rep-grp">피드백 완료 <b>${done.length}</b></div><div class="rep-donelist">${done.map(repDoneCard).join("")}</div>` : "");
-  grid.querySelectorAll(".rep-done").forEach(d => { if (open.has(d.dataset.rid)) d.open = true; });
-  grid.querySelectorAll(".fb-opt").forEach(b => b.addEventListener("click", () => {
-    const ta = b.closest(".rep-fbw").querySelector("textarea"), t = b.textContent, cur = ta.value.trim();
-    const on = b.getAttribute("aria-pressed") === "true";
-    if (on) { ta.value = cur.split("\n").filter(l => l.trim() !== t).join("\n"); b.setAttribute("aria-pressed", "false"); }
-    else { ta.value = cur ? cur + "\n" + t : t; b.setAttribute("aria-pressed", "true"); }
-    ta.style.height = "auto"; ta.style.height = Math.min(260, ta.scrollHeight + 2) + "px"; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }));
-  grid.querySelectorAll("[data-vote]").forEach(b => b.addEventListener("click", () => repVote(b)));
-  grid.querySelectorAll(".rep-fb").forEach(f => { bindMic(f); f.addEventListener("submit", e => { e.preventDefault(); repFeedback(f); });
-    f.querySelector("textarea").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); f.requestSubmit(); } }); });
-  repBadge();
+    : (todo.length ? `<div class="rep-grp">피드백 기다리는 보고 <b>${todo.length}</b></div>` + todo.map(repCard).join("") : `<div class="rep-grp ok">이 날짜의 보고에 모두 피드백을 남겼어요</div>`)
+      + (done.length ? `<div class="rep-grp">피드백 완료 <b>${done.length}</b></div>${done.map(repCard).join("")}` : "");
+  grid.querySelectorAll("[data-open-report]").forEach(b => b.addEventListener("click", () => openRepReader(b.dataset.openReport)));
+  repBadge(); refreshRepReader();
 }
 async function repVote(b){
-  const r = REPORTS.find(x => String(x.id) === b.closest(".rep").dataset.rid); if (!r) return;
+  const r = REPORTS.find(x => String(x.id) === b.closest("[data-rid]").dataset.rid); if (!r) return;
   const key = b.dataset.vote, v = +b.dataset.v, votes = { ...(r.votes || {}) };
   if (votes[key] === v) delete votes[key]; else votes[key] = v;
   const patch = { votes, ...(r.status === "new" ? { status: "read" } : {}) };
@@ -2792,13 +2989,12 @@ async function repFeedback(f){
   const patch = { feedback: text, feedback_at: new Date().toISOString(), status: "replied" };
   const { error } = await sb.from("agency_reports").update(patch).eq("id", r.id);
   if (error) return toast("저장하지 못했어요: " + error.message);
-  Object.assign(r, patch); renderReports(); toast(`${(AG[r.code] || ALUM[r.code])?.name || r.code}에게 전달했어요. 아래 '피드백 완료'로 옮겼어요`);
+  Object.assign(r, patch); draftDrop(f.querySelector("textarea")); renderReports(); setRepPage(REP_READER?.page || 0); toast(`${repAgent(r).name}에게 전달했어요. 피드백 완료로 옮겼어요`);
 }
-async function markRepRead(){
-  if ($("#p-reports")?.hidden) return;
-  const ids = REPORTS.filter(r => r.report_date === REP_DATE && r.status === "new").map(r => r.id); if (!ids.length) return;
-  const { error } = await sb.from("agency_reports").update({ status: "read" }).in("id", ids);
-  if (!error) { REPORTS.forEach(r => { if (ids.includes(r.id)) r.status = "read"; }); if (!document.activeElement || !document.activeElement.closest(".rep-fb, .rep-dir")) renderReports(); else repBadge(); }
+async function markRepRead(id){
+  const r = REPORTS.find(x => String(x.id) === String(id)); if (!r || r.status !== "new") return;
+  const { error } = await sb.from("agency_reports").update({ status: "read" }).eq("id", r.id);
+  if (!error) { if (r.status === "new") r.status = "read"; renderReports(); }
 }
 function repDirList(){
   const list = Array.isArray(CFG.report_direction) ? CFG.report_direction : [];
@@ -2820,7 +3016,7 @@ function showTab(t){
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t ? "true" : "false"));
   document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "p-" + t);
   store("agency-tab", t); document.body.classList.toggle("tab-rooms", t === "rooms");
-  if (t === "reports") setTimeout(markRepRead, 4000);
+  if (t !== "reports") closeRepReader();
   if (t === "rooms") { fitRooms(); renderTeam(); const bx = $("#teamBody"); if (bx) toBottom(bx); }
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
