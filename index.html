@@ -207,7 +207,7 @@ main { margin-top: 1.5rem; margin-bottom: 2.5rem; }
 footer { color: var(--text-secondary); }
 
 /* --- 자동화 현황 (iframe) --- */
-#automationContainer { margin-top: 1rem; }
+#automationContainer, #pptautoContainer { margin-top: 1rem; }
 .automation-frame { display: block; width: 100%; height: calc(100svh - 150px); min-height: 620px; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--surface); }
 
 /* ===== Sample 1 · PAPER INDEX — 밝은 에디토리얼 + 좌측 인덱스 사이드바 ===== */
@@ -349,8 +349,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
 }
 /* 자동화: 데스크톱에서는 사이드바 옆 전체 높이 패널 */
 @media (min-width: 1024px) {
-    #appContainer > #automationContainer { padding: 0; }
-    #automationContainer .automation-frame, #agencyContainer .automation-frame { height: 100svh; min-height: 0; border: none; border-radius: 0; }
+    #appContainer > #automationContainer, #appContainer > #pptautoContainer { padding: 0; }
+    #automationContainer .automation-frame, #agencyContainer .automation-frame, #pptautoContainer .automation-frame { height: 100svh; min-height: 0; border: none; border-radius: 0; }
     #quickLinks .quick-link-btn.current { border-left-color: var(--accent); }
 }
     </style>
@@ -389,6 +389,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
+                <a href="#pptauto" class="main-menu-tab" id="pptautoTab">PPT 자동화</a>
                 <a href="#agency" class="main-menu-tab" id="agencyTab" style="display: none;">Agency</a>
             </div>
         </div>
@@ -416,6 +417,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         <!-- Automation Page (자동화 현황) -->
         <main id="automationContainer" class="grid-layout-align" style="display: none;">
             <iframe id="automationFrame" class="automation-frame" title="콘텐츠 자동화 현황" data-src="automation.html?v=20260928-link-mapping-4"></iframe>
+        </main>
+        <!-- PPT 자동화 (커리큘럼 시트 → 구글 슬라이드) -->
+        <main id="pptautoContainer" class="grid-layout-align" style="display: none;">
+            <iframe id="pptautoFrame" class="automation-frame" title="PPT 자동화" data-src="ppt-automation.html"></iframe>
         </main>
         <!-- Agency Page (profiles.visible_tabs에 agency가 있는 계정만) -->
         <main id="agencyContainer" class="grid-layout-align" style="display: none;">
@@ -992,6 +997,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         function canSeeTab(tabName) {
             if (tabName === 'reference') return true; // 참고자료는 누구나 열람 가능
             if (tabName === 'automation') return true; // 자동화 현황은 누구나 열람 가능
+            if (tabName === 'pptauto') return true; // PPT 자동화도 누구나 (구글 로그인은 탭 안에서 각자)
             return visibleTabs.includes(tabName);
         }
         function defaultTab() {
@@ -1014,6 +1020,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const referenceContainer = document.getElementById('referenceContainer');
             const automationContainer = document.getElementById('automationContainer');
             const agencyContainer = document.getElementById('agencyContainer');
+            const pptautoContainer = document.getElementById('pptautoContainer');
             
             const navBarWrapper = document.querySelector('.nav-bar-wrapper');
             const addProjBtn = document.getElementById('btnAddProject');
@@ -1025,6 +1032,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (referenceContainer) referenceContainer.style.display = 'none';
             if (automationContainer) automationContainer.style.display = 'none';
             if (agencyContainer) agencyContainer.style.display = 'none';
+            if (pptautoContainer) pptautoContainer.style.display = 'none';
             // 2) 선택된 컨테이너 보여주기
             if (tabName === 'archive') {
                 if (archiveContainer) archiveContainer.style.display = 'block';
@@ -1046,6 +1054,13 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
                 if (btnAdminReference) btnAdminReference.style.display = 'none';
                 loadAutomationFrame();
+            } else if (tabName === 'pptauto') {
+                if (pptautoContainer) pptautoContainer.style.display = 'block';
+                if (navBarWrapper) navBarWrapper.style.display = 'none';
+                if (addProjBtn) addProjBtn.style.display = 'none';
+                if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
+                if (btnAdminReference) btnAdminReference.style.display = 'none';
+                loadPptautoFrame();
             } else if (tabName === 'agency') {
                 if (agencyContainer) agencyContainer.style.display = 'block';
                 if (navBarWrapper) navBarWrapper.style.display = 'none';
@@ -1071,7 +1086,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 return;
             }
 
-            if (['archive', 'library', 'automation', 'agency', 'reference'].includes(hash)) {
+            if (['archive', 'library', 'automation', 'pptauto', 'agency', 'reference'].includes(hash)) {
                 switchMainTab(hash);
             }
         }
@@ -2062,6 +2077,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         function loadAutomationFrame() {
             const frame = document.getElementById('automationFrame');
             if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;
+        }
+        function loadPptautoFrame() {
+            const frame = document.getElementById('pptautoFrame');
+            if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src + '?v=' + Date.now(); // 항상 최신 파일
         }
         // --- 아카이브 목차: 화면에 보이는 프로젝트를 목차에서 강조 ---
         const SECTION_SPY_MARGIN = '-20% 0px -70% 0px';

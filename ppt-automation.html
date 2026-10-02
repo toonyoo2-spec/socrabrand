@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PPT 자동화</title>
+  <meta name="description" content="커리큘럼 시트를 읽어 구글 슬라이드 템플릿으로 강의 PPT를 만든다">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23141923'/%3E%3Crect x='14' y='18' width='36' height='24' rx='3' fill='none' stroke='%2336cf9a' stroke-width='5'/%3E%3Cpath d='M26 48h12' stroke='%23f5b650' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg:#f6f5f1; --panel:#ffffff; --border:#e3e1db; --text:#141414; --muted:#6f6d67;
+      --green:#00D37A; --green-line:#0E955C; --green-tint:#E6F9ED;
+      --amber:#B86E00; --amber-tint:#FDF0D5;
+      --red:#D92D20; --red-tint:#FDE7E4;
+      --blue:#2F6FDB; --blue-tint:#E7EEFC;
+      --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+      --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      /* 미리보기 슬라이드 색 (실제 디자인은 구글 템플릿을 따른다) */
+      --s-navy:#14306b; --s-blue:#1f4fb4; --s-hl:#e5392b; --s-card:#eef2fb;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 var(--font); -webkit-font-smoothing:antialiased; }
+    button, input, select { font:inherit; }
+    button { cursor:pointer; }
+    a { color:var(--text); }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 24px; border-bottom:1px solid var(--text); flex-wrap:wrap; }
+    h1 { font-size:20px; margin:0 0 4px; letter-spacing:-.04em; font-weight:800; }
+    .subtitle { color:var(--muted); font-size:12px; }
+    .header-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .pill { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border); background:var(--panel); border-radius:99px; padding:5px 11px; font-size:11px; font-weight:700; white-space:nowrap; }
+    .dot { width:7px; height:7px; border-radius:50%; background:currentColor; display:inline-block; }
+    .btn { border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:99px; padding:7px 14px; font-size:12px; font-weight:700; transition:border-color .2s, background .2s; white-space:nowrap; }
+    .btn:hover:not(:disabled) { border-color:var(--text); }
+    .btn:disabled { opacity:.45; cursor:not-allowed; }
+    .btn.primary { background:var(--text); color:#fff; border-color:var(--text); }
+    .btn.primary:hover:not(:disabled) { background:#000; }
+    .btn.green { background:var(--green); border-color:var(--green); color:#0b1a12; }
+    .btn.small { padding:4px 10px; font-size:11px; }
+    main { display:grid; grid-template-columns:300px minmax(0,1fr); gap:0; min-height:calc(100vh - 77px); }
+    aside.side { border-right:1px solid var(--border); padding:18px; display:flex; flex-direction:column; gap:18px; min-width:0; }
+    .step { display:flex; flex-direction:column; gap:8px; }
+    .step-title { display:flex; align-items:center; gap:8px; font-weight:800; font-size:13px; letter-spacing:-.02em; }
+    .step-no { width:20px; height:20px; border-radius:50%; background:var(--text); color:#fff; font:700 11px/20px var(--mono); text-align:center; flex-shrink:0; }
+    .hint { color:var(--muted); font-size:11.5px; line-height:1.55; }
+    .row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .lesson-list { display:flex; flex-direction:column; gap:4px; max-height:46vh; overflow:auto; padding-right:2px; }
+    .lesson { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:8px; align-items:center; text-align:left; width:100%; border:1px solid transparent; background:transparent; border-radius:10px; padding:7px 8px; color:var(--text); }
+    .lesson:hover { background:var(--panel); border-color:var(--border); }
+    .lesson.active { background:var(--panel); border-color:var(--text); }
+    .lesson.empty { color:var(--muted); }
+    .lesson .no { font:700 12px var(--mono); }
+    .lesson .t { font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .badge { border-radius:99px; padding:2px 7px; font-size:10px; font-weight:800; white-space:nowrap; }
+    .badge.err { background:var(--red-tint); color:#8c1d14; }
+    .badge.warn { background:var(--amber-tint); color:#6b4000; }
+    .badge.ok { background:var(--green-tint); color:#0B6B44; }
+    .badge.mute { background:#efeee9; color:var(--muted); }
+    .content { padding:18px 24px 40px; min-width:0; }
+    .empty-state { border:1px dashed #c9c6bd; border-radius:16px; padding:40px 24px; text-align:center; color:var(--muted); background:rgba(255,255,255,.4); }
+    .empty-state h2 { color:var(--text); font-size:18px; margin:0 0 6px; letter-spacing:-.03em; }
+    .lesson-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+    .lesson-head h2 { margin:0; font-size:22px; letter-spacing:-.04em; }
+    .lesson-head .meta { color:var(--muted); font-size:12px; font-family:var(--mono); margin-top:4px; }
+    .tabs { display:flex; gap:4px; margin:4px 0 14px; border-bottom:1px solid var(--border); }
+    .tabs button { border:0; background:transparent; padding:8px 12px; font-size:13px; font-weight:700; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .tabs button.active { color:var(--text); border-bottom-color:var(--green-line); }
+    .card { border:1px solid var(--border); border-radius:14px; background:var(--panel); padding:16px; }
+    .issues { display:flex; flex-direction:column; gap:6px; }
+    .issue { display:grid; grid-template-columns:56px 44px minmax(0,170px) minmax(0,1fr); gap:10px; align-items:baseline; padding:8px 10px; border-radius:10px; background:var(--bg); font-size:12.5px; }
+    .issue .lv { font-weight:800; font-size:11px; }
+    .issue.error .lv { color:var(--red); } .issue.warn .lv { color:var(--amber); } .issue.info .lv { color:var(--blue); }
+    .issue .col { font:700 11px var(--mono); color:var(--muted); }
+    .issue .where { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ok-box { padding:14px; border-radius:12px; background:var(--green-tint); color:#0B6B44; font-weight:700; }
+    .filter { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+    .filter button { border:1px solid var(--border); background:var(--panel); border-radius:99px; padding:4px 10px; font-size:11px; font-weight:700; color:var(--muted); }
+    .filter button.active { color:var(--text); border-color:var(--text); }
+    /* 미리보기 */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+    .thumb { display:flex; flex-direction:column; gap:6px; min-width:0; }
+    .thumb-cap { display:flex; justify-content:space-between; gap:6px; font-size:11px; color:var(--muted); }
+    .thumb-cap b { color:var(--text); font-family:var(--mono); }
+    .slide { container-type:inline-size; aspect-ratio:16/9; background:#fff; border:1px solid var(--border); border-radius:8px; overflow:hidden; position:relative; color:#1a2230; box-shadow:0 1px 2px rgba(20,20,20,.04); }
+    .s-inner { position:absolute; inset:0; padding:4cqw 5cqw; display:flex; flex-direction:column; gap:2cqw; font-size:2.6cqw; line-height:1.35; }
+    .s-chip { position:absolute; left:2.2cqw; top:2.2cqw; background:var(--s-navy); color:#fff; border-radius:1cqw; padding:.6cqw 1.4cqw; font-size:1.9cqw; font-weight:800; line-height:1.25; text-align:center; }
+    .s-bar { align-self:flex-end; width:74%; background:var(--s-navy); color:#fff; border-radius:1.2cqw; padding:1.2cqw 2.4cqw; font-weight:900; letter-spacing:.02em; font-size:3.4cqw; }
+    .s-text { white-space:pre-line; }
+    .s-q { background:var(--s-blue); color:#fff; border-radius:1cqw; padding:1.2cqw 2cqw; font-weight:800; }
+    .s-choices { display:grid; grid-template-columns:1fr 1fr; gap:1.4cqw; margin-top:auto; }
+    .s-choice { display:flex; align-items:center; gap:1.4cqw; background:var(--s-card); border-radius:1.2cqw; padding:1.2cqw 1.6cqw; font-weight:700; min-height:6cqw; border:.35cqw solid transparent; }
+    .s-choice i { font-style:normal; width:4cqw; height:4cqw; border-radius:50%; background:var(--s-navy); color:#fff; display:grid; place-items:center; font-size:2.2cqw; flex-shrink:0; }
+    .s-choice.right { border-color:var(--green); background:#e3fbef; }
+    .s-choice.right i { background:var(--green-line); }
+    .s-list .s-choice { min-height:0; }
+    .s-list { display:flex; flex-direction:column; gap:1cqw; margin-top:auto; }
+    .s-answer { margin-top:auto; align-self:center; background:#e3fbef; border:.35cqw solid var(--green); border-radius:1.4cqw; padding:1.4cqw 3cqw; font-weight:800; text-align:center; }
+    .s-big { margin:auto; text-align:center; font-weight:900; font-size:5.4cqw; letter-spacing:-.02em; color:var(--s-navy); white-space:pre-line; }
+    .s-big small { display:block; font-size:2.6cqw; color:#6b7380; font-weight:600; margin-top:1cqw; }
+    .s-pattern { font-weight:900; color:var(--s-blue); font-size:3.6cqw; }
+    .s-img { width:22cqw; height:16cqw; border-radius:1.2cqw; background:#eef0f4 center/contain no-repeat; flex-shrink:0; display:grid; place-items:center; color:#9aa2ad; font-size:1.8cqw; }
+    .s-row { display:flex; gap:3cqw; align-items:center; }
+    .s-small { font-size:2.1cqw; color:#5b6472; }
+    mark { background:transparent; color:var(--s-hl); font-weight:900; }
+    .static .s-inner { background:linear-gradient(135deg,#f3f6fd,#fff); }
+    /* 생성 */
+    .log { font:12px/1.7 var(--mono); background:#111; color:#d6f5e6; border-radius:12px; padding:12px 14px; max-height:300px; overflow:auto; white-space:pre-wrap; }
+    .log .e { color:#ff9b8f; } .log .w { color:#ffd27a; }
+    .result-link { display:inline-flex; gap:8px; align-items:center; padding:10px 14px; border-radius:12px; background:var(--green-tint); font-weight:800; text-decoration:none; margin-top:10px; }
+    table.tok { width:100%; border-collapse:collapse; font-size:12px; }
+    table.tok th, table.tok td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+    table.tok th { font-size:11px; color:var(--muted); }
+    table.tok code { font:11.5px var(--mono); background:var(--bg); padding:1px 5px; border-radius:5px; margin:0 3px 3px 0; display:inline-block; }
+    .miss { color:var(--red); font-weight:800; } .found { color:var(--green-line); font-weight:800; }
+    /* 설정 */
+    dialog { border:1px solid var(--border); border-radius:16px; padding:0; width:min(560px,calc(100vw - 32px)); box-shadow:0 30px 60px -20px rgba(0,0,0,.35); }
+    dialog::backdrop { background:rgba(20,20,18,.35); }
+    .dlg { padding:20px; display:flex; flex-direction:column; gap:12px; }
+    .dlg h3 { margin:0; font-size:18px; letter-spacing:-.03em; }
+    label.f { display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:700; }
+    label.f input { border:1px solid var(--border); border-radius:10px; padding:9px 11px; font-weight:400; background:var(--bg); }
+    label.f input:focus { outline:2px solid var(--green-line); outline-offset:1px; }
+    .dlg .row { justify-content:flex-end; }
+    .toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:9px 16px; border-radius:99px; font-size:12px; font-weight:700; opacity:0; transition:opacity .2s; pointer-events:none; z-index:20; }
+    .toast.show { opacity:1; }
+    @media (max-width:860px) {
+      main { grid-template-columns:1fr; }
+      aside.side { border-right:0; border-bottom:1px solid var(--border); }
+      .lesson-list { max-height:240px; }
+      header { padding:14px 16px; } .content { padding:16px; }
+      .issue { grid-template-columns:48px 40px minmax(0,1fr); } .issue .msg { grid-column:1/-1; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>PPT 자동화 · 커리큘럼 시트 → 구글 슬라이드</h1>
+      <div class="subtitle">시트를 읽어 검수하고, 정해진 템플릿에 채워 강의 PPT를 만듭니다 · 프로토타입</div>
+    </div>
+    <div class="header-right">
+      <span class="pill" id="authPill"><span class="dot" style="color:#b9b6ad"></span> 구글 로그인 전</span>
+      <button class="btn" id="btnLogin">구글로 로그인</button>
+      <button class="btn" id="btnSettings">설정</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="side">
+      <div class="step">
+        <div class="step-title"><span class="step-no">1</span>커리큘럼 불러오기</div>
+        <div class="row">
+          <button class="btn primary" id="btnLoadSheet">시트에서 불러오기</button>
+          <button class="btn" id="btnCsv">CSV 올리기</button>
+          <input type="file" id="csvInput" accept=".csv,text/csv" hidden>
+        </div>
+        <div class="hint" id="sourceHint">구글 로그인 후 설정에 넣은 시트를 읽습니다. 로그인 없이 보려면 시트에서 <b>파일 → 다운로드 → CSV</b>로 받은 파일을 올리세요. 파일은 이 브라우저 밖으로 나가지 않습니다.</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-no">2</span>강 선택</div>
+        <div class="lesson-list" id="lessonList"><div class="hint">아직 불러온 시트가 없습니다.</div></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-no">3</span>템플릿</div>
+        <div class="row">
+          <button class="btn small" id="btnCheckTpl">템플릿 점검</button>
+          <button class="btn small" id="btnGuide">토큰 안내</button>
+        </div>
+        <div class="hint">원본 슬라이드마다 발표자 노트에 <code>#유형</code>, 바뀔 글자 자리에 <code>{{토큰}}</code>을 적어 둡니다.</div>
+      </div>
+    </aside>
+
+    <section class="content" id="content">
+      <div class="empty-state">
+        <h2>커리큘럼을 불러와 주세요</h2>
+        <div>강을 고르면 검수 결과와 만들어질 슬라이드를 미리 볼 수 있습니다.</div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="settingsDlg">
+    <form class="dlg" method="dialog" id="settingsForm">
+      <h3>설정</h3>
+      <div class="hint">이 브라우저에만 저장됩니다. 아래 "설정 링크 복사"로 팀원에게 같은 설정을 넘길 수 있습니다.</div>
+      <label class="f">커리큘럼 시트 주소 (탭 gid 포함)<input name="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…"></label>
+      <label class="f">자동화용 템플릿 슬라이드 주소<input name="templateUrl" placeholder="https://docs.google.com/presentation/d/…/edit"></label>
+      <label class="f">만든 PPT를 넣을 폴더 주소 (비우면 내 드라이브)<input name="folderUrl" placeholder="https://drive.google.com/drive/folders/…"></label>
+      <label class="f">파일 이름 형식 ({no}, {title}, {date} 사용)<input name="nameFormat" placeholder="[자동생성] CNN 10_{no}강_{title}"></label>
+      <label class="f">워드월·퀴즈앤 코드 앞부분<input name="series" placeholder="CNN 10"></label>
+      <label class="f">강조 색<input name="highlightColor" placeholder="#E5392B"></label>
+      <div class="row">
+        <button class="btn" type="button" id="btnShareSettings">설정 링크 복사</button>
+        <button class="btn" value="cancel">닫기</button>
+        <button class="btn primary" value="save" id="btnSaveSettings">저장</button>
+      </div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast"></div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="ppt-automation/ppt-core.js?v=20261002-1"></script>
+  <script src="ppt-automation/slides-builder.js?v=20261002-1"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = window.PPTCore, B = window.SlidesBuilder;
+    // Google Cloud "Socra PPT 자동화" (내부 앱, socra.ai 계정만) 웹 클라이언트 ID
+    const GOOGLE_CLIENT_ID = '43041548577-s4cgqtv0fle3njshdgljnh34quuet4od.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/presentations https://www.googleapis.com/auth/spreadsheets.readonly';
+    const SETTINGS_KEY = 'ppt_auto_settings_v1';
+    const DEFAULTS = { sheetUrl: '', templateUrl: '', folderUrl: '', nameFormat: '[자동생성] CNN 10_{no}강_{title}', series: 'CNN 10', highlightColor: '#E5392B' };
+
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 2600); };
+
+    // ---------------- 설정 ----------------
+    function loadSettings() {
+      let s = {};
+      try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (_) { s = {}; }
+      // 공유 링크(?sheet=…&template=…)로 받은 설정이 있으면 덮어쓴다
+      const q = new URLSearchParams(location.search);
+      const map = { sheet: 'sheetUrl', template: 'templateUrl', folder: 'folderUrl' };
+      let fromLink = false;
+      Object.entries(map).forEach(([k, v]) => { if (q.get(k)) { s[v] = q.get(k); fromLink = true; } });
+      const merged = Object.assign({}, DEFAULTS, s);
+      if (fromLink) saveSettings(merged);
+      return merged;
+    }
+    function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (_) {} }
+    let settings = loadSettings();
+    const idFrom = (url, kind) => {
+      const m = String(url || '').match(kind === 'folder' ? /folders\/([\w-]+)/ : /\/d\/([\w-]+)/);
+      return m ? m[1] : (/^[\w-]{20,}$/.test(String(url || '').trim()) ? String(url).trim() : '');
+    };
+    const gidFrom = (url) => { const m = String(url || '').match(/[#?&]gid=(\d+)/); return m ? Number(m[1]) : null; };
+
+    $('#btnSettings').onclick = () => {
+      const f = $('#settingsForm');
+      Object.keys(DEFAULTS).forEach((k) => { f.elements[k].value = settings[k] || ''; });
+      $('#settingsDlg').showModal();
+    };
+    $('#settingsForm').addEventListener('submit', (e) => {
+      if (e.submitter && e.submitter.value === 'save') {
+        const f = e.target;
+        Object.keys(DEFAULTS).forEach((k) => { settings[k] = f.elements[k].value.trim() || DEFAULTS[k]; });
+        saveSettings(settings);
+        toast('설정을 저장했습니다');
+      }
+    });
+    $('#btnShareSettings').onclick = async () => {
+      const f = $('#settingsForm');
+      const u = new URL(location.href.split('#')[0].split('?')[0].replace(/index\.html$/, ''));
+      if (!/ppt-automation\.html$/.test(u.pathname)) u.pathname = u.pathname.replace(/\/?$/, '/') + 'ppt-automation.html';
+      if (f.elements.sheetUrl.value) u.searchParams.set('sheet', f.elements.sheetUrl.value.trim());
+      if (f.elements.templateUrl.value) u.searchParams.set('template', f.elements.templateUrl.value.trim());
+      if (f.elements.folderUrl.value) u.searchParams.set('folder', f.elements.folderUrl.value.trim());
+      try { await navigator.clipboard.writeText(u.toString()); toast('설정 링크를 복사했습니다'); } catch (_) { prompt('아래 링크를 복사하세요', u.toString()); }
+    };
+
+    // ---------------- 구글 로그인 (각자 자기 계정) ----------------
+    let token = null, tokenExp = 0, tokenClient = null, pendingAuth = [];
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('ppt_auto_token') || 'null');
+      if (saved && saved.exp > Date.now() + 60000) { token = saved.token; tokenExp = saved.exp; }
+    } catch (_) {}
+    function setAuthUi() {
+      const ok = token && tokenExp > Date.now();
+      $('#authPill').innerHTML = ok ? '<span class="dot" style="color:#00D37A"></span> 구글 로그인됨' : '<span class="dot" style="color:#b9b6ad"></span> 구글 로그인 전';
+      $('#btnLogin').textContent = ok ? '다시 로그인' : '구글로 로그인';
+    }
+    function initTokenClient() {
+      if (tokenClient || !window.google || !google.accounts || !google.accounts.oauth2) return !!tokenClient;
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID, scope: SCOPES, hd: 'socra.ai',
+        callback: (resp) => {
+          const waiters = pendingAuth; pendingAuth = [];
+          if (resp.error) { waiters.forEach((w) => w.reject(new Error('구글 로그인 실패: ' + resp.error))); return; }
+          token = resp.access_token; tokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+          try { sessionStorage.setItem('ppt_auto_token', JSON.stringify({ token, exp: tokenExp })); } catch (_) {}
+          setAuthUi();
+          waiters.forEach((w) => w.resolve(token));
+        },
+        error_callback: (err) => {
+          const waiters = pendingAuth; pendingAuth = [];
+          waiters.forEach((w) => w.reject(new Error(err && err.type === 'popup_closed' ? '로그인 창을 닫았습니다' : '로그인 창을 열지 못했습니다 (팝업 차단을 확인해 주세요)')));
+        },
+      });
+      return true;
+    }
+    function login(force) {
+      if (!force && token && tokenExp > Date.now() + 60000) return Promise.resolve(token);
+      if (!initTokenClient()) return Promise.reject(new Error('구글 로그인 모듈을 아직 불러오지 못했습니다. 잠시 후 다시 눌러 주세요.'));
+      return new Promise((resolve, reject) => {
+        pendingAuth.push({ resolve, reject });
+        tokenClient.requestAccessToken({ prompt: force ? 'select_account' : '' });
+      });
+    }
+    $('#btnLogin').onclick = () => login(true).then(() => toast('로그인했습니다')).catch((e) => toast(e.message));
+    setAuthUi();
+
+    async function gapi(url, opts) {
+      await login(false);
+      const res = await fetch(url, Object.assign({}, opts, { headers: Object.assign({ Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, (opts || {}).headers || {}) }));
+      if (res.status === 401) { token = null; setAuthUi(); }
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = (body.error && (body.error.message || body.error.status)) || res.statusText;
+        const err = new Error(`${res.status} ${msg}`); err.status = res.status; throw err;
+      }
+      return body;
+    }
+    const explain = (e) => {
+      if (e.status === 403) return '권한이 없습니다. 이 파일을 볼 수 있는 socra.ai 계정으로 로그인했는지, Google Cloud에서 API를 켰는지 확인해 주세요. (' + e.message + ')';
+      if (e.status === 404) return '파일을 찾지 못했습니다. 설정의 주소를 확인해 주세요. (' + e.message + ')';
+      return e.message;
+    };
+
+    // ---------------- 데이터 ----------------
+    let state = { lessons: [], current: null, view: 'issues', filter: 'all', source: '' };
+
+    function setLessons(rows, links, source) {
+      const { lessons } = C.readLessons(rows, { links });
+      state.lessons = lessons; state.source = source;
+      $('#sourceHint').innerHTML = `${esc(source)} · 강의 ${lessons.length}개 (내용 있음 ${lessons.filter((l) => !l.empty).length}개)`;
+      renderLessonList();
+      const first = lessons.find((l) => !l.empty);
+      if (first) selectLesson(first.no);
+    }
+
+    $('#btnCsv').onclick = () => $('#csvInput').click();
+    $('#csvInput').onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try { setLessons(C.parseCsv(await file.text()), null, 'CSV: ' + file.name); }
+      catch (err) { toast(err.message); }
+      e.target.value = '';
+    };
+
+    $('#btnLoadSheet').onclick = async () => {
+      const id = idFrom(settings.sheetUrl);
+      if (!id) { toast('설정에서 커리큘럼 시트 주소를 넣어 주세요'); $('#btnSettings').click(); return; }
+      const btn = $('#btnLoadSheet'); btn.disabled = true; btn.textContent = '불러오는 중…';
+      try {
+        const meta = await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}?fields=properties(title),sheets(properties(sheetId,title))`);
+        const gid = gidFrom(settings.sheetUrl);
+        const sheet = meta.sheets.find((s) => s.properties.sheetId === gid) || meta.sheets[0];
+        const range = encodeURIComponent(`'${sheet.properties.title.replace(/'/g, "''")}'`);
+        const data = await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}?includeGridData=true&ranges=${range}&fields=sheets(data(rowData(values(formattedValue,hyperlink,textFormatRuns(format(link(uri)))))))`);
+        const rowData = (((data.sheets || [])[0] || {}).data || [])[0] || {};
+        const rows = [], links = [];
+        (rowData.rowData || []).forEach((r) => {
+          const vals = r.values || [];
+          rows.push(vals.map((v) => v.formattedValue || ''));
+          links.push(vals.map((v) => v.hyperlink || ((v.textFormatRuns || []).map((t) => t.format && t.format.link && t.format.link.uri).find(Boolean)) || ''));
+        });
+        setLessons(rows, links, `${meta.properties.title} › ${sheet.properties.title}`);
+        toast('시트를 불러왔습니다');
+      } catch (e) { toast(explain(e)); }
+      btn.disabled = false; btn.textContent = '시트에서 불러오기';
+    };
+
+    function renderLessonList() {
+      const box = $('#lessonList');
+      if (!state.lessons.length) { box.innerHTML = '<div class="hint">강의 행을 찾지 못했습니다.</div>'; return; }
+      box.innerHTML = state.lessons.map((l) => {
+        const c = C.summarizeIssues(l);
+        const badge = l.empty ? '<span class="badge mute">비어 있음</span>'
+          : c.error ? `<span class="badge err">오류 ${c.error}</span>`
+          : c.warn ? `<span class="badge warn">확인 ${c.warn}</span>` : '<span class="badge ok">통과</span>';
+        return `<button class="lesson${l.empty ? ' empty' : ''}${state.current && state.current.no === l.no ? ' active' : ''}" data-no="${l.no}"><span class="no">${l.no}강</span><span class="t" title="${esc(l.titleEn)}">${esc(l.titleEn || l.titleKo)}</span>${badge}</button>`;
+      }).join('');
+      box.querySelectorAll('.lesson').forEach((b) => { b.onclick = () => selectLesson(Number(b.dataset.no)); });
+    }
+
+    function selectLesson(no) {
+      state.current = state.lessons.find((l) => l.no === no) || null;
+      state.plan = state.current && !state.current.empty ? C.planSlides(state.current, { series: settings.series }) : [];
+      renderLessonList();
+      renderContent();
+    }
+
+    // ---------------- 본문 ----------------
+    function renderContent() {
+      const l = state.current, box = $('#content');
+      if (!l) return;
+      if (l.empty) {
+        box.innerHTML = `<div class="empty-state"><h2>${l.no}강 · ${esc(l.titleEn)}</h2><div>아직 커리큘럼 내용이 채워지지 않았습니다.</div></div>`;
+        return;
+      }
+      const c = C.summarizeIssues(l);
+      box.innerHTML = `
+        <div class="lesson-head">
+          <div>
+            <h2>${l.no}강 · ${esc(l.titleEn)}</h2>
+            <div class="meta">${esc(l.titleKo)} · ${esc(l.date)} ${esc(l.day)} · 슬라이드 ${state.plan.length}장${l.pptLink ? ` · <a href="${esc(l.pptLink)}" target="_blank" rel="noopener">기존 PPT</a>` : ''}</div>
+          </div>
+          <div class="row">
+            ${c.error ? `<span class="badge err">오류 ${c.error}</span>` : ''}${c.warn ? `<span class="badge warn">확인 ${c.warn}</span>` : ''}${!c.error && !c.warn ? '<span class="badge ok">검수 통과</span>' : ''}
+            <button class="btn small" id="btnJson">JSON</button>
+          </div>
+        </div>
+        <div class="tabs">
+          <button data-v="issues">검수 결과</button>
+          <button data-v="preview">슬라이드 미리보기</button>
+          <button data-v="create">PPT 만들기</button>
+        </div>
+        <div id="view"></div>`;
+      box.querySelectorAll('.tabs button').forEach((b) => {
+        b.classList.toggle('active', b.dataset.v === state.view);
+        b.onclick = () => { state.view = b.dataset.v; renderContent(); };
+      });
+      $('#btnJson').onclick = () => {
+        const blob = new Blob([JSON.stringify({ lesson: l, plan: state.plan }, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `lesson-${l.no}.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      };
+      if (state.view === 'issues') renderIssues();
+      else if (state.view === 'preview') renderPreview();
+      else renderCreate();
+    }
+
+    function renderIssues() {
+      const l = state.current, v = $('#view');
+      const list = l.issues.filter((i) => state.filter === 'all' || i.level === state.filter);
+      const c = C.summarizeIssues(l);
+      if (!l.issues.length) { v.innerHTML = '<div class="ok-box">형식 검수를 모두 통과했습니다. 내용(문법·사실)은 사람이 확인해 주세요.</div>'; return; }
+      v.innerHTML = `
+        <div class="filter">
+          <button data-f="all">전체 ${l.issues.length}</button>
+          ${c.error ? `<button data-f="error">오류 ${c.error}</button>` : ''}
+          ${c.warn ? `<button data-f="warn">확인 ${c.warn}</button>` : ''}
+          ${c.info ? `<button data-f="info">참고 ${c.info}</button>` : ''}
+        </div>
+        <div class="hint" style="margin-bottom:10px">오류는 PPT에 빈칸이나 잘못된 정답이 들어가는 문제입니다. 시트를 고친 뒤 다시 불러오세요. 확인은 글자 수 초과처럼 넘침 위험이 있는 곳입니다.</div>
+        <div class="issues">${list.map((i) => `<div class="issue ${i.level}"><span class="lv">${{ error: '오류', warn: '확인', info: '참고' }[i.level]}</span><span class="col">${esc(i.col)}열</span><span class="where" title="${esc(i.where)}">${esc(i.where)}</span><span class="msg">${esc(i.msg)}</span></div>`).join('')}</div>`;
+      v.querySelectorAll('.filter button').forEach((b) => {
+        b.classList.toggle('active', b.dataset.f === state.filter);
+        b.onclick = () => { state.filter = b.dataset.f; renderIssues(); };
+      });
+    }
+
+    // ---------------- 미리보기 (대략적인 모양, 실제 디자인은 템플릿) ----------------
+    function hlText(item, token) {
+      const val = String((item.values || {})[token] || '');
+      const h = (item.highlights || []).find((x) => x.token === token);
+      if (!h) return esc(val);
+      let out = '', last = 0;
+      h.ranges.slice().sort((a, b) => a[0] - b[0]).forEach(([s, e]) => { out += esc(val.slice(last, s)) + '<mark>' + esc(val.slice(s, e)) + '</mark>'; last = e; });
+      return out + esc(val.slice(last));
+    }
+    const STATIC_TEXT = {
+      greet: '인사', trivia_intro: '흥미 유발 퀴즈\n(채팅)', video: '영상 시청', words_intro: '단어 4개', script_intro: '스크립트 3파트',
+      headline_intro: '헤드라인 작성', headline_rewatch: 'Write your own headline\nfor this news story!', headline_q: '헤드라인 작성\n(채팅)',
+    };
+    function choicesHtml(item, toks, rightIndex, list) {
+      return `<div class="${list ? 's-list' : 's-choices'}">${toks.map((t, k) => {
+        const val = (item.values || {})[t];
+        if (val == null) return '';
+        return `<div class="s-choice${k === rightIndex ? ' right' : ''}"><i>${list ? k + 1 : C.LETTERS[k]}</i><span class="s-text">${esc(val)}</span></div>`;
+      }).join('')}</div>`;
+    }
+    function slideHtml(item) {
+      const v = item.values || {}, t = item.type;
+      const ans = item.answer ? item.answer.index : -1;
+      if (STATIC_TEXT[t]) return `<div class="slide static"><div class="s-inner"><div class="s-big">${esc(STATIC_TEXT[t])}</div></div></div>`;
+      let chip = '', bar = '', body = '';
+      if (t.startsWith('trivia')) {
+        chip = '흥미 유발<br>퀴즈'; bar = 'TRIVIA TIME';
+        body = `<div class="s-q">${esc(v.q)}</div>${choicesHtml(item, ['c1', 'c2', 'c3', 'c4'], t === 'trivia_a' ? ans : -1)}`;
+      } else if (t === 'word_q' || t === 'word_a') {
+        chip = `단어 ${esc(v.n)}/4<br>채팅`; bar = 'WORD CHECK';
+        body = `<div class="s-text">${hlText(item, 'sentence')}</div><div class="s-q">Q. What does "${esc(v.word)}" mean here?</div>${choicesHtml(item, ['c1', 'c2', 'c3', 'c4'], t === 'word_a' ? ans : -1)}`;
+      } else if (t === 'word_card') {
+        chip = `단어 ${esc(v.n)}/4<br>채팅`; bar = 'WORD CHECK';
+        const img = item.image ? `<div class="s-img" style="background-image:url('${esc(item.image.url)}')"></div>` : '<div class="s-img">이미지 없음</div>';
+        body = `<div class="s-row">${img}<div><div class="s-pattern">${esc(v.word)}</div><div>${esc(v.meaning)}</div><div class="s-text s-small" style="margin-top:1.4cqw">${hlText(item, 'example')}</div></div></div>`;
+      } else if (t.startsWith('script')) {
+        chip = `스크립트 ${esc(v.s)}/3<br>분석 + 채팅`; bar = 'INSIDE THE STORY';
+        body = `<div class="s-text s-small">${hlText(item, 'script')}</div>${t === 'script_q' ? `<div class="s-q">${esc(v.question)}</div>` : t === 'script_a' ? `<div class="s-answer">${esc(v.answer)}</div>` : ''}`;
+      } else if (t.startsWith('grammar')) {
+        chip = `스크립트 ${esc(v.s)}/3<br>문법`; bar = 'GRAMMAR';
+        body = `<div class="s-text">${esc(v.sentence)}</div><div class="s-pattern">${esc(v.pattern)}</div><div class="s-small">${esc(v.explanation)}</div>${v.ex1 ? `<div class="s-text">• ${esc(v.ex1)}</div>` : ''}${v.ex2 ? `<div class="s-text">• ${esc(v.ex2)}</div>` : ''}`;
+      } else if (t === 'wordwall' || t === 'quiz_intro') {
+        chip = t === 'wordwall' ? `스크립트 ${esc(v.s)}/3<br>워드월` : '퀴즈앤';
+        return `<div class="slide static"><div class="s-chip">${chip}</div><div class="s-inner"><div class="s-big">${t === 'wordwall' ? '워드월' : '퀴즈앤'}<small>${esc(v.code)} · ${t === 'wordwall' ? 1 : 3} min</small></div></div></div>`;
+      } else if (t.startsWith('practice')) {
+        chip = `스크립트 ${esc(v.s)}/3<br>워드월 복습`; bar = `PRACTICE ${esc(v.kk)}`;
+        const isA = t.endsWith('_a');
+        body = `<div class="s-small"><b>${esc(v.pattern)}</b> · ${esc(v.explanation)}</div><div class="s-small">${esc(v.instruction)}</div>`;
+        if (t.startsWith('practice_order') && isA) body += `<div class="s-answer">${esc(v.answer)}</div>`;
+        else body += `<div class="s-text" style="font-weight:700">${esc(v.prompt)}</div>`;
+        if (t.startsWith('practice_mc')) body += choicesHtml(item, ['c1', 'c2', 'c3', 'c4'], isA ? ans : -1);
+        else if (isA && !t.startsWith('practice_order')) body += `<div class="s-answer">${esc(v.answer)}</div>`;
+      } else if (t.startsWith('comp')) {
+        chip = `스크립트 ${esc(v.s)}/3<br>독해 + 채팅`; bar = 'COMPREHENSION';
+        if (t.startsWith('comp_tf')) {
+          body = `<div class="s-pattern">${esc(v.kk)}</div><div class="s-text" style="font-weight:700">${esc(v.statement)}</div><div class="s-choices"><div class="s-choice${t === 'comp_tf_a' && v.answer === 'True' ? ' right' : ''}">True</div><div class="s-choice${t === 'comp_tf_a' && v.answer === 'False' ? ' right' : ''}">False</div></div>`;
+        } else if (t.startsWith('comp_lie')) {
+          body = `<div class="s-small">${esc(v.instruction)}</div>${choicesHtml(item, ['st1', 'st2', 'st3'], t === 'comp_lie_a' ? ans : -1, true)}`;
+        } else {
+          const isA = t === 'comp_order_a';
+          const toks = isA ? ['ord1', 'ord2', 'ord3', 'ord4'] : ['ev1', 'ev2', 'ev3', 'ev4'];
+          body = `<div class="s-small">${esc(v.instruction)}</div><div class="s-list">${toks.map((k, i) => v[k] == null ? '' : `<div class="s-choice${isA ? ' right' : ''}"><i>${isA ? esc(v['num' + (i + 1)]) : i + 1}</i><span>${esc(v[k])}</span></div>`).join('')}</div>`;
+        }
+      } else if (t.startsWith('quiz')) {
+        chip = `퀴즈앤 복습<br>#${esc(v.k)}`; bar = 'QUIZ TIME';
+        const isA = t.endsWith('_a');
+        body = `<div class="s-small">${esc(v.instruction)}</div><div class="s-text" style="font-weight:700">${esc(v.prompt)}</div>`;
+        if (t.startsWith('quiz_mc')) body += choicesHtml(item, ['c1', 'c2', 'c3', 'c4'], isA ? ans : -1);
+        else if (isA) body += `<div class="s-answer">${esc(v.answer)}</div>`;
+      } else if (t === 'headline_a') {
+        return `<div class="slide static"><div class="s-chip">헤드라인 작성<br>(채팅)</div><div class="s-inner"><div class="s-big" style="font-size:4.2cqw">${esc(v.headline)}</div></div></div>`;
+      }
+      return `<div class="slide"><div class="s-chip">${chip}</div><div class="s-inner">${bar ? `<div class="s-bar">${bar}</div>` : ''}${body}</div></div>`;
+    }
+    function renderPreview() {
+      const v = $('#view');
+      v.innerHTML = `<div class="hint" style="margin-bottom:12px">대략적인 모양입니다. 실제 글꼴·색·배치는 구글 템플릿을 그대로 따릅니다. <mark>빨간 글자</mark>는 강조, 초록 테두리는 정답 강조 박스가 옮겨질 위치입니다.</div>
+        <div class="grid">${state.plan.map((p, i) => `<div class="thumb"><div class="slide-wrap">${slideHtml(p)}</div><div class="thumb-cap"><span><b>${i + 1}</b> · ${esc(C.SLIDE_TYPES[p.type].name)}</span><span>#${esc(p.type)}</span></div></div>`).join('')}</div>`;
+    }
+
+    // ---------------- 생성 ----------------
+    function renderCreate() {
+      const l = state.current, v = $('#view');
+      const c = C.summarizeIssues(l);
+      const tplId = idFrom(settings.templateUrl);
+      v.innerHTML = `
+        <div class="card" style="display:flex;flex-direction:column;gap:10px">
+          <div><b>${l.no}강 PPT 만들기</b> · 슬라이드 ${state.plan.length}장</div>
+          <div class="hint">템플릿을 복사한 새 파일을 만들고, 원본 슬라이드를 순서대로 복제해 글자를 채웁니다. 템플릿과 기존 PPT는 바뀌지 않습니다. 만든 사람은 로그인한 계정으로 기록됩니다.</div>
+          ${!tplId ? '<div class="issue error"><span class="lv">필요</span><span class="col"></span><span class="where">템플릿</span><span class="msg">설정에서 자동화용 템플릿 주소를 넣어 주세요.</span></div>' : ''}
+          ${c.error ? `<div class="issue error"><span class="lv">오류</span><span class="col"></span><span class="where">검수</span><span class="msg">검수 오류 ${c.error}개가 있습니다. 그대로 만들면 해당 칸이 비거나 정답 박스가 옮겨지지 않습니다.</span></div>` : ''}
+          <div class="row"><button class="btn green" id="btnCreate" ${tplId ? '' : 'disabled'}>구글 슬라이드 만들기</button></div>
+          <div id="createOut"></div>
+        </div>`;
+      $('#btnCreate').onclick = () => createDeck();
+    }
+
+    function logger(box) {
+      box.innerHTML = '<div class="log" id="log"></div>';
+      const el = box.querySelector('#log');
+      return (msg, cls) => { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = msg; el.appendChild(d); el.scrollTop = el.scrollHeight; };
+    }
+
+    async function createDeck() {
+      const l = state.current, out = $('#createOut'), btn = $('#btnCreate');
+      const tplId = idFrom(settings.templateUrl);
+      const log = logger(out);
+      btn.disabled = true;
+      let deckId = null;
+      try {
+        log('구글 로그인 확인…');
+        await login(false);
+        log('템플릿 읽는 중…');
+        const tpl = await gapi(`https://slides.googleapis.com/v1/presentations/${tplId}`);
+        // 템플릿만으로 먼저 점검 (복사 전에 멈추면 빈 파일이 남지 않는다)
+        B.buildRequests(tpl, state.plan, { highlightColor: settings.highlightColor });
+        const name = (settings.nameFormat || DEFAULTS.nameFormat).replace('{no}', l.no).replace('{title}', l.titleEn).replace('{date}', l.dateMMDD.replace('/', ''));
+        const body = { name };
+        const folder = idFrom(settings.folderUrl, 'folder');
+        if (folder) body.parents = [folder];
+        log('템플릿 복사 중… (' + name + ')');
+        const copy = await gapi(`https://www.googleapis.com/drive/v3/files/${tplId}/copy?supportsAllDrives=true&fields=id,name,webViewLink`, { method: 'POST', body: JSON.stringify(body) });
+        deckId = copy.id;
+        const pres = await gapi(`https://slides.googleapis.com/v1/presentations/${deckId}`);
+        const built = B.buildRequests(pres, state.plan, { highlightColor: settings.highlightColor });
+        const chunks = B.chunk(built.requests, 400);
+        for (let i = 0; i < chunks.length; i++) {
+          log(`슬라이드 채우는 중… (${i + 1}/${chunks.length})`);
+          await gapi(`https://slides.googleapis.com/v1/presentations/${deckId}:batchUpdate`, { method: 'POST', body: JSON.stringify({ requests: chunks[i] }) });
+        }
+        if (built.imageJobs.length) log(`이미지 ${built.imageJobs.length}개 넣는 중…`);
+        for (const job of built.imageJobs) {
+          try {
+            await gapi(`https://slides.googleapis.com/v1/presentations/${deckId}:batchUpdate`, { method: 'POST', body: JSON.stringify({ requests: B.imageRequest(job) }) });
+          } catch (e) {
+            log(`⚠ ${job.index + 1}번 슬라이드 이미지를 넣지 못했습니다 (${e.message}). 자리를 비워 둡니다.`, 'w');
+            await gapi(`https://slides.googleapis.com/v1/presentations/${deckId}:batchUpdate`, { method: 'POST', body: JSON.stringify({ requests: B.imageFallbackRequest(job) }) }).catch(() => {});
+          }
+        }
+        log('발표자 노트의 #유형 표시 정리 중…');
+        const after = await gapi(`https://slides.googleapis.com/v1/presentations/${deckId}`);
+        const notes = B.notesCleanupRequests(after);
+        if (notes.length) await gapi(`https://slides.googleapis.com/v1/presentations/${deckId}:batchUpdate`, { method: 'POST', body: JSON.stringify({ requests: notes }) });
+        built.warnings.forEach((w) => log('⚠ ' + w, 'w'));
+        log(`완료 · 슬라이드 ${after.slides.length}장`);
+        const link = `https://docs.google.com/presentation/d/${deckId}/edit`;
+        out.insertAdjacentHTML('beforeend', `<a class="result-link" href="${link}" target="_blank" rel="noopener">만든 PPT 열기 ↗</a>`);
+      } catch (e) {
+        log('✗ ' + (e.missing ? e.message + '\n→ 템플릿에 해당 유형의 원본 슬라이드를 추가하고 발표자 노트에 #유형을 적어 주세요.' : explain(e)), 'e');
+        if (deckId) out.insertAdjacentHTML('beforeend', `<a class="result-link" style="background:var(--amber-tint)" href="https://docs.google.com/presentation/d/${deckId}/edit" target="_blank" rel="noopener">중간까지 만든 파일 열기 ↗</a>`);
+      }
+      btn.disabled = false;
+    }
+
+    // ---------------- 템플릿 점검 · 토큰 안내 ----------------
+    function showPanel(html) {
+      state.current = null;
+      renderLessonList();
+      $('#content').innerHTML = html;
+    }
+    function tokenTable(report) {
+      const groups = {};
+      Object.entries(C.SLIDE_TYPES).forEach(([k, d]) => { (groups[d.group] = groups[d.group] || []).push([k, d]); });
+      return `<table class="tok"><thead><tr><th>발표자 노트</th><th>슬라이드</th><th>쓸 수 있는 토큰</th>${report ? '<th>템플릿</th>' : ''}</tr></thead><tbody>${
+        Object.values(groups).flat().map(([k, d]) => `<tr><td><code>#${k}</code></td><td>${esc(d.name)}${d.choices ? '<div class="hint">정답 강조 박스에 {{answer}} 를 넣어 아무 보기 위에 올려 두세요</div>' : ''}</td><td>${d.tokens.map((t) => `<code>{{${t}}}</code>`).join('') || '<span class="hint">고정 슬라이드 (공통 토큰만)</span>'}</td>${
+          report ? `<td>${report.found.includes(k) ? `<span class="found">있음</span>${report.unknownTokens[k] ? `<div class="miss">모르는 토큰: ${report.unknownTokens[k].map(esc).join(', ')}</div>` : ''}` : report.missing.includes(k) ? '<span class="miss">없음</span>' : '<span class="hint">안 씀</span>'}</td>` : ''}</tr>`).join('')
+      }</tbody></table>`;
+    }
+    const COMMON = `<div class="hint" style="margin:8px 0 12px">모든 슬라이드 공통: ${C.GLOBAL_TOKENS.map((t) => `<code>{{${t}}}</code>`).join(' ')} · 단어 이미지 자리는 <code>{{image}}</code>라고 적은 도형 · 강조는 단어·표현이 들어가는 글상자에 자동 적용</div>`;
+    $('#btnGuide').onclick = () => showPanel(`<div class="lesson-head"><div><h2>템플릿 토큰 안내</h2><div class="meta">1강 PPT를 복사해 유형별로 한 장씩만 남기고 아래처럼 표시합니다</div></div></div>
+      <div class="card"><ol class="hint" style="margin:0 0 6px;padding-left:18px;color:var(--text)">
+        <li>1강 PPT를 복사합니다 (파일 → 사본 만들기).</li>
+        <li>아래 유형마다 한 장씩만 남기고 나머지는 지웁니다. 쓰지 않는 유형은 없어도 됩니다.</li>
+        <li>남긴 슬라이드의 <b>발표자 노트</b>에 <code>#유형</code>을 적습니다 (예: <code>#word_q</code>). 다른 메모는 그대로 둬도 됩니다.</li>
+        <li>바뀔 글자를 <code>{{토큰}}</code>으로 바꿉니다 (예: 문장 → <code>{{sentence}}</code>, "단어 1/4" → <code>단어 {{n}}/4</code>). 글꼴·색은 그대로 유지됩니다.</li>
+        <li>정답 슬라이드의 초록 강조 박스 안 글자는 <code>{{answer}}</code>로 바꾸고 보기 하나 위에 겹쳐 둡니다.</li>
+        <li>이 페이지의 <b>템플릿 점검</b>으로 빠진 유형을 확인합니다.</li>
+      </ol>${COMMON}${tokenTable(null)}</div>`);
+
+    $('#btnCheckTpl').onclick = async () => {
+      const tplId = idFrom(settings.templateUrl);
+      if (!tplId) { toast('설정에서 템플릿 주소를 넣어 주세요'); $('#btnSettings').click(); return; }
+      try {
+        const tpl = await gapi(`https://slides.googleapis.com/v1/presentations/${tplId}`);
+        const needed = [...new Set(state.lessons.filter((l) => !l.empty).flatMap((l) => C.planSlides(l, { series: settings.series }).map((p) => p.type)))];
+        const r = B.checkTemplate(tpl, needed.length ? needed : null);
+        showPanel(`<div class="lesson-head"><div><h2>템플릿 점검 · ${esc(tpl.title)}</h2><div class="meta">유형 ${r.found.length}개 있음 · ${needed.length ? '불러온 강의 기준 ' : ''}빠진 유형 ${r.missing.length}개${r.untagged.length ? ` · #유형 없는 슬라이드 ${r.untagged.length}장 (${r.untagged.slice(0, 12).join(', ')}${r.untagged.length > 12 ? '…' : ''}번)` : ''}${r.duplicates.length ? ` · 같은 유형이 두 장: ${r.duplicates.map((d) => '#' + d.type + '(' + d.slide + '번)').join(', ')}` : ''}</div></div></div>
+          <div class="card">${r.missing.length ? `<div class="issue error" style="margin-bottom:10px"><span class="lv">없음</span><span class="col"></span><span class="where">빠진 유형</span><span class="msg">${r.missing.map((t) => '#' + t).join(', ')}</span></div>` : '<div class="ok-box" style="margin-bottom:10px">필요한 유형이 모두 있습니다.</div>'}${COMMON}${tokenTable(r)}</div>`);
+      } catch (e) { toast(explain(e)); }
+    };
+
+    // GIS 스크립트가 늦게 오면 그때 초기화
+    window.addEventListener('load', () => initTokenClient());
+  })();
+  </script>
+</body>
+</html>
