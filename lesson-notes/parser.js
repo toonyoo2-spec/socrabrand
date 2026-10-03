@@ -240,6 +240,6 @@ function styledParts_(row) {
   const breaks=Array.from(new Set([0,text.length,...ranges.flatMap(r=>[r.start,r.end])])).sort((a,b)=>a-b);
   return breaks.slice(0,-1).map((start,i)=>{
     const active=ranges.filter(r=>r.start<=start&&r.end>=breaks[i+1]);
-    return {text:text.slice(start,breaks[i+1]),bold:active.some(r=>r.bold),highlight:active.find(r=>r.highlight)?.highlight};
+    return {text:text.slice(start,breaks[i+1]),bold:active.some(r=>r.bold)?true:undefined,highlight:active.find(r=>r.highlight)?.highlight};
   });
 }
