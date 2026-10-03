@@ -38,7 +38,14 @@
 | `ppt-automation/slides-builder.js` | 계획 → Slides API 요청 (순수 함수) |
 | `ppt-automation/test/ppt.test.js` | 가짜 데이터로 만든 테스트 (`node --test ppt-automation/test/ppt.test.js`) |
 
+## AI 내용 검수
+
+- 검수 탭의 **AI로 검수하기** → Supabase 함수 `ppt-ai-review`(소스: `ppt-automation/edge/ppt-ai-review.ts`) → Claude Opus 5.5.
+- 정답이 맞는지, 영어 문법·철자, 스크립트와 어긋난 독해 문항, 단어 뜻·예문을 본다. 형식·글자 수는 코드 검수가 맡는다.
+- 탭에서 로그인한 구글 토큰으로 socra.ai 계정인지 확인한 뒤에만 실행한다 (외부에서 API 비용을 쓰지 못하게).
+- API 키는 Supabase 프로젝트 시크릿 `ANTHROPIC_API_KEY`. 없으면 탭에 안내가 뜬다.
+- 배포: `verify_jwt=false` (Supabase 로그인이 아니라 구글 토큰으로 확인).
+
 ## 아직 없는 것
 
-- **내용 검수(AI)**: 형식은 코드로 잡지만 문법 오류(예: 주어와 동사 수 불일치)는 못 잡는다. 붙인다면 Claude API 키 또는 기존 Codex 작업기를 쓴다.
 - **글자 넘침 자동 축소**: Slides API로는 "넘치면 축소"를 켤 수 없다. 대신 시트 가이드의 글자 수 규칙으로 미리 경고한다.

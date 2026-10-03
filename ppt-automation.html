@@ -80,6 +80,9 @@
     .issue.error .lv { color:var(--red); } .issue.warn .lv { color:var(--amber); } .issue.info .lv { color:var(--blue); }
     .issue .col { font:700 11px var(--mono); color:var(--muted); }
     .issue .where { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .issue .fix { margin-top:4px; font-size:12px; }
+    .issue .fix s { color:var(--muted); }
+    .issue .fix b { color:#0B6B44; }
     .ok-box { padding:14px; border-radius:12px; background:var(--green-tint); color:#0B6B44; font-weight:700; }
     .filter { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
     .filter button { border:1px solid var(--border); background:var(--panel); border-radius:99px; padding:4px 10px; font-size:11px; font-weight:700; color:var(--muted); }
@@ -214,15 +217,16 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="ppt-automation/ppt-core.js?v=20261002-2"></script>
-  <script src="ppt-automation/slides-builder.js?v=20261002-2"></script>
+  <script src="ppt-automation/ppt-core.js?v=20261003-1"></script>
+  <script src="ppt-automation/slides-builder.js?v=20261003-1"></script>
   <script>
   (function () {
     'use strict';
     const C = window.PPTCore, B = window.SlidesBuilder;
     // Google Cloud "Socra PPT 자동화" (내부 앱, socra.ai 계정만) 웹 클라이언트 ID
     const GOOGLE_CLIENT_ID = '43041548577-s4cgqtv0fle3njshdgljnh34quuet4od.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/presentations https://www.googleapis.com/auth/spreadsheets.readonly';
+    // email: AI 검수 서버가 socra.ai 계정인지 확인할 때 필요
+    const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/presentations https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/userinfo.email';
     const SETTINGS_KEY = 'ppt_auto_settings_v1';
     const DIALOG_KEYS = ['folderUrl', 'nameFormat', 'series', 'highlightColor'];
     const DEFAULTS = { sheetUrl: '', templateUrl: '', folderUrl: '', nameFormat: '[자동생성] CNN 10_{no}강_{title}', series: 'CNN 10', highlightColor: '#E5392B' };
@@ -466,7 +470,9 @@
         const badge = l.empty ? '<span class="badge mute">비어 있음</span>'
           : c.error ? `<span class="badge err">오류 ${c.error}</span>`
           : c.warn ? `<span class="badge warn">확인 ${c.warn}</span>` : '<span class="badge ok">통과</span>';
-        return `<button class="lesson${l.empty ? ' empty' : ''}${state.current && state.current.no === l.no ? ' active' : ''}" data-no="${l.no}"><span class="no">${l.no}강</span><span class="t" title="${esc(l.titleEn)}">${esc(l.titleEn || l.titleKo)}</span>${badge}</button>`;
+        const ai = aiResults[l.no];
+        const aiBadge = ai && ai.status === 'done' ? (ai.result.issues || []).filter((i) => i.severity === 'error').length ? `<span class="badge err" title="AI 검수 오류">AI ${(ai.result.issues || []).filter((i) => i.severity === 'error').length}</span>` : '' : '';
+        return `<button class="lesson${l.empty ? ' empty' : ''}${state.current && state.current.no === l.no ? ' active' : ''}" data-no="${l.no}"><span class="no">${l.no}강</span><span class="t" title="${esc(l.titleEn)}">${esc(l.titleEn || l.titleKo)}</span><span class="row" style="gap:3px;flex-wrap:nowrap">${aiBadge}${badge}</span></button>`;
       }).join('');
       box.querySelectorAll('.lesson').forEach((b) => { b.onclick = () => selectLesson(Number(b.dataset.no)); });
     }
@@ -518,13 +524,76 @@
       else renderCreate();
     }
 
+    // ---------------- AI 내용 검수 (Supabase 함수 ppt-ai-review → Claude) ----------------
+    const AI_URL = 'https://eoljasmgogdcvnytaoax.supabase.co/functions/v1/ppt-ai-review';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvbGphc21nb2dkY3ZueXRhb2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NzIwMDEsImV4cCI6MjEwMTQ0ODAwMX0.G8wiFPCgvzoDwGlk__SDkn8SxP6lDMHY6g6pt61-a5o';
+    const aiResults = {}; // 강 번호 → { status, result, error }
+    function aiPayload(l) {
+      const q = (x) => ({ kind: x.kind, instruction: x.instruction, prompt: x.prompt, choices: x.choices, answer: x.answer });
+      return {
+        no: l.no, title: l.titleEn, objective: l.objective,
+        trivia: { question: l.trivia.question, choices: l.trivia.choices, answer: l.trivia.choices[l.trivia.answerIndex] || '' },
+        words: l.words.map((w) => ({ word: w.word, sentence: w.sentence, choices: w.choices, answer: w.meaning, example: w.example })),
+        scripts: l.scripts.map((s) => ({
+          script: s.text,
+          expressions: s.expressions.map((e) => ({ expression: e.expression, question: e.question, answer: e.answer })),
+          grammar: s.grammar,
+          practice: { instruction: s.practice.instruction, items: s.practice.items.map(q) },
+          comprehension: s.comprehension,
+        })),
+        quiz: l.quiz.items.map(q), headline: l.headline,
+      };
+    }
+    async function runAiReview(l) {
+      aiResults[l.no] = { status: 'loading', started: Date.now() };
+      if (state.current && state.current.no === l.no && state.view === 'issues') renderIssues();
+      try {
+        const call = async () => {
+          await login(false);
+          return fetch(AI_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, 'x-google-token': token },
+            body: JSON.stringify({ lesson: aiPayload(l) }),
+          });
+        };
+        let res = await call();
+        if (res.status === 401) { // 예전 로그인에 이메일 권한이 없으면 한 번 다시 로그인
+          token = null; try { sessionStorage.removeItem('ppt_auto_token'); } catch (_) {}
+          res = await call();
+        }
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `AI 검수 실패 (${res.status})`);
+        aiResults[l.no] = { status: 'done', result: body };
+      } catch (e) {
+        aiResults[l.no] = { status: 'error', error: e.message === 'Failed to fetch' ? 'AI 서버에 연결하지 못했습니다. 잠시 후 다시 눌러 주세요.' : e.message };
+      }
+      renderLessonList();
+      if (state.current && state.current.no === l.no && state.view === 'issues') renderIssues();
+    }
+    function aiCardHtml(l) {
+      const a = aiResults[l.no];
+      const head = `<div class="row" style="justify-content:space-between"><div><b>AI 내용 검수</b> <span class="hint">정답이 맞는지, 영어 문법·철자, 스크립트와 어긋난 문항을 찾습니다</span></div>
+        <button class="btn small green" id="btnAi" ${a && a.status === 'loading' ? 'disabled' : ''}>${a && a.status === 'done' ? '다시 검수' : a && a.status === 'loading' ? '검수 중…' : 'AI로 검수하기'}</button></div>`;
+      let body = '';
+      if (!a) body = '<div class="hint">구글 로그인한 socra.ai 계정으로 실행됩니다. 강 하나에 30초~1분 걸립니다.</div>';
+      else if (a.status === 'loading') body = '<div class="hint">AI가 강의 전체를 읽고 있습니다… (30초~1분)</div>';
+      else if (a.status === 'error') body = `<div class="issue error"><span class="lv">실패</span><span class="col"></span><span class="where">AI 검수</span><span class="msg">${esc(a.error)}</span></div>`;
+      else {
+        const r = a.result, items = r.issues || [];
+        body = `<div class="hint" style="margin-bottom:8px">${esc(r.summary || '')}</div>` + (items.length
+          ? `<div class="issues">${items.map((i) => `<div class="issue ${esc(i.severity)} ai"><span class="lv">${{ error: '오류', warn: '확인', info: '참고' }[i.severity] || '확인'}</span><span class="col">AI</span><span class="where" title="${esc(i.section)}">${esc(i.section)}</span><span class="msg">${esc(i.problem)}${i.current || i.suggestion ? `<div class="fix">${i.current ? `<s>${esc(i.current)}</s>` : ''}${i.suggestion ? ` → <b>${esc(i.suggestion)}</b>` : ''}</div>` : ''}</span></div>`).join('')}</div>`
+          : '<div class="ok-box">AI가 내용 문제를 찾지 못했습니다.</div>');
+      }
+      return `<div class="card" style="margin-bottom:16px;display:flex;flex-direction:column;gap:10px">${head}${body}</div>`;
+    }
+
     function renderIssues() {
       const l = state.current, v = $('#view');
       const list = l.issues.filter((i) => state.filter === 'all' || i.level === state.filter);
       const c = C.summarizeIssues(l);
-      if (!l.issues.length) { v.innerHTML = '<div class="ok-box">형식 검수를 모두 통과했습니다. 내용(문법·사실)은 사람이 확인해 주세요.</div>'; return; }
-      v.innerHTML = `
-        <div class="filter">
+      const rules = !l.issues.length
+        ? '<div class="ok-box">형식 검수를 모두 통과했습니다.</div>'
+        : `<div class="filter">
           <button data-f="all">전체 ${l.issues.length}</button>
           ${c.error ? `<button data-f="error">오류 ${c.error}</button>` : ''}
           ${c.warn ? `<button data-f="warn">확인 ${c.warn}</button>` : ''}
@@ -532,6 +601,8 @@
         </div>
         <div class="hint" style="margin-bottom:10px">오류는 PPT에 빈칸이나 잘못된 정답이 들어가는 문제입니다. 시트를 고친 뒤 다시 불러오세요. 확인은 글자 수 초과처럼 넘침 위험이 있는 곳입니다.</div>
         <div class="issues">${list.map((i) => `<div class="issue ${i.level}"><span class="lv">${{ error: '오류', warn: '확인', info: '참고' }[i.level]}</span><span class="col">${esc(i.col)}열</span><span class="where" title="${esc(i.where)}">${esc(i.where)}</span><span class="msg">${esc(i.msg)}</span></div>`).join('')}</div>`;
+      v.innerHTML = aiCardHtml(l) + `<div class="step-title" style="margin:4px 0 10px">형식 검수</div>` + rules;
+      $('#btnAi').onclick = () => runAiReview(l);
       v.querySelectorAll('.filter button').forEach((b) => {
         b.classList.toggle('active', b.dataset.f === state.filter);
         b.onclick = () => { state.filter = b.dataset.f; renderIssues(); };
