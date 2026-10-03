@@ -19,7 +19,23 @@ function quoteHeading_(line) {
 }
 
 function dialogueLines_(blocks) {
-  return blocks.flatMap(block => cleanText_(block).split('\n')).filter(line => /^[A-Za-z][A-Za-z .'-]{0,35}:\s*\S/.test(line));
+  const result=[];
+  blocks.forEach(block=>{
+    let current='';
+    cleanText_(block).split('\n').forEach(raw=>{
+      const line=raw.trim();
+      if(/^[A-Za-z][A-Za-z .'-]{0,35}:\s*\S/.test(line)) {
+        if(current)result.push(current);
+        current=line;
+      }else if(current&&line)current+=' '+line;
+    });
+    if(current)result.push(current);
+  });
+  return result;
+}
+
+function expressionKey_(value) {
+  return normalize_(value).toLowerCase().replace(/[‘’]/g,"'").replace(/[.!?]+$/,'');
 }
 
 /** 문장 사이에 바뀐 정답만 찾아 고정된 뒤 문장을 잘라내지 않는다. */
@@ -73,12 +89,13 @@ function buildLesson_(deck, options) {
     const text = slide.blocks.join('\n');
     if (/^(다시보기|수업 노트|테스트|Thank you|감사합니다)/i.test(text)) { usedSlides.add(slide.number); return; }
     const lines = text.split('\n');
-    const heading = quoteHeading_(lines[0].trim());
+    const quoted=lines.join('\n').match(/^[“"]([^”"]+)[”"](?:[ \t]*\n|$)/);
+    const heading = quoted ? normalize_(quoted[1]) : null;
     if (heading) {
       const existing = sections.find(s => normalize_(s.expression) === normalize_(heading));
       if (existing) current = existing;
       else { current = {expression:heading, meaning:'', paragraphs:[], slideNumbers:[], highlights:[]}; sections.push(current); }
-      lines.shift();
+      lines.splice(0,quoted[0].trimEnd().split('\n').length);
       if (!existing) {
         const meaning = [];
         while (lines.length && lines[0].trim()) meaning.push(lines.shift().trim());
@@ -100,20 +117,33 @@ function buildLesson_(deck, options) {
   const answers = markers.map((marker, i) => {
     const questionLine = questions.find(line => line.includes(marker));
     const qPart = questionLine.split(marker)[1].split(/[①-⑳]/)[0];
-    const candidates = [];
+    const candidates = [], answeredParts=[], reveals=[];
     dialogueSlides.forEach(s => {
       const line = dialogueLines_(s.blocks).find(l => l.split(':')[0] === questionLine.split(':')[0] && l.includes(marker));
       if (!line) return;
       const part = line.split(marker)[1].split(/[①-⑳]/)[0];
       if (normalize_(part) !== normalize_(qPart)) {
         const answer = changedAnswer_(qPart, part);
-        if (answer && !hasKorean_(answer)) candidates.push(answer);
+        if (answer && !hasKorean_(answer)) { candidates.push(answer); answeredParts.push(part); reveals.push(s.number); }
       }
     });
     // 따옴표로 정의된 핵심 표현과 정답을 대조해서 연결한다.
     const unique = Array.from(new Set(candidates));
-    const section = sections.find(s => unique.some(a => normalize_(s.expression).replace(/[.!?]$/,'') === normalize_(a).replace(/[.!?]$/,'')));
-    let text = section ? section.expression : unique[0];
+    const matches=sections.filter(s=>unique.some(a=>expressionKey_(s.expression)===expressionKey_(a)) || answeredParts.some(part=>{
+      const phrase=expressionKey_(s.expression), full=expressionKey_(part);
+      return phrase.length>=8 && (full===phrase || full.startsWith(phrase+' ') || full.startsWith(phrase+'.') || full.startsWith(phrase+'!') || full.startsWith(phrase+'?'));
+    }));
+    // 대화 직후 핵심 표현을 설명하는 원본 순서로도 연결한다.
+    // 제목에 오타가 있어도 대화의 실제 정답 문장은 그대로 유지한다.
+    let section=matches.length===1?matches[0]:null;
+    let positional=false;
+    if(!section&&reveals.length){
+      const reveal=Math.min(...reveals);
+      const nextDialogue=dialogueSlides.find(s=>s.number>reveal);
+      const following=sections.filter(s=>s.slideNumbers[0]>reveal&&(!nextDialogue||s.slideNumbers[0]<nextDialogue.number));
+      if(following.length===1){section=following[0];positional=true;}
+    }
+    let text = section && !positional ? section.expression : unique[0];
     if (!text) { text = '[정답 확인 필요]'; warnings.push(marker + ' 정답을 원본에서 찾지 못했습니다.'); }
     if (unique.length > 1 && !section) warnings.push(marker + ' 정답 후보가 여러 개입니다. 원본과 비교해 주세요.');
     return {marker, text, sectionIndex:section ? sections.indexOf(section) : -1};
