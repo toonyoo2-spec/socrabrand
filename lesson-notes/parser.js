@@ -45,7 +45,10 @@ function changedAnswer_(question, answered) {
   while (start < a.length && start < b.length && a[start] === b[start]) start++;
   let endA = a.length, endB = b.length;
   while (endA > start && endB > start && a[endA - 1] === b[endB - 1]) { endA--; endB--; }
-  return b.slice(start, endB).trim();
+  // A period/question mark shared with the Korean prompt belongs to the
+  // revealed answer. Shared English context (e.g. "so much. ...") does not.
+  const punctuation = b.slice(endB).match(/^[.!?,;:…]+/);
+  return b.slice(start, endB + (punctuation ? punctuation[0].length : 0)).trim();
 }
 
 function segments_(lines) {
@@ -86,7 +89,7 @@ function segmentRows_(lines,rich) {
   function flush(){if(buffer.length)result.push(joinedRow_(buffer,rich));buffer=[];}
   function strong(line){const row=joinedRow_([line],rich);return !!row.parts?.length&&row.parts.filter(p=>p.text.trim()).every(p=>p.bold);}
   lines.forEach(line=>{
-    const text=line.text.trim();if(!text){flush();return;}
+    const text=line.text.trim();if(!text){flush();if(result.length&&result[result.length-1].text)result.push({text:'',parts:rich?.styled?[]:undefined});return;}
     const previous=buffer[buffer.length-1];
     const label=/^(?:[A-Za-z][A-Za-z /-]*\s*:|비슷한 표현|같이 해석|.*관련 표현|based in 비슷한 표현)/.test(text);
     if(previous&&(text.startsWith(':')||text.startsWith('→')||label||hasKorean_(previous.text)!==hasKorean_(text)||(/^[A-Za-z]/.test(text)&&/^[가-힣]/.test(previous.text.trim().replace(/^[:→]\s*/,'')))||strong(line)||strong(previous)))flush();
@@ -119,6 +122,7 @@ function buildLesson_(deck, options) {
   if (!markers.length) throw new Error('대화에서 ①, ② 같은 문제 번호를 찾지 못했습니다.');
   const sections = [];
   let current = null;
+  const contentSlides = new Set();
   const usedSlides = new Set(dialogueSlides.map(s => s.number));
   slides.forEach(slide => {
     if (slide.number <= first.number || usedSlides.has(slide.number)) return;
@@ -146,10 +150,14 @@ function buildLesson_(deck, options) {
       }
     }
     if (!current) { warnings.push(slide.number + '번: 섹션을 판별하지 못했습니다. ' + normalize_(text).slice(0,100)); return; }
+    const fingerprint=JSON.stringify([current.expression,rich.text,rich.runs]);
+    if(contentSlides.has(fingerprint)){usedSlides.add(slide.number);return;}
+    contentSlides.add(fingerprint);
     current.slideNumbers.push(slide.number);
     segmentRows_(lines,rich).forEach(row => {
-      // 같은 슬라이드의 반복 제목만 제거. 서로 다른 예문은 유지.
-      if (!current.paragraphs.includes(row.text)) {current.paragraphs.push(row.text);current.paragraphRows.push(row);}
+      // Identical vocabulary labels can introduce different examples. Only
+      // repeated quoted slide headings are structural duplicates.
+      current.paragraphs.push(row.text);current.paragraphRows.push(row);
     });
     usedSlides.add(slide.number);
   });
@@ -180,13 +188,33 @@ function buildLesson_(deck, options) {
       const reveal=Math.min(...reveals);
       const nextDialogue=dialogueSlides.find(s=>s.number>reveal);
       const following=sections.filter(s=>s.slideNumbers[0]>reveal&&(!nextDialogue||s.slideNumbers[0]<nextDialogue.number));
-      if(following.length===1){section=following[0];positional=true;}
+      if(following.length){section=following[0];positional=true;}
     }
-    let text = section && !positional ? section.expression : unique[0];
+    // The quoted key phrase can abbreviate the answer. Always retain the
+    // complete revealed replacement, excluding unchanged dialogue context.
+    let text = unique[0];
     if (!text) { text = '[정답 확인 필요]'; warnings.push(marker + ' 정답을 원본에서 찾지 못했습니다.'); }
     if (unique.length > 1 && !section) warnings.push(marker + ' 정답 후보가 여러 개입니다. 원본과 비교해 주세요.');
     return {marker, text, sectionIndex:section ? sections.indexOf(section) : -1};
   });
+  // Unmatched quoted phrases are supporting material, not extra questions.
+  // Keep their source heading/meaning/body under the preceding primary item.
+  const primary = new Set(answers.filter(a=>a.sectionIndex>=0).map(a=>sections[a.sectionIndex]));
+  const grouped=[];let parent=null;const pending=[];
+  function appendSupporting(target,section){
+    const additional=[section.expressionRow || {text:'“'+section.expression+'”'},...(section.meaning?[section.meaningRow || {text:section.meaning}]:[]),...section.paragraphRows];
+    additional.forEach(row=>{target.paragraphRows.push(row);target.paragraphs.push(row.text);});
+    target.slideNumbers.push(...section.slideNumbers);
+  }
+  sections.forEach(section=>{
+    if(primary.has(section)){grouped.push(section);parent=section;pending.splice(0).forEach(s=>appendSupporting(parent,s));return;}
+    if(!parent){pending.push(section);return;}
+    appendSupporting(parent,section);
+  });
+  if(grouped.length){
+    answers.forEach(a=>{a.sectionIndex=grouped.indexOf(sections[a.sectionIndex]);});
+    sections.splice(0,sections.length,...grouped);
+  }
   if (sections.length !== markers.length) warnings.push('문제 ' + markers.length + '개 / 핵심 표현 ' + sections.length + '개: 번호 연결을 확인해 주세요.');
   if (!sections.length) throw new Error('따옴표로 시작하는 핵심 표현 슬라이드를 찾지 못했습니다.');
   const level = options.level || ((deck.title.match(/LV\s*(\d+)/i) || [])[1] ? 'LV' + deck.title.match(/LV\s*(\d+)/i)[1] : '');
@@ -198,25 +226,28 @@ function buildLesson_(deck, options) {
 }
 
 function lessonRows_(lesson) {
-  const rows = [{role:'section',text:'Dialogues'}];
+  const rows = [{role:'section',text:'Dialogues'},{role:'body',text:'',keepNext:true}];
   (lesson.dialogueRows || lesson.dialogue.map(text=>({text}))).forEach(row => rows.push({role:'body',...row}));
   rows.push({role:'body',text:''},{role:'label',text:'정답:'});
   lesson.answers.forEach(a => rows.push({role:'body',text:a.marker + ' ' + a.text}));
-  rows.push({role:'pageBreak'},{role:'section',text:'Key Points'});
+  rows.push({role:'pageBreak'},{role:'section',text:'Key Points'},{role:'body',text:'',keepNext:true});
   lesson.sections.forEach((s,i) => {
-    if (i > 0) rows.push({role:'pageBreak'});
+    if (i > 0) rows.push({role:'body',text:''});
     const answer = lesson.answers.find(a => a.sectionIndex === i);
     rows.push({role:'number',text:'#' + (answer ? answer.marker.charCodeAt(0)-'①'.charCodeAt(0)+1 : i+1)});
     rows.push({role:'expression',...(s.expressionRow || {text:'“' + s.expression + '”'})});
     if (s.meaning) rows.push({role:'expression',...(s.meaningRow || {text:s.meaning})});
-    rows.push({role:'body',text:''});
-    (s.paragraphRows || s.paragraphs.map(text=>({text}))).forEach(source => {
+    rows.push({role:'body',text:'',keepNext:true});
+    const sources=s.paragraphRows || s.paragraphs.map(text=>({text}));
+    sources.forEach((source,index) => {
       const raw=source.text;
-      if (normalize_(raw).replace(/[.!?]$/,'') === normalize_(s.expression).replace(/[.!?]$/,'')) return;
       const text = raw;
       let role = /비슷한 표현|관련 표현|같이 해석/.test(text) ? 'label' : 'body';
       if (text.startsWith('→')) role='note';
-      rows.push({role,...source});
+      const next=sources[index+1]?.text || '';
+      const paired=/[A-Za-z]/.test(text)&&!hasKorean_(text)&&/^(?:[:→]\s*)?[가-힣]/.test(next);
+      const heading=/^[A-Za-z]/.test(text)&&text.length<70&&source.parts?.filter(p=>p.text.trim()).every(p=>p.bold);
+      rows.push({role,...source,keepNext:paired||heading});
     });
   });
   return rows;
@@ -242,4 +273,17 @@ function styledParts_(row) {
     const active=ranges.filter(r=>r.start<=start&&r.end>=breaks[i+1]);
     return {text:text.slice(start,breaks[i+1]),bold:active.some(r=>r.bold)?true:undefined,highlight:active.find(r=>r.highlight)?.highlight};
   });
+}
+
+function validateLesson_(lesson) {
+  const errors=[];
+  if(lesson.answers.some(a=>a.text==='[정답 확인 필요]'||a.sectionIndex<0))errors.push('정답을 원본 핵심 표현에 연결하지 못했습니다.');
+  if(lesson.answers.length!==lesson.sections.length || new Set(lesson.answers.map(a=>a.sectionIndex)).size!==lesson.answers.length)errors.push('문제와 핵심 표현 번호가 일대일로 연결되지 않았습니다.');
+  lessonRows_(lesson).forEach(row=>{
+    if(row.parts&&row.parts.map(p=>p.text).join('')!==row.text)errors.push('본문과 강조 구간의 글자가 일치하지 않습니다.');
+  });
+  // An unclassified text slide is a potential omission; never call this a
+  // successful conversion just because the four answers were found.
+  lesson.warnings.filter(w=>w.includes('섹션을 판별')).forEach(w=>errors.push(w));
+  return {ok:!errors.length,errors:Array.from(new Set(errors)),reviewSlides:lesson.warnings.filter(w=>w.includes('이미지 속'))};
 }
