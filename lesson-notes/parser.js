@@ -49,28 +49,68 @@ function changedAnswer_(question, answered) {
 }
 
 function segments_(lines) {
-  const result = [];
-  let buffer = [];
-  function flush() { if (buffer.length) result.push(buffer.join(' ')); buffer = []; }
-  lines.forEach(raw => {
-    const line = raw.trim();
-    if (!line) { flush(); return; }
-    // 영어 예문과 한국어 뜻, 새 용어, 소제목은 서로 다른 문단으로 유지.
-    const prev = buffer[buffer.length - 1] || '';
-    const label = /^(?:[A-Za-z][A-Za-z /-]*\s*:|비슷한 표현|같이 해석|.*관련 표현|based in 비슷한 표현)/.test(line);
-    if (buffer.length && (line.startsWith(':') || line.startsWith('→') || label || hasKorean_(prev) !== hasKorean_(line))) flush();
-    buffer.push(line.replace(/^:\s*(?=[A-Za-z])/, ''));
-    // 짧은 유사 표현 리스트도 합쳐 버리지 않도록 문장 끝에서 분리.
-    if (/[.!?]$/.test(line) || /^(Pleasure|I am pleased|It[’']s|Honored|Lovely)\b/.test(line)) flush();
+  return segmentRows_(lines.map(text=>({text,start:0}))).map(r=>r.text);
+}
+
+function slideRich_(slide) {
+  const blocks=slide.styledBlocks || slide.blocks.map(text=>({text,runs:[]}));
+  let text='',runs=[];
+  blocks.forEach((b,i)=>{if(i)text+='\n';const base=text.length;text+=b.text;(b.runs||[]).forEach(r=>runs.push({...r,start:r.start+base,end:r.end+base}));});
+  return {text,runs,styled:!!slide.styledBlocks};
+}
+function richLines_(rich) {
+  let offset=0;return rich.text.split('\n').map(text=>{const line={text,start:offset};offset+=text.length+1;return line;});
+}
+function richParts_(text,map,rich) {
+  if(!rich?.styled)return undefined;
+  const parts=[];
+  for(let i=0;i<text.length;i++){
+    const r=rich.runs.find(r=>r.start<=map[i]&&r.end>map[i]);
+    const style=r?{bold:r.bold,italic:r.italic,underline:r.underline,strike:r.strike,color:r.color,highlight:r.highlight}:{};
+    const last=parts[parts.length-1];
+    if(last&&JSON.stringify(last.style)===JSON.stringify(style))last.text+=text[i];
+    else parts.push({text:text[i],style});
+  }
+  return parts.map(p=>({text:p.text,...p.style}));
+}
+function joinedRow_(lines,rich) {
+  let text='',map=[];
+  lines.forEach(line=>{const trimmed=line.text.trim();if(!trimmed)return;const leading=line.text.length-line.text.trimStart().length;
+    if(text){text+=' ';map.push(line.start-1);}
+    text+=trimmed;for(let i=0;i<trimmed.length;i++)map.push(line.start+leading+i);
   });
-  flush();
-  return result;
+  return {text,parts:richParts_(text,map,rich)};
+}
+function segmentRows_(lines,rich) {
+  const result=[];let buffer=[];
+  function flush(){if(buffer.length)result.push(joinedRow_(buffer,rich));buffer=[];}
+  function strong(line){const row=joinedRow_([line],rich);return !!row.parts?.length&&row.parts.filter(p=>p.text.trim()).every(p=>p.bold);}
+  lines.forEach(line=>{
+    const text=line.text.trim();if(!text){flush();return;}
+    const previous=buffer[buffer.length-1];
+    const label=/^(?:[A-Za-z][A-Za-z /-]*\s*:|비슷한 표현|같이 해석|.*관련 표현|based in 비슷한 표현)/.test(text);
+    if(previous&&(text.startsWith(':')||text.startsWith('→')||label||hasKorean_(previous.text)!==hasKorean_(text)||(/^[A-Za-z]/.test(text)&&/^[가-힣]/.test(previous.text.trim().replace(/^[:→]\s*/,'')))||strong(line)||strong(previous)))flush();
+    buffer.push(line);
+    if(/[.!?]$/.test(text)||/^(Pleasure|I am pleased|It[’']s|Honored|Lovely)\b/.test(text))flush();
+  });flush();return result;
+}
+function dialogueRows_(questions,rich) {
+  // Dialogue reflow normalizes whitespace; each output character retains its
+  // original source position, including repeated words in the same text box.
+  let normalized='',map=[],space=null;
+  for(let i=0;i<rich.text.length;i++){
+    if(/\s/.test(rich.text[i])){if(normalized)space=i;continue;}
+    if(space!==null){normalized+=' ';map.push(space);space=null;}
+    normalized+=rich.text[i];map.push(i);
+  }
+  let cursor=0;
+  return questions.map(text=>{const start=normalized.indexOf(text,cursor);if(start<0)return {text};cursor=start+text.length;return {text,parts:richParts_(text,map.slice(start,cursor),rich)};});
 }
 
 function buildLesson_(deck, options) {
   options = options || {};
   const warnings = [];
-  const slides = deck.slides.map(s => ({number:s.number, id:s.id, blocks:s.blocks.map(cleanText_).filter(Boolean), imageCount:s.imageCount || 0, highlights:s.highlights || []}));
+  const slides = deck.slides.map(s => ({number:s.number, id:s.id, blocks:s.blocks.map(cleanText_).filter(Boolean), styledBlocks:s.styledBlocks, imageCount:s.imageCount || 0}));
   const dialogueSlides = slides.filter(s => dialogueLines_(s.blocks).length >= 2 && /[①-⑳]/.test(s.blocks.join('\n')));
   if (!dialogueSlides.length) throw new Error('화자 이름: 문장 형태의 대화를 찾지 못했습니다. 현재는 예시와 같은 영어 수업 슬라이드 형식을 지원합니다.');
   const first = dialogueSlides[0];
@@ -88,29 +128,28 @@ function buildLesson_(deck, options) {
     }
     const text = slide.blocks.join('\n');
     if (/^(다시보기|수업 노트|테스트|Thank you|감사합니다)/i.test(text)) { usedSlides.add(slide.number); return; }
-    const lines = text.split('\n');
-    const quoted=lines.join('\n').match(/^[“"]([^”"]+)[”"](?:[ \t]*\n|$)/);
+    const rich=slideRich_(slide);
+    const lines = richLines_(rich);
+    const quoted=rich.text.match(/^[“"]([^”"]+)[”"](?:[ \t]*\n|$)/);
     const heading = quoted ? normalize_(quoted[1]) : null;
     if (heading) {
       const existing = sections.find(s => normalize_(s.expression) === normalize_(heading));
       if (existing) current = existing;
-      else { current = {expression:heading, meaning:'', paragraphs:[], slideNumbers:[], highlights:[]}; sections.push(current); }
-      lines.splice(0,quoted[0].trimEnd().split('\n').length);
+      else { current = {expression:heading, meaning:'', paragraphs:[], paragraphRows:[], slideNumbers:[]}; sections.push(current); }
+      const headingLines=lines.splice(0,quoted[0].trimEnd().split('\n').length);
+      if(!existing)current.expressionRow=joinedRow_(headingLines,rich);
       if (!existing) {
         const meaning = [];
-        while (lines.length && lines[0].trim()) meaning.push(lines.shift().trim());
-        current.meaning = meaning.join(' ');
+        while (lines.length && /^[가-힣]/.test(lines[0].text.trim()) && !/^(비슷한 표현|같이 해석)/.test(lines[0].text.trim())) meaning.push(lines.shift());
+        current.meaningRow=joinedRow_(meaning,rich);
+        current.meaning = current.meaningRow.text;
       }
     }
     if (!current) { warnings.push(slide.number + '번: 섹션을 판별하지 못했습니다. ' + normalize_(text).slice(0,100)); return; }
     current.slideNumbers.push(slide.number);
-    slide.highlights.forEach(term => {
-      const normalized = normalize_(term).replace(/\s+(me|you|us|them)$/i,'');
-      if (normalized && !current.highlights.includes(normalized)) current.highlights.push(normalized);
-    });
-    segments_(lines).forEach(line => {
+    segmentRows_(lines,rich).forEach(row => {
       // 같은 슬라이드의 반복 제목만 제거. 서로 다른 예문은 유지.
-      if (!current.paragraphs.includes(line)) current.paragraphs.push(line);
+      if (!current.paragraphs.includes(row.text)) {current.paragraphs.push(row.text);current.paragraphRows.push(row);}
     });
     usedSlides.add(slide.number);
   });
@@ -155,12 +194,12 @@ function buildLesson_(deck, options) {
   if (!level || !lessonNumber) throw new Error('레벨과 Lesson 번호를 입력해 주세요.');
   const titleSlide = slides.find(s => s.number < first.number && s.blocks.length && /^[A-Za-z]/.test(s.blocks[0]));
   const title = options.lessonTitle || (titleSlide ? normalize_(titleSlide.blocks[0]) : deck.title.replace(/^.*?\d+강[_\s]*/,''));
-  return {level, lessonNumber, title, documentTitle:'[' + level + '] 라이브노트_' + lessonNumber + '강_' + title, dialogue:questions, answers, sections, warnings, slideCount:slides.length, dialogueSlideCount:dialogueSlides.length};
+  return {level, lessonNumber, title, documentTitle:'[' + level + '] 라이브노트_' + lessonNumber + '강_' + title, dialogue:questions, dialogueRows:dialogueRows_(questions,slideRich_(first)), answers, sections, warnings, slideCount:slides.length, dialogueSlideCount:dialogueSlides.length};
 }
 
 function lessonRows_(lesson) {
   const rows = [{role:'section',text:'Dialogues'}];
-  lesson.dialogue.forEach(text => rows.push({role:'body',text}));
+  (lesson.dialogueRows || lesson.dialogue.map(text=>({text}))).forEach(row => rows.push({role:'body',...row}));
   rows.push({role:'body',text:''},{role:'label',text:'정답:'});
   lesson.answers.forEach(a => rows.push({role:'body',text:a.marker + ' ' + a.text}));
   rows.push({role:'pageBreak'},{role:'section',text:'Key Points'});
@@ -168,31 +207,25 @@ function lessonRows_(lesson) {
     if (i > 0) rows.push({role:'pageBreak'});
     const answer = lesson.answers.find(a => a.sectionIndex === i);
     rows.push({role:'number',text:'#' + (answer ? answer.marker.charCodeAt(0)-'①'.charCodeAt(0)+1 : i+1)});
-    rows.push({role:'expression',text:'“' + s.expression + '”'});
-    if (s.meaning) rows.push({role:'expression',text:s.meaning});
+    rows.push({role:'expression',...(s.expressionRow || {text:'“' + s.expression + '”'})});
+    if (s.meaning) rows.push({role:'expression',...(s.meaningRow || {text:s.meaning})});
     rows.push({role:'body',text:''});
-    let previous = '';
-    s.paragraphs.forEach(raw => {
+    (s.paragraphRows || s.paragraphs.map(text=>({text}))).forEach(source => {
+      const raw=source.text;
       if (normalize_(raw).replace(/[.!?]$/,'') === normalize_(s.expression).replace(/[.!?]$/,'')) return;
-      let text = raw;
+      const text = raw;
       let role = /비슷한 표현|관련 표현|같이 해석/.test(text) ? 'label' : 'body';
-      if (text.startsWith('→')) { role='note'; text=text.replace(/^→\s*/,''); }
-      else if (/^[가-힣]/.test(text) && /^[A-Za-z]/.test(previous) && /[.!?]$/.test(previous)) text=': ' + text;
-      rows.push({role,text,highlights:s.highlights || []});
-      previous=text;
+      if (text.startsWith('→')) role='note';
+      rows.push({role,...source});
     });
   });
   return rows;
 }
 
 function styledParts_(row) {
+  if(row.parts)return row.parts;
   const ranges=[];
   const text=row.text || '';
-  (row.highlights || []).forEach(term => {
-    if (!term) return;
-    let index=text.toLowerCase().indexOf(term.toLowerCase());
-    while(index>=0){ranges.push({start:index,end:index+term.length,highlight:'D9EAD3'});index=text.toLowerCase().indexOf(term.toLowerCase(),index+term.length);}
-  });
   if(row.role==='body') {
     const speaker=text.match(/^[A-Za-z][A-Za-z .'-]{0,35}(?=:)/);
     if(speaker)ranges.push({start:0,end:speaker[0].length,bold:true});
