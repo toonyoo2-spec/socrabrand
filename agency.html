@@ -1349,7 +1349,7 @@ async function boot(){
   SUMMON = (sm.data || [])[0] || null;
   SCOUT = sc.data || [];
   (pr.data || []).forEach(x => PRES[x.code] = x);
-  CHAT = (ch.data || []).slice().reverse();
+  CHAT = (ch.data || []).slice().reverse(); chatFullAt = Date.now();
   (cf.data || []).forEach(x => CFG[x.key] = x.value);
   if (CFG.execution_provider === "codex") CODEX_JOBS = (await sb.from("agency_codex_jobs").select("id,kind,status,result,updated_at").order("created_at",{ascending:false}).limit(8)).data || [];
   IV = iv.data || [];
@@ -1462,10 +1462,10 @@ function pipelineHtml(){
 let pollTimer = null;
 async function pollRun(){
   if (document.hidden) return schedulePoll();
-  const [mr, pr, ch, smr, bridge, jobs] = await Promise.all([
+  // 채팅은 syncChat이 따로 가볍게 동기화한다(여기서 1000개를 또 받지 않는다)
+  const [mr, pr, smr, bridge, jobs] = await Promise.all([
     sb.from("agency_meetings").select("*").order("created_at", {ascending:false}).limit(1),
     sb.from("agency_presence").select("*"),
-    sb.from("agency_chat").select("*").order("created_at", {ascending:false}).limit(1000), // 최신 1000개(오래된 500개만 불러와 새 말이 사라지던 문제)
     sb.from("agency_summons").select("*").order("requested_at", {ascending:false}).limit(1),
     sb.from("agency_config").select("key,value").in("key",["execution_provider","codex_bridge","night_mode"]),
     sb.from("agency_codex_jobs").select("id,kind,status,result,updated_at").order("created_at",{ascending:false}).limit(8)
@@ -1476,7 +1476,7 @@ async function pollRun(){
   const row = mr.data && mr.data[0]; const cur = MEETINGS[0];
   const sig = r => r ? r.id + r.status + JSON.stringify((r.meta||{}).steps || []) : "";
   const psig = JSON.stringify(PRES) + CHAT.length + CHAT.filter(c => c.handled).length;
-  (pr.data || []).forEach(x => PRES[x.code] = x); if (ch.data) ingestChat(ch.data);
+  (pr.data || []).forEach(x => PRES[x.code] = x);
   const changedMeeting = row && sig(row) !== sig(cur);
   if (changedMeeting) { const i = MEETINGS.findIndex(x => x.id === row.id); if (i >= 0) MEETINGS[i] = row; else MEETINGS.unshift(row); }
   if (changedMeeting && row.status !== "running") { renderToday(); renderMinutesNav(); }
@@ -1509,19 +1509,49 @@ function ingestChat(rows){
   if (roomChanged) renderTeam();
   refreshRoomCounts(); refreshChat(); refreshOffice();
 }
-async function syncChat(){
+// 매번 최신 1000개(약 700KB)를 다시 받으면 전송량(egress)이 하루 수 GB가 된다.
+// 평소엔 최근 1분 안에 생긴 말 + 아직 바뀔 수 있는 말(처리 대기·첨부 분석·안 읽음)의 상태만 가볍게 확인하고,
+// 전체 1000개는 실시간 재연결·네트워크 복구·5분 넘게 숨겼다 돌아올 때·보이는 동안 30분마다만 다시 받는다.
+let chatFullAt = 0, chatWantFull = false, chatHiddenAt = 0;
+const CHAT_STATE = "id,handled,read_by_kwan,media_pending";
+async function syncChat(full){
+  if (full === true) chatWantFull = true;
   if (chatSyncBusy) return;
   clearTimeout(chatTimer); chatSyncBusy = true;
   try {
-    const result = await sb.from("agency_chat").select("*").order("created_at", {ascending:false}).limit(1000);
-    if (result.error) throw result.error;
-    if (result.data) ingestChat(result.data);
+    const due = !document.hidden && Date.now() - chatFullAt > 30 * 60e3;
+    if (!CHAT.length || due || (chatWantFull && Date.now() - chatFullAt > 30e3)) {
+      chatWantFull = false;
+      const result = await sb.from("agency_chat").select("*").order("created_at", {ascending:false}).limit(1000);
+      if (result.error) throw result.error;
+      chatFullAt = Date.now();
+      if (result.data) ingestChat(result.data);
+    } else {
+      chatWantFull = false;
+      const last = CHAT.reduce((m, c) => Math.max(m, Date.parse(c.created_at) || 0), 0);
+      const since = new Date(last - 60e3).toISOString(); // 커밋 순서가 뒤바뀐 말도 놓치지 않게 1분 겹쳐 본다
+      const open = CHAT.filter(c => c.media_pending || (c.sender === "kwan" && !c.handled) || (c.sender === "agent" && !c.read_by_kwan)).slice(-50).map(c => c.id);
+      const [recent, state] = await Promise.all([
+        sb.from("agency_chat").select("id").gte("created_at", since),
+        open.length ? sb.from("agency_chat").select(CHAT_STATE).in("id", open) : Promise.resolve({ data: [] })
+      ]);
+      if (recent.error) throw recent.error;
+      if (state.error) throw state.error;
+      const missing = (recent.data || []).map(r => r.id).filter(id => !CHAT.some(c => c.id === id)); // 본문은 처음 보는 말만 받는다
+      const fresh = missing.length ? await sb.from("agency_chat").select("*").in("id", missing).order("id") : { data: [] };
+      if (fresh.error) throw fresh.error;
+      const merged = (state.data || []).map(s => { const prev = CHAT.find(c => c.id === s.id); return prev ? { ...prev, ...s } : null; }).filter(Boolean);
+      ingestChat([...(fresh.data || []), ...merged]);
+    }
   } catch (e) { console.warn("채팅 동기화 재시도 예정", e.message || e); }
-  finally { chatSyncBusy = false; chatTimer = setTimeout(syncChat, document.hidden ? 15000 : 5000); }
+  finally { chatSyncBusy = false; chatTimer = setTimeout(syncChat, document.hidden ? 30000 : 5000); }
 }
 window.addEventListener("focus", () => { if (RT) syncChat(); });
-window.addEventListener("online", () => { if (RT) syncChat(); });
-document.addEventListener("visibilitychange", () => { if (RT) syncChat(); });
+window.addEventListener("online", () => { if (RT) syncChat(true); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { chatHiddenAt = Date.now(); return; }
+  if (RT) syncChat(chatHiddenAt && Date.now() - chatHiddenAt > 5 * 60e3);
+});
 
 // ===== 실시간 연동 (새로고침 없이) =====
 let RT = null, rtTimer = null, rtDirty = {};
@@ -1565,7 +1595,7 @@ function startRealtime(){
       rtDirty.pipe = true; if (row.status !== "running") { rtDirty.today = true; rtDirty.minutes = true; } else rtDirty.office = true; rtFlush(); })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_summons"}, ({new:row}) => { if (row && row.id) { SUMMON = row; rtDirty.office = true; rtFlush(); } })
     .on("postgres_changes", {event:"*", schema:"public", table:"agency_attendance"}, ({new:row}) => { if (row && row.work_date === kstNow().date) { ATT = row; rtDirty.office = true; rtFlush(); } })
-    .subscribe(status => { const on = status === "SUBSCRIBED"; if (on !== LIVE) { LIVE = on; refreshOffice(); schedulePoll(); } if (on) syncChat(); });
+    .subscribe(status => { const on = status === "SUBSCRIBED"; if (on !== LIVE) { LIVE = on; refreshOffice(); schedulePoll(); } if (on) syncChat(true); }); // (재)연결 사이 놓친 말은 전체 동기화로 채운다
 }
 
 // ===== 카카오톡식 알림 =====
@@ -2276,6 +2306,21 @@ function bindMic(f){
     try { rec.start(); } catch (e) { const message = "음성 입력을 시작하지 못했어요. 마이크 권한을 확인하고 다시 눌러 주세요."; micStop(message); toast(message); }
   });
 }
+// 큰 사진(800KB 이상)은 올리기 전에 긴 변 2560px·JPEG로 줄인다. 원본은 올리지 않으므로 저장소에 쌓이지 않는다.
+// 줄인 결과가 더 크거나 이 브라우저가 못 여는 형식이면 원본 그대로 올린다(GIF·SVG는 손대지 않음).
+async function shrinkImage(file){
+  if (!/^image\/(png|jpe?g|webp|bmp|heic|heif)$/i.test(file.type || "") || file.size < 800e3) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const s = Math.min(1, 2560 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement("canvas"); cv.width = Math.round(bmp.width * s); cv.height = Math.round(bmp.height * s);
+    const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(bmp, 0, 0, cv.width, cv.height);
+    if (bmp.close) bmp.close();
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch (e) { return file; }
+}
 async function sendChat(code, fid, taid){
   micStop();
   const ta = $("#" + taid), files = ATT_FILES[fid] || [];
@@ -2283,7 +2328,8 @@ async function sendChat(code, fid, taid){
   const btn = $("#" + fid).querySelector('button[type="submit"]'); if (btn) btn.disabled = true;
   try {
     const attachments = [];
-    for (const file of files) {
+    for (const orig of files) {
+      const file = await shrinkImage(orig);
       toast(`올리는 중 · ${file.name} (${fsize(file.size)})`);
       const safe = file.name.replace(/[^\w.\-가-힣]+/g, "_").slice(-80);
       const path = `${code}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${safe}`;
@@ -2309,7 +2355,7 @@ function attHtml(c){
   const list = c.attachments || []; if (!list.length) return "";
   return list.map(a => { const m = MEDIA.find(x => x.chat_id === c.id && x.path === a.path);
     const media = a.type.startsWith("video/") ? `<video controls preload="metadata" playsinline data-src="${esc(a.path)}"></video>`
-      : a.type.startsWith("image/") ? `<img alt="${esc(a.name)}" data-src="${esc(a.path)}">`
+      : a.type.startsWith("image/") ? `<img alt="${esc(a.name)}" loading="lazy" data-src="${esc(a.path)}">`
       : a.type.startsWith("audio/") ? `<audio controls preload="metadata" data-src="${esc(a.path)}"></audio>`
       : `<a class="att-file" href="#" data-src="${esc(a.path)}" target="_blank" rel="noopener">📄 ${esc(a.name)}</a>`;
     return `<div class="att" data-path="${esc(a.path)}" data-chat="${c.id}">${media}${c.sender === "kwan" ? aiBox(m) : ""}</div>`; }).join("");
