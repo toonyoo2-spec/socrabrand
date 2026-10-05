@@ -20,7 +20,7 @@
 
 1. 먼저 agency_config의 spec_codex·spec_senior·reference_policy를 읽고 해당 에이전트 guideline.senior_role·execution_contract·reference_routine을 적용한다. 현재 작업 유형·출처 행을 확인한다. 원 요청이 이미 handled/duty_seen/done이면 결과를 재생성하지 않고 기존 결과 확인 후 done을 반환한다. 에이전트는 active=true만 읽고, spec_morning/spec_night의 뒤쪽 조직 개편·Mia 복귀·Iris 독립성 규칙을 적용한다. 에이전트 역할·자아·성장 목표·KWAN 프로필·해당 방의 최근 대화를 읽는다.
 2. 채팅은 KWAN이 쓴 바로 그 code의 방으로 답한다. 1:1은 해당 에이전트만, 단체방은 그 방 members만 답한다. Iris(HR)는 자신의 1:1에서만 답한다. retired 에이전트는 말하지 않는다.
-3. 작업 시작·중간 결과를 실제 DB에 저장한다. presence는 실제 진행에 맞게 working/meeting으로 설정한다. 단순 인사나 사전 확인만으로 원 요청을 완료했다고 표시하지 않는다.
+3. 작업 시작·중간 결과를 해당 원 행·작업 대기열에 저장한다. 정기 업무의 시작/중간/완료 안내를 메신저에 복제하지 않는다. presence는 실제 진행에 맞게 working/meeting으로 설정한다. 단순 인사나 사전 확인만으로 원 요청을 완료했다고 표시하지 않는다.
 4. 사용자 입력이 필요한 작업은 구체적인 질문을 같은 방에 쓰고 status=needs_user로 반환한다. 권한이 부족하거나 도구가 없으면 blocked로 반환한다. 실제 저장·도구 성공을 재조회한 뒤에만 done을 반환한다.
 5. 진행 중 들어온 같은 방 메시지는 필요한 시점마다 확인한다. 회의는 짧은 라운드로 질문과 반론을 실제 채팅방에 기록한다. 사용자 참여 의사가 있으면 사용자 답을 중심으로 진행하고, 승인 없이 선택을 확정하지 않는다.
 6. 정상 완료 뒤 원 chat.handled=true / intervention.duty_seen=true와 필요한 status / summons.done / research.done을 저장한다. 단순 확인 메시지 전송 직후 handled로 바꾸지 않는다.
@@ -47,7 +47,9 @@ SENIOR_STANDARD.md·CODEX_OPERATIONS.md·REFERENCE_ROUTINE.md는 운영 지침�
 
 ## Grace 개인비서
 
-PM 작업은 grace_personal_policy를 우선 적용한다. 정기 일일보고를 하지 않으며, 필요할 때만 중요한 변화와 자연스러운 대화를 원 PM 방에 남긴다. smalltalk는 사용자가 허용한 PM 대화이며 최근 맥락·읽음·대기 메시지·조용한 시간 조건을 다시 확인한다. 재료가 없으면 조용히 종료한다. 단순 안부는 빠르게 짧게 답하고 불필요한 네 플랫폼 탐색·회의를 하지 않는다. 기억은 근거가 있는 명시적 선호와 추정 패턴을 구분한다. 대화 중단 요청은 grace_smalltalk_enabled=false로 반영한다.
+모든 메신저 작성은 MESSENGER_POLICY.md와 DB messenger_policy를 우선 적용한다. 먼저 보내는 메시지는 개인적인 질문이나 함께 이야기할 실제 주제가 있을 때만 보낸다. 정기 업무의 시작/중간/완료/오류 안내와 피드백 독촉은 해당 원 행에만 저장한다. 사용자의 직접 채팅 요청에 대한 답변과 진행에 반드시 필요한 구체적인 질문은 원 방에서 전달한다.
+
+PM 작업은 grace_personal_policy도 적용한다. smalltalk는 사용자가 허용한 PM 대화이며 최근 맥락·읽음·대기 메시지·조용한 시간 조건을 다시 확인한다. 재료가 없으면 조용히 종료한다. 단순 안부는 빠르게 짧게 답하고 불필요한 네 플랫폼 탐색·회의를 하지 않는다. 기억은 근거가 있는 명시적 선호와 추정 패턴을 구분한다. 대화 중단 요청은 grace_smalltalk_enabled=false로 반영한다.
 
 ## 백그라운드 리서치 · KWAN 요청 2026-10-02
 

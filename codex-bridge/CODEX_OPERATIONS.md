@@ -19,7 +19,7 @@ duty/intervention: 원 kind/body/연관 회의와 현재 요청을 읽고 처리
 summon: queued 또는 running인 원 summons를 읽는다. queued→running. team의 active(PM/YK 포함, HR 제외)와 note의 목적을 따른다. 작업 요청은 산출물, 결정 요청은 manual 회의. note가 비면 필요한 안건만 제안하고 자동 오전 회의를 재개하지 않는다. 저장 후 meeting_id와 status=done, 실패 시 failed/error.
 research: 원 research를 읽어 queued→running, 요청 에이전트와 주제를 유지한다. 검증한 사실 5~8개·우리 서비스 적용·다른 관점·한계를 agency_notes(kind='research',links/sources)에 저장하고 agent.study.learned에 by='codex'로 현재 값과 병합, 원 research.result와 done. 실패는 failed. 단순 최신 동향 나열로 끝내지 않는다.
 media: agency_media의 실제 파일·chat_id·지시를 읽고 지원 도구로 원본을 확인한다. 이미지·PDF·영상·오디오에서 본 범위와 타임코드를 명시한다. 지원하지 않는 형식은 failed/skipped와 이유. 같은 chat의 모든 첨부가 종료된 경우에만 media_pending=false로 바꿔 답변으로 넘긴다. 못 본 내용을 파일명으로 추측하지 않는다.
-report: payload.code의 active 직무 담당 한 명이 날짜+code 중복을 확인하고 agency_reports에 통찰·직접 근거·우리 서비스 실행안·측정/실패 조건을 저장한다. agency_config.report_direction와 최근 KWAN 피드백을 반영한다. 단순 유행 요약은 미달.
+report: payload.code의 active 직무 담당 한 명이 날짜+code 중복을 확인하고 agency_reports에 통찰·직접 근거·우리 서비스 실행안·측정/실패 조건을 저장한다. agency_config.report_direction와 최근 KWAN 피드백을 반영한다. 단순 유행 요약은 미달. 시작/중간/완료 알림은 메신저에 복제하지 않는다. 읽음(status=read)은 피드백 없이 처리가 끝난 상태이며 승인/반려를 뜻하지 않는다.
 study: payload.code의 현재 성장 목표와 study_plan을 읽는다. 원 출처→직무 원리→적용 과제→반례/한계→검증 계획을 study에 현재 값과 병합한다. 사용자의 원문을 신기술 근거로 바꾸지 않는다.
 growth: Iris가 active 본인 제외 구성원의 실제 결과·신호·기회 차이를 iris_rubric으로 평가한다. 기존 가중치·레벨 조건 유지, history/목표에 근거 저장, HR 1:1 공유. 신규 조직·기준 변경은 KWAN 결정 필요.
 hr_scout: Iris가 실제 커뮤니티/공식 설계 사례에서 역할·기법을 확인하고 필요성·적용·테스트·한계를 HR 1:1로 제안한다. 채용은 제안까지만.

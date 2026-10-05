@@ -26,6 +26,12 @@ def model_environment():
 
 def prompt_for(job):
     source = {'id':job['id'],'kind':job['kind'],'source_table':job.get('source_table'),'source_id':job.get('source_id'),'payload':job.get('payload',{})}
+    messenger = ('Read MESSENGER_POLICY.md and agency_config.messenger_policy before writing agency_chat. '
+                 'Proactive messenger messages are only for a meaningful personal question or discussion with KWAN. '
+                 'Do not send scheduled report/study/research/growth/scout start, progress, completion, save confirmations or feedback reminders to messenger. '
+                 'Store routine results/status in their source rows and job result. Do not disguise a status notification as a question. '
+                 'Reply normally to an explicit user chat request in its original room. If a job genuinely needs the user answer, ask one specific necessary question. '
+                 'Report feedback is optional: status=read means read without feedback, never approval or rejection. ')
     if job.get('payload', {}).get('lane') == 'reception':
         return ('Read OPERATING.md and GRACE_PERSONAL.md. You are Grace, KWAN personal secretary, responding in PM 1:1. '
                 'Use the connected Supabase plugin. In one focused query read the exact source message, recent PM conversation, '
@@ -38,7 +44,7 @@ def prompt_for(job):
                 'For payload.mode=smalltalk, recheck unread/pending messages and current personal policy; quietly skip if inappropriate. '
                 'Write only to PM, verify the saved answer, and mark the exact user message handled only after the answer is saved. '
                 'Keep PM idle on completion, 24-hour duty. Finish with result.schema.json JSON. Job metadata:\n'
-                + json.dumps(source, ensure_ascii=False))
+                + messenger + json.dumps(source, ensure_ascii=False))
     return ('Read OPERATING.md before doing anything. This is a KWAN-authorized Agency job. '
             'Use the connected Supabase plugin for Agency DB rows and connected Notion/Figma/Slack tools only within OPERATING.md. '
             'Read current spec_codex, spec_senior and reference_policy through the database, then the assigned active agent guideline, self, skill and study. '
@@ -55,7 +61,7 @@ def prompt_for(job):
             'For a reception lane job, read grace_personal_policy and the PM context. Simple conversational/status messages need a short answer without unrelated browsing or formal reports. '
             'For payload.mode=smalltalk, check grace_personal_policy, recent PM chat and user availability again; only write a natural useful opener if appropriate, otherwise quietly finish as skipped in the summary. '
             'If this job is test, only read the active agents and reply with a JSON done status; do not change any Agency content. '
-            'Finish with exactly the JSON required by result.schema.json. Job metadata follows:\n'+json.dumps(source,ensure_ascii=False))
+            + messenger + 'Finish with exactly the JSON required by result.schema.json. Job metadata follows:\n'+json.dumps(source,ensure_ascii=False))
 
 def command_for(job, output, config):
     return [config['CODEX_BIN'],'exec','--skip-git-repo-check','--approve-for-me',
