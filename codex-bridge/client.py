@@ -17,7 +17,7 @@ def settings():
             if line and not line.startswith('#') and '=' in line:
                 k, v = line.split('=', 1)
                 values[k.strip()] = v.strip()
-    for k in ('SUPABASE_URL', 'SUPABASE_ANON_KEY', 'AGENCY_WORKER_TOKEN', 'CODEX_BIN', 'POLL_SECONDS', 'JOB_TIMEOUT_SECONDS'):
+    for k in ('SUPABASE_URL', 'SUPABASE_ANON_KEY', 'AGENCY_WORKER_TOKEN', 'CODEX_BIN', 'CLAUDE_BIN', 'CLAUDE_MODEL', 'POLL_SECONDS', 'JOB_TIMEOUT_SECONDS'):
         if k in os.environ:
             values[k] = os.environ[k]
     url = values.get('SUPABASE_URL', '')

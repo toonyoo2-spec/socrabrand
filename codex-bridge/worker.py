@@ -1,4 +1,5 @@
-"""One Codex process per fixed reception/interactive/background lane; no idle inference."""
+"""One model process per fixed reception/interactive/background lane; no idle inference.
+Jay·Mia design jobs run on Claude Code, everything else on Codex."""
 import argparse
 import datetime as dt
 import fcntl
@@ -63,21 +64,57 @@ def prompt_for(job):
             'If this job is test, only read the active agents and reply with a JSON done status; do not change any Agency content. '
             + messenger + 'Finish with exactly the JSON required by result.schema.json. Job metadata follows:\n'+json.dumps(source,ensure_ascii=False))
 
-def command_for(job, output, config):
+# Jay(DS)·Mia(AD) 디자인 일은 Claude Code(Claude 로그인, 기본 Opus 5.5)로 실행한다. 어떤 일인지는 DB claim이 payload.runner로 정한다.
+CLAUDE_EARLY_FAIL_SECONDS = 120
+
+def runner_for(job, config):
+    return 'claude' if job.get('payload', {}).get('runner') == 'claude' and config.get('CLAUDE_BIN') else 'codex'
+
+def command_for(job, output, config, runner='codex'):
+    if runner == 'claude':
+        return [config['CLAUDE_BIN'],'-p',prompt_for(job),'--model',config.get('CLAUDE_MODEL') or 'claude-opus-5-5',
+                '--output-format','json','--json-schema',(ROOT/'result.schema.json').read_text(),
+                '--permission-mode','bypassPermissions']
     return [config['CODEX_BIN'],'exec','--skip-git-repo-check','--approve-for-me',
             '--cd',str(ROOT),'--json','--output-schema',str(ROOT/'result.schema.json'),
             '--output-last-message',str(output),
             prompt_for(job)]
 
+def claude_final(events_path, output):
+    # Claude는 표준 출력에 결과 JSON 하나를 쓴다. 검증된 구조화 결과만 Codex와 같은 result.json으로 옮긴다.
+    try: data = json.loads(events_path.read_text() or '{}')
+    except ValueError: return
+    if not data.get('is_error') and isinstance(data.get('structured_output'), dict):
+        output.write_text(json.dumps(data['structured_output'], ensure_ascii=False))
+
 def run_job(db, job, config):
-    folder=RUNTIME/job['id']; folder.mkdir(mode=0o700,parents=True,exist_ok=True)
+    runner=runner_for(job,config)
+    result=execute(db,job,config,runner)
+    # Claude가 시작하자마자 실패하면(로그인·한도·설치 문제) 아직 작업 전이므로 Codex가 이어받는다
+    if runner=='claude' and result.get('early_failure'):
+        log('runner_fallback',job_id=job['id'],reason=result['summary'][:200])
+        reason=result['summary'][:300]; runner='codex'
+        result=execute(db,job,config,runner); result['fallback_from_claude']=reason
+    result.pop('early_failure',None)
+    result['runner']=runner
+    db.rpc('finish',{'job_id':job['id'],'status':result['status'],'result':result})
+    db.rpc('heartbeat',{'state':'idle'})
+    log('job_finished',job_id=job['id'],status=result['status'])
+    return result
+
+def execute(db, job, config, runner):
+    folder=RUNTIME/job['id']/runner; folder.mkdir(mode=0o700,parents=True,exist_ok=True)
     output=folder/'result.json'
     timeout=int(config.get('JOB_TIMEOUT_SECONDS','1800'))
-    log('job_started',job_id=job['id'],kind=job['kind'])
+    log('job_started',job_id=job['id'],kind=job['kind'],runner=runner)
     started=time.monotonic(); last_beat=0
-    with (folder/'events.jsonl').open('w') as events, (folder/'stderr.log').open('w') as errors:
-        process=subprocess.Popen(command_for(job,output,config),env=model_environment(),stdin=subprocess.DEVNULL,
-                                 stdout=events,stderr=errors,start_new_session=True)
+    events_path=folder/'events.jsonl'
+    with events_path.open('w') as events, (folder/'stderr.log').open('w') as errors:
+        try:
+            process=subprocess.Popen(command_for(job,output,config,runner),env=model_environment(),stdin=subprocess.DEVNULL,
+                                     stdout=events,stderr=errors,start_new_session=True,cwd=str(ROOT))
+        except OSError as e:
+            return {'status':'blocked','summary':f'{runner} could not start: {e}','early_failure':runner=='claude'}
         try:
             while process.poll() is None:
                 if STOP or time.monotonic()-started>timeout:
@@ -89,21 +126,22 @@ def run_job(db, job, config):
                 if time.monotonic()-last_beat>30:
                     db.rpc('heartbeat',{'state':'working','job_id':job['id']});last_beat=time.monotonic()
                 time.sleep(1)
+            name='Claude' if runner=='claude' else 'Codex'
+            if runner=='claude': events.flush(); claude_final(events_path,output)
             if process.returncode!=0:
-                raise RuntimeError(f'Codex exited with status {process.returncode}; no automatic retry of partial work')
+                raise RuntimeError(f'{name} exited with status {process.returncode}; no automatic retry of partial work')
             if not output.exists():
-                raise RuntimeError('Codex produced no verified final result')
+                raise RuntimeError(f'{name} produced no verified final result')
             result=json.loads(output.read_text())
             if result.get('status') not in ('done','needs_user','blocked') or not isinstance(result.get('summary'),str):
-                raise RuntimeError('Invalid Codex final result')
+                raise RuntimeError(f'Invalid {name} final result')
         except Exception as e:
             if process.poll() is None:
                 os.killpg(process.pid,signal.SIGTERM)
                 process.wait(timeout=10)
             result={'status':'blocked','summary':str(e)}
-    db.rpc('finish',{'job_id':job['id'],'status':result['status'],'result':result})
-    db.rpc('heartbeat',{'state':'idle'})
-    log('job_finished',job_id=job['id'],status=result['status'])
+            if runner=='claude' and not STOP and time.monotonic()-started<CLAUDE_EARLY_FAIL_SECONDS:
+                result['early_failure']=True
     return result
 
 def stop(_signum,_frame):

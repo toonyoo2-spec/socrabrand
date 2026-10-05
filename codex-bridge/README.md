@@ -35,3 +35,11 @@
 PM 정기 보고를 제외하고 직무 공부는 유지한다. GRACE_PERSONAL.md와 운영 DB의 grace_personal_policy가 편안한 스몰토크·근거 기반 선호 학습을 규정한다. MESSENGER_POLICY.md와 messenger_policy에 따라 먼저 보내는 메신저는 개인 질문/대화만 허용하고 정기 업무의 시작/중간/완료 알림은 보고와 작업 기록에만 저장한다. 선제 대화는 PM 방에서만, 최근 대화/읽음/대기 요청/시간 조건을 확인하며 하루 2회와 6시간 간격은 상한이다. 단순 안부에 전체 조직 감사와 레퍼런스 탐색을 하지 않는다. PM presence는 24시간 idle 당직으로 복구하고 자동 퇴근에서 제외한다. 실제 응답은 이 Mac이 깨어 있고 로그인·네트워크·Codex 사용 한도가 유효할 때 가능하다.
 
 일일 보고의 피드백은 선택 사항이다. 전체 읽음 버튼은 마지막 보고 ID를 서버에서 확인하고 그 이전의 새 보고만 읽음 처리한다. 기존 피드백과 처리 중 새로 등록된 보고를 보존하며, 읽음은 승인/반려로 해석하지 않는다. `node --test codex-bridge/test-reports.mjs`는 저장 실패·동시 피드백·새 보고·300개 이상의 과거 보고 처리를 검증한다.
+
+## Jay·Mia 디자인 일은 Claude Opus 5.5 (KWAN 2026-10-05)
+
+`design-runner.sql`이 claim 응답에 `payload.runner`를 붙인다. Jay(DS)·Mia(AD)의 1:1 대화·첨부·보고·공부·리서치, 단체방의 디자인 요청(시안·Figma·배너·썸네일 등), 디자인 목적의 강제 출근은 `claude`, 나머지는 `codex`. 기준은 `agency_config.design_runner`(enabled·agents·pattern)에서 바꾼다.
+
+`worker.py`는 `runner=claude`이고 `.env`에 `CLAUDE_BIN`이 있으면 Claude Code(`claude -p`, Claude 계정 로그인, `CLAUDE_MODEL` 기본 `claude-opus-5-5`)로 실행한다. 같은 프롬프트·운영 지침·`result.schema.json`을 쓰고, 구조화 결과만 완료로 인정한다. Claude가 2분 안에 실패하면(로그인·한도·설치) 작업 전으로 보고 Codex가 이어받는다. `CLAUDE_BIN`이 비어 있으면 모두 Codex로 실행한다. 모델 API 키는 쓰지 않는다.
+
+Mac 설정: Claude Code 설치·로그인 → Claude Code에서 Figma·Supabase 커넥터 확인 → `.env`에 `CLAUDE_BIN=<claude 절대경로>` → 세 경로의 LaunchAgent 재시작.
