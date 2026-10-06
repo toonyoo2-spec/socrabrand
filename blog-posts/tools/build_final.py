@@ -1,5 +1,8 @@
 # 원고 + 이미지 프롬프트 + 작업지침을 합쳐 최종 md/zip을 만든다.
-import pathlib, re, shutil, zipfile
+import pathlib, re, shutil, sys, zipfile
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from card_copy import CARDS
+CARD = {c["no"]: c for c in CARDS}
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "2026-10"
@@ -184,13 +187,16 @@ def build():
                "> 이 파일은 **작업지침 → 이미지 프롬프트 → 본문** 순서로 되어 있어요. 에디터에는 맨 아래 `▼ 본문 시작` 줄 **다음부터** 붙여 넣어 주세요.", "",
                "## 1. 게시 정보", "",
                "| 항목 | 내용 |", "|---|---|",
-               f"| 영역 | {p['section']} |", f"| 카테고리 | {p['cat']} |", f"| 태그 | {p['tags']} |",
-               f"| 날짜/표기 | {p['date']} |", f"| 카드 요약문 | {p['summary']} |",
+               f"| 영역 | {p['section']} |", f"| 제목 | {title} |",
+               f"| 기존 제목 | {CARD[p['no']]['old_title']} (사이트 카드 교체 필요) |",
+               f"| 카드 요약문 | {CARD[p['no']]['summary'] or CARD[p['no']]['old_summary'] + ' (유지)'} |",
+               f"| 태그 | {CARD[p['no']]['tags']} |",
+               f"| 날짜/표기 | {CARD[p['no']]['meta'] or p['date']} |",
                f"| 카드·이미지 기준 색 | {p['bg']} |",
-               f"| 사이트 카드 수정 | {('**필요** — ' + p['card_change']) if p.get('card_change') else '없음 (카드 문구 그대로)'} |", "",
+               "| 카드 문구·카드뉴스 표지 | `98-카드문구-교체안.md` 참고 |", "",
                "## 2. 이미지 작업 목록 (총 5장)", "",
                "| # | 파일명 | 용도 | 비율 | 넣을 위치 | 캡션 |", "|---|---|---|---|---|---|",
-               f"| 0 | {p['no']}-hero.png | 대표(썸네일) | {HERO_AR} | 게시글 대표 이미지 칸 (본문에 넣지 않음) | {p['hero'][1]} |"]
+               f"| 0 | {p['no']}-hero.png | 대표(썸네일) | {HERO_AR} | 게시글 대표 이미지 칸 (본문에 넣지 않음) | {title} |"]
         for k, (h, _, cap) in enumerate(p["imgs"], 1):
             out.append(f"| {k} | {p['no']}-{k}.png | 본문 (M) | {BODY_AR} | {place_desc(p['no'], k, h)} (`IMAGE-URL-{p['no']}-{k}` 자리) | {cap} |")
         out += ["", "## 3. 영문 프롬프트", "",
