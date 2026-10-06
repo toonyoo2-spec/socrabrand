@@ -51,13 +51,14 @@ POSTS = [
        ("## 꾸준함을 돕는 작은 장치", "A wall calendar filled with a long streak of colorful stickers; a child proudly adds one more sticker", "스티커 달력으로 이어진 날을 눈으로 확인해요"),
       ]),
  dict(no="05", src="05-behind-why-cnn10.md", section="새로운 이야기", cat="아티클", tags="비하인드",
-      date="2026.10.02 · 5분 읽기", summary="1만 문장 커리큘럼이 만들어지기까지, 회의실에서 오간 이야기.", bg="soft lavender (#ECE8FB)",
-      hero=("A cozy meeting room where several teachers sit around a table covered with sticky notes and tablets; the tablets show a generic news broadcast with a friendly anchor at a desk, and a whiteboard holds simple diagrams. No brand marks", "선생님들이 CNN 10을 교재로 고른 이유"),
+      date="2026.10.02 · 5분 읽기", summary="실제 속도의 영어, 10분 안팎의 길이, 다양한 주제. 뉴스가 아이 영어 교재가 되는 이유를 정리했어요.", bg="soft lavender (#ECE8FB)",
+      card_change="제목·요약문 교체 (기존: '선생님들이 CNN 10을 교재로 고른 진짜 이유' / '1만 문장 커리큘럼이 만들어지기까지, 회의실에서 오간 이야기.'). 태그는 '비하인드' 대신 '교재 이야기' 권장",
+      hero=("A teacher and two elementary school children leaning in together to watch a generic student news program on a tablet, the screen showing a friendly anchor at a desk and small topic icons; a notebook and pencils on the table. No channel logos or brand marks", "CNN 10, 아이 영어 교재로 좋은 이유"),
       imgs=[
-       ("## 출발점은 '진짜 영어'였어요", "Three large sticky notes on a whiteboard, each with a simple icon: a speaking mouth with sound waves, a stopwatch without numbers, and a globe surrounded by small varied topic icons", "실제 속도, 집중할 수 있는 길이, 새로운 주제"),
+       ("## 교재를 고를 때 먼저 볼 세 가지", "Three large sticky notes on a whiteboard, each with a simple icon: a speaking mouth with sound waves, a stopwatch without numbers, and a globe surrounded by small varied topic icons", "실제 속도, 집중할 수 있는 길이, 다양한 주제"),
        ("## CNN 10은 어떤 프로그램인가요", "A child watching a short generic student news program on a tablet; the screen shows a friendly anchor and small topic icons such as a rocket, a leaf and a soccer ball. No channel logos", "약 10분, 학생을 위한 뉴스 프로그램"),
-       ("## 한 편의 뉴스가 수업이 되기까지", "A horizontal four-step flow connected by soft arrows: an eye, an ear with a mouth, two swapping puzzle pieces, and a speech bubble with a lightbulb", "보기, 따라 말하기, 바꿔 말하기, 내 생각 말하기"),
-       ("## 그래서, 아이들은 어땠을까요", "An elementary classroom where children eagerly raise their hands while one child points at a tablet and speaks, and the teacher looks delighted", "뉴스 속 문장이 아이의 말이 되는 순간"),
+       ("## 한 편의 뉴스를 공부하는 흐름", "A horizontal four-step flow connected by soft arrows: an eye, an ear with a mouth, two swapping puzzle pieces, and a speech bubble with a lightbulb", "보기, 따라 말하기, 바꿔 말하기, 내 생각 말하기"),
+       ("## 집에서 활용할 때의 팁", "A parent and child at home pausing a short news clip on a tablet to chat about it, the child pointing at the screen with curiosity, cozy living room", "한 장면씩, 함께 멈추고 이야기 나누기"),
       ]),
  dict(no="06", src="06-news-speaking-credit-era.md", section="새로운 이야기", cat="뉴스", tags="고교학점제",
       date="2026.09.30 · 5분 읽기", summary="선택과목과 발표 수업이 늘어난 지금, 초등 때 준비할 것.", bg="pale sky blue (#E6EEFD)",
@@ -69,7 +70,8 @@ POSTS = [
        ("## 말하기와 함께 자라는 힘", "A child watering a growing plant with three large leaves; each leaf holds an icon: an ordered list, an ear and a raised hand", "생각을 정리하고, 듣고, 자기 의견을 내는 힘"),
       ]),
  dict(no="07", src="07-expression-my-style.md", section="새로운 이야기", cat="아티클", tags="1분 표현",
-      date="2026.09.28 · 5분 읽기", summary="CNN 10 앵커가 실제로 쓴 표현으로 오늘 저녁 대화해보세요. (※ 검수 리포트: 실제 방송 대사 인용 여부 확인 필요)", bg="warm cream (#FDF1DE)",
+      date="2026.09.28 · 5분 읽기", summary="원어민이 일상에서 즐겨 쓰는 '취향' 표현으로 오늘 저녁 대화해보세요.", bg="warm cream (#FDF1DE)",
+      card_change="요약문 교체 (기존: 'CNN 10 앵커가 실제로 쓴 표현으로 오늘 저녁 대화해보세요.' → 본문에 실제 방송 대사가 없어 불일치)",
       hero=("A cheerful child holding a yellow jacket up against themselves in front of a mirror, delighted, with small sparkles around", "“완전 내 스타일이야”를 영어로"),
       imgs=[
        ("## 상황별 '내 스타일' 표현 5가지", "Five small round vignettes in a row: a movie ticket with popcorn, a child in a well-matched outfit, headphones with music notes, a child absorbed in building blocks, and a teacup", "상황에 따라 골라 쓰는 '취향' 표현 다섯 가지"),
@@ -87,13 +89,14 @@ POSTS = [
        ("## 하루 15분, 이렇게 나눠 보세요", "A simple round clock face without numbers divided into three colored segments, each holding an icon: a music note, a puzzle piece and an open book", "노래, 오늘의 활동, 그림책으로 나눈 15분"),
       ]),
  dict(no="09", src="09-growth-one-minute-speech.md", section="새로운 이야기", cat="아티클", tags="성장 기록",
-      date="2026.09.23 · 5분 읽기", summary="6개월간의 학습 리포트로 따라가 본 한 아이의 변화.", bg="soft peach (#FCE8E2)",
+      date="2026.09.23 · 5분 읽기", summary="말하기를 어려워하던 아이가 1분 스피치까지 가는 단계를, 가상의 아이 '지우'의 이야기로 따라가 봐요.", bg="soft peach (#FCE8E2)",
+      card_change="요약문 교체 (기존: '6개월간의 학습 리포트로 따라가 본 한 아이의 변화.' → 실제 사례로 오해될 수 있음). 태그는 '성장 기록' 대신 '말하기 성장' 권장",
       hero=("An elementary school girl standing in front of her classmates giving a short speech while holding up a drawing of a small white dog; classmates smile and listen", "말 한마디 못 하던 아이의 1분 스피치"),
       imgs=[
        ("## 1개월 차: 듣기만 하는 시간", "A quiet child sitting in class and listening intently to the teacher, with gentle sound waves flowing toward the child and turning into tiny sprouting seeds", "말이 없는 시간은 채우는 시간이에요"),
        ("## 2~3개월 차: 한 단어에서 한 문장으로", "A child answering with a small speech bubble that holds a single dog icon, and the teacher replying with a bigger speech bubble holding a dog and heart icons", "한 단어 대답을 문장으로 넓혀 주기"),
        ("## 4개월 차: 따라 말하기가 자신감이 되다", "A child at home wearing headphones and quietly repeating along with a video on a tablet, with small echoing speech bubbles", "따라 말하기가 혼잣말이 되는 시기"),
-       ("## 부모님 시점에서 본 6개월", "A parent and child watching a tablet together on the sofa; the parent asks a question and the child points excitedly at the screen", "시험이 아니라 함께 보는 이야기로"),
+       ("## 집에서 부모님이 함께할 수 있는 일", "A parent and child watching a tablet together on the sofa; the parent asks a question and the child points excitedly at the screen", "시험이 아니라 함께 보는 이야기로"),
       ]),
  dict(no="10", src="10-news-middle-school-listening.md", section="새로운 이야기", cat="뉴스", tags="중등 대비",
       date="2026.09.19 · 5분 읽기", summary="시험 형식과 출제 경향을 보고 지금부터 할 수 있는 준비를 정리했어요.", bg="light cool gray (#F3F4F6) with soft green accents",
@@ -183,7 +186,8 @@ def build():
                "| 항목 | 내용 |", "|---|---|",
                f"| 영역 | {p['section']} |", f"| 카테고리 | {p['cat']} |", f"| 태그 | {p['tags']} |",
                f"| 날짜/표기 | {p['date']} |", f"| 카드 요약문 | {p['summary']} |",
-               f"| 카드·이미지 기준 색 | {p['bg']} |", "",
+               f"| 카드·이미지 기준 색 | {p['bg']} |",
+               f"| 사이트 카드 수정 | {('**필요** — ' + p['card_change']) if p.get('card_change') else '없음 (카드 문구 그대로)'} |", "",
                "## 2. 이미지 작업 목록 (총 5장)", "",
                "| # | 파일명 | 용도 | 비율 | 넣을 위치 | 캡션 |", "|---|---|---|---|---|---|",
                f"| 0 | {p['no']}-hero.png | 대표(썸네일) | {HERO_AR} | 게시글 대표 이미지 칸 (본문에 넣지 않음) | {p['hero'][1]} |"]
@@ -204,6 +208,12 @@ def build():
                 "▼ 본문 시작 (이 줄 아래부터 에디터에 붙여넣기) ▼", "", insert_images(body, p), ""]
         name = (SRC / p["src"]).name
         (OUT / name).write_text("\n".join(out), encoding="utf-8")
+    for doc in (ROOT / "docs").glob("*.md"):   # README, 검수리포트
+        shutil.copy(doc, OUT / doc.name)
+    zpath = ROOT / "blog-posts-2026-10-final.zip"
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in sorted(OUT.glob("*.md")):
+            z.write(f, f.name)
 
 if __name__ == "__main__":
     build()

@@ -12,6 +12,7 @@
 | 날짜/표기 | 2026.09.16 · 5분 읽기 |
 | 카드 요약문 | 읽어주기에서 함께 말하기로 넘어가는 대화 질문 5가지를 소개해요. |
 | 카드·이미지 기준 색 | fresh mint green (#C6EBD3) |
+| 사이트 카드 수정 | 없음 (카드 문구 그대로) |
 
 ## 2. 이미지 작업 목록 (총 5장)
 
@@ -118,7 +119,7 @@ Three small stacks of picture books growing in size, from chunky board books to 
 "Who is this?", "Where is the cat going?"처럼 who, what, where로 시작하는 질문이에요. 그림 속 대상의 이름과 상황을 말하게 하면서 새 단어를 자연스럽게 익히게 돼요.
 
 **질문 5. 내 경험과 연결하기**
-"Do you have a pet like this?", "Have you ever been to the beach?" 책 속 이야기를 아이의 생활과 연결하는 질문이에요. 내 이야기를 할 때 아이는 가장 많이, 가장 신나게 말해요.
+"Do you have a pet like this?", "Have you ever been to the beach?" 책 속 이야기를 아이의 생활과 연결하는 질문이에요. 자기 이야기를 할 때 아이는 더 많이, 더 신나게 말하곤 해요.
 
 ---
 

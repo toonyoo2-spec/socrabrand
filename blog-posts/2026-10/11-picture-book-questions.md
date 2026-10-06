@@ -39,7 +39,7 @@
 "Who is this?", "Where is the cat going?"처럼 who, what, where로 시작하는 질문이에요. 그림 속 대상의 이름과 상황을 말하게 하면서 새 단어를 자연스럽게 익히게 돼요.
 
 **질문 5. 내 경험과 연결하기**
-"Do you have a pet like this?", "Have you ever been to the beach?" 책 속 이야기를 아이의 생활과 연결하는 질문이에요. 내 이야기를 할 때 아이는 가장 많이, 가장 신나게 말해요.
+"Do you have a pet like this?", "Have you ever been to the beach?" 책 속 이야기를 아이의 생활과 연결하는 질문이에요. 자기 이야기를 할 때 아이는 더 많이, 더 신나게 말하곤 해요.
 
 ---
 
