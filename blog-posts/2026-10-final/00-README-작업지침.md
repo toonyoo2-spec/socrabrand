@@ -1,0 +1,88 @@
+# 2026년 10월 블로그 12편 작업지침
+
+이 zip에는 글 12편이 들어 있어요. 파일마다 **작업지침 → 이미지 영문 프롬프트 → 본문** 순서로 되어 있어서, 한 파일만 열면 그 글을 발행할 때까지 필요한 내용을 다 볼 수 있어요.
+
+## 1. 파일 구성
+
+| 파일 | 영역 | 제목 |
+|---|---|---|
+| 01-issue-grade5-system.md | ISSUE TRACKER | 내신 5등급제 전환, 초등 학부모가 알아둘 3가지 |
+| 02-issue-credit-system-english.md | ISSUE TRACKER | 고교학점제 전면 시행 2년 차, 영어 선택과목은 어떻게 고를까 |
+| 03-issue-essay-assessment-writing.md | ISSUE TRACKER | 서술형·논술형 평가 확대, 영어 쓰기는 언제부터 준비할까 |
+| 04-article-three-line-diary.md | 새로운 이야기 | 영어 일기, 세 줄이면 충분해요 |
+| 05-behind-why-cnn10.md | 새로운 이야기 | 선생님들이 CNN 10을 교재로 고른 진짜 이유 |
+| 06-news-speaking-credit-era.md | 새로운 이야기 | 학점제 시대, 초등 말하기가 더 중요해진 이유 |
+| 07-expression-my-style.md | 새로운 이야기 | “완전 내 스타일이야”를 영어로 하면? |
+| 08-starter-3month-roadmap.md | 새로운 이야기 | 알파벳부터 시작하는 아이, 첫 3개월 로드맵 |
+| 09-growth-one-minute-speech.md | 새로운 이야기 | 말 한마디 못 하던 아이가 1분 스피치를 하기까지 |
+| 10-news-middle-school-listening.md | 새로운 이야기 | 중학교 영어 듣기평가, 초등 때 무엇을 해두면 좋을까 |
+| 11-picture-book-questions.md | 새로운 이야기 | 영어 그림책, 읽어주기만 해도 될까요? |
+| 12-parent-guide-child-dislikes-english.md | 새로운 이야기 | 영어 싫다는 아이, 억지로 시키기 전에 확인할 것 |
+| 99-검수리포트.md | – | 팩트체크(1차)와 오탈자·형식 검수(2차) 결과 |
+
+## 2. 글 하나를 발행하는 순서
+
+1. 파일을 열고 **1. 게시 정보**에서 카테고리, 태그, 날짜, 카드 요약문을 확인해요.
+2. **3. 영문 프롬프트**의 코드 블록 5개를 이미지 생성 도구에 그대로 붙여 넣어 이미지 5장을 만들어요.
+   - 대표 이미지 1장: `NN-hero.png`, 16:9, 게시글 대표 이미지(썸네일) 칸에 등록
+   - 본문 이미지 4장: `NN-1.png` ~ `NN-4.png`, 3:2, 본문 M 사이즈
+3. 이미지를 업로드해서 URL을 받아요.
+4. `▼ 본문 시작` 줄 **아래 내용만** 복사해서 에디터에 붙여 넣어요.
+5. 본문의 `IMAGE-URL-NN-1` ~ `IMAGE-URL-NN-4`를 각각 업로드한 URL로 바꿔요. 위치와 캡션은 이미 들어가 있어요.
+6. 미리보기로 이미지 위치, 캡션, 콜아웃, 리스트가 제대로 보이는지 확인하고 발행해요.
+
+## 3. 이미지 공통 스타일 가이드
+
+모든 프롬프트 뒤에는 아래 공통 스타일 문장이 이미 붙어 있어요. 따로 덧붙이지 않아도 돼요.
+
+```
+Soft flat editorial illustration with subtle paper grain, rounded friendly shapes, warm natural light, calm and hopeful mood, limited pastel palette dominated by {글별 기준 색}, clean composition with generous negative space. People are Korean elementary school children and parents with simple, friendly faces. Original artwork, not imitating any existing book or brand. No text, no letters, no numbers, no logos, no watermarks.
+```
+
+**글별 기준 색** (사이트 카드 배경색에 맞췄어요)
+
+| 글 | 기준 색 |
+|---|---|
+| 01~03 (이슈 트래커) | soft warm gray #F3F4F6 + coral red 포인트 #F0503C |
+| 04 | pale mint green #E8F8EE |
+| 05 | soft lavender #ECE8FB |
+| 06 | pale sky blue #E6EEFD |
+| 07 | warm cream #FDF1DE |
+| 08 | pale lime #EEF6D8 |
+| 09 | soft peach #FCE8E2 |
+| 10 | light cool gray #F3F4F6 + soft green 포인트 |
+| 11 | fresh mint green #C6EBD3 |
+| 12 | very pale mint #E8F7EC |
+
+**생성할 때 지킬 것**
+- 이미지에 글자나 숫자가 생기면 다시 생성해요. 이미지 생성 도구는 글자를 깨뜨리기 쉬워서 프롬프트에서 막아 두었지만, 그래도 생길 수 있어요.
+- 같은 글의 5장은 같은 도구와 같은 모델로 만들어서 그림체를 맞춰요. 시리즈 전체를 같은 모델로 만들면 더 좋아요.
+- 비율 지정 옵션이 있는 도구라면 옵션에서도 16:9 / 3:2를 지정해요. 프롬프트 끝에도 비율 문장을 넣어 두었어요.
+- 실존 인물이나 브랜드는 넣지 않아요.
+  - CNN 로고나 실제 앵커 얼굴은 넣지 않고, "generic news broadcast"로만 표현했어요.
+  - 11번의 애벌레 장면은 특정 그림책의 그림체를 따라 하지 않도록 "Original artwork"를 넣었어요.
+- 9번의 "지우"는 가명이고 여러 사례를 재구성한 인물이에요. 실제 아이 사진은 쓰지 않아요.
+
+## 4. 본문 마크다운 규칙 (사이트 가이드 기준)
+
+| 요소 | 문법 |
+|---|---|
+| 헤드라인 | `# 헤드라인` (글마다 1개) |
+| 타이틀 | `## 타이틀` |
+| 볼드 | `**텍스트**` |
+| 콜아웃 | `::: callout` (줄바꿈) 내용 (줄바꿈) `:::` |
+| 인용문 | `> 인용 텍스트` |
+| Bullet 리스트 | `-- 항목` (2개 이상) |
+| 숫자 리스트 | `== 항목` (2개 이상) |
+| 구분선 | `---` (앞뒤 빈 줄) |
+| 본문 이미지 | `![M:캡션](이미지URL)` |
+
+- 빈칸 표기는 `□`로 통일했어요. 밑줄(`___`)은 이탤릭 문법으로 잘못 읽힐 수 있어서예요.
+- 작업지침 부분(표, 코드 블록, `###`)은 사람이 읽는 용도예요. 에디터에는 붙여 넣지 않아요.
+
+## 5. 발행 전 꼭 확인할 것
+
+- **07:** 카드 요약문은 "CNN 10 앵커가 실제로 쓴 표현"이지만, 본문은 실제 방송 대사를 인용하지 않았어요. 카드 문구를 "뉴스 영어에서 자주 들리는 표현으로"처럼 바꾸거나, 실제 회차를 확인한 뒤 대사를 넣어 주세요.
+- **05:** "1만 문장" 목표, 회의 과정, 수업 4단계는 카드 문구를 바탕으로 구성한 내용이에요. 실제 사내 사실과 맞는지 확인해 주세요.
+- **01~03, 06, 10:** 제도 관련 수치는 2026-10-06 기준으로 확인했어요. 발행일이 늦어지면 교육부와 시·도교육청 최신 발표를 한 번 더 확인해 주세요.
+- 자세한 출처와 수정 내역은 `99-검수리포트.md`에 있어요.

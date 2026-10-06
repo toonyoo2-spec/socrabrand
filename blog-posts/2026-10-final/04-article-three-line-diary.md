@@ -1,0 +1,188 @@
+# [작업지침] 04. 영어 일기, 세 줄이면 충분해요
+
+> 이 파일은 **작업지침 → 이미지 프롬프트 → 본문** 순서로 되어 있어요. 에디터에는 맨 아래 `▼ 본문 시작` 줄 **다음부터** 붙여 넣어 주세요.
+
+## 1. 게시 정보
+
+| 항목 | 내용 |
+|---|---|
+| 영역 | 새로운 이야기 |
+| 카테고리 | 아티클 |
+| 태그 | 초3-4 |
+| 날짜/표기 | 2026.10.05 · 5분 읽기 |
+| 카드 요약문 | 매일 한 편 쓰기를 부담 없이 시작하는 선생님의 세 줄 공식을 알려드려요. |
+| 카드·이미지 기준 색 | pale mint green (#E8F8EE) |
+
+## 2. 이미지 작업 목록 (총 5장)
+
+| # | 파일명 | 용도 | 비율 | 넣을 위치 | 캡션 |
+|---|---|---|---|---|---|
+| 0 | 04-hero.png | 대표(썸네일) | 16:9 | 게시글 대표 이미지 칸 (본문에 넣지 않음) | 영어 일기, 세 줄이면 충분해요 |
+| 1 | 04-1.png | 본문 (M) | 3:2 | `세 줄 공식: 사실 - 느낌 - 다음` 섹션 첫 문단 바로 아래 (`IMAGE-URL-04-1` 자리) | 사실, 느낌, 다음. 세 줄에는 각각 역할이 있어요 |
+| 2 | 04-2.png | 본문 (M) | 3:2 | `막힐 때 꺼내 쓰는 표현 주머니` 섹션 첫 문단 바로 아래 (`IMAGE-URL-04-2` 자리) | 막힐 때 꺼내 쓰는 표현 주머니 |
+| 3 | 04-3.png | 본문 (M) | 3:2 | `부모님이 지켜주시면 좋은 세 가지 약속` 섹션 첫 문단 바로 아래 (`IMAGE-URL-04-3` 자리) | 고치기보다 답장으로 반응해 주세요 |
+| 4 | 04-4.png | 본문 (M) | 3:2 | `꾸준함을 돕는 작은 장치` 섹션 첫 문단 바로 아래 (`IMAGE-URL-04-4` 자리) | 스티커 달력으로 이어진 날을 눈으로 확인해요 |
+
+## 3. 영문 프롬프트
+
+### 대표 이미지 — 04-hero.png (16:9)
+
+```
+An open diary on a desk with exactly three handwritten lines (abstract squiggles, nothing readable), a pencil and a small cup of cocoa, in warm evening light. Soft flat editorial illustration with subtle paper grain, rounded friendly shapes, warm natural light, calm and hopeful mood, limited pastel palette dominated by pale mint green (#E8F8EE), clean composition with generous negative space. People are Korean elementary school children and parents with simple, friendly faces. Original artwork, not imitating any existing book or brand. No text, no letters, no numbers, no logos, no watermarks. Horizontal 16:9 composition.
+```
+
+### 본문 이미지 1 — 04-1.png (3:2)
+- 위치: `세 줄 공식: 사실 - 느낌 - 다음` 섹션 첫 문단 바로 아래
+- 캡션: 사실, 느낌, 다음. 세 줄에는 각각 역할이 있어요
+
+```
+Three stacked rounded panels: a child playing soccer, a smiling face surrounded by sparkles, and a sunrise beside a blank calendar page. Soft flat editorial illustration with subtle paper grain, rounded friendly shapes, warm natural light, calm and hopeful mood, limited pastel palette dominated by pale mint green (#E8F8EE), clean composition with generous negative space. People are Korean elementary school children and parents with simple, friendly faces. Original artwork, not imitating any existing book or brand. No text, no letters, no numbers, no logos, no watermarks. Horizontal 3:2 composition.
+```
+
+### 본문 이미지 2 — 04-2.png (3:2)
+- 위치: `막힐 때 꺼내 쓰는 표현 주머니` 섹션 첫 문단 바로 아래
+- 캡션: 막힐 때 꺼내 쓰는 표현 주머니
+
+```
+A cute fabric pouch spilling out small colorful tiles that show only icons: emotion faces, a school, a house, a park tree and a library. Soft flat editorial illustration with subtle paper grain, rounded friendly shapes, warm natural light, calm and hopeful mood, limited pastel palette dominated by pale mint green (#E8F8EE), clean composition with generous negative space. People are Korean elementary school children and parents with simple, friendly faces. Original artwork, not imitating any existing book or brand. No text, no letters, no numbers, no logos, no watermarks. Horizontal 3:2 composition.
+```
+
+### 본문 이미지 3 — 04-3.png (3:2)
+- 위치: `부모님이 지켜주시면 좋은 세 가지 약속` 섹션 첫 문단 바로 아래
+- 캡션: 고치기보다 답장으로 반응해 주세요
+
+```
+A parent writing a short reply note with a heart doodle under the child's diary entry while the child peeks in happily. Soft flat editorial illustration with subtle paper grain, rounded friendly shapes, warm natural light, calm and hopeful mood, limited pastel palette dominated by pale mint green (#E8F8EE), clean composition with generous negative space. People are Korean elementary school children and parents with simple, friendly faces. Original artwork, not imitating any existing book or brand. No text, no letters, no numbers, no logos, no watermarks. Horizontal 3:2 composition.
+```
+
+### 본문 이미지 4 — 04-4.png (3:2)
+- 위치: `꾸준함을 돕는 작은 장치` 섹션 첫 문단 바로 아래
+- 캡션: 스티커 달력으로 이어진 날을 눈으로 확인해요
+
+```
+A wall calendar filled with a long streak of colorful stickers; a child proudly adds one more sticker. Soft flat editorial illustration with subtle paper grain, rounded friendly shapes, warm natural light, calm and hopeful mood, limited pastel palette dominated by pale mint green (#E8F8EE), clean composition with generous negative space. People are Korean elementary school children and parents with simple, friendly faces. Original artwork, not imitating any existing book or brand. No text, no letters, no numbers, no logos, no watermarks. Horizontal 3:2 composition.
+```
+
+## 4. 작업 순서
+
+1. 위 프롬프트로 이미지 5장을 생성해요. 비율은 표대로 맞추고, 글자가 생긴 컷은 다시 생성해요.
+2. 이미지를 업로드해서 URL을 받아요.
+3. 본문의 `IMAGE-URL-04-1` ~ `IMAGE-URL-04-4`를 업로드한 URL로 바꿔요.
+4. `04-hero.png`는 게시글 대표 이미지(썸네일) 칸에 등록해요.
+5. 미리보기로 이미지 위치와 캡션을 확인한 뒤 발행해요.
+
+▼ 본문 시작 (이 줄 아래부터 에디터에 붙여넣기) ▼
+
+# 영어 일기, 세 줄이면 충분해요
+
+"영어 일기 써 볼까?" 하고 노트를 펼쳤다가, 첫 줄 "Today is Monday."에서 멈춰 버린 경험 있으시죠? 영어 일기가 오래가지 못하는 이유는 아이의 실력보다 **너무 많이 쓰려는 마음**에 있는 경우가 많아요. 오늘은 매일 한 편을 부담 없이 쓰게 해 주는 '세 줄 공식'을 소개할게요.
+
+## 왜 하필 세 줄일까요
+
+일기를 꾸준히 쓰는 데 가장 큰 적은 '시작하기 귀찮음'이에요. 한 페이지를 채워야 한다고 생각하면 연필을 들기 전부터 지쳐요. 세 줄은 5분 안에 끝낼 수 있는 분량이라 시작 자체가 가벼워져요.
+
+-- 끝이 보이니까 시작이 쉬워요.
+-- 매일 쓰니까 실력이 쌓여요.
+-- 짧으니까 부모님도 함께 읽어 주기 편해요.
+
+> 길게 한 번보다, 짧게 매일이 이겨요.
+
+---
+
+## 세 줄 공식: 사실 - 느낌 - 다음
+
+세 줄에는 각각 역할이 있어요. 이 틀만 기억하면 무엇을 써야 할지 고민하는 시간이 확 줄어요.
+
+![M:사실, 느낌, 다음. 세 줄에는 각각 역할이 있어요](IMAGE-URL-04-1)
+
+== **첫째 줄, 사실**: 오늘 있었던 일 하나를 써요. (I played soccer with my friends.)
+== **둘째 줄, 느낌**: 그때 어떤 기분이었는지 써요. (It was really fun.)
+== **셋째 줄, 다음**: 내일 하고 싶은 일이나 바라는 점을 써요. (I want to play again tomorrow.)
+
+이 공식이 좋은 이유는 자연스럽게 **과거형, 감정 표현, 미래 표현**을 매일 한 번씩 쓰게 된다는 점이에요. 문법 설명 없이도 시제의 쓰임을 몸으로 익히게 돼요.
+
+## 학년별로 이렇게 조절해 보세요
+
+**막 시작한 아이라면**
+첫 줄만 영어로, 나머지는 한국어로 써도 괜찮아요. 혹은 아래처럼 빈칸 채우기 틀을 주세요.
+
+-- Today I □.
+-- I felt □.
+-- Tomorrow I will □.
+
+**조금 익숙해진 아이라면**
+둘째 줄에 이유를 붙여 보세요. "It was fun **because** I scored a goal." 이렇게 because 한 단어만 더해도 문장이 훨씬 풍부해져요.
+
+**자신감이 붙은 아이라면**
+셋째 줄을 질문으로 바꿔 보는 것도 좋아요. "Will it rain tomorrow?"처럼 스스로에게 묻는 문장은 생각을 확장하는 연습이 돼요.
+
+---
+
+## 막힐 때 꺼내 쓰는 표현 주머니
+
+아이가 "뭐라고 써야 할지 모르겠어"라고 할 때를 대비해, 자주 쓰는 표현을 일기장 첫 장에 붙여 두면 좋아요.
+
+![M:막힐 때 꺼내 쓰는 표현 주머니](IMAGE-URL-04-2)
+
+-- 기분: happy, tired, excited, nervous, proud, bored
+-- 장소: at school, at home, at the park, at the library
+-- 연결: and, but, because, so
+
+모르는 단어는 한국어로 쓰고 넘어가도 돼요. "I ate 떡볶이." 같은 문장도 훌륭한 일기예요. 나중에 함께 찾아보면 그게 바로 오늘의 새 단어가 되니까요.
+
+## 부모님이 지켜주시면 좋은 세 가지 약속
+
+== **빨간 펜 내려놓기**: 틀린 곳을 고치기보다 내용에 반응해 주세요. "축구에서 골 넣었구나! 어떤 기분이었어?"
+== **같은 시간에 쓰기**: 저녁 식사 후, 잠들기 전처럼 정해진 시간에 쓰면 습관이 빨리 자리 잡아요.
+== **가끔 답장 쓰기**: 일기 아래에 부모님이 영어 한 줄로 답해 주면 아이는 '읽어 주는 사람'이 있다는 걸 느껴요.
+
+![M:고치기보다 답장으로 반응해 주세요](IMAGE-URL-04-3)
+
+틀린 표현이 계속 반복된다면, 고치라고 말하기보다 부모님의 답장에 올바른 표현을 자연스럽게 넣어 주세요. 아이가 "I goed to the park."라고 썼다면 "Oh, you went to the park! I went there too."처럼요.
+
+::: callout
+**세 줄 일기 체크리스트**
+오늘 있었던 일을 하나 썼나요? 그때의 기분을 썼나요? 내일에 대한 한 줄을 썼나요? 세 가지만 확인하면 오늘의 일기는 완성이에요.
+:::
+
+## 실제 예시: 일주일의 세 줄 일기
+
+공식이 실제로 어떻게 쓰이는지, 초등 3학년 아이가 쓸 법한 일주일 예시를 보여 드릴게요.
+
+**월요일**
+I went to school. I was sleepy. I want to sleep early tonight.
+
+**수요일**
+I ate pizza for lunch. It was so good. I want to eat it again.
+
+**금요일**
+I played with my dog. He was happy. I will walk him tomorrow.
+
+**일요일**
+I read a book about space. It was interesting because the planets were big. I want to visit the moon someday.
+
+월요일과 일요일 일기를 비교해 보면, 일요일에는 because가 들어가고 문장이 조금 더 길어졌어요. 이런 작은 변화가 바로 세 줄 일기가 만드는 성장이에요.
+
+## 자주 묻는 질문
+
+**Q. 매일 같은 내용만 써요. 괜찮을까요?**
+처음에는 괜찮아요. 같은 문장을 반복하며 자신감이 붙으면, "오늘은 점심 말고 쉬는 시간 이야기를 써 볼까?"처럼 주제만 살짝 바꿔 제안해 주세요.
+
+**Q. 세 줄보다 더 쓰고 싶어 하면요?**
+물론 더 써도 돼요. 다만 '세 줄은 꼭, 그 이상은 자유'라는 규칙을 지키면, 바쁜 날에도 일기를 거르지 않게 돼요.
+
+## 꾸준함을 돕는 작은 장치
+
+-- **스티커 달력**: 일기를 쓴 날마다 스티커를 붙이면, 이어진 날짜가 눈에 보여 동기가 생겨요.
+-- **좋아하는 공책 고르기**: 아이가 직접 고른 공책은 펼쳐 보고 싶은 마음을 만들어 줘요.
+-- **주말 낭독 시간**: 일주일에 한 번, 그 주에 쓴 일기 중 하나를 가족 앞에서 소리 내어 읽어 보세요. 쓰기와 말하기가 함께 자라요.
+
+![M:스티커 달력으로 이어진 날을 눈으로 확인해요](IMAGE-URL-04-4)
+
+## 한 달 뒤, 이런 변화가 보여요
+
+매일 세 줄을 쓰면 한 달이면 약 90문장이 쌓여요. 첫 장과 마지막 장을 나란히 펼쳐 보면, 단어 선택과 문장 길이가 달라진 게 눈에 보일 거예요. 그 변화를 아이와 함께 확인하는 순간이 다음 한 달을 이어가게 하는 가장 큰 힘이 돼요.
+
+그리고 한 달 동안 쓴 일기 중 가장 마음에 드는 한 편을 골라 액자에 넣거나 가족 단톡방에 공유해 보세요. 내 글을 누군가 읽고 반응해 준다는 경험은 아이에게 계속 쓰고 싶은 이유가 돼요. 쓰는 사람에게 독자가 생기는 순간, 일기는 숙제가 아니라 이야기가 돼요.
+
+영어 일기는 잘 쓰는 것보다 **계속 쓰는 것**이 먼저예요. 오늘 밤, 세 줄부터 시작해 보세요.
