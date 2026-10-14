@@ -149,6 +149,8 @@ def stop(_signum,_frame):
     STOP=True
 
 def main():
+    if (Path(__file__).resolve().parent / 'DISABLED').exists():
+        print('Agency is disabled by owner request.');return
     parser=argparse.ArgumentParser();parser.add_argument('--once',action='store_true');parser.add_argument('--check',action='store_true');parser.add_argument('--lane',choices=('reception','interactive','background'),default='background')
     args=parser.parse_args();config=settings();db=Database(config)
     if args.check:

@@ -1,3 +1,7 @@
+# Agency 비활성화 (2026-10-14)
+
+KWAN 요청으로 Agency 페이지를 제거하고 전체 실행을 중지했다. Mac LaunchAgent 3개는 disable/bootout, Supabase Agency cron 14개는 inactive, 모든 worker 인증은 disabled, execution_provider는 disabled, 에이전트는 inactive다. Agency Edge Function 9개는 모델·DB 호출 없이 410 응답만 반환한다. 기존 보고·대화·자료는 보존한다. DISABLED 파일이 로컬 실행과 재설치를 차단한다. 아래 내용은 이전 운영 기록이다.
+
 # Agency → Codex 전환 검토
 
 현재 상태: 2026-10-01 운영 전환 완료. 작업 대기열·서버 함수 9개·예약·Mac 자동 실행을 반영했고 Claude 아침/야간 루틴을 비활성화했다. 사이트에서 입력한 테스트 요청(#723)에 Codex가 같은 방으로 답변(#724)하고 원 요청 완료를 재조회했다. 기존 리서치 #4의 결과 저장도 검증했다.

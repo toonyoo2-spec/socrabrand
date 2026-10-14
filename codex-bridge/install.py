@@ -10,6 +10,8 @@ from client import ROOT
 LABEL = 'com.kwan.agency-codex'
 
 def main():
+    if (ROOT / 'DISABLED').exists():
+        raise SystemExit('Agency is disabled by owner request; installation is blocked.')
     parser = argparse.ArgumentParser()
     parser.add_argument('--install', action='store_true')
     parser.add_argument('--lane', choices=('reception','interactive','background'), default='background')
