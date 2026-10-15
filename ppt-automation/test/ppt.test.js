@@ -205,3 +205,46 @@ test('발표자 노트의 #유형 표시만 지운다', () => {
   assert.equal(reqs.length, 3);
   assert.deepEqual(reqs[0].deleteText.textRange, { type: 'FIXED_RANGE', startIndex: 0, endIndex: '#word_q\n'.length });
 });
+
+test('정답 문장은 빈칸 위치에 들어가고 강조 범위가 정답만 가리킨다', () => {
+  const [l] = lesson1();
+  const p = C.planSlides(l).find((x) => x.type === 'practice_fill_a');
+  assert.equal(p.values.completed, 'The robot is baking bread now. (bake)');
+  const h = p.highlights.find((x) => x.token === 'completed');
+  assert.equal(p.values.completed.slice(...h.ranges[0]), 'is baking');
+});
+
+test('T/F 정답에 따라 강조 박스의 목적 보기를 지정한다', () => {
+  const [l] = lesson1();
+  const p = C.planSlides(l).filter((x) => x.type === 'comp_tf_a');
+  assert.deepEqual(p.map((x) => x.answer.index), [1, 0]);
+  assert.deepEqual(p[0].answer.tokens, ['trueChoice', 'falseChoice']);
+  assert.equal(p[1].values.trueChoice, 'True');
+});
+
+test('헤드라인 이미지 두 개를 문제와 정답 슬라이드에 모두 연결한다', () => {
+  const rows = ROWS.map((r) => r.slice());
+  rows[5][31] = 'https://example.com/headline1.png\nhttps://example.com/headline2.png';
+  const l = C.readLessons(rows).lessons[0];
+  const plan = C.planSlides(l).filter((p) => ['headline_q', 'headline_a'].includes(p.type));
+  assert.equal(l.headlineImages.length, 2);
+  assert.ok(plan.every((p) => p.images.length === 2));
+  const tpl = { slides: plan.map((p, i) => slide('head_' + i, p.type, [shape('photo_' + i, '{{headlineImage1}} {{headlineImage2}}', 0, 0)])) };
+  const built = B.buildRequests(tpl, plan);
+  assert.equal(built.imageJobs.length, 4);
+  assert.ok(!built.requests.some((r) => r.replaceAllText && /headlineImage/.test(r.replaceAllText.containsText.text)));
+});
+
+test('기준 강의만 원본 사진을 유지하고 다른 강의는 교체하거나 제거한다', () => {
+  const photo = { objectId: 'native_photo', title: '{{headlineImage1}}', description: JSON.stringify({ referenceTitle: 'Reference Lesson' }), image: {} };
+  const tpl = { slides: [slide('native_headline', 'headline_q', [photo])] };
+  const plan = (title, images = []) => [{ type: 'headline_q', globals: { title }, values: {}, images }];
+  const original = B.buildRequests(tpl, plan('Reference Lesson'));
+  assert.ok(!original.requests.some((r) => r.deleteObject && r.deleteObject.objectId === 'auto_0_0'));
+  const other = B.buildRequests(tpl, plan('Different Lesson'));
+  assert.ok(other.requests.some((r) => r.deleteObject && r.deleteObject.objectId === 'auto_0_0'));
+  const replacement = B.buildRequests(tpl, plan('Different Lesson', [{ token: 'headlineImage1', url: 'https://example.com/new.png' }]));
+  assert.equal(replacement.imageJobs[0].objectId, 'auto_0_0');
+  assert.equal(B.imageRequest(replacement.imageJobs[0])[0].replaceImage.imageReplaceMethod, 'CENTER_INSIDE');
+  assert.equal(B.imageFallbackRequest(replacement.imageJobs[0])[0].deleteObject.objectId, 'auto_0_0');
+});

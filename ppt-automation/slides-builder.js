@@ -75,7 +75,7 @@
       if (protos[type]) { duplicates.push({ type, slide: i + 1 }); return; }
       protos[type] = slide;
       const set = new Set();
-      walk(slide.pageElements, (el) => { if (!el.elementGroup) tokensIn(elementText(el)).forEach((t) => set.add(t)); });
+      walk(slide.pageElements, (el) => { if (!el.elementGroup) tokensIn(el.image ? (el.title || '') : elementText(el)).forEach((t) => set.add(t)); });
       tokens[type] = set;
       const allowed = new Set(TYPES[type].tokens.concat(PPTCore.GLOBAL_TOKENS));
       const bad = [...set].filter((t) => !allowed.has(t));
@@ -202,7 +202,7 @@
       duplicates.push({ duplicateObject: { objectId: proto.objectId, objectIds: idMap } });
 
       const resolve = (tok) => {
-        if (tok === 'image' && item.image) return null; // 이미지 자리는 글자로 바꾸지 않는다
+        if ((tok === 'image' && item.image) || (item.images || []).some((im) => im.token === tok && im.url)) return null; // 이미지 자리는 글자로 바꾸지 않는다
         if (item.values && item.values[tok] != null) return item.values[tok];
         if (item.globals && item.globals[tok] != null) return item.globals[tok];
         return '';
@@ -212,6 +212,28 @@
       if (present.has('image')) {
         if (item.image && item.image.url) imageJobs.push({ pageObjectId: slideId, url: item.image.url, token: 'image', index: i });
       }
+      // A reference photo remains native. Only the matching source lesson may retain it
+      // when its sheet has no image URL; other lessons never inherit unrelated photos.
+      const nativeImages = new Map();
+      walk(proto.pageElements, (el) => {
+        if (!el.image) return;
+        tokensIn(el.title || '').forEach((tok) => {
+          nativeImages.set(tok, el);
+          const im = (item.images || []).find((x) => x.token === tok && x.url);
+          if (im) imageJobs.push({ objectId: idMap[el.objectId], pageObjectId: slideId, url: im.url, token: tok, index: i });
+          else {
+            let metadata = {};
+            try { metadata = JSON.parse(el.description || '{}'); } catch (_) {}
+            if (!metadata.referenceTitle || metadata.referenceTitle !== (item.globals || {}).title) {
+              edits.push({ deleteObject: { objectId: idMap[el.objectId] } });
+              warnings.push(`${i + 1}번 슬라이드: ${tok} 이미지 링크가 없어 원본 이미지를 제거함`);
+            }
+          }
+        });
+      });
+      (item.images || []).forEach((im) => {
+        if (im.url && present.has(im.token) && !nativeImages.has(im.token)) imageJobs.push({ pageObjectId: slideId, url: im.url, token: im.token, index: i });
+      });
       // 2) 글자 바꾸기
       present.forEach((tok) => {
         const v = resolve(tok);
@@ -290,9 +312,11 @@
 
   // 이미지 넣기 요청 (이미지는 실패할 수 있어 하나씩 따로 보낸다)
   function imageRequest(job) {
+    if (job.objectId) return [{ replaceImage: { imageObjectId: job.objectId, url: job.url, imageReplaceMethod: 'CENTER_INSIDE' } }];
     return [{ replaceAllShapesWithImage: { imageUrl: job.url, imageReplaceMethod: 'CENTER_INSIDE', containsText: { text: `{{${job.token}}}`, matchCase: true }, pageObjectIds: [job.pageObjectId] } }];
   }
   function imageFallbackRequest(job) {
+    if (job.objectId) return [{ deleteObject: { objectId: job.objectId } }];
     return [{ replaceAllText: { containsText: { text: `{{${job.token}}}`, matchCase: true }, replaceText: '', pageObjectIds: [job.pageObjectId] } }];
   }
 

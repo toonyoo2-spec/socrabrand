@@ -142,29 +142,35 @@
       .issue { grid-template-columns:48px 40px minmax(0,1fr); } .issue .msg { grid-column:1/-1; }
     }
   </style>
+  <link rel="stylesheet" href="workspace-redesign.css?v=2">
+  <link rel="stylesheet" href="ppt-automation/workspace.css?v=20261015-1">
 </head>
-<body>
-  <header>
-    <div>
-      <h1>PPT 자동화 · 커리큘럼 시트 → 구글 슬라이드</h1>
-      <div class="subtitle">시트를 읽어 검수하고, 정해진 템플릿에 채워 강의 PPT를 만듭니다 · 프로토타입</div>
-    </div>
-    <div class="header-right">
-      <span class="pill" id="authPill"><span class="dot" style="color:#b9b6ad"></span> 구글 로그인 전</span>
-      <button class="btn" id="btnLogin">구글로 로그인</button>
-      <button class="btn" id="btnSettings">고급 설정</button>
-    </div>
+<body class="socra-tool ppt-tool">
+  <a class="skip-link" href="#workspace-main">작업 영역으로 건너뛰기</a>
+  <header class="app-header">
+    <div class="app-brand"><a href="/" target="_top">SOC<span>RA</span></a><span class="brand-divider"></span><span class="brand-context">PPT 자동화</span></div>
+    <nav class="tool-links" aria-label="강의 제작 도구"><a href="lecture-workspace.html?tool=notes">강의노트</a><a href="lecture-workspace.html?tool=editing">편집스크립트</a><a href="ppt-automation.html" aria-current="page">PPT 자동화</a></nav>
   </header>
-
-  <main>
-    <aside class="side">
+  <main id="workspace-main">
+    <div class="page-heading">
+      <div><p class="page-kicker">SOCRA WORKSPACE</p><h1>PPT 자동화</h1><p class="page-description">커리큘럼을 검수하고, 템플릿에 맞춰 강의 PPT를 만드세요.</p></div>
+      <p class="page-flow">시트 불러오기<span>→</span>검수·미리보기<span>→</span>Google 슬라이드 저장</p>
+    </div>
+    <div class="workspace">
+    <aside class="side panel">
+      <div class="panel-heading"><h2>작업 설정</h2><span>Google Drive 연동</span></div>
+      <div class="connection">
+        <span class="pill" id="authPill"><span class="dot" style="color:#b9b6ad"></span> 구글 로그인 전</span>
+        <button class="btn" id="btnLogin">구글로 로그인</button>
+        <p class="hint">socra.ai 계정으로 시트와 템플릿을 불러오세요.<br>CSV 파일은 로그인 없이 검수할 수 있어요.</p>
+      </div>
       <div class="step">
-        <div class="step-title"><span class="step-no">1</span>커리큘럼 시트</div>
+        <div class="step-title"><span class="step-no">01</span>커리큘럼 시트</div>
         <div class="row" id="sheetLogin"><button class="btn primary" data-login>구글로 로그인하고 시트 고르기</button></div>
         <div class="pickers" id="sheetPicker" hidden>
           <select class="pick" id="sheetSelect" aria-label="커리큘럼 시트"></select>
           <select class="pick" id="tabSelect" aria-label="시트 탭"></select>
-          <input class="pick" id="sheetSearch" placeholder="다른 시트: 이름 검색 또는 주소 붙여넣기 ↵">
+          <input class="pick" id="sheetSearch" aria-label="다른 커리큘럼 시트 검색 또는 주소" placeholder="다른 시트: 이름 검색 또는 주소 붙여넣기 ↵">
         </div>
         <div class="hint" id="sourceHint">로그인하면 내 드라이브에서 이름에 "커리큘럼"이 들어간 시트를 찾아 보여 줍니다.</div>
         <div class="row">
@@ -174,34 +180,56 @@
         </div>
       </div>
       <div class="step">
-        <div class="step-title"><span class="step-no">2</span>강 선택</div>
+        <div class="step-title"><span class="step-no">02</span>강 선택</div>
         <div class="lesson-list" id="lessonList"><div class="hint">아직 불러온 시트가 없습니다.</div></div>
       </div>
       <div class="step">
-        <div class="step-title"><span class="step-no">3</span>템플릿</div>
+        <div class="step-title"><span class="step-no">03</span>템플릿</div>
         <div class="pickers" id="tplPicker" hidden>
           <select class="pick" id="tplSelect" aria-label="자동화용 템플릿"></select>
-          <input class="pick" id="tplSearch" placeholder="다른 템플릿: 이름 검색 또는 주소 붙여넣기 ↵">
+          <input class="pick" id="tplSearch" aria-label="다른 템플릿 검색 또는 주소" placeholder="다른 템플릿: 이름 검색 또는 주소 붙여넣기 ↵">
         </div>
         <div class="row">
           <button class="btn small" id="btnCheckTpl">템플릿 점검</button>
           <button class="btn small" id="btnGuide">토큰 안내</button>
         </div>
-        <div class="hint">원본 슬라이드마다 발표자 노트에 <code>#유형</code>, 바뀔 글자 자리에 <code>{{토큰}}</code>을 적어 둡니다.</div>
+        <button class="btn small" id="btnUseReference">기본 시트·템플릿 사용</button><p class="reference-link"><a href="https://docs.google.com/presentation/d/1Iu3JaYFyw0piI6O4jUf-Dg_Q9abFgXMmHCcBSHMHU4c/edit" target="_blank" rel="noopener">기본 자동화 템플릿 열기 ↗</a></p><div class="hint">기본 템플릿은 1강 완성본의 4:3 디자인을 따릅니다. 다른 템플릿은 원본 슬라이드마다 발표자 노트에 <code>#유형</code>, 바뀔 글자 자리에 <code>{{토큰}}</code>을 적어 둡니다.</div>
       </div>
+      <div class="sidebar-footer"><button class="btn" id="btnSettings">고급 설정</button><button class="btn" id="btnOverview">자동화 안내</button></div>
+      <p class="hint storage-note">선택한 시트·템플릿과 설정은 현재 브라우저에 저장됩니다.</p>
     </aside>
 
-    <section class="content" id="content">
+    <section class="result-area" aria-label="검수 및 생성 결과">
+      <div class="toolbar"><div><div class="eyebrow">결과 확인</div><h2>검수와 슬라이드 미리보기</h2></div><span class="stage">Google 슬라이드</span></div>
+      <div class="content" id="content">
       <div class="empty-state">
-        <h2>커리큘럼을 불러와 주세요</h2>
-        <div>강을 고르면 검수 결과와 만들어질 슬라이드를 미리 볼 수 있습니다.</div>
+        <div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M7 9h10M7 12h6"/></svg></div>
+        <h2>만들어질 PPT를 미리 확인하세요</h2>
+        <p>커리큘럼 시트를 불러오고 강을 선택하면<br>검수 결과와 슬라이드 구성이 이곳에 표시됩니다.</p>
+        <div class="onboarding-path"><span>커리큘럼 시트</span><span class="path-branch">검수·미리보기</span><span class="path-result">강의 PPT</span></div>
+        <small>1강 완성본 기준의 자동화 템플릿이 기본으로 연결되어 있어요.</small>
+      </div>
       </div>
     </section>
+    </div>
   </main>
 
-  <dialog id="settingsDlg">
+  <dialog id="overviewDlg" aria-labelledby="overviewTitle">
+    <div class="dlg">
+      <div class="overview-heading"><h2 id="overviewTitle">자동화 안내</h2><form method="dialog"><button class="btn" aria-label="자동화 안내 닫기">닫기</button></form></div>
+      <p class="hint">현재 구현된 기능과 사용 준비사항입니다. 최초 제작 요청서나 변경 이력을 저장하는 기능은 아직 없습니다.</p>
+      <h3>현재 가능한 작업</h3>
+      <ol class="overview-list"><li><b>불러오기</b> · Google 커리큘럼 시트 또는 CSV를 읽고 강별로 나눕니다.</li><li><b>검수</b> · 정답 표시·보기·글자 수를 확인합니다. AI 내용 검수는 로그인 후 별도로 실행합니다.</li><li><b>미리보기</b> · 생성할 슬라이드의 순서와 내용을 확인합니다. 실제 디자인은 선택한 템플릿을 따릅니다.</li><li><b>만들기</b> · 템플릿을 복사해 내용을 채우고 Google 슬라이드로 저장합니다.</li></ol>
+      <div class="overview-note"><b>현재 연결된 제작 기준</b><p><a href="https://docs.google.com/spreadsheets/d/1GrLiUhEDzna61K3uYJHb1xDMDo7CWhx2EABFGnLF5Js/edit?gid=1014908939" target="_blank" rel="noopener">커리큘럼 시트</a>의 6행(1강)을 <a href="https://docs.google.com/presentation/d/1BBW340awsWcW0solw24tBlE7Q6yZ7B-5qPepdfow288/edit" target="_blank" rel="noopener">91장 완성 PPT</a>와 대조했습니다. 기본 자동화 템플릿에 유형과 토큰을 준비했으며, Google 연결 후 바로 선택됩니다.</p><p>헤드라인 이미지는 시트 링크를 사용합니다. 1강은 해당 칸이 비어 있어 완성본의 이미지를 유지합니다. 다른 강에 링크가 없으면 이전 강의 이미지를 남기지 않고 제거합니다.</p></div>
+      <h3>제작 전 준비사항</h3>
+      <ul class="overview-list"><li>정해진 열 이름과 머리글 구조를 갖춘 커리큘럼 시트</li><li>발표자 노트의 <code>#유형</code>과 글상자의 <code>{{토큰}}</code>을 설정한 Google 슬라이드 템플릿</li><li>시트 읽기·템플릿 복사·저장 폴더 쓰기 권한이 있는 Google 계정</li></ul>
+      <div class="overview-note"><b>저장되는 것과 남지 않는 것</b><p>시트·템플릿 선택과 고급 설정은 이 브라우저에 저장됩니다. 검수 결과·생성 작업 이력은 화면을 새로 열면 복원되지 않습니다. 생성된 PPT는 Google Drive에 남습니다.</p></div>
+      <p class="hint">현재는 강 하나씩 생성합니다. 글자 넘침 자동 축소, 검수 내용의 시트 반영, 제작 요청사항 관리는 지원하지 않습니다.</p>
+    </div>
+  </dialog>
+  <dialog id="settingsDlg" aria-labelledby="settingsTitle">
     <form class="dlg" method="dialog" id="settingsForm">
-      <h3>고급 설정</h3>
+      <h3 id="settingsTitle">고급 설정</h3>
       <div class="hint">시트와 템플릿은 왼쪽 목록에서 고릅니다. 여기 값은 이 브라우저에만 저장되고, "설정 링크 복사"로 지금 고른 시트·템플릿까지 팀원에게 넘길 수 있습니다.</div>
       <label class="f">만든 PPT를 넣을 폴더 주소 (비우면 내 드라이브)<input name="folderUrl" placeholder="https://drive.google.com/drive/folders/…"></label>
       <label class="f">파일 이름 형식 ({no}, {title}, {date} 사용)<input name="nameFormat" placeholder="[자동생성] CNN 10_{no}강_{title}"></label>
@@ -214,11 +242,11 @@
       </div>
     </form>
   </dialog>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="ppt-automation/ppt-core.js?v=20261003-1"></script>
-  <script src="ppt-automation/slides-builder.js?v=20261003-1"></script>
+  <script src="ppt-automation/ppt-core.js?v=20261015-2"></script>
+  <script src="ppt-automation/slides-builder.js?v=20261015-2"></script>
   <script>
   (function () {
     'use strict';
@@ -229,7 +257,7 @@
     const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/presentations https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/userinfo.email';
     const SETTINGS_KEY = 'ppt_auto_settings_v1';
     const DIALOG_KEYS = ['folderUrl', 'nameFormat', 'series', 'highlightColor'];
-    const DEFAULTS = { sheetUrl: '', templateUrl: '', folderUrl: '', nameFormat: '[자동생성] CNN 10_{no}강_{title}', series: 'CNN 10', highlightColor: '#E5392B' };
+    const DEFAULTS = { sheetUrl: 'https://docs.google.com/spreadsheets/d/1GrLiUhEDzna61K3uYJHb1xDMDo7CWhx2EABFGnLF5Js/edit?gid=1014908939', templateUrl: 'https://docs.google.com/presentation/d/1Iu3JaYFyw0piI6O4jUf-Dg_Q9abFgXMmHCcBSHMHU4c/edit', folderUrl: '', nameFormat: '[자동생성] CNN 10_{no}강_{title}', series: 'CNN 10', highlightColor: '#E5392B' };
 
     const $ = (s) => document.querySelector(s);
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -245,6 +273,8 @@
       let fromLink = false;
       Object.entries(map).forEach(([k, v]) => { if (q.get(k)) { s[v] = q.get(k); fromLink = true; } });
       const merged = Object.assign({}, DEFAULTS, s);
+      if (!merged.sheetUrl) merged.sheetUrl = DEFAULTS.sheetUrl;
+      if (!merged.templateUrl) merged.templateUrl = DEFAULTS.templateUrl;
       if (fromLink) saveSettings(merged);
       return merged;
     }
@@ -256,6 +286,7 @@
     };
     const gidFrom = (url) => { const m = String(url || '').match(/[#?&]gid=(\d+)/); return m ? Number(m[1]) : null; };
 
+    $('#btnOverview').onclick = () => $('#overviewDlg').showModal();
     $('#btnSettings').onclick = () => {
       const f = $('#settingsForm');
       DIALOG_KEYS.forEach((k) => { f.elements[k].value = settings[k] || ''; });
@@ -439,6 +470,12 @@
       if (e.key !== 'Enter') return;
       const v = e.target.value.trim(); e.target.value = '';
       (looksLikeFile(v) ? chooseSheet(idFrom(v), gidFrom(v)) : searchSheets(v)).catch((err) => toast(explain(err)));
+    };
+    $('#btnUseReference').onclick = async () => {
+      settings.sheetUrl = DEFAULTS.sheetUrl; settings.templateUrl = DEFAULTS.templateUrl;
+      saveSettings(settings); pickersReady = false;
+      if (token && tokenExp > Date.now() + 60000) await initPickers();
+      toast('1강 완성본 기준의 시트와 템플릿을 연결했습니다');
     };
     function chooseTemplate(id, name) {
       settings.templateUrl = tplUrlOf(id); saveSettings(settings);
@@ -632,6 +669,10 @@
     function slideHtml(item) {
       const v = item.values || {}, t = item.type;
       const ans = item.answer ? item.answer.index : -1;
+      if (t === 'headline_q' || t === 'headline_a') {
+        const photos = (item.images || []).map((im) => `<img src="${esc(im.url)}" alt="헤드라인 참고 이미지" loading="lazy">`).join('');
+        return `<div class="slide"><div class="s-inner"><div class="headline-photos">${photos || '<span class="s-small">기준 1강은 완성본 이미지 유지 · 다른 강은 시트 이미지 사용</span>'}</div>${t === 'headline_a' ? `<div class="s-answer">${esc(v.headline)}</div>` : '<div class="s-small">Write your own headline</div>'}</div></div>`;
+      }
       if (STATIC_TEXT[t]) return `<div class="slide static"><div class="s-inner"><div class="s-big">${esc(STATIC_TEXT[t])}</div></div></div>`;
       let chip = '', bar = '', body = '';
       if (t.startsWith('trivia')) {

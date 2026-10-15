@@ -1,0 +1,67 @@
+/* PPT workspace uses the same visual tokens as lecture-workspace.html. */
+.ppt-tool{--bg:var(--ui-bg);--panel:var(--ui-white);--border:var(--ui-line);--text:var(--ui-ink);--muted:var(--ui-muted);--green:var(--ui-green);--green-line:var(--ui-green);--green-tint:var(--ui-soft)}
+.ppt-tool .app-brand a{text-decoration:none;color:var(--ui-ink)}
+.ppt-tool main{display:block;min-height:0;width:100%}
+.ppt-tool .workspace{display:grid}
+.ppt-tool .workspace>*{min-width:0}
+.ppt-tool .side{display:flex;flex-direction:column;gap:0}
+.ppt-tool .panel-heading h2{font-weight:700}
+.ppt-tool .connection{display:grid;gap:12px;margin-top:20px}
+.ppt-tool .connection .pill{justify-self:start;border:0;padding:0;font-size:12px;font-weight:500;background:transparent}
+.ppt-tool .connection .hint{margin:0}
+.ppt-tool .btn{min-height:44px;padding:10px 14px;border-radius:7px;font-size:13px;font-weight:600;white-space:normal;line-height:1.5}
+.ppt-tool .btn.primary,.ppt-tool .btn.green{background:var(--ui-green);color:#fff;border-color:var(--ui-green)}
+.ppt-tool .btn.primary:hover:enabled,.ppt-tool .btn.green:hover:enabled{background:var(--ui-green-dark)}
+.ppt-tool .step{gap:10px;padding-top:22px;margin-top:24px;border-top:1px solid var(--ui-line)}
+.ppt-tool .step-title{font-size:15px;font-weight:650;gap:10px}
+.ppt-tool .step-no{display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:var(--ui-soft);color:var(--ui-green);font:750 11px var(--font)}
+.ppt-tool .hint{font-size:12px;line-height:1.75;overflow-wrap:anywhere}
+.ppt-tool .pick{min-height:44px;font-size:13px;padding:11px 12px;border-radius:7px}
+.ppt-tool .pickers{gap:10px}
+.ppt-tool .lesson-list{max-height:320px;margin:0;border:0;box-shadow:none;gap:6px}
+.ppt-tool .lesson{min-height:48px;padding:10px 8px;border-radius:7px}
+.ppt-tool .lesson.active{background:var(--ui-soft);border-color:#b7cdbd}
+.ppt-tool .lesson .t{font-size:13px}
+.ppt-tool .lesson .no{font-family:var(--font)}
+.ppt-tool .badge{font-size:11px;font-weight:650}
+.ppt-tool .sidebar-footer{display:flex;gap:8px;margin-top:24px;padding-top:22px;border-top:1px solid var(--ui-line)}
+.ppt-tool .sidebar-footer .btn{flex:1}
+.ppt-tool .storage-note{margin:12px 0 0}
+.ppt-tool .toolbar{display:flex;justify-content:space-between;gap:16px}
+.ppt-tool .toolbar h2{margin:0;font-weight:650}
+.ppt-tool .content{padding:0;min-width:0}
+.ppt-tool .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:530px;padding:48px 28px;background:var(--ui-white);border:1px solid var(--ui-line);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow)}
+.ppt-tool .empty-state h2{margin:20px 0 10px;font-size:20px;font-weight:650;line-height:1.4;text-wrap:balance}
+.ppt-tool .empty-state p{margin:0;font-size:14px;line-height:1.8}
+.ppt-tool .empty-state small{font-size:12px;line-height:1.7}
+.ppt-tool .lesson-head{padding:22px 24px;background:var(--ui-white);border:1px solid var(--ui-line);border-radius:var(--ui-radius);margin-bottom:20px}
+.ppt-tool .lesson-head h2{font-size:22px;line-height:1.4}
+.ppt-tool .lesson-head .meta{font:12px/1.7 var(--font);overflow-wrap:anywhere}
+.ppt-tool .tabs{padding:4px;gap:4px;border:1px solid var(--ui-line);background:var(--ui-soft);border-radius:9px;margin-bottom:20px;display:flex}
+.ppt-tool .tabs button{min-height:44px;flex:1;margin:0;padding:10px 8px;border:0;border-radius:6px;font-size:13px}
+.ppt-tool .tabs button.active{background:#fff;color:var(--ui-green);box-shadow:0 1px 4px #253b2c0c}
+.ppt-tool .filter{gap:8px}
+.ppt-tool .filter button{min-height:44px;border-radius:7px;padding:8px 12px;font-size:12px}
+.ppt-tool .filter button.active{border-color:var(--ui-green);color:var(--ui-green)}
+.ppt-tool .card{padding:22px;border-radius:var(--ui-radius);box-shadow:var(--ui-shadow)}
+.ppt-tool .issue{line-height:1.7;overflow-wrap:anywhere}
+.ppt-tool .issue .where{white-space:normal}
+.ppt-tool .grid{gap:18px}
+.ppt-tool dialog{color:var(--ui-ink);max-height:85dvh;overflow:auto}
+.ppt-tool .dlg{padding:28px;gap:16px}
+.ppt-tool .dlg h3{font-size:16px}
+.ppt-tool .dlg label{font-size:13px;line-height:1.6}
+.ppt-tool .dlg input{min-height:44px;font-size:14px}
+.ppt-tool .overview-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.ppt-tool .overview-heading h2{margin:0;font-size:23px;letter-spacing:-.5px}
+.ppt-tool .overview-list{margin:0;padding-left:20px;font-size:14px;line-height:1.8}
+.ppt-tool .overview-list li+li{margin-top:10px}
+.ppt-tool .overview-note{background:var(--ui-soft);padding:16px;border-radius:8px;font-size:13px;line-height:1.75}
+.ppt-tool .overview-note p{margin:6px 0 0}
+.ppt-tool table.tok{table-layout:fixed}
+.ppt-tool table.tok th,.ppt-tool table.tok td{overflow-wrap:anywhere}
+.ppt-tool table.tok code{overflow-wrap:anywhere;white-space:normal}
+@media(max-width:1100px){.ppt-tool .issue{grid-template-columns:48px 40px minmax(0,1fr)}.ppt-tool .issue .msg{grid-column:1/-1}}
+@media(max-width:760px){.ppt-tool .app-header .tool-links{min-width:0;width:100%;flex-wrap:wrap}.ppt-tool .app-header .tool-links a{padding:10px 8px}.ppt-tool .workspace{gap:24px}.ppt-tool .empty-state{min-height:400px;padding:36px 18px}.ppt-tool .empty-state h2{font-size:18px}.ppt-tool .empty-state p{font-size:13px}.ppt-tool .lesson-head{padding:20px}.ppt-tool .lesson-head h2{font-size:20px}.ppt-tool .dlg{padding:20px}.ppt-tool .tabs button{font-size:12px}.ppt-tool .toolbar{flex-wrap:wrap}}
+
+.ppt-tool .slide{aspect-ratio:4/3}.ppt-tool .reference-link{margin:4px 0;font-size:12px;line-height:1.7}.ppt-tool .reference-link a{color:var(--ui-green);text-underline-offset:3px}.headline-photos{display:flex;gap:2cqw;flex:1;min-height:0;align-items:center;justify-content:center}.headline-photos img{width:48%;max-height:36cqw;object-fit:contain}

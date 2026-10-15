@@ -207,7 +207,7 @@ main { margin-top: 1.5rem; margin-bottom: 2.5rem; }
 footer { color: var(--text-secondary); }
 
 /* --- 자동화 현황 (iframe) --- */
-#automationContainer, #pptautoContainer { margin-top: 1rem; }
+#automationContainer, #pptautoContainer, #lectureContainer { margin-top: 1rem; }
 .automation-frame { display: block; width: 100%; height: calc(100svh - 150px); min-height: 620px; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--surface); }
 
 /* ===== Sample 1 · PAPER INDEX — 밝은 에디토리얼 + 좌측 인덱스 사이드바 ===== */
@@ -349,8 +349,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
 }
 /* 자동화: 데스크톱에서는 사이드바 옆 전체 높이 패널 */
 @media (min-width: 1024px) {
-    #appContainer > #automationContainer, #appContainer > #pptautoContainer { padding: 0; }
-    #automationContainer .automation-frame, #pptautoContainer .automation-frame { height: 100svh; min-height: 0; border: none; border-radius: 0; }
+    #appContainer > #automationContainer, #appContainer > #pptautoContainer, #appContainer > #lectureContainer { padding: 0; }
+    #automationContainer .automation-frame, #pptautoContainer .automation-frame, #lectureContainer .automation-frame { height: 100svh; min-height: 0; border: none; border-radius: 0; }
     #quickLinks .quick-link-btn.current { border-left-color: var(--accent); }
 }
     </style>
@@ -390,7 +390,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
                 <a href="#pptauto" class="main-menu-tab" id="pptautoTab">PPT 자동화</a>
-                <a href="lecture-workspace.html" class="main-menu-tab" target="_blank" rel="noopener">강의 제작</a>
+                <a href="#lecture" class="main-menu-tab" id="lectureTab">강의 제작</a>
             </div>
         </div>
         <div class="nav-bar-wrapper">
@@ -421,6 +421,9 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         <!-- PPT 자동화 (커리큘럼 시트 → 구글 슬라이드) -->
         <main id="pptautoContainer" class="grid-layout-align" style="display: none;">
             <iframe id="pptautoFrame" class="automation-frame" title="PPT 자동화" data-src="ppt-automation.html"></iframe>
+        </main>
+        <main id="lectureContainer" class="grid-layout-align" style="display: none;">
+            <iframe id="lectureFrame" class="automation-frame" title="강의 제작" data-src="lecture-workspace.html?embed=1"></iframe>
         </main>
         <!-- Reference Page (참고자료) -->
         <main id="referenceContainer" class="grid-layout-align" style="display: none;">
@@ -990,12 +993,14 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         function canSeeTab(tabName) {
             if (tabName === 'reference') return true; // 참고자료는 누구나 열람 가능
             if (tabName === 'automation') return true; // 자동화 현황은 누구나 열람 가능
+            if (tabName === 'lecture') return true; // 사이트 로그인 이후 강의 제작 (Google 연결은 도구에서 별도)
             if (tabName === 'pptauto') return true; // PPT 자동화도 누구나 (구글 로그인은 탭 안에서 각자)
             return visibleTabs.includes(tabName);
         }
         function defaultTab() {
             if (visibleTabs.includes('archive')) return 'archive';
             if (visibleTabs.includes('library')) return 'library';
+            if (visibleTabs.includes('lecture')) return 'lecture';
             return 'reference';
         }
         function switchMainTab(tabName) {
@@ -1013,6 +1018,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const referenceContainer = document.getElementById('referenceContainer');
             const automationContainer = document.getElementById('automationContainer');
             const pptautoContainer = document.getElementById('pptautoContainer');
+            const lectureContainer = document.getElementById('lectureContainer');
             
             const navBarWrapper = document.querySelector('.nav-bar-wrapper');
             const addProjBtn = document.getElementById('btnAddProject');
@@ -1024,6 +1030,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (referenceContainer) referenceContainer.style.display = 'none';
             if (automationContainer) automationContainer.style.display = 'none';
             if (pptautoContainer) pptautoContainer.style.display = 'none';
+            if (lectureContainer) lectureContainer.style.display = 'none';
             // 2) 선택된 컨테이너 보여주기
             if (tabName === 'archive') {
                 if (archiveContainer) archiveContainer.style.display = 'block';
@@ -1052,6 +1059,14 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
                 if (btnAdminReference) btnAdminReference.style.display = 'none';
                 loadPptautoFrame();
+            } else if (tabName === 'lecture') {
+                if (lectureContainer) lectureContainer.style.display = 'block';
+                if (navBarWrapper) navBarWrapper.style.display = 'none';
+                if (addProjBtn) addProjBtn.style.display = 'none';
+                if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
+                if (btnAdminReference) btnAdminReference.style.display = 'none';
+                const frame = document.getElementById('lectureFrame');
+                if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;
             } else if (tabName === 'reference') {
                 if (referenceContainer) referenceContainer.style.display = 'block';
                 if (navBarWrapper) navBarWrapper.style.display = 'none';
@@ -1075,7 +1090,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 return;
             }
 
-            if (['archive', 'library', 'automation', 'pptauto', 'reference'].includes(hash)) {
+            if (['archive', 'library', 'automation', 'pptauto', 'lecture', 'reference'].includes(hash)) {
                 switchMainTab(hash);
             }
         }

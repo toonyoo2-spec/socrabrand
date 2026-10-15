@@ -35,28 +35,28 @@
     grammar_3:        { name: '문법 (+예문2)', group: 'Grammar', tokens: ['s', 'sentence', 'pattern', 'explanation', 'ex1', 'ex2'] },
     wordwall:         { name: '워드월 안내', group: 'Practice', tokens: ['s', 'code'] },
     practice_fill_q:  { name: '연습 빈칸 문제', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt'] },
-    practice_fill_a:  { name: '연습 빈칸 정답', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt', 'answer'] },
+    practice_fill_a:  { name: '연습 빈칸 정답', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt', 'completed', 'answer'] },
     practice_order_q: { name: '연습 배열 문제', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt'] },
-    practice_order_a: { name: '연습 배열 정답', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt', 'answer'] },
+    practice_order_a: { name: '연습 배열 정답', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt', 'completed', 'answer'] },
     practice_mc_q:    { name: '연습 4지선다 문제', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt', ...C4] },
-    practice_mc_a:    { name: '연습 4지선다 정답', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt', ...C4, 'answer', 'letter'], choices: C4 },
+    practice_mc_a:    { name: '연습 4지선다 정답', group: 'Practice', tokens: ['s', 'k', 'kk', 'instruction', 'pattern', 'explanation', 'prompt', ...C4, 'completed', 'answer', 'letter'], choices: C4 },
     comp_tf_q:        { name: '독해 T/F 문제', group: 'Comprehension', tokens: ['s', 'k', 'kk', 'statement'] },
-    comp_tf_a:        { name: '독해 T/F 정답', group: 'Comprehension', tokens: ['s', 'k', 'kk', 'statement', 'answer'] },
+    comp_tf_a:        { name: '독해 T/F 정답', group: 'Comprehension', tokens: ['s', 'k', 'kk', 'statement', 'answer', 'trueChoice', 'falseChoice'], choices: ['trueChoice', 'falseChoice'] },
     comp_lie_q:       { name: '독해 Two Truths 문제', group: 'Comprehension', tokens: ['s', 'instruction', 'st1', 'st2', 'st3'] },
     comp_lie_a:       { name: '독해 Two Truths 정답', group: 'Comprehension', tokens: ['s', 'instruction', 'st1', 'st2', 'st3', 'answer', 'lieNo', 'explanation'], choices: ['st1', 'st2', 'st3'] },
     comp_order_q:     { name: '독해 순서 배열 문제', group: 'Comprehension', tokens: ['s', 'instruction', 'ev1', 'ev2', 'ev3', 'ev4'] },
     comp_order_a:     { name: '독해 순서 배열 정답', group: 'Comprehension', tokens: ['s', 'instruction', 'ev1', 'ev2', 'ev3', 'ev4', 'ord1', 'ord2', 'ord3', 'ord4', 'num1', 'num2', 'num3', 'num4'] },
     quiz_intro:       { name: '퀴즈앤 안내', group: 'Quiz', tokens: ['code'] },
     quiz_mc_q:        { name: '퀴즈 4지선다 문제', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt', ...C4] },
-    quiz_mc_a:        { name: '퀴즈 4지선다 정답', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt', ...C4, 'answer', 'letter'], choices: C4 },
+    quiz_mc_a:        { name: '퀴즈 4지선다 정답', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt', 'completed', ...C4, 'answer', 'letter'], choices: C4 },
     quiz_fill_q:      { name: '퀴즈 빈칸 문제', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt'] },
-    quiz_fill_a:      { name: '퀴즈 빈칸 정답', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt', 'answer'] },
+    quiz_fill_a:      { name: '퀴즈 빈칸 정답', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt', 'completed', 'answer'] },
     quiz_order_q:     { name: '퀴즈 배열 문제', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt'] },
-    quiz_order_a:     { name: '퀴즈 배열 정답', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt', 'answer'] },
+    quiz_order_a:     { name: '퀴즈 배열 정답', group: 'Quiz', tokens: ['k', 'kk', 'instruction', 'prompt', 'completed', 'answer'] },
     headline_intro:   { name: '헤드라인 안내', group: '안내', tokens: [] },
     headline_rewatch: { name: '헤드라인 영상 재시청', group: '안내', tokens: [] },
-    headline_q:       { name: '헤드라인 작성 (채팅)', group: 'Headline', tokens: [] },
-    headline_a:       { name: '헤드라인 예시', group: 'Headline', tokens: ['headline'] },
+    headline_q:       { name: '헤드라인 작성 (채팅)', group: 'Headline', tokens: ['headlineImage1', 'headlineImage2'] },
+    headline_a:       { name: '헤드라인 예시', group: 'Headline', tokens: ['headline', 'headlineImage1', 'headlineImage2'] },
   };
   // 모든 슬라이드에서 쓸 수 있는 공통 토큰
   const GLOBAL_TOKENS = ['no', 'week', 'date', 'day', 'title', 'titleKo', 'series'];
@@ -383,6 +383,7 @@
     lesson.words = parseWords(get, issuer);
     lesson.scripts = [1, 2, 3].map((s) => parseScript(s, get, issuer));
     lesson.quiz = parseQuiz(get('quiz'), issuer('quiz', '퀴즈앤'));
+    lesson.headlineImages = (get('headlineImg').match(/https?:\/\/[^\s]+/g) || []).slice(0, 2);
     lesson.headline = oneLine(get('headline'));
     if (!lesson.headline) issuer('headline', 'My Headline')('error', '헤드라인이 비어 있습니다');
     else if (lesson.headline.length > LIMITS.headline) issuer('headline', 'My Headline')('warn', `${lesson.headline.length}자 (최대 ${LIMITS.headline}자)`);
@@ -623,6 +624,12 @@
     const add = (type, values, extra) => plan.push(Object.assign({ type, values: values || {}, highlights: [], answer: null, image: null }, extra || {}));
     const pad = (k) => String(k).padStart(2, '0');
     const choiceVals = (arr) => ({ c1: arr[0] || '', c2: arr[1] || '', c3: arr[2] || '', c4: arr[3] || '' });
+    const completed = (q) => {
+      const match = q.prompt.match(/_{2,}/);
+      if (!match) return { values: { completed: q.prompt }, highlights: [] };
+      const text = q.prompt.slice(0, match.index) + q.answer + q.prompt.slice(match.index + match[0].length);
+      return { values: { completed: text }, highlights: [{ token: 'completed', ranges: [[match.index, match.index + q.answer.length]] }] };
+    };
     const code = (s) => `${series}_Class ${lesson.no}_${pad(s)}_${lesson.dateMMDD}`;
 
     add('greet');
@@ -659,15 +666,15 @@
       sc.practice.items.forEach((q, k) => {
         const v = Object.assign({ s, k: String(k + 1), kk: pad(k + 1), instruction: q.instruction, pattern: g.pattern, explanation: g.explanation, prompt: q.prompt }, q.kind === 'mc' ? choiceVals(q.choices) : {});
         add(`practice_${q.kind}_q`, v);
-        add(`practice_${q.kind}_a`, Object.assign({ answer: q.answer }, q.kind === 'mc' ? { letter: LETTERS[q.answerIndex] || '' } : {}, v),
-          q.kind === 'mc' ? { answer: { tokens: C4, index: q.answerIndex } } : {});
+        add(`practice_${q.kind}_a`, Object.assign({ answer: q.answer }, completed(q).values, q.kind === 'mc' ? { letter: LETTERS[q.answerIndex] || '' } : {}, v),
+          Object.assign({ highlights: completed(q).highlights }, q.kind === 'mc' ? { answer: { tokens: C4, index: q.answerIndex } } : {}));
       });
       const c = sc.comprehension;
       if (c.kind === 'tf') {
         c.items.forEach((it, k) => {
           const v = { s, k: String(k + 1), kk: pad(k + 1), statement: it.statement };
           add('comp_tf_q', v);
-          add('comp_tf_a', Object.assign({ answer: it.answer }, v));
+          add('comp_tf_a', Object.assign({ answer: it.answer, trueChoice: 'True', falseChoice: 'False' }, v), { answer: { tokens: ['trueChoice', 'falseChoice'], index: it.answer === 'True' ? 0 : 1 } });
         });
       } else if (c.kind === 'lie') {
         const v = { s, instruction: c.instruction, st1: c.statements[0] || '', st2: c.statements[1] || '', st3: c.statements[2] || '' };
@@ -687,13 +694,14 @@
     lesson.quiz.items.forEach((q, k) => {
       const v = Object.assign({ k: String(k + 1), kk: pad(k + 1), instruction: q.instruction, prompt: q.prompt }, q.kind === 'mc' ? choiceVals(q.choices) : {});
       add(`quiz_${q.kind}_q`, v);
-      add(`quiz_${q.kind}_a`, Object.assign({ answer: q.answer }, q.kind === 'mc' ? { letter: LETTERS[q.answerIndex] || '' } : {}, v),
-        q.kind === 'mc' ? { answer: { tokens: C4, index: q.answerIndex } } : {});
+      add(`quiz_${q.kind}_a`, Object.assign({ answer: q.answer }, completed(q).values, q.kind === 'mc' ? { letter: LETTERS[q.answerIndex] || '' } : {}, v),
+        Object.assign({ highlights: completed(q).highlights }, q.kind === 'mc' ? { answer: { tokens: C4, index: q.answerIndex } } : {}));
     });
     add('headline_intro');
     add('headline_rewatch');
-    add('headline_q');
-    add('headline_a', { headline: lesson.headline });
+    const headlineImages = (lesson.headlineImages || []).map((url, i) => ({ token: 'headlineImage' + (i + 1), url }));
+    add('headline_q', {}, { images: headlineImages });
+    add('headline_a', { headline: lesson.headline }, { images: headlineImages });
     const globals = { no: String(lesson.no), week: lesson.week, date: lesson.dateMMDD, day: lesson.day, title: lesson.titleEn, titleKo: lesson.titleKo, series };
     plan.forEach((p, i) => { p.index = i; p.globals = globals; });
     return plan;
