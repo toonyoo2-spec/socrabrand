@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>강의 제작 · Socra</title>
+  <title>LX팀 · Socra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="workspace-redesign.css?v=2">
   <style>
@@ -23,21 +23,21 @@
 </head>
 <body class="socra-tool workspace-hub">
   <header class="app-header">
-    <div class="app-brand"><a href="/" target="_top">SOC<span>RA</span></a><span class="brand-divider"></span><span class="brand-context">강의 제작</span></div>
+    <div class="app-brand"><a href="/" target="_top">SOC<span>RA</span></a><span class="brand-divider"></span><span class="brand-context">LX팀</span></div>
     <nav class="tool-links" role="tablist" aria-label="강의 제작 도구">
       <button id="tab-notes" role="tab" aria-selected="true" aria-controls="panel-notes" data-tool="notes">강의노트</button>
       <button id="tab-editing" role="tab" aria-selected="false" aria-controls="panel-editing" tabindex="-1" data-tool="editing">편집스크립트</button>
-      <button id="tab-pptauto" role="tab" aria-selected="false" aria-controls="panel-pptauto" tabindex="-1" data-tool="pptauto">PPT 자동화</button>
+      <button id="tab-pptauto" role="tab" aria-selected="false" aria-controls="panel-pptauto" tabindex="-1" data-tool="pptauto">RA 대치라이브</button>
     </nav>
   </header>
   <main>
-    <section id="panel-notes" role="tabpanel" aria-labelledby="tab-notes"><iframe id="frame-notes" title="강의노트 작업" data-src="lesson-notes.html?embed=1"></iframe></section>
-    <section id="panel-editing" role="tabpanel" aria-labelledby="tab-editing" hidden><iframe id="frame-editing" title="편집스크립트 작업" data-src="editing-script.html?embed=1"></iframe></section>
-    <section id="panel-pptauto" role="tabpanel" aria-labelledby="tab-pptauto" hidden><iframe id="frame-pptauto" title="PPT 자동화 작업" data-src="ppt-automation.html?embed=1&amp;v=20261015-3"></iframe></section>
+    <section id="panel-notes" role="tabpanel" aria-labelledby="tab-notes"><iframe id="frame-notes" title="강의노트 작업" data-src="lesson-notes.html?embed=1&amp;v=20261015-guides-4"></iframe></section>
+    <section id="panel-editing" role="tabpanel" aria-labelledby="tab-editing" hidden><iframe id="frame-editing" title="편집스크립트 작업" data-src="editing-script.html?embed=1&amp;v=20261015-guides-4"></iframe></section>
+    <section id="panel-pptauto" role="tabpanel" aria-labelledby="tab-pptauto" hidden><iframe id="frame-pptauto" title="RA 대치라이브 작업" data-src="ppt-automation.html?embed=1&amp;v=20261015-guides-4"></iframe></section>
   </main>
   <script>
     const tabs = [...document.querySelectorAll('[data-tool]')];
-    const toolTitles = { notes: '강의노트', editing: '편집스크립트', pptauto: 'PPT 자동화' };
+    const toolTitles = { notes: '강의노트', editing: '편집스크립트', pptauto: 'RA 대치라이브' };
     function activate(tool, write = true) {
       if (!Object.hasOwn(toolTitles, tool)) tool = 'notes';
       tabs.forEach(tab => {
@@ -53,7 +53,7 @@
         url.searchParams.set('tool', tool);
         history.replaceState(null, '', url);
       }
-      document.title = toolTitles[tool] + ' · Socra 강의 제작';
+      document.title = toolTitles[tool] + ' · Socra LX팀';
     }
     tabs.forEach(tab => {
       tab.onclick = () => activate(tab.dataset.tool);
