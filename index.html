@@ -1121,20 +1121,20 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const active = currentMainTab === 'lecture';
             const open = document.getElementById('lectureTab').getAttribute('aria-expanded') === 'true';
             setLxMenu(active ? !open : true);
-            if (!active) { location.hash = 'lecture'; switchMainTab('lecture'); }
+            if (!active) { history.pushState(null, '', '#lecture'); switchMainTab('lecture'); }
         });
         document.querySelectorAll('[data-lx-tool]').forEach(link => link.addEventListener('click', e => {
             e.preventDefault();
             const hash = 'lecture/' + link.dataset.lxTool;
-            if (location.hash !== '#' + hash) location.hash = hash;
-            else switchMainTab(hash);
+            if (location.hash !== '#' + hash) history.pushState(null, '', '#' + hash);
+            switchMainTab(hash);
         }));
         window.addEventListener('message', e => {
             const frame = document.getElementById('lectureFrame');
             if (e.origin !== location.origin || e.source !== frame.contentWindow || e.data?.type !== 'socra:tool-changed' || !['notes','editing','pptauto'].includes(e.data.tool)) return;
             frame.dataset.tool = e.data.tool;
             markLxTool(e.data.tool);
-            if (currentMainTab === 'lecture') history.replaceState(null, '', '#lecture/' + e.data.tool);
+            if (currentMainTab === 'lecture' && location.hash !== '#lecture/' + e.data.tool) history.replaceState(null, '', '#lecture/' + e.data.tool);
         });
         function handleHashChange() {
             const hash = window.location.hash.slice(1) || 'archive';
@@ -1155,6 +1155,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }
         }
         window.addEventListener('hashchange', handleHashChange);
+        window.addEventListener('popstate', handleHashChange);
         async function loadArchiveFromDB() {
             try {
                 const authHeaders = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` };

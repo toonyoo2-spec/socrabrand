@@ -46,13 +46,13 @@
         tab.tabIndex = active ? 0 : -1;
         document.getElementById('panel-' + tab.dataset.tool).hidden = !active;
       });
-      const frame = document.getElementById('frame-' + tool);
-      if (!frame.getAttribute('src')) frame.src = frame.dataset.src;
       if (write) {
         const url = new URL(location.href);
         url.searchParams.set('tool', tool);
-        history.replaceState(null, '', url);
+        if (url.href !== location.href) history.replaceState(null, '', url);
       }
+      const frame = document.getElementById('frame-' + tool);
+      if (!frame.getAttribute('src')) frame.src = frame.dataset.src;
       document.title = toolTitles[tool] + ' · Socra LX팀';
       if (window.parent !== window) window.parent.postMessage({type:'socra:tool-changed',tool}, location.origin);
     }
