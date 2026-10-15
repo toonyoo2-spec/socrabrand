@@ -1137,9 +1137,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 switchMainTab('lecture/' + e.data.tool);
                 return;
             }
-            frame.dataset.tool = e.data.tool;
+            if (frame.dataset.tool !== e.data.tool) return;
             markLxTool(e.data.tool);
-            if (currentMainTab === 'lecture' && location.hash !== '#lecture/' + e.data.tool) history.replaceState(null, '', '#lecture/' + e.data.tool);
         });
         function handleHashChange() {
             const hash = window.location.hash.slice(1) || 'archive';
