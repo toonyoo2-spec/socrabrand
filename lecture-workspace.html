@@ -14,10 +14,11 @@
     .workspace-hub [role=tabpanel]{height:100%;width:100%}
     .workspace-hub iframe{width:100%;height:100%;border:0;display:block;background:var(--ui-bg)}
     .workspace-hub [hidden]{display:none!important}
-    .workspace-hub .tool-links button{border:0;min-height:40px;padding:10px 22px;background:transparent;color:var(--ui-muted);font-family:inherit;line-height:20px;font-size:14px}
+    .workspace-hub .tool-links button{border:0;min-height:40px;padding:10px 22px;background:transparent;color:var(--ui-muted);font-family:inherit;line-height:20px;font-size:14px;white-space:nowrap}
     .workspace-hub .tool-links button[aria-selected=true]{background:var(--ui-white);color:var(--ui-green);box-shadow:0 1px 4px #253b2c0c;font-weight:700}
     .workspace-hub .tool-links button:hover{color:var(--ui-green)}
-    @media(max-width:760px){.workspace-hub .tool-links button{flex:1;text-align:center;padding:10px 14px}}
+    @media(max-width:760px){.workspace-hub header .tool-links{flex:1 1 330px;min-width:0;max-width:100%}.workspace-hub .tool-links button{flex:1;text-align:center;padding:10px 14px}}
+    @media(max-width:400px){.workspace-hub .tool-links button{font-size:13px;padding:10px 8px}}
   </style>
 </head>
 <body class="socra-tool workspace-hub">
