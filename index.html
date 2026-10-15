@@ -420,10 +420,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         </main>
         <!-- PPT 자동화 (커리큘럼 시트 → 구글 슬라이드) -->
         <main id="pptautoContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="pptautoFrame" class="automation-frame" title="PPT 자동화" data-src="lecture-workspace.html?tool=pptauto&amp;embed=1&amp;v=20261015-3"></iframe>
+            <iframe id="pptautoFrame" class="automation-frame" title="PPT 자동화" data-src="lecture-workspace.html?tool=pptauto&amp;embed=1&amp;v=20261015-4"></iframe>
         </main>
         <main id="lectureContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="lectureFrame" class="automation-frame" title="강의 제작" data-src="lecture-workspace.html?embed=1&amp;v=20261015-3"></iframe>
+            <iframe id="lectureFrame" class="automation-frame" title="강의 제작" data-src="lecture-workspace.html?embed=1&amp;v=20261015-4"></iframe>
         </main>
         <!-- Reference Page (참고자료) -->
         <main id="referenceContainer" class="grid-layout-align" style="display: none;">
@@ -1065,8 +1065,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if (addProjBtn) addProjBtn.style.display = 'none';
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
                 if (btnAdminReference) btnAdminReference.style.display = 'none';
-                const frame = document.getElementById('lectureFrame');
-                if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;
+                loadWorkspaceFrame('lectureFrame');
             } else if (tabName === 'reference') {
                 if (referenceContainer) referenceContainer.style.display = 'block';
                 if (navBarWrapper) navBarWrapper.style.display = 'none';
@@ -2076,14 +2075,15 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const frame = document.getElementById('automationFrame');
             if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;
         }
-        function loadPptautoFrame() {
-            const frame = document.getElementById('pptautoFrame');
+        function loadWorkspaceFrame(frameId) {
+            const frame = document.getElementById(frameId);
             if (frame && !frame.getAttribute('src')) {
                 const url = new URL(frame.dataset.src, location.href);
                 url.searchParams.set('v', String(Date.now()));
                 frame.src = url.href;
             }
         }
+        function loadPptautoFrame() { loadWorkspaceFrame('pptautoFrame'); }
         // --- 아카이브 목차: 화면에 보이는 프로젝트를 목차에서 강조 ---
         const SECTION_SPY_MARGIN = '-20% 0px -70% 0px';
         let sectionSpy = null;
