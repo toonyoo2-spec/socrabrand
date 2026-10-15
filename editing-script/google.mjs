@@ -1,3 +1,4 @@
+import {driveBrowseQuery} from '../drive-browser.mjs';
 import {pairFiles} from './request.mjs';
 let token='',expiry=0,clientId='';
 const DRIVE='https://www.googleapis.com/drive/v3',FOLDER='application/vnd.google-apps.folder';
@@ -19,3 +20,5 @@ const folders=await list(`'${esc(parent.id)}' in parents and mimeType='${FOLDER}
 export async function saveSheet({rows,title,folder,source,requests}){const name=title+' · 편집스크립트';const prior=await list(`'${esc(folder.id)}' in parents and name='${esc(name)}' and mimeType='application/vnd.google-apps.spreadsheet'`);if(prior.length)return {duplicate:true,file:prior[0]};
 const f=await api(DRIVE+'/files?supportsAllDrives=true&fields=id,name,webViewLink',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,mimeType:'application/vnd.google-apps.spreadsheet',parents:[folder.id],appProperties:{generator:'socra-editing-script',sourcePresentationId:source,validation:'pending'}})});
 try{const meta=await api(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}?fields=spreadsheetId,sheets.properties`);const sid=meta.sheets[0].properties.sheetId;await api(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}:batchUpdate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requests:requests(sid)})});const actual=await api(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}/values/A1:E${rows.length+1}`);const expected=rows.map(r=>r.values.map(c=>c.userEnteredValue.stringValue));if(!Array.isArray(actual.values)||actual.values.length!==expected.length||expected.some((r,i)=>r.some((v,j)=>v!== (actual.values[i]?.[j]||''))))throw Error('시트 내용 검증이 일치하지 않습니다.');await api(`${DRIVE}/files/${f.id}?supportsAllDrives=true`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({appProperties:{validation:'complete'}})});return {file:f};}catch(e){throw Error(`시트를 만들었지만 검증을 완료하지 못했습니다. https://docs.google.com/spreadsheets/d/${f.id}/edit · ${e.message}`);}}
+
+export function browseDrive(options){return list(driveBrowseQuery(options,esc));}
