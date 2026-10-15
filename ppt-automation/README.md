@@ -65,3 +65,7 @@
 - UI는 `lecture-workspace.html`과 같은 `workspace-redesign.css` 토큰을 사용한다. `#lecture`에서 강의 제작을 사이트 내부 iframe으로 연다. Google OAuth 코드와 강의 제작 도구의 Drive 연결 코드는 유지했다.
 
 아직 없는 기능: 제작 요청서·변경 이력 저장, 생성 이력 복원, 시트에 AI 수정 반영, 여러 강의 일괄 생성, 글자 넘침 자동 축소. 기본 템플릿에는 기준 완성본에 없는 퀴즈 배열 유형 2종이 없으며, 이런 유형이 사용되면 생성 전 템플릿 검수에서 멈춘다.
+
+### 강의 제작과 동일한 화면 프레임
+
+`#lecture`와 `#pptauto`는 모두 `lecture-workspace.html`의 같은 헤더·세그먼트 탭을 사용한다. PPT는 `tool=pptauto`로 열고 `ppt-automation.html?embed=1`에서 자체 헤더를 숨긴다. 탭 이동 시 이미 불러온 도구 iframe은 유지한다. 본문 상단 28px, 작업 패널 폭과 간격, 연결 버튼 46px, 빈 미리보기 530px(모바일 400px), 안쪽 글꼴·줄 간격을 강의노트와 대조했다. Google 연결은 버튼 표기만 통일했고 OAuth·Drive 로직은 그대로다.
