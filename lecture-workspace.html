@@ -46,7 +46,7 @@
         tab.tabIndex = active ? 0 : -1;
         document.getElementById('panel-' + tab.dataset.tool).hidden = !active;
       });
-      if (write) {
+      if (write && window.parent === window) {
         const url = new URL(location.href);
         url.searchParams.set('tool', tool);
         if (url.href !== location.href) history.replaceState(null, '', url);
@@ -56,8 +56,12 @@
       document.title = toolTitles[tool] + ' · Socra LX팀';
       if (window.parent !== window) window.parent.postMessage({type:'socra:tool-changed',tool}, location.origin);
     }
+    function selectTool(tool) {
+      if (window.parent !== window) window.parent.postMessage({type:'socra:request-tool',tool}, location.origin);
+      else activate(tool);
+    }
     tabs.forEach(tab => {
-      tab.onclick = () => activate(tab.dataset.tool);
+      tab.onclick = () => selectTool(tab.dataset.tool);
       tab.onkeydown = e => {
         let index = tabs.indexOf(tab);
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') index = (index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
@@ -66,11 +70,11 @@
         else return;
         e.preventDefault();
         tabs[index].focus();
-        activate(tabs[index].dataset.tool);
+        selectTool(tabs[index].dataset.tool);
       };
     });
     window.addEventListener('message', e => {
-      if (e.origin === location.origin && e.source === window.parent && e.data?.type === 'socra:activate-tool' && Object.hasOwn(toolTitles,e.data.tool)) activate(e.data.tool);
+      if (e.origin === location.origin && e.source === window.parent && e.data?.type === 'socra:activate-tool' && Object.hasOwn(toolTitles,e.data.tool)) activate(e.data.tool, false);
     });
     window.addEventListener('popstate', () => activate(new URLSearchParams(location.search).get('tool'), false));
     activate(new URLSearchParams(location.search).get('tool'), false);
