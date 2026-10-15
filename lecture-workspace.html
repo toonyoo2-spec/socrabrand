@@ -25,19 +25,19 @@
   <header class="app-header">
     <div class="app-brand"><a href="/" target="_top">SOC<span>RA</span></a><span class="brand-divider"></span><span class="brand-context">LX팀</span></div>
     <nav class="tool-links" role="tablist" aria-label="강의 제작 도구">
-      <button id="tab-notes" role="tab" aria-selected="true" aria-controls="panel-notes" data-tool="notes">강의노트</button>
-      <button id="tab-editing" role="tab" aria-selected="false" aria-controls="panel-editing" tabindex="-1" data-tool="editing">편집스크립트</button>
+      <button id="tab-notes" role="tab" aria-selected="true" aria-controls="panel-notes" data-tool="notes">RC 강의노트</button>
+      <button id="tab-editing" role="tab" aria-selected="false" aria-controls="panel-editing" tabindex="-1" data-tool="editing">RC 편집스크립트</button>
       <button id="tab-pptauto" role="tab" aria-selected="false" aria-controls="panel-pptauto" tabindex="-1" data-tool="pptauto">RA 대치라이브</button>
     </nav>
   </header>
   <main>
-    <section id="panel-notes" role="tabpanel" aria-labelledby="tab-notes"><iframe id="frame-notes" title="강의노트 작업" data-src="lesson-notes.html?embed=1&amp;v=20261015-guides-4"></iframe></section>
-    <section id="panel-editing" role="tabpanel" aria-labelledby="tab-editing" hidden><iframe id="frame-editing" title="편집스크립트 작업" data-src="editing-script.html?embed=1&amp;v=20261015-guides-4"></iframe></section>
-    <section id="panel-pptauto" role="tabpanel" aria-labelledby="tab-pptauto" hidden><iframe id="frame-pptauto" title="RA 대치라이브 작업" data-src="ppt-automation.html?embed=1&amp;v=20261015-guides-4"></iframe></section>
+    <section id="panel-notes" role="tabpanel" aria-labelledby="tab-notes"><iframe id="frame-notes" title="RC 강의노트 작업" data-src="lesson-notes.html?embed=1&amp;v=20261015-lx-5"></iframe></section>
+    <section id="panel-editing" role="tabpanel" aria-labelledby="tab-editing" hidden><iframe id="frame-editing" title="RC 편집스크립트 작업" data-src="editing-script.html?embed=1&amp;v=20261015-lx-5"></iframe></section>
+    <section id="panel-pptauto" role="tabpanel" aria-labelledby="tab-pptauto" hidden><iframe id="frame-pptauto" title="RA 대치라이브 작업" data-src="ppt-automation.html?embed=1&amp;v=20261015-lx-5"></iframe></section>
   </main>
   <script>
     const tabs = [...document.querySelectorAll('[data-tool]')];
-    const toolTitles = { notes: '강의노트', editing: '편집스크립트', pptauto: 'RA 대치라이브' };
+    const toolTitles = { notes: 'RC 강의노트', editing: 'RC 편집스크립트', pptauto: 'RA 대치라이브' };
     function activate(tool, write = true) {
       if (!Object.hasOwn(toolTitles, tool)) tool = 'notes';
       tabs.forEach(tab => {
@@ -54,6 +54,7 @@
         history.replaceState(null, '', url);
       }
       document.title = toolTitles[tool] + ' · Socra LX팀';
+      if (window.parent !== window) window.parent.postMessage({type:'socra:tool-changed',tool}, location.origin);
     }
     tabs.forEach(tab => {
       tab.onclick = () => activate(tab.dataset.tool);
@@ -67,6 +68,9 @@
         tabs[index].focus();
         activate(tabs[index].dataset.tool);
       };
+    });
+    window.addEventListener('message', e => {
+      if (e.origin === location.origin && e.source === window.parent && e.data?.type === 'socra:activate-tool' && Object.hasOwn(toolTitles,e.data.tool)) activate(e.data.tool);
     });
     window.addEventListener('popstate', () => activate(new URLSearchParams(location.search).get('tool'), false));
     activate(new URLSearchParams(location.search).get('tool'), false);

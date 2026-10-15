@@ -143,7 +143,7 @@
     }
   </style>
   <link rel="stylesheet" href="workspace-redesign.css?v=2">
-  <link rel="stylesheet" href="ppt-automation/workspace.css?v=20261015-guides-4">
+  <link rel="stylesheet" href="ppt-automation/workspace.css?v=20261015-lx-5">
 <link rel="stylesheet" href="/usage-guides.css?v=1"></head>
 <body class="socra-tool ppt-tool">
   <script>if(new URLSearchParams(location.search).get("embed")==="1")document.body.classList.add("workspace-embedded");</script>
@@ -356,7 +356,7 @@
     async function gapi(url, opts) {
       await login(false);
       const res = await fetch(url, Object.assign({}, opts, { headers: Object.assign({ Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, (opts || {}).headers || {}) }));
-      if (res.status === 401) { token = null; setAuthUi(); }
+      if (res.status === 401) { token = null; tokenExp = 0; try { sessionStorage.removeItem('ppt_auto_token'); } catch (_) {} setAuthUi(); }
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg = (body.error && (body.error.message || body.error.status)) || res.statusText;
@@ -846,5 +846,5 @@
     window.addEventListener('load', () => initTokenClient());
   })();
   </script>
-<script type="module" src="/usage-guides.mjs?v=1"></script></body>
+<script type="module" src="/usage-guides.mjs?v=2"></script></body>
 </html>

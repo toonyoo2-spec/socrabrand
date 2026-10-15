@@ -1,5 +1,5 @@
 import {openDriveBrowser} from '../drive-browser.mjs?v=2';
-import * as G from './google.mjs?v=drive-picker-2';
+import * as G from './google.mjs?v=20261015-session-1';
 import {parseTranscript,buildRows,slideText,validateRow,sheetRequests,timecode,seconds,dropboxLink} from './core.mjs?v=20261015';
 import {makeRequest,requestIssues} from './request.mjs?v=20261015';
 const $=id=>document.getElementById(id);
@@ -38,4 +38,4 @@ $('save').onclick=()=>run(async()=>{const edited=checked();if(edited.some(r=>!r.
 ...edited.flatMap((r,i)=>[{updateCells:{range:{sheetId:sid,startRowIndex:i+data.dataStartIndex,endRowIndex:i+data.dataStartIndex+1,startColumnIndex:3,endColumnIndex:4},rows:[{values:[{note:`PPT ${r.slide||'대응 확인'}쪽\n${r.flags.join('\n')}\n원본 PPT: https://docs.google.com/presentation/d/${current.id}/edit`,userEnteredFormat:{textFormat:{strikethrough:r.status==='미사용'}}}]}],fields:'note,userEnteredFormat.textFormat.strikethrough'}}])
 ]});const a=node('a',result.duplicate?'같은 이름의 기존 시트 열기':'새 편집스크립트 열기');a.href=result.file.webViewLink||`https://docs.google.com/spreadsheets/d/${result.file.id}/edit`;a.target='_blank';a.rel='noopener';$('saved').replaceChildren(a);tell(result.duplicate?'같은 이름의 시트가 있어 덮어쓰지 않았습니다. 기존 파일을 확인하거나 다른 저장 폴더를 지정해 주세요.':'새 시트 저장 및 내용 검증을 완료했습니다.');});
 window.addEventListener('beforeunload',e=>{if(current?.rows?.length){e.preventDefault();e.returnValue='';}});
-setup();async function setup(){try{await G.setupGoogle();sync();}catch(e){tell(e.message,true);$('connect').disabled=true;}}
+setup();async function setup(){try{await G.setupGoogle();}catch(e){tell(e.message,true);$('connect').disabled=true;return;}try{const user=await G.restoreGoogle();if(user){$('account').textContent=user.email||'Google 연결 완료';$('connect').hidden=true;$('disconnect').hidden=false;}}catch(e){tell(e.message,true);}sync();}

@@ -354,6 +354,11 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
     #quickLinks .quick-link-btn.current { border-left-color: var(--accent); }
 }
     </style>
+<style id="lx-submenu-style">
+.lx-menu-group{position:relative}.lx-menu-group #lectureTab{display:flex;align-items:center;justify-content:space-between;gap:16px}.lx-chevron{font-size:16px;transition:transform .15s}.lx-menu-group #lectureTab[aria-expanded=true] .lx-chevron{transform:rotate(180deg)}
+.lx-submenu{display:flex;flex-direction:column;gap:4px;padding:6px 0 8px 14px;margin-left:12px;border-left:1px solid #dbe5df}.lx-submenu[hidden]{display:none!important}.lx-submenu a{display:block;padding:11px 14px;border-radius:8px;color:#65746b;text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap}.lx-submenu a:hover{background:#f0f5f2;color:#00683e}.lx-submenu a[aria-current=page]{background:#eaf3ed;color:#00683e;font-weight:700}.lx-submenu a:focus-visible{outline:2px solid #00683e;outline-offset:2px}
+@media(max-width:1023px){.lx-submenu{position:absolute;top:100%;right:0;min-width:190px;z-index:50;background:#fff;border:1px solid #dbe5df;border-radius:12px;margin:4px 0 0;padding:8px;box-shadow:0 8px 24px #153a2414}.main-menu-wrapper{overflow:visible}.main-menu-container{overflow:visible}}
+</style>
 </head>
 <body>
     <!-- 1. 로그인 스크린 -->
@@ -389,7 +394,14 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
-                <a href="#lecture" class="main-menu-tab" id="lectureTab">LX팀</a>
+                <div class="lx-menu-group">
+                        <a href="#lecture" class="main-menu-tab" id="lectureTab" aria-expanded="false" aria-controls="lxSubmenu">LX팀 <span class="lx-chevron" aria-hidden="true">⌄</span></a>
+                        <div id="lxSubmenu" class="lx-submenu" hidden>
+                            <a href="#lecture/pptauto" data-lx-tool="pptauto">RA 대치라이브</a>
+                            <a href="#lecture/notes" data-lx-tool="notes">RC 강의노트</a>
+                            <a href="#lecture/editing" data-lx-tool="editing">RC 편집스크립트</a>
+                        </div>
+                    </div>
             </div>
         </div>
         <div class="nav-bar-wrapper">
@@ -990,6 +1002,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }
         }
         function canSeeTab(tabName) {
+            if (/^lecture\/(notes|editing|pptauto)$/.test(tabName)) return true;
             if (tabName === 'reference') return true; // 참고자료는 누구나 열람 가능
             if (tabName === 'automation') return true; // 자동화 현황은 누구나 열람 가능
             if (tabName === 'lecture') return true; // 사이트 로그인 이후 강의 제작 (Google 연결은 도구에서 별도)
@@ -1003,6 +1016,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             return 'reference';
         }
         function switchMainTab(tabName) {
+            const lxTool = /^lecture\/(notes|editing|pptauto)$/.test(tabName) ? tabName.split('/')[1] : null;
+            if (lxTool) tabName = 'lecture';
             if (referenceViewerOpen) {
                 forceCloseReferenceView();
             }
@@ -1064,7 +1079,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if (addProjBtn) addProjBtn.style.display = 'none';
                 if (libraryHeaderAdmin) libraryHeaderAdmin.style.display = 'none';
                 if (btnAdminReference) btnAdminReference.style.display = 'none';
-                loadWorkspaceFrame('lectureFrame');
+                setLxMenu(true);
+                activateLxTool(lxTool);
             } else if (tabName === 'reference') {
                 if (referenceContainer) referenceContainer.style.display = 'block';
                 if (navBarWrapper) navBarWrapper.style.display = 'none';
@@ -1074,6 +1090,52 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 loadReferences();
             }
         }
+        function setLxMenu(open) {
+            document.getElementById('lectureTab').setAttribute('aria-expanded', String(open));
+            document.getElementById('lxSubmenu').hidden = !open;
+        }
+        function markLxTool(tool) {
+            document.querySelectorAll('[data-lx-tool]').forEach(link => {
+                if (link.dataset.lxTool === tool) link.setAttribute('aria-current', 'page');
+                else link.removeAttribute('aria-current');
+            });
+        }
+        function activateLxTool(tool) {
+            const frame = document.getElementById('lectureFrame');
+            if (!['notes', 'editing', 'pptauto'].includes(tool)) tool = frame.dataset.tool || 'notes';
+            frame.dataset.tool = tool;
+            markLxTool(tool);
+            if (!frame.dataset.lxBound) {
+                frame.dataset.lxBound = '1';
+                frame.addEventListener('load', () => frame.contentWindow.postMessage({type:'socra:activate-tool',tool:frame.dataset.tool}, location.origin));
+            }
+            if (!frame.getAttribute('src')) {
+                const url = new URL(frame.dataset.src, location.href);
+                url.searchParams.set('tool', tool);
+                url.searchParams.set('v', '20261015-lx-5');
+                frame.src = url.href;
+            } else frame.contentWindow.postMessage({type:'socra:activate-tool',tool}, location.origin);
+        }
+        document.getElementById('lectureTab').addEventListener('click', e => {
+            e.preventDefault();
+            const active = currentMainTab === 'lecture';
+            const open = document.getElementById('lectureTab').getAttribute('aria-expanded') === 'true';
+            setLxMenu(active ? !open : true);
+            if (!active) { location.hash = 'lecture'; switchMainTab('lecture'); }
+        });
+        document.querySelectorAll('[data-lx-tool]').forEach(link => link.addEventListener('click', e => {
+            e.preventDefault();
+            const hash = 'lecture/' + link.dataset.lxTool;
+            if (location.hash !== '#' + hash) location.hash = hash;
+            else switchMainTab(hash);
+        }));
+        window.addEventListener('message', e => {
+            const frame = document.getElementById('lectureFrame');
+            if (e.origin !== location.origin || e.source !== frame.contentWindow || e.data?.type !== 'socra:tool-changed' || !['notes','editing','pptauto'].includes(e.data.tool)) return;
+            frame.dataset.tool = e.data.tool;
+            markLxTool(e.data.tool);
+            if (currentMainTab === 'lecture') history.replaceState(null, '', '#lecture/' + e.data.tool);
+        });
         function handleHashChange() {
             const hash = window.location.hash.slice(1) || 'archive';
             if (hash === 'agency') {
@@ -1088,7 +1150,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 return;
             }
 
-            if (['archive', 'library', 'automation', 'pptauto', 'lecture', 'reference'].includes(hash)) {
+            if (/^lecture\/(notes|editing|pptauto)$/.test(hash) || ['archive', 'library', 'automation', 'pptauto', 'lecture', 'reference'].includes(hash)) {
                 switchMainTab(hash);
             }
         }
