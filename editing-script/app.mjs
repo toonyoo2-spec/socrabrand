@@ -1,6 +1,6 @@
 import * as G from './google.mjs';
-import {parseTranscript,buildRows,slideText,validateRow,sheetRequests,timecode,seconds,dropboxLink} from './core.mjs';
-import {makeRequest,requestIssues} from './request.mjs';
+import {parseTranscript,buildRows,slideText,validateRow,sheetRequests,timecode,seconds,dropboxLink} from './core.mjs?v=20261015';
+import {makeRequest,requestIssues} from './request.mjs?v=20261015';
 const $=id=>document.getElementById(id);
 let mode='folder',plan=null,current=null,busy=false,mediaURL='';
 const tell=(s,error=false)=>{$('status').textContent=s;$('status').classList.toggle('error',error);};

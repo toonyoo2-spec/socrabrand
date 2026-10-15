@@ -1,4 +1,4 @@
-import {EDITING_POLICY} from './policy.mjs';
+import {EDITING_POLICY} from './policy.mjs?v=20261015';
 export function timecode(n){if(!Number.isFinite(n)||n<0)throw Error('RT는 0 이상의 초 단위 숫자여야 합니다.');const ms=Math.round(n*1000);return `${String(Math.floor(ms/60000)).padStart(2,'0')}:${String(Math.floor(ms%60000/1000)).padStart(2,'0')}.${String(ms%1000).padStart(3,'0')}`;}
 export function seconds(s){if(typeof s==='number')return s;const t=String(s).trim().replace(',','.');if(/^\d+(\.\d+)?$/.test(t))return Number(t);const p=t.split(':').map(Number);if(p.length<2||p.length>3||p.some(x=>!Number.isFinite(x)||x<0)||p.slice(1).some(x=>x>=60))throw Error('RT는 00:00.000 형식으로 입력해 주세요.');return p.reduce((v,x)=>v*60+x,0);}
 export function normalize(s){return String(s||'').normalize('NFKC').toLowerCase().replace(/[‘’]/g,"'").replace(/[^a-z0-9가-힣]/g,'');}
