@@ -1,0 +1,43 @@
+/* Presentation only: node positions, workflow data and links retain their behavior. */
+:root {
+  --bg: #f6f7f4;
+  --border: #dce3dc;
+  --text: #23372b;
+  --muted: #596b60;
+  --green: #006b40;
+  --green-line: #006b40;
+  --green-tint: #eaf3ec;
+}
+header { padding: 24px 28px; border-bottom-color: var(--border); background: var(--panel); }
+h1 { font-size: 23px; font-weight: 650; line-height: 1.5; letter-spacing: -.035em; }
+.subtitle { font-size: 13px; line-height: 1.8; }
+.toolbar { padding: 12px 28px; gap: 12px; }
+.tabs { flex-wrap: wrap; }
+.tabs button, .zoom button { min-height: 44px; border-radius: 7px; font-size: 13px; }
+.tabs button.active, .tabs button.active:hover { background: var(--green); color: #fff; }
+.zoom button { min-width: 44px; }
+.pill { white-space: normal; font-size: 12px; line-height: 1.7; border-radius: 7px; }
+.pill strong { margin: 0; padding: 0; background: transparent; color: var(--green); }
+.canvas-wrap { background-image: radial-gradient(#dce3dc 1px, transparent 1px); }
+.node { border-radius: 10px; box-shadow: 0 2px 6px #23372b06; }
+.node:hover { transform: translateY(-1px); border-color: #9aae9f; box-shadow: 0 4px 12px #23372b0d; }
+.node-top { color: #526358; }
+.post-grid { grid-template-columns: repeat(auto-fit, minmax(min(310px, 100%), 1fr)); gap: 20px; }
+.post-card { padding: 20px; border-radius: 10px; }
+.post-card h3 { font-weight: 650; font-size: 17px; }
+.post-card p { font-size: 14px; line-height: 1.8; }
+.post-meta { font-size: 12px; }
+.post-links a { min-height: 44px; display: inline-flex; align-items: center; border-radius: 6px; padding: 8px 12px; font-size: 12px; }
+aside { box-shadow: -8px 0 32px #23372b0d; }
+.aside-head button { width: 44px; height: 44px; border-radius: 7px; }
+.source-list a { min-height: 44px; display: flex; align-items: center; }
+:is(button, a):focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+@media (max-width: 740px) {
+  header { padding: 20px 16px; }
+  h1 { font-size: 20px; }
+  .header-right { gap: 8px; }
+  .toolbar { padding: 12px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

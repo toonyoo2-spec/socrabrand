@@ -1,0 +1,161 @@
+/* UI/UX Pro Max: restrained type, readable neutrals, Socra green.
+   The host enables this class only for the four brand-team routes.
+   LX navigation, frames and shared tool styles are intentionally unselected. */
+#appContainer.brand-tone {
+  --bg: #f6f7f4;
+  --surface: #fff;
+  --surface-2: #eff3ef;
+  --border-color: #dce3dc;
+  --border-hover: #9aae9f;
+  --text-primary: #23372b;
+  --text-secondary: #596b60;
+  --accent: #006b40;
+  --accent-text: #006b40;
+  --accent-contrast: #fff;
+  --accent-soft: #eaf3ec;
+  --hover: #edf3ee;
+  --bar-bg: #f6f7f4;
+  --media-placeholder: #e8ede7;
+  --radius: 10px;
+  --radius-sm: 6px;
+  min-height: 100svh;
+  background-color: var(--bg);
+}
+.brand-tone > header .header-tag {
+  font-size: 1.3rem;
+  font-weight: 720;
+  letter-spacing: -.045em;
+}
+.brand-tone .main-menu-container > .main-menu-tab {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-right: 0;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 550;
+}
+.brand-tone .main-menu-container > .main-menu-tab:hover {
+  color: var(--text-primary);
+  background: var(--hover);
+}
+.brand-tone .main-menu-container > .main-menu-tab.active {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+.brand-tone .main-menu-container > .main-menu-tab.active::before { content: none; }
+.brand-tone .nav-bar-container::before { content: '프로젝트 목차'; font-family: var(--font); letter-spacing: .02em; font-size: 12px; }
+.brand-tone .nav-row { gap: 8px; }
+.brand-tone :is(.tab-btn, .month-btn) {
+  min-height: 44px;
+  height: auto !important;
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 7px;
+}
+.brand-tone .month-btn.active { border-color: var(--accent); color: var(--accent-text); }
+.brand-tone #yearTabs { flex-wrap: wrap; }
+.brand-tone #quickLinks .quick-link-btn {
+  min-height: 44px;
+  line-height: 1.6;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.brand-tone #quickLinks .quick-link-btn.current {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.brand-tone #quickLinks .date-label { font-size: 12px; color: var(--text-secondary); }
+.brand-tone .brand-page-heading { margin-bottom: 36px; }
+.brand-tone .brand-page-heading h1 { font-size: clamp(26px, 3vw, 32px); font-weight: 700; line-height: 1.35; letter-spacing: -.04em; }
+.brand-tone .brand-page-heading p { margin-top: 8px; font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+.brand-tone .project-section { margin-bottom: 52px; }
+.brand-tone .section-header {
+  border-color: var(--border-color);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  align-items: center;
+  gap: 16px;
+}
+.brand-tone .section-header::after { content: none; }
+.brand-tone .section-header-left { flex-direction: row; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.brand-tone .section-header-left .date-badge { flex-basis: 100%; }
+.brand-tone .section-title {
+  flex-basis: 100%;
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 650;
+  line-height: 1.5;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+.brand-tone .date-badge { font-size: 12px; line-height: 1.6; }
+.brand-tone .date-badge::before { width: 6px; height: 6px; border-radius: 50%; }
+.brand-tone .video-grid { gap: 28px 20px; }
+.brand-tone .thumb-cover { border: 1px solid #23372b0c; }
+.brand-tone .video-info { padding: 14px 2px 0; }
+.brand-tone .video-tag { font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; overflow-wrap: anywhere; }
+.brand-tone .video-title { font-size: 15px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+.brand-tone .video-card:hover .video-title { text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.brand-tone .video-admin-bar { margin-top: 10px; }
+.brand-tone :is(.btn-admin-action, .btn-download, .btn-submit) {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.brand-tone :is(.admin-edit-badge, .admin-delete-badge, .btn-preview, .btn-edit-file, .btn-delete-file, .btn-cancel) {
+  min-height: 44px;
+  padding: 9px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.brand-tone .file-list { grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 20px; }
+.brand-tone :is(.file-item, .note-card) { padding: 20px; box-shadow: 0 2px 8px #23372b03; }
+.brand-tone .file-icon { aspect-ratio: 4 / 3; flex-direction: column; gap: 12px; color: var(--accent-text); }
+.brand-tone .file-type { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; }
+.brand-tone .file-name { font-size: 14px; line-height: 1.7; }
+.brand-tone :is(.file-meta, .note-card-meta) { font-size: 12px; line-height: 1.7; }
+.brand-tone .note-list { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 20px; }
+.brand-tone .note-card-title { font-size: 17px; font-weight: 650; white-space: normal; overflow-wrap: anywhere; line-height: 1.6; }
+.brand-tone .note-card-snippet { font-size: 14px; line-height: 1.8; }
+.brand-tone .note-empty { background: var(--surface); border-style: solid; padding: 48px 20px; }
+.brand-tone > footer { color: var(--text-secondary); line-height: 1.8; }
+.brand-tone :is(button, input, select, textarea, a):not(.lx-menu-group *):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (min-width: 1024px) {
+  #appContainer.brand-tone[style*="block"] {
+    background: linear-gradient(to right, var(--surface) var(--side-w), var(--border-color) var(--side-w), var(--border-color) calc(var(--side-w) + 1px), var(--bg) calc(var(--side-w) + 1px));
+  }
+  .brand-tone > .main-menu-wrapper .main-menu-container { padding-left: 20px !important; padding-right: 20px; gap: 4px; }
+  .brand-tone .main-menu-container > .main-menu-tab { width: 100%; }
+  .brand-tone #quickLinks .quick-link-btn { margin-left: -10px; }
+  #appContainer.brand-tone > :is(#archiveContainer, #libraryContainer, #referenceContainer) { padding-top: 40px; }
+  .brand-tone .video-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+}
+@media (max-width: 1023px) {
+  .brand-tone .main-menu-container { gap: 4px; padding-left: 12px !important; flex-wrap: wrap; }
+  .brand-tone .main-menu-container > .main-menu-tab { padding-inline: 10px; }
+  .brand-tone .nav-bar-wrapper { position: relative; }
+  .brand-tone #quickLinks { padding-bottom: 4px; }
+  .brand-tone .brand-page-heading { margin-bottom: 28px; }
+  .brand-tone .section-header { gap: 10px; }
+  .brand-tone .project-section { scroll-margin-top: 24px; }
+}
+@media (max-width: 480px) {
+  .brand-tone .video-grid { grid-template-columns: 1fr; gap: 28px; }
+  .brand-tone .section-header > .btn-admin-action { margin-left: auto; }
+  .brand-tone .section-header-left { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-tone *, .brand-tone *::before, .brand-tone *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

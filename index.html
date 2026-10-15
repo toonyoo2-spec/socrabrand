@@ -359,6 +359,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
 .lx-submenu{display:flex;flex-direction:column;gap:4px;padding:6px 0 8px 14px;margin-left:12px;border-left:1px solid #dbe5df}.lx-submenu[hidden]{display:none!important}.lx-submenu a{display:block;padding:11px 14px;border-radius:8px;color:#65746b;text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap}.lx-submenu a:hover{background:#f0f5f2;color:#00683e}.lx-submenu a[aria-current=page]{background:#eaf3ed;color:#00683e;font-weight:700}.lx-submenu a:focus-visible{outline:2px solid #00683e;outline-offset:2px}
 @media(max-width:1023px){.lx-submenu{position:absolute;top:100%;right:0;min-width:190px;z-index:50;background:#fff;border:1px solid #dbe5df;border-radius:12px;margin:4px 0 0;padding:8px;box-shadow:0 8px 24px #153a2414}.main-menu-wrapper{overflow:visible}.main-menu-container{overflow:visible}}
 </style>
+    <link rel="stylesheet" href="brand-tone.css?v=20261015-1">
 </head>
 <body>
     <!-- 1. 로그인 스크린 -->
@@ -419,6 +420,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         <!-- Library Page -->
         <main id="libraryContainer" class="grid-layout-align" style="display: none;">
             <div style="margin-top: 1.5rem;">
+                <div class="brand-page-heading"><h1>자료실</h1><p>팀에서 함께 사용하는 파일을 모아두었습니다.</p></div>
                 <div id="libraryHeaderAdmin" class="library-header" style="display: none;">
                     <button class="btn-admin-action" style="display: inline-block;" onclick="openFileUploadModal()">+ 파일 업로드</button>
                 </div>
@@ -427,7 +429,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         </main>
         <!-- Automation Page (자동화 현황) -->
         <main id="automationContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="automationFrame" class="automation-frame" title="콘텐츠 자동화 현황" data-src="automation.html?v=20260928-link-mapping-4"></iframe>
+            <iframe id="automationFrame" class="automation-frame" title="콘텐츠 자동화 현황" data-src="automation.html?v=20261015-tone-1"></iframe>
         </main>
         <!-- PPT 자동화 (커리큘럼 시트 → 구글 슬라이드) -->
         <main id="pptautoContainer" class="grid-layout-align" style="display: none;">
@@ -1023,6 +1025,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }
             if (!canSeeTab(tabName)) tabName = defaultTab();
             currentMainTab = tabName;
+            // Brand-team polish is disabled for LX and its legacy PPT route.
+            document.getElementById('appContainer').classList.toggle('brand-tone', ['archive', 'library', 'reference', 'automation'].includes(tabName));
             const tabs = document.querySelectorAll('.main-menu-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
             const activeTab = document.querySelector(`a[href="#${tabName}"]`);
@@ -1246,7 +1250,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         function renderArchive() {
             const container = document.getElementById('archiveContainer');
             const quickLinksContainer = document.getElementById('quickLinks');
-            container.innerHTML = '';
+            container.innerHTML = '<div class="brand-page-heading"><h1>아카이브</h1><p>프로젝트별 영상과 시안을 한곳에서 확인하세요.</p></div>';
             quickLinksContainer.innerHTML = '';
             const yearsSet = new Set();
             const availableMonthsSet = new Set();
@@ -1819,10 +1823,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 const fileSize = file.file_size ? formatFileSize(file.file_size) : '';
                 const uploadDate = file.created_at ? new Date(file.created_at).toLocaleDateString('ko-KR') : '';
                 const ext = file.file_name.split('.').pop().toLowerCase();
-                let icon = '📄';
-                if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) icon = '🖼️';
-                else if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) icon = '🎬';
-                else if (ext === 'pdf') icon = '📕'; else if (['zip', 'rar', '7z'].includes(ext)) icon = '📦';
+                const fileGlyph = '<svg viewBox="0 0 32 32" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M19 4H8a2 2 0 0 0-2 2v20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V11L19 4Z"/><path d="M19 4v7h7M11 18h10M11 23h7"/></svg>';
                 const safeFileName = file.file_name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 const safeUrl = file.file_url.replace(/'/g, "\\'");
                 const previewBtn = `<button class="btn-preview" onclick='previewFile("${safeUrl}", "${safeFileName}")'>미리보기</button>`;
@@ -1831,7 +1832,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 const draggableAttrs = isAdmin ? `draggable="true" ondragstart="handleFileDragStart(event, ${index})" ondragover="handleFileDragOver(event)" ondrop="handleFileDrop(event, ${index})" ondragend="handleFileDragEnd(event)"` : '';
                 return `
                     <div class="file-item ${isAdmin ? 'draggable' : ''}" ${draggableAttrs}>
-                        <div class="file-icon">${icon}</div>
+                        <div class="file-icon">${fileGlyph}<span class="file-type">${/^[a-z0-9]{1,8}$/.test(ext) ? ext.toUpperCase() : "FILE"}</span></div>
                         <div class="file-info"><div class="file-name">${file.file_name}</div><div class="file-meta">${fileSize}${uploadDate ? ' · ' + uploadDate : ''}</div></div>
                         <div class="file-actions">${previewBtn}<button class="btn-download" onclick='downloadFile("${safeUrl}", "${safeFileName}")'>다운로드</button>${editBtn}${deleteBtn}</div>
                     </div>
