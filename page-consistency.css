@@ -1,0 +1,26 @@
+/* Shared page typography and compact spacing; document previews retain their own styles. */
+:root { --socra-page-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+#appContainer.top-navigation > :is(#archiveContainer, #libraryContainer, #referenceContainer) { padding: 24px 32px 48px; }
+#appContainer .brand-page-heading { margin: 0 0 24px; }
+#appContainer .brand-page-heading h1,
+.socra-tool .page-heading h1,
+body > header h1 { font-family: var(--socra-page-font); font-size: 28px; font-weight: 700; line-height: 1.4; letter-spacing: -.035em; margin: 0; }
+#appContainer .brand-page-heading p { font-family: var(--socra-page-font); font-size: 14px; line-height: 1.7; margin: 8px 0 0; }
+#appContainer :is(.archive-page-heading, .reference-page-heading) { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+#appContainer .reference-page-heading { align-items: flex-start; }
+#appContainer .archive-page-heading #btnAddProject { flex-shrink: 0; }
+#appContainer.top-navigation #archiveContainer > .nav-bar-wrapper { position: static; max-height: none; overflow: visible; padding: 0; margin: 0 0 24px; border: 0; background: transparent; backdrop-filter: none; }
+#appContainer.top-navigation #archiveContainer .nav-bar-container { margin-top: 12px; padding: 16px!important; border: 1px solid var(--border-color); border-radius: 8px; background: var(--surface); }
+#appContainer.top-navigation > header > div:has(> #btnAddProject):empty { display: none; }
+.socra-tool.workspace-embedded main { max-width: none; padding: 24px 32px 48px; }
+.socra-tool .page-heading { margin: 0 0 24px; }
+.workspace-embedded .page-kicker { display: none; }
+/* The automation view has a page header inside its frame. */
+body:not(.socra-tool) > header { padding: 24px 32px; }
+body:not(.socra-tool) > header .subtitle { font-family: var(--socra-page-font); font-size: 14px; line-height: 1.7; margin-top: 8px; }
+@media (max-width: 760px) {
+  #appContainer.top-navigation > :is(#archiveContainer, #libraryContainer, #referenceContainer),
+  .socra-tool.workspace-embedded main { padding: 24px 16px 40px; }
+  body:not(.socra-tool) > header { padding: 24px 16px; }
+  #appContainer .brand-page-heading h1, .socra-tool .page-heading h1, body > header h1 { font-size: 26px; }
+}

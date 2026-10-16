@@ -388,7 +388,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
 @media(max-width:1023px){.lx-submenu{position:absolute;top:100%;right:0;min-width:190px;z-index:50;background:#fff;border:1px solid #dbe5df;border-radius:12px;margin:4px 0 0;padding:8px;box-shadow:0 8px 24px #153a2414}.main-menu-wrapper{overflow:visible}.main-menu-container{overflow:visible}}
 </style>
     <link rel="stylesheet" href="brand-tone.css?v=20261015-1">
-<link rel="stylesheet" href="/sidebar-toggle.css?v=20261016-2"><script type="module" src="/sidebar-toggle.mjs?v=20261016-2"></script></head>
+<link rel="stylesheet" href="/sidebar-toggle.css?v=20261016-2"><script type="module" src="/sidebar-toggle.mjs?v=20261016-2"></script><link rel="stylesheet" href="/page-consistency.css?v=20261016-1"><script type="module" src="/archive-page-layout.mjs?v=20261016-1"></script></head>
 <body>
     <!-- 1. 로그인 스크린 -->
     <div id="loginScreen">
@@ -446,7 +446,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         <main id="archiveContainer" class="grid-layout-align" style="display: block;"></main>
         <!-- Library Page -->
         <main id="libraryContainer" class="grid-layout-align" style="display: none;">
-            <div style="margin-top: 1.5rem;">
+            <div>
                 <div class="brand-page-heading"><h1>자료실</h1><p>팀에서 함께 사용하는 파일을 모아두었습니다.</p></div>
                 <div id="libraryHeaderAdmin" class="library-header" style="display: none;">
                     <button class="btn-admin-action" style="display: inline-block;" onclick="openFileUploadModal()">+ 파일 업로드</button>
@@ -456,15 +456,15 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         </main>
         <!-- Automation Page (자동화 현황) -->
         <main id="automationContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="automationFrame" class="automation-frame" title="콘텐츠 자동화 현황" data-src="automation.html?v=20261015-tone-1"></iframe>
+            <iframe id="automationFrame" class="automation-frame" title="콘텐츠 자동화 현황" data-src="automation.html?v=20261016-consistency-1"></iframe>
         </main>
         <main id="lectureContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="lectureFrame" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261016-stop-2" data-src="lecture-workspace.html?embed=1&amp;v=20261016-stop-2"></iframe>
+            <iframe id="lectureFrame" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261016-consistency-1" data-src="lecture-workspace.html?embed=1&amp;v=20261016-consistency-1"></iframe>
         </main>
         <!-- Reference Page (참고자료) -->
         <main id="referenceContainer" class="grid-layout-align" style="display: none;">
-            <div class="section-header" style="margin-top: 1.5rem;">
-                <h2 class="section-title">참고자료</h2>
+            <div class="brand-page-heading reference-page-heading">
+                <h1>참고자료</h1>
                 <!-- 관리자(또는 작성 권한자)에게만 보이는 버튼 -->
                 <button id="btnAdminReference" class="btn-admin-action" style="display: none;" onclick="openReferenceEditor()">+ 새 참고자료</button>
             </div>
@@ -1277,7 +1277,12 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         function renderArchive() {
             const container = document.getElementById('archiveContainer');
             const quickLinksContainer = document.getElementById('quickLinks');
-            container.innerHTML = '<div class="brand-page-heading"><h1>아카이브</h1><p>프로젝트별 영상과 시안을 한곳에서 확인하세요.</p></div>';
+            // Keep archive-only controls inside its page, preserving the shared header width.
+            const addProjectButton = document.getElementById('btnAddProject');
+            const archiveIndex = document.querySelector('.nav-bar-wrapper');
+            container.innerHTML = '<div class="brand-page-heading archive-page-heading"><div><h1>아카이브</h1><p>프로젝트별 영상과 시안을 한곳에서 확인하세요.</p></div></div>';
+            if (addProjectButton) container.querySelector('.archive-page-heading').appendChild(addProjectButton);
+            if (archiveIndex) container.appendChild(archiveIndex);
             quickLinksContainer.innerHTML = '';
             const yearsSet = new Set();
             const availableMonthsSet = new Set();
