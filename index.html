@@ -423,6 +423,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
+                <a href="#creative-six" class="main-menu-tab" id="creativeOfficeTab" style="display:none">작은 사무실</a>
                 <div class="lx-menu-group">
                         <a href="#lecture" class="main-menu-tab" id="lectureTab" aria-expanded="false" aria-controls="lxSubmenu">LX팀 <span class="lx-chevron" aria-hidden="true">⌄</span></a>
                         <div id="lxSubmenu" class="lx-submenu" hidden>
@@ -476,6 +477,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             &nbsp;·&nbsp;
             <span id="logoutBtn" style="cursor:pointer; text-decoration:underline; color:var(--text-secondary);" onclick="handleLogout()">로그아웃</span>
         </footer>
+        <main id="creativeOfficeContainer" class="grid-layout-align" style="display:none"><iframe id="creativeOfficeFrame" title="KWAN의 작은 사무실" style="width:100%;height:100svh;min-height:760px;border:0;border-radius:20px" sandbox="allow-scripts allow-same-origin"></iframe></main>
         <!-- 모달 모음 -->
         <div id="projectModal" class="admin-modal-overlay">
             <div class="admin-modal-box">
@@ -779,8 +781,31 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let currentUserName = localStorage.getItem(USER_NAME_KEY) || null;
         let visibleTabs = JSON.parse(localStorage.getItem(VISIBLE_TABS_KEY) || '["archive","library"]');
         let isAdmin = !!(adminToken && Number(localStorage.getItem(ADMIN_EXP_KEY)) > Date.now() && userRole === 'editor');
+        let creativeOwner = false;
+        let creativeOwnerClient = null;
+        async function refreshCreativeOwner() {
+            creativeOwner = false;
+            const token = adminToken;
+            if (!token) return false;
+            try {
+                const {createOfficeClient} = await import('./creative-office/client.mjs');
+                creativeOwnerClient?.invalidate();
+                const client = createOfficeClient({url:SUPABASE_URL,anonKey:SUPABASE_ANON_KEY,getToken:()=>adminToken});
+                creativeOwnerClient=client;
+                await client.requireOwner();
+                creativeOwner = token === adminToken && creativeOwnerClient === client;
+            } catch { creativeOwner=false; }
+            return creativeOwner;
+        }
         let sessionRefreshTimerId = null;
         function clearSessionState() {
+            creativeOwner=false;
+            creativeOwnerClient?.invalidate();
+            const officeFrame=document.getElementById('creativeOfficeFrame');
+            officeFrame?.contentWindow?.postMessage({type:'socra:office-lock'},location.origin);
+            officeFrame?.removeAttribute('src');
+            const officeTab=document.getElementById('creativeOfficeTab');
+            if(officeTab)officeTab.style.display='none';
             isAdmin = false;
             adminToken = null;
             refreshToken = null;
@@ -874,6 +899,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 loginScreen.style.display = 'none';
                 appContainer.style.display = 'block';
                 await refreshVisibleTabs();
+                await refreshCreativeOwner();
                 applyAdminMode();
                 setupQuickLinksScroll();
                 const refIdFromHash = getReferenceIdFromHash();
@@ -1006,6 +1032,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let currentFilterYear = 'ALL';
         let currentFilterMonth = 'ALL';
         function applyAdminMode() {
+            document.getElementById('creativeOfficeTab').style.display=creativeOwner?'inline-block':'none';
             const addProjBtn = document.getElementById('btnAddProject');
             const libraryHeaderAdmin = document.getElementById('libraryHeaderAdmin');
             const archiveTab = document.querySelector('a[href="#archive"]');
@@ -1028,6 +1055,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }
         }
         function canSeeTab(tabName) {
+            if(tabName === 'creative-six') return creativeOwner === true;
             if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
                 return ['lecture', 'lecture/notes', 'lecture/editing', 'pptauto', 'lecture/pptauto'].includes(tabName);
             }
@@ -1082,8 +1110,18 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (referenceContainer) referenceContainer.style.display = 'none';
             if (automationContainer) automationContainer.style.display = 'none';
             if (lectureContainer) lectureContainer.style.display = 'none';
+            const officeContainer=document.getElementById('creativeOfficeContainer');
+            if(officeContainer)officeContainer.style.display='none';
             // 2) 선택된 컨테이너 보여주기
-            if (tabName === 'archive') {
+            if(tabName === 'creative-six' && creativeOwner) {
+                officeContainer.style.display='block';
+                if(navBarWrapper)navBarWrapper.style.display='none';
+                if(addProjBtn)addProjBtn.style.display='none';
+                if(libraryHeaderAdmin)libraryHeaderAdmin.style.display='none';
+                if(btnAdminReference)btnAdminReference.style.display='none';
+                const frame=document.getElementById('creativeOfficeFrame');
+                if(!frame.getAttribute('src'))frame.src='creative-office.html';
+            } else if (tabName === 'archive') {
                 if (archiveContainer) archiveContainer.style.display = 'block';
                 if (navBarWrapper) navBarWrapper.style.display = 'block';
                 if (isAdmin && addProjBtn) addProjBtn.style.display = 'block';
@@ -1185,7 +1223,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 return;
             }
 
-            if (/^lecture\/(notes|editing)$/.test(hash) || ['archive', 'library', 'automation', 'pptauto', 'lecture/pptauto', 'lecture', 'reference'].includes(hash)) {
+            if (/^lecture\/(notes|editing)$/.test(hash) || ['archive', 'library', 'automation', 'pptauto', 'lecture/pptauto', 'lecture', 'reference', 'creative-six'].includes(hash)) {
                 switchMainTab(hash);
             }
         }
