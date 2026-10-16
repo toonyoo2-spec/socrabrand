@@ -28,7 +28,7 @@ test('explicit arbitrary PPT/audio folders support WAV, read only load, PPT pare
   assert.equal(plan.course.id,'root');assert.equal(plan.source.name,'강의자료_최종');assert.equal(plan.audioFolder.name,'MP3&wav');assert.equal(plan.audios.length,2);assert.deepEqual(plan.files.map(f=>f.audio.id),['a1','a2']);
   const picked=await G.loadSelectedPlan([files.p1,files.p2],'https://drive.google.com/drive/folders/audio');assert.equal(picked.files.length,2);
   await assert.rejects(G.loadSelectedPlan([files.p1,files.p3],'https://drive.google.com/drive/folders/audio'),/같은 PPT 폴더/);
-  await assert.rejects(G.loadPlan('https://drive.google.com/drive/folders/ppt','folder',''),/오디오 폴더 링크/);
+  const automatic=await G.loadPlan('https://drive.google.com/drive/folders/ppt','folder','');assert.equal(automatic.audioFolder.id,'ppt');assert.equal(automatic.files.length,2);assert.equal(automatic.audios.length,0);
   await assert.rejects(G.loadPlan('https://drive.google.com/drive/folders/root','folder','https://drive.google.com/drive/folders/audio'),/상위 폴더/);
   assert.ok(calls.every(x=>!x.opts.method));
   const dest=await G.destination(plan,'',files.p1);assert.equal(dest.id,'dest');assert.equal(calls.filter(x=>x.opts.method==='POST').length,1);

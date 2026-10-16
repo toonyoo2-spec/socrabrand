@@ -1,8 +1,8 @@
-import {discoverFiles} from './discovery.mjs?v=20261016-discovery-1';
+import {discoverFiles} from './discovery.mjs?v=20261016-groups-2';
 import {slideText,sheetRequests} from './core.mjs?v=20261016-discovery-1';
 import {createSharedGoogleSession} from '../google-session.mjs?v=20261016-shared-1';
 import {driveBrowseQuery} from '../drive-browser.mjs?v=20261016-paths-1';
-import {pairFiles} from './request.mjs?v=20261016-discovery-1';
+import {pairFiles} from './request.mjs?v=20261016-groups-2';
 let token='',expiry=0,clientId='';
 const session=createSharedGoogleSession();
 function clearSession(){token='';expiry=0;session.clear();}
@@ -19,7 +19,6 @@ export function fileInfo(id){return api(`${DRIVE}/files/${encodeURIComponent(id)
 async function list(q){let files=[],pageToken;do{const p=new URLSearchParams({q:q+' and trashed=false',fields:'nextPageToken,files(id,name,mimeType,parents,webViewLink,capabilities(canAddChildren))',pageSize:'100',supportsAllDrives:'true',includeItemsFromAllDrives:'true',orderBy:'name_natural'});if(pageToken)p.set('pageToken',pageToken);const x=await api(DRIVE+'/files?'+p);files.push(...x.files);pageToken=x.nextPageToken;}while(pageToken);return files;}
 export async function loadPlan(input,mode='folder',audioInput='',onProgress=()=>{}){
   onProgress('PPT 폴더 정보 확인 중');
-  if(!audioInput.trim())throw Error('오디오 폴더 링크를 입력하거나 Drive에서 선택해 주세요.');
   if(mode==='presentation'){
     const f=await fileInfo(idFrom(input,'presentation'));
     if(f.mimeType!=='application/vnd.google-apps.presentation')throw Error('Google Slides 형식의 PPT를 선택해 주세요.');
@@ -32,16 +31,16 @@ export async function loadPlan(input,mode='folder',audioInput='',onProgress=()=>
   if(source.parents?.length!==1)throw Error('PPT 폴더의 상위 폴더를 하나로 확인할 수 없습니다. 저장 위치를 확인해 주세요.');
   const course=await fileInfo(source.parents[0]);
   const pptScan=await discoverFiles(source,id=>list(`'${esc(id)}' in parents`),'ppt',{onProgress:p=>onProgress(`PPT 하위 폴더 ${p.foldersScanned}개 탐색 · PPT ${p.files}개 발견`)});const files=pptScan.files;
-  if(!files.length)throw Error('선택한 폴더에 Google Slides PPT가 없습니다. 상위 폴더가 아닌 PPT가 실제로 들어 있는 폴더를 선택해 주세요.');
+  if(!files.length)throw Error('선택한 폴더에 Google Slides PPT가 없습니다. PPT를 포함하는 상위 폴더를 선택해 주세요.');
   if(files.length>100)throw Error('한 번에 100개 이하의 PPT를 선택해 주세요.');
   onProgress('오디오 폴더 정보 확인 중');
-  const audioFolder=await fileInfo(idFrom(audioInput));
+  const audioFolder=audioInput.trim()?await fileInfo(idFrom(audioInput)):source;
   if(audioFolder.mimeType!==FOLDER)throw Error('MP3·WAV가 들어 있는 오디오 폴더를 선택해 주세요.');
   const audioScan=await discoverFiles(audioFolder,id=>list(`'${esc(id)}' in parents`),'audio',{onProgress:p=>onProgress(`오디오 하위 폴더 ${p.foldersScanned}개 탐색 · 음원 ${p.files}개 발견`)});const audios=audioScan.files;
   const audioWarning=audios.length?'':'선택한 오디오 폴더에 MP3·WAV 파일이 없습니다.';
   let analyzed=0;onProgress(`PPT 표현 분석 0/${files.length}개`);
   for(let i=0;i<files.length;i+=4)await Promise.all(files.slice(i,i+4).map(async f=>{const deck=await readSlides(f.id);f.slides=deck.slides.map((s,j)=>({number:j+1,text:slideText(s)}));onProgress(`PPT 표현 분석 ${++analyzed}/${files.length}개`);}));
-  return {files:pairFiles(files,audios).sort((a,b)=>(a.lectureNumber??Infinity)-(b.lectureNumber??Infinity)||(a.expression??0)-(b.expression??0)),course,source,audioFolder,audios,audioWarning,discovery:{pptFolders:pptScan.foldersScanned,audioFolders:audioScan.foldersScanned}};
+  return {files:pairFiles(files,audios).sort((a,b)=>(a.groupLabel||'').localeCompare(b.groupLabel||'','ko')||(a.lectureNumber??Infinity)-(b.lectureNumber??Infinity)||(a.expression??0)-(b.expression??0)),course,source,audioFolder,audios,audioWarning,discovery:{pptFolders:pptScan.foldersScanned,audioFolders:audioScan.foldersScanned}};
 }
 export function readSlides(id){return api('https://slides.googleapis.com/v1/presentations/'+encodeURIComponent(id));}
 export async function destination(plan,input,file){if(input.trim()){const f=await fileInfo(idFrom(input));if(f.mimeType!==FOLDER||!f.capabilities?.canAddChildren)throw Error('저장할 폴더의 편집 권한을 확인해 주세요.');return f;}
