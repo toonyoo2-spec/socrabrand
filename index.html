@@ -879,8 +879,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 const refIdFromHash = getReferenceIdFromHash();
                 const hash = window.location.hash.slice(1);
                 switchMainTab(refIdFromHash ? 'reference' : (canSeeTab(hash) ? hash : defaultTab()));
-                await loadArchiveFromDB();
-                if (refIdFromHash) {
+                if (canSeeTab('archive')) await loadArchiveFromDB();
+                if (refIdFromHash && canSeeTab('reference')) {
                     await loadReferences();
                     renderReferenceView(refIdFromHash);
                     history.replaceState({ referenceViewOpen: true, referenceId: refIdFromHash }, '', `#reference/${refIdFromHash}`);
@@ -1014,8 +1014,9 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             // 탭 표시는 profiles.visible_tabs 기준
             archiveTab.style.display = visibleTabs.includes('archive') ? 'inline-block' : 'none';
             libraryTab.style.display = visibleTabs.includes('library') ? 'inline-block' : 'none';
-            // 참고자료 탭은 모두에게 항시 표시
-            document.getElementById('referenceTab').style.display = 'inline-block'; 
+            // LX-only accounts cannot enter brand-team pages.
+            document.getElementById('referenceTab').style.display = canSeeTab('reference') ? 'inline-block' : 'none';
+            document.getElementById('automationTab').style.display = canSeeTab('automation') ? 'inline-block' : 'none';
             if (isAdmin) {
                 if (currentMainTab === 'archive') addProjBtn.style.display = 'block';
                 if (libraryHeaderAdmin && currentMainTab === 'library') libraryHeaderAdmin.style.display = 'flex';
@@ -1027,6 +1028,9 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }
         }
         function canSeeTab(tabName) {
+            if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
+                return ['lecture', 'lecture/notes', 'lecture/editing', 'pptauto', 'lecture/pptauto'].includes(tabName);
+            }
             if (/^lecture\/(notes|editing)$/.test(tabName)) return true;
             if (tabName === 'reference') return true; // 참고자료는 누구나 열람 가능
             if (tabName === 'automation') return true; // 자동화 현황은 누구나 열람 가능
@@ -1051,7 +1055,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (referenceViewerOpen) {
                 forceCloseReferenceView();
             }
-            if (!canSeeTab(tabName)) tabName = defaultTab();
+            if (!canSeeTab(tabName)) {
+                tabName = defaultTab();
+                history.replaceState(null, '', '#' + tabName);
+            }
             currentMainTab = tabName;
             // Brand-team polish is disabled for LX routes.
             document.getElementById('appContainer').classList.toggle('brand-tone', ['archive', 'library', 'reference', 'automation'].includes(tabName));
@@ -1174,6 +1181,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             // #reference/7 형태인지 체크 (참고자료 상세 보기)
             const isReferenceDetail = /^reference\/(.+)$/.test(hash);
             if (isReferenceDetail) {
+                if (!canSeeTab('reference')) switchMainTab('reference');
                 return;
             }
 
@@ -2005,10 +2013,12 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let referenceViewerOpen = false;
         let currentRefBlobUrl = null;
         function getReferenceIdFromHash() {
+            if (!canSeeTab('reference')) return null;
             const m = window.location.hash.slice(1).match(/^reference\/(.+)$/);
             return m ? decodeURIComponent(m[1]) : null;
         }
         async function loadReferences() {
+            if (!canSeeTab('reference')) return;
             try {
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/references?select=*&order=created_at.desc`, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` }
@@ -2118,6 +2128,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         }
         // 뷰어 열기/닫기 (풀페이지, iframe에 srcdoc 주입)
         function renderReferenceView(id) {
+            if (!canSeeTab('reference')) { switchMainTab('reference'); return; }
             const target = currentReferences.find(r => r.id == id);
             if (!target) return;
             document.getElementById('refViewTitle').textContent = target.title;
