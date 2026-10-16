@@ -12,5 +12,5 @@ test('WAV matches exact title and ambiguous formats require a choice; request us
  const text=makeRequest({course:{id:'ppt-parent',name:'Course'},source:{id:'slides',name:'Any folder name'},audioFolder:{id:'elsewhere',name:'오디오'},files:paired});
  const data=JSON.parse(text.split('작업 자료(JSON):\n')[1]);
  assert.equal(data.destination.parentFolderId,'ppt-parent');assert.equal(data.audioFolder.url,'https://drive.google.com/drive/folders/elsewhere');assert.equal(data.pairs[0].audio.id,'w');
- assert.ok(text.includes('PPT 폴더의 바로 위 상위 폴더'));
+ assert.ok(text.includes('프롬프트 폴더의 바로 위 상위 폴더'));
 });

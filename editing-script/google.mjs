@@ -1,8 +1,8 @@
-import {discoverFiles} from './discovery.mjs?v=20261016-groups-2';
+import {discoverFiles} from './discovery.mjs?v=20261016-groups-7';
 import {slideText,sheetRequests} from './core.mjs?v=20261016-discovery-1';
 import {createSharedGoogleSession} from '../google-session.mjs?v=20261016-shared-1';
 import {driveBrowseQuery} from '../drive-browser.mjs?v=20261016-paths-1';
-import {pairFiles} from './request.mjs?v=20261016-groups-2';
+import {pairFiles} from './request.mjs?v=20261016-groups-7';
 let token='',expiry=0,clientId='';
 const session=createSharedGoogleSession();
 function clearSession(){token='';expiry=0;session.clear();}
@@ -18,7 +18,7 @@ export function idFrom(value,type='folder'){const s=String(value).trim();if(/^[\
 export function fileInfo(id){return api(`${DRIVE}/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,parents,webViewLink,capabilities(canAddChildren)`);}
 async function list(q){let files=[],pageToken;do{const p=new URLSearchParams({q:q+' and trashed=false',fields:'nextPageToken,files(id,name,mimeType,parents,webViewLink,capabilities(canAddChildren))',pageSize:'100',supportsAllDrives:'true',includeItemsFromAllDrives:'true',orderBy:'name_natural'});if(pageToken)p.set('pageToken',pageToken);const x=await api(DRIVE+'/files?'+p);files.push(...x.files);pageToken=x.nextPageToken;}while(pageToken);return files;}
 export async function loadPlan(input,mode='folder',audioInput='',onProgress=()=>{}){
-  onProgress('PPT 폴더 정보 확인 중');
+  onProgress('프롬프트 폴더 정보 확인 중');
   if(mode==='presentation'){
     const f=await fileInfo(idFrom(input,'presentation'));
     if(f.mimeType!=='application/vnd.google-apps.presentation')throw Error('Google Slides 형식의 PPT를 선택해 주세요.');
@@ -28,8 +28,9 @@ export async function loadPlan(input,mode='folder',audioInput='',onProgress=()=>
   }
   const source=await fileInfo(idFrom(input));
   if(source.mimeType!==FOLDER)throw Error('PPT가 실제로 들어 있는 폴더 링크를 입력해 주세요.');
-  if(source.parents?.length!==1)throw Error('PPT 폴더의 상위 폴더를 하나로 확인할 수 없습니다. 저장 위치를 확인해 주세요.');
-  const course=await fileInfo(source.parents[0]);
+  const combinedRoot=!audioInput.trim();
+  if(!combinedRoot&&source.parents?.length!==1)throw Error('프롬프트 폴더의 상위 폴더를 하나로 확인할 수 없습니다. 저장 위치를 확인해 주세요.');
+  const course=combinedRoot?source:await fileInfo(source.parents[0]);
   const pptScan=await discoverFiles(source,id=>list(`'${esc(id)}' in parents`),'ppt',{onProgress:p=>onProgress(`PPT 하위 폴더 ${p.foldersScanned}개 탐색 · PPT ${p.files}개 발견`)});const files=pptScan.files;
   if(!files.length)throw Error('선택한 폴더에 Google Slides PPT가 없습니다. PPT를 포함하는 상위 폴더를 선택해 주세요.');
   if(files.length>100)throw Error('한 번에 100개 이하의 PPT를 선택해 주세요.');
@@ -40,13 +41,13 @@ export async function loadPlan(input,mode='folder',audioInput='',onProgress=()=>
   const audioWarning=audios.length?'':'선택한 오디오 폴더에 MP3·WAV 파일이 없습니다.';
   let analyzed=0;onProgress(`PPT 표현 분석 0/${files.length}개`);
   for(let i=0;i<files.length;i+=4)await Promise.all(files.slice(i,i+4).map(async f=>{const deck=await readSlides(f.id);f.slides=deck.slides.map((s,j)=>({number:j+1,text:slideText(s)}));onProgress(`PPT 표현 분석 ${++analyzed}/${files.length}개`);}));
-  return {files:pairFiles(files,audios).sort((a,b)=>(a.groupLabel||'').localeCompare(b.groupLabel||'','ko')||(a.lectureNumber??Infinity)-(b.lectureNumber??Infinity)||(a.expression??0)-(b.expression??0)),course,source,audioFolder,audios,audioWarning,discovery:{pptFolders:pptScan.foldersScanned,audioFolders:audioScan.foldersScanned}};
+  return {files:pairFiles(files,audios).sort((a,b)=>(a.groupLabel||'').localeCompare(b.groupLabel||'','ko')||(a.lectureNumber??Infinity)-(b.lectureNumber??Infinity)||(a.expression??0)-(b.expression??0)),course,source,combinedRoot,audioFolder,audios,audioWarning,discovery:{pptFolders:pptScan.foldersScanned,audioFolders:audioScan.foldersScanned}};
 }
 export function readSlides(id){return api('https://slides.googleapis.com/v1/presentations/'+encodeURIComponent(id));}
 export async function destination(plan,input,file){if(input.trim()){const f=await fileInfo(idFrom(input));if(f.mimeType!==FOLDER||!f.capabilities?.canAddChildren)throw Error('저장할 폴더의 편집 권한을 확인해 주세요.');return f;}
-if(!plan?.source?.id||!plan?.course?.id)throw Error('PPT 폴더와 오디오 폴더를 다시 연결해 주세요.');
+if(!plan?.source?.id||!plan?.course?.id)throw Error('프롬프트 폴더와 오디오 폴더를 다시 연결해 주세요.');
 const source=await fileInfo(plan.source.id);
-if(source.parents?.length!==1||source.parents[0]!==plan.course.id)throw Error('PPT 폴더의 상위 경로가 변경되었습니다. 다시 연결한 뒤 저장해 주세요.');
+if(!plan.combinedRoot&&(source.parents?.length!==1||source.parents[0]!==plan.course.id))throw Error('프롬프트 폴더의 상위 경로가 변경되었습니다. 다시 연결한 뒤 저장해 주세요.');
 const parent=await fileInfo(plan.course.id);
 const folders=await list(`'${esc(parent.id)}' in parents and mimeType='${FOLDER}' and name='편집스크립트'`);if(folders.length>1)throw Error('편집스크립트 폴더가 여러 개입니다. 저장 폴더를 직접 지정해 주세요.');if(folders.length){if(!folders[0].capabilities?.canAddChildren)throw Error('편집스크립트 폴더에 저장 권한이 없습니다.');return folders[0];}if(!parent.capabilities?.canAddChildren)throw Error('상위 폴더에 저장 권한이 없습니다. 저장할 폴더를 지정해 주세요.');return api(DRIVE+'/files?supportsAllDrives=true&fields=id,name',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'편집스크립트',mimeType:FOLDER,parents:[parent.id]})});}
 export async function saveSheet({rows,title,folder,source,requests}){const name=title+' · 편집스크립트';const prior=await list(`'${esc(folder.id)}' in parents and name='${esc(name)}' and mimeType='application/vnd.google-apps.spreadsheet'`);if(prior.length)return {duplicate:true,file:prior[0]};
@@ -55,11 +56,11 @@ try{const meta=await api(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}?
 
 export function browseDrive(options){return list(driveBrowseQuery(options,esc));}
 
-export async function loadSelectedPlan(files,audioInput,onProgress=()=>{}){if(!files.length)throw Error('PPT를 선택해 주세요.');const details=await Promise.all(files.map(f=>fileInfo(f.id)));const parents=new Set(details.map(f=>f.parents?.[0]));if(parents.size!==1||parents.has(undefined))throw Error('편집스크립트는 같은 PPT 폴더 안의 파일을 함께 선택해 주세요.');const plan=await loadPlan('https://drive.google.com/drive/folders/'+details[0].parents[0],'folder',audioInput,onProgress);const ids=new Set(files.map(f=>f.id));plan.files=plan.files.filter(f=>ids.has(f.id));if(new Set(plan.files.map(f=>f.id)).size!==files.length)throw Error('선택한 PPT를 모두 찾지 못했습니다. Google Slides 파일인지 확인해 주세요.');return plan;}
+export async function loadSelectedPlan(files,audioInput,onProgress=()=>{}){if(!files.length)throw Error('PPT를 선택해 주세요.');const details=await Promise.all(files.map(f=>fileInfo(f.id)));const parents=new Set(details.map(f=>f.parents?.[0]));if(parents.size!==1||parents.has(undefined))throw Error('편집스크립트는 같은 프롬프트 폴더 안의 파일을 함께 선택해 주세요.');const plan=await loadPlan('https://drive.google.com/drive/folders/'+details[0].parents[0],'folder',audioInput,onProgress);const ids=new Set(files.map(f=>f.id));plan.files=plan.files.filter(f=>ids.has(f.id));if(new Set(plan.files.map(f=>f.id)).size!==files.length)throw Error('선택한 PPT를 모두 찾지 못했습니다. Google Slides 파일인지 확인해 주세요.');return plan;}
 
 // Resolve the actual ancestors for both pasted links and selected files.
 export async function folderTrail(folder){const trail=[],seen=new Set();let current=folder;for(let i=0;current&&i<40;i++){if(seen.has(current.id))break;seen.add(current.id);trail.unshift(current);if(current.parents?.length!==1)break;try{current=await fileInfo(current.parents[0]);}catch{break;}}return trail;}
-export async function audioBrowseStart(input,mode='folder',selected=[]){let folder;if(selected.length||mode==='presentation'){const file=await fileInfo(selected[0]?.id||idFrom(input,'presentation'));if(file.parents?.length!==1)throw Error('PPT 폴더 위치를 확인할 수 없습니다.');folder=await fileInfo(file.parents[0]);}else folder=await fileInfo(idFrom(input));if(folder.mimeType!==FOLDER||folder.parents?.length!==1)throw Error('PPT 폴더의 상위 위치를 확인할 수 없습니다.');const parent=await fileInfo(folder.parents[0]);return {folder:parent,trail:await folderTrail(parent)};}
+export async function audioBrowseStart(input,mode='folder',selected=[]){let folder;if(selected.length||mode==='presentation'){const file=await fileInfo(selected[0]?.id||idFrom(input,'presentation'));if(file.parents?.length!==1)throw Error('프롬프트 폴더 위치를 확인할 수 없습니다.');folder=await fileInfo(file.parents[0]);}else folder=await fileInfo(idFrom(input));if(folder.mimeType!==FOLDER||folder.parents?.length!==1)throw Error('프롬프트 폴더의 상위 위치를 확인할 수 없습니다.');const parent=await fileInfo(folder.parents[0]);return {folder:parent,trail:await folderTrail(parent)};}
 export async function saveLecture({parts,title,folder,source}){
  if(!parts.length||parts.some(p=>!p.rows?.length))throw Error('현재 강의의 모든 표현에 전사·검수 결과를 준비해 주세요.');
  const prior=await list(`'${esc(folder.id)}' in parents and name='${esc(title+' · 편집스크립트')}' and mimeType='application/vnd.google-apps.spreadsheet'`);

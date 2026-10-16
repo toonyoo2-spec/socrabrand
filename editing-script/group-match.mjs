@@ -8,8 +8,10 @@ function score(ppt,audio){const p=branches(ppt),a=branches(audio);let ids=0,name
 export function scopedAudios(ppt,ppts,audios,lectureOf){
  const scores=audios.map(a=>score(ppt,a)),best=Math.max(0,...scores);
  if(best>0)return {audios:audios.filter((a,i)=>scores[i]===best),unresolved:false};
- const groups=new Set(ppts.filter(p=>lectureOf(p.name)!==null).map(groupIdentity));
- if(groups.size>1&&audios.length)return {audios:[],unresolved:true};
- // A lone course with independently selected folders keeps number-based matching.
- return {audios,unresolved:false};
+ // Dates or other organization folders may share one flat audio folder.
+ // Only a globally unique lesson may use audio with no known course association.
+ const unscoped=audios.filter(a=>!ppts.some(p=>score(p,a)>0));
+ const sameLesson=new Set(ppts.filter(p=>lectureOf(p.name)===lectureOf(ppt.name)).map(p=>p.id));
+ if(sameLesson.size>1&&unscoped.length)return {audios:[],unresolved:true};
+ return {audios:unscoped,unresolved:false};
 }
