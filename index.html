@@ -459,7 +459,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <iframe id="automationFrame" class="automation-frame" title="콘텐츠 자동화 현황" data-src="automation.html?v=20261015-tone-1"></iframe>
         </main>
         <main id="lectureContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="lectureFrame" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261016-workflow-7" data-src="lecture-workspace.html?embed=1&amp;v=20261016-workflow-7"></iframe>
+            <iframe id="lectureFrame" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261016-notes-progress-2" data-src="lecture-workspace.html?embed=1&amp;v=20261016-notes-progress-2"></iframe>
         </main>
         <!-- Reference Page (참고자료) -->
         <main id="referenceContainer" class="grid-layout-align" style="display: none;">
@@ -1142,7 +1142,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (!frame.getAttribute('src')) {
                 const url = new URL(frame.dataset.src, location.href);
                 url.searchParams.set('tool', tool);
-                url.searchParams.set('v', '20261016-workflow-7');
+                url.searchParams.set('v', '20261016-notes-progress-2');
                 frame.src = url.href;
             } else frame.contentWindow.postMessage({type:'socra:activate-tool',tool}, location.origin);
         }
