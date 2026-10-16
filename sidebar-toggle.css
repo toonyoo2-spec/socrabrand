@@ -1,6 +1,6 @@
 /* A single top navigation leaves the full width available to every workspace. */
 #appContainer.top-navigation[style*="block"]{display:grid!important;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:100dvh;background:var(--bg)!important}
-#appContainer.top-navigation>header{grid-column:1;grid-row:1;padding:14px 24px!important;flex-direction:row;align-items:center;gap:16px;border-bottom:1px solid var(--border-color);margin:0;max-width:none;min-height:72px;background:var(--surface)}
+#appContainer.top-navigation>header{grid-column:1;grid-row:1;padding:14px 24px!important;flex-direction:row;align-items:center;gap:16px;border-bottom:1px solid var(--border-color);margin:0;max-width:none;min-height:64px;background:var(--surface)}
 #appContainer.top-navigation .header-tag{font-size:20px;white-space:nowrap}
 #appContainer.top-navigation>.main-menu-wrapper{grid-column:2;grid-row:1;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border-color);margin:0;display:flex;align-items:center;justify-content:flex-start;min-width:0}
 #appContainer.top-navigation .main-menu-container{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:4px;padding:0!important;margin:0;overflow:visible;max-width:none}
@@ -12,6 +12,17 @@
 #archive-index-toggle:focus-visible,#appContainer.top-navigation .main-menu-tab:focus-visible{outline:3px solid #00663a;outline-offset:2px}
 #appContainer.top-navigation>main{grid-column:1/-1;grid-row:3;margin:0;max-width:none;width:100%;padding:28px 32px}
 #appContainer.top-navigation>footer{grid-column:1/-1;grid-row:4;padding:20px 32px!important}
-#appContainer.top-navigation>#lectureContainer,#appContainer.top-navigation>#automationContainer{padding:0}#appContainer.top-navigation .automation-frame{height:calc(100dvh - 72px);min-height:440px;border:0;border-radius:0}
+#appContainer.top-navigation>#lectureContainer,#appContainer.top-navigation>#automationContainer{padding:0}#appContainer.top-navigation .automation-frame{height:calc(100dvh - 64px);min-height:440px;border:0;border-radius:0}
 #appContainer.top-navigation .lx-submenu{position:absolute;top:100%;right:0;min-width:190px;z-index:500;background:var(--surface,#fff);border:1px solid var(--border-color);border-radius:10px;margin:4px 0 0;padding:8px;box-shadow:0 8px 24px #153a2414}
 @media(max-width:1023px){#appContainer.top-navigation[style*="block"]{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto}#appContainer.top-navigation>header{grid-column:1;grid-row:1;min-height:60px;padding:12px 20px!important}#appContainer.top-navigation>.main-menu-wrapper{grid-column:1;grid-row:2;padding:0 12px 8px;justify-content:flex-start}#appContainer.top-navigation .main-menu-container{justify-content:flex-start}#appContainer.top-navigation>.nav-bar-wrapper{grid-row:3;padding:8px 20px}#appContainer.top-navigation>main{grid-row:4;padding:20px}#appContainer.top-navigation>footer{grid-row:5}#appContainer.top-navigation .main-menu-tab{padding:10px 12px;font-size:13px}#appContainer.top-navigation .automation-frame{height:calc(100dvh - 124px)}}
+
+#site-logout{margin-left:auto;flex-shrink:0;min-height:44px;padding:8px 14px;border:1px solid var(--border-color);border-radius:7px;color:var(--text-secondary);background:var(--surface);font:500 12px var(--font);cursor:pointer}#site-logout:focus-visible{outline:3px solid #00663a;outline-offset:2px}
+
+#appContainer.top-navigation .lx-menu-group{display:flex;align-items:center;flex-wrap:wrap;gap:0;max-width:100%;min-width:0}
+#appContainer.top-navigation .lx-menu-group #lectureTab{gap:8px;flex-shrink:0}
+#appContainer.top-navigation .lx-submenu{position:static;display:flex;flex-direction:row;align-items:center;flex-wrap:nowrap;gap:4px;max-width:290px;min-width:0;margin:0 0 0 6px;padding:0 0 0 8px;border:0;border-left:1px solid var(--border-color);border-radius:0;box-shadow:none;background:transparent;overflow:hidden;opacity:1;transform:translateX(0);visibility:visible;transition:max-width .18s ease,opacity .18s ease,transform .18s ease}
+#appContainer.top-navigation .lx-submenu[hidden]{display:flex!important;max-width:0;margin:0;padding:0;border:0;opacity:0;transform:translateX(-8px);visibility:hidden;pointer-events:none}
+#appContainer.top-navigation .lx-submenu a{padding:10px 12px;font-size:13px;min-height:44px;white-space:nowrap;flex-shrink:0}
+#appContainer.top-navigation .lx-chevron{transform:rotate(-90deg)}#appContainer.top-navigation #lectureTab[aria-expanded=true] .lx-chevron{transform:rotate(90deg)}
+@media(max-width:1023px){#appContainer.top-navigation .lx-menu-group{flex-wrap:wrap}#appContainer.top-navigation .lx-submenu{margin-left:0;padding-left:4px;max-width:290px}#appContainer.top-navigation .lx-submenu a{padding:10px}}
+@media(prefers-reduced-motion:reduce){#appContainer.top-navigation .lx-submenu{transition:none}}

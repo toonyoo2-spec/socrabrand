@@ -48,9 +48,10 @@
     .workspace-hub .tool-links button:hover{color:var(--ui-green)}
     @media(max-width:760px){.workspace-hub header .tool-links{flex:1 1 330px;min-width:0;max-width:100%}.workspace-hub .tool-links button{flex:1;text-align:center;padding:10px 14px}}
     @media(max-width:400px){.workspace-hub .tool-links button{font-size:13px;padding:10px 8px}}
+    .workspace-hub.hub-embedded .app-header{display:none!important}
   </style>
 </head>
-<body class="socra-tool workspace-hub">
+<body class="socra-tool workspace-hub"><script>if(new URLSearchParams(location.search).get("embed")==="1")document.body.classList.add("hub-embedded");</script>
   <header class="app-header">
     <div class="app-brand"><a href="/" target="_top">SOC<span>RA</span></a><span class="brand-divider"></span><span class="brand-context">LX팀</span></div>
     <nav class="tool-links" role="tablist" aria-label="강의 제작 도구">
