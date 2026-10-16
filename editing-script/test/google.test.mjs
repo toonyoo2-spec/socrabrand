@@ -17,6 +17,7 @@ test('explicit arbitrary PPT/audio folders support WAV, read only load, PPT pare
   if(opts.method==='POST'){const body=JSON.parse(opts.body);assert.deepEqual(body.parents,['root']);assert.equal(body.name,'편집스크립트');data={id:'dest',name:body.name};existing=true;}
   else if(q.includes("'root' in parents"))data={files:existing?[{id:'dest',name:'편집스크립트',capabilities:{canAddChildren:true}}]:[]};
   else if(q.includes("'ppt' in parents"))data={files:[files.p1,files.p2]};
+  else if(q.includes("'subfolder' in parents"))data={files:[]};
   else if(q.includes("'audio' in parents"))data={files:[{id:'a1',name:'1-1.mp3',mimeType:'audio/mpeg'},{id:'a2',name:'2-1.WAV',mimeType:'audio/x-wav'},{id:'junk',name:'script.txt',mimeType:'text/plain'},{id:'subfolder',name:'3강.wav',mimeType:folder}]};
   else throw Error(q);
  }else data=id==='ppt'&&moved?{...files.ppt,parents:['new-parent']}:files[id];

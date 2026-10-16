@@ -1,11 +1,12 @@
-import {slideText,sheetRequests} from './core.mjs?v=20261016-expressions-1';
-import {createGoogleSession} from '../google-session.mjs';
+import {discoverFiles} from './discovery.mjs?v=20261016-discovery-1';
+import {slideText,sheetRequests} from './core.mjs?v=20261016-discovery-1';
+import {createSharedGoogleSession} from '../google-session.mjs?v=20261016-shared-1';
 import {driveBrowseQuery} from '../drive-browser.mjs?v=20261016-paths-1';
-import {pairFiles} from './request.mjs?v=20261016-expressions-1';
+import {pairFiles} from './request.mjs?v=20261016-discovery-1';
 let token='',expiry=0,clientId='';
-const session=createGoogleSession('socra_editing_google');
+const session=createSharedGoogleSession();
 function clearSession(){token='';expiry=0;session.clear();}
-export async function restoreGoogle(){const saved=session.read(clientId);if(!saved)return null;token=saved.token;expiry=saved.expiresAt;try{return await api('https://www.googleapis.com/oauth2/v3/userinfo');}catch(e){if(!connected())return null;throw e;}}
+export async function restoreGoogle(){const saved=session.read(clientId);if(!saved){token='';expiry=0;return null;}token=saved.token;expiry=saved.expiresAt;try{return await api('https://www.googleapis.com/oauth2/v3/userinfo');}catch(e){if(!connected())return null;throw e;}}
 const DRIVE='https://www.googleapis.com/drive/v3',FOLDER='application/vnd.google-apps.folder';
 export async function setupGoogle(){const r=await fetch('./lesson-notes/config.json',{cache:'no-store'});if(!r.ok)throw Error('Google 연결 설정을 읽지 못했습니다.');clientId=(await r.json()).googleClientId;if(!clientId)throw Error('Google 연결 설정이 비어 있습니다.');}
 export function connected(){return token&&Date.now()<expiry;}
@@ -16,30 +17,31 @@ const esc=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 export function idFrom(value,type='folder'){const s=String(value).trim();if(/^[\w-]{15,}$/.test(s))return s;const u=new URL(s);const re=type==='folder'?/\/(?:drive\/)?(?:u\/\d+\/)?folders\/([\w-]+)/:/\/presentation\/d\/([\w-]+)/;const m=u.pathname.match(re);if(u.protocol!=='https:'||!['drive.google.com','docs.google.com'].includes(u.hostname)||!m)throw Error(type==='folder'?'Drive 폴더 링크를 입력해 주세요.':'Google Slides PPT 링크를 입력해 주세요.');return m[1];}
 export function fileInfo(id){return api(`${DRIVE}/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,parents,webViewLink,capabilities(canAddChildren)`);}
 async function list(q){let files=[],pageToken;do{const p=new URLSearchParams({q:q+' and trashed=false',fields:'nextPageToken,files(id,name,mimeType,parents,webViewLink,capabilities(canAddChildren))',pageSize:'100',supportsAllDrives:'true',includeItemsFromAllDrives:'true',orderBy:'name_natural'});if(pageToken)p.set('pageToken',pageToken);const x=await api(DRIVE+'/files?'+p);files.push(...x.files);pageToken=x.nextPageToken;}while(pageToken);return files;}
-export async function loadPlan(input,mode='folder',audioInput=''){
+export async function loadPlan(input,mode='folder',audioInput='',onProgress=()=>{}){
+  onProgress('PPT 폴더 정보 확인 중');
   if(!audioInput.trim())throw Error('오디오 폴더 링크를 입력하거나 Drive에서 선택해 주세요.');
   if(mode==='presentation'){
     const f=await fileInfo(idFrom(input,'presentation'));
     if(f.mimeType!=='application/vnd.google-apps.presentation')throw Error('Google Slides 형식의 PPT를 선택해 주세요.');
     if(!f.parents?.length)throw Error('PPT가 들어 있는 폴더를 확인할 수 없습니다.');
-    const plan=await loadPlan(f.parents[0],'folder',audioInput);
+    const plan=await loadPlan(f.parents[0],'folder',audioInput,onProgress);
     plan.files=plan.files.filter(x=>x.id===f.id);return plan;
   }
   const source=await fileInfo(idFrom(input));
   if(source.mimeType!==FOLDER)throw Error('PPT가 실제로 들어 있는 폴더 링크를 입력해 주세요.');
   if(source.parents?.length!==1)throw Error('PPT 폴더의 상위 폴더를 하나로 확인할 수 없습니다. 저장 위치를 확인해 주세요.');
   const course=await fileInfo(source.parents[0]);
-  const files=[],seen=new Set(),queue=[source];let scanned=0;
-  while(queue.length){if(++scanned>200)throw Error('하위 폴더가 너무 많습니다. 더 작은 PPT 폴더를 선택해 주세요.');const dir=queue.shift();if(seen.has(dir.id))continue;seen.add(dir.id);for(const f of await list(`'${esc(dir.id)}' in parents`)){if(f.mimeType==='application/vnd.google-apps.presentation'&&!files.some(x=>x.id===f.id))files.push(f);else if(f.mimeType===FOLDER)queue.push(f);}}
-
+  const pptScan=await discoverFiles(source,id=>list(`'${esc(id)}' in parents`),'ppt',{onProgress:p=>onProgress(`PPT 하위 폴더 ${p.foldersScanned}개 탐색 · PPT ${p.files}개 발견`)});const files=pptScan.files;
   if(!files.length)throw Error('선택한 폴더에 Google Slides PPT가 없습니다. 상위 폴더가 아닌 PPT가 실제로 들어 있는 폴더를 선택해 주세요.');
   if(files.length>100)throw Error('한 번에 100개 이하의 PPT를 선택해 주세요.');
+  onProgress('오디오 폴더 정보 확인 중');
   const audioFolder=await fileInfo(idFrom(audioInput));
   if(audioFolder.mimeType!==FOLDER)throw Error('MP3·WAV가 들어 있는 오디오 폴더를 선택해 주세요.');
-  const audios=(await list(`'${esc(audioFolder.id)}' in parents`)).filter(f=>f.mimeType!==FOLDER&&(/\.(mp3|wav)$/i.test(f.name)||['audio/mpeg','audio/mp3','audio/wav','audio/x-wav','audio/wave','audio/vnd.wave'].includes(f.mimeType)));
+  const audioScan=await discoverFiles(audioFolder,id=>list(`'${esc(id)}' in parents`),'audio',{onProgress:p=>onProgress(`오디오 하위 폴더 ${p.foldersScanned}개 탐색 · 음원 ${p.files}개 발견`)});const audios=audioScan.files;
   const audioWarning=audios.length?'':'선택한 오디오 폴더에 MP3·WAV 파일이 없습니다.';
-  for(let i=0;i<files.length;i+=4)await Promise.all(files.slice(i,i+4).map(async f=>{const deck=await readSlides(f.id);f.slides=deck.slides.map((s,j)=>({number:j+1,text:slideText(s)}));}));
-  return {files:pairFiles(files,audios),course,source,audioFolder,audios,audioWarning};
+  let analyzed=0;onProgress(`PPT 표현 분석 0/${files.length}개`);
+  for(let i=0;i<files.length;i+=4)await Promise.all(files.slice(i,i+4).map(async f=>{const deck=await readSlides(f.id);f.slides=deck.slides.map((s,j)=>({number:j+1,text:slideText(s)}));onProgress(`PPT 표현 분석 ${++analyzed}/${files.length}개`);}));
+  return {files:pairFiles(files,audios).sort((a,b)=>(a.lectureNumber??Infinity)-(b.lectureNumber??Infinity)||(a.expression??0)-(b.expression??0)),course,source,audioFolder,audios,audioWarning,discovery:{pptFolders:pptScan.foldersScanned,audioFolders:audioScan.foldersScanned}};
 }
 export function readSlides(id){return api('https://slides.googleapis.com/v1/presentations/'+encodeURIComponent(id));}
 export async function destination(plan,input,file){if(input.trim()){const f=await fileInfo(idFrom(input));if(f.mimeType!==FOLDER||!f.capabilities?.canAddChildren)throw Error('저장할 폴더의 편집 권한을 확인해 주세요.');return f;}
@@ -54,7 +56,7 @@ try{const meta=await api(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}?
 
 export function browseDrive(options){return list(driveBrowseQuery(options,esc));}
 
-export async function loadSelectedPlan(files,audioInput){if(!files.length)throw Error('PPT를 선택해 주세요.');const details=await Promise.all(files.map(f=>fileInfo(f.id)));const parents=new Set(details.map(f=>f.parents?.[0]));if(parents.size!==1||parents.has(undefined))throw Error('편집스크립트는 같은 PPT 폴더 안의 파일을 함께 선택해 주세요.');const plan=await loadPlan('https://drive.google.com/drive/folders/'+details[0].parents[0],'folder',audioInput);const ids=new Set(files.map(f=>f.id));plan.files=plan.files.filter(f=>ids.has(f.id));if(new Set(plan.files.map(f=>f.id)).size!==files.length)throw Error('선택한 PPT를 모두 찾지 못했습니다. Google Slides 파일인지 확인해 주세요.');return plan;}
+export async function loadSelectedPlan(files,audioInput,onProgress=()=>{}){if(!files.length)throw Error('PPT를 선택해 주세요.');const details=await Promise.all(files.map(f=>fileInfo(f.id)));const parents=new Set(details.map(f=>f.parents?.[0]));if(parents.size!==1||parents.has(undefined))throw Error('편집스크립트는 같은 PPT 폴더 안의 파일을 함께 선택해 주세요.');const plan=await loadPlan('https://drive.google.com/drive/folders/'+details[0].parents[0],'folder',audioInput,onProgress);const ids=new Set(files.map(f=>f.id));plan.files=plan.files.filter(f=>ids.has(f.id));if(new Set(plan.files.map(f=>f.id)).size!==files.length)throw Error('선택한 PPT를 모두 찾지 못했습니다. Google Slides 파일인지 확인해 주세요.');return plan;}
 
 // Resolve the actual ancestors for both pasted links and selected files.
 export async function folderTrail(folder){const trail=[],seen=new Set();let current=folder;for(let i=0;current&&i<40;i++){if(seen.has(current.id))break;seen.add(current.id);trail.unshift(current);if(current.parents?.length!==1)break;try{current=await fileInfo(current.parents[0]);}catch{break;}}return trail;}
