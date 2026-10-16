@@ -3,7 +3,7 @@ import {discoverFiles} from './discovery.mjs?v=20261016-workflow-3';
 import {slideText,sheetRequests} from './core.mjs?v=20261016-discovery-1';
 import {createSharedGoogleSession} from '../google-session.mjs?v=20261016-shared-1';
 import {driveBrowseQuery} from '../drive-browser.mjs?v=20261016-paths-1';
-import {pairFiles} from './request.mjs?v=20261016-workflow-3';
+import {pairFiles} from './request.mjs?v=20261016-selection-1';
 let token='',expiry=0,clientId='';
 const session=createSharedGoogleSession();
 const outputStore=createOutputLifecycle({generator:'socra-editing-script',request:(url,options)=>api(url,{...options,rawResponse:true})});
