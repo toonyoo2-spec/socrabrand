@@ -1,5 +1,5 @@
 import {createOfficeClient,ROLES,kstDate} from './client.mjs';
-import {renderOffice,OFFICE_MEMBERS} from './office-view.mjs';
+import {renderOffice,OFFICE_MEMBERS} from './office-view.mjs?v=20261017-title';
 const root=document.querySelector('#office-root');
 const url='https://eoljasmgogdcvnytaoax.supabase.co';
 // The public anon key identifies the project. Authorization comes from the JWT and server-side owner/RLS checks.
