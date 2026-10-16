@@ -1,8 +1,8 @@
-import {discoverFiles} from './discovery.mjs?v=20261016-groups-7';
+import {discoverFiles} from './discovery.mjs?v=20261016-workflow-3';
 import {slideText,sheetRequests} from './core.mjs?v=20261016-discovery-1';
 import {createSharedGoogleSession} from '../google-session.mjs?v=20261016-shared-1';
 import {driveBrowseQuery} from '../drive-browser.mjs?v=20261016-paths-1';
-import {pairFiles} from './request.mjs?v=20261016-groups-7';
+import {pairFiles} from './request.mjs?v=20261016-workflow-3';
 let token='',expiry=0,clientId='';
 const session=createSharedGoogleSession();
 function clearSession(){token='';expiry=0;session.clear();}

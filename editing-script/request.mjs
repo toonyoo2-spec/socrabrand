@@ -1,5 +1,5 @@
-import {scopedAudios,groupIdentity,groupLabel} from './group-match.mjs?v=20261016-groups-7';
-import {expressionWork} from './expression-plan.mjs?v=20261016-groups-7';
+import {scopedAudios,groupIdentity,groupLabel} from './group-match.mjs?v=20261016-workflow-3';
+import {expressionWork} from './expression-plan.mjs?v=20261016-workflow-3';
 import {policyRequest,EDITING_POLICY} from './policy.mjs?v=20261016-folders-1';
 const clean=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\.(mp3|wav|pptx)$/,'').replace(/\[[^\]]*\]/g,'').replace(/(피피티|파워포인트|ppt|mp3|wav|최종|편집본|편집|녹음|오디오|완료|수정본)/g,'').replace(/[^a-z0-9가-힣]/g,'');
 function lesson(name){const s=String(name).normalize('NFKC').toLowerCase();const m=s.match(/(?:^|[^0-9])(\d+)\s*(?:일차|강|차시)/)||s.match(/(?:day|lesson)\s*0*(\d+)(?![\d-])/);return m?Number(m[1]):null;}
