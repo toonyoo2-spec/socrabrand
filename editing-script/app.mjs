@@ -1,3 +1,4 @@
+import {setupInbox} from '../lx-request-inbox/ui.mjs?v=20261016-inbox-1';
 import {transferInfo,copyRequest,requestFile} from './request-transfer.mjs?v=20261016-copy-1';
 import {watchGoogleSession} from '../google-session.mjs?v=20261016-shared-1';
 import {openDriveBrowser} from '../drive-browser.mjs?v=20261016-paths-1';
@@ -61,7 +62,7 @@ function resetAudioPlan(){plan=null;current=null;$('audio-picked-name').textCont
 $('audio-source').addEventListener('input',resetAudioPlan);$('clear-audio-override').onclick=()=>{$('audio-source').value='';resetAudioPlan();$('audio-override').open=false;};
 $('choose-audio').onclick=()=>run(async()=>{if(!G.connected())throw Error('Google 계정을 먼저 연결해 주세요.');let start={folder:null,trail:[]};if($('source').value.trim()||selectedPresentations.length)start=await G.audioBrowseStart($('source').value,mode,selectedPresentations);openDriveBrowser({browse:G.browseDrive,type:'folder',initialFolder:start.folder,initialTrail:start.trail,resolveTrail:G.folderTrail,onSelect:f=>{resetAudioPlan();$('audio-source').value='https://drive.google.com/drive/folders/'+f.id;$('audio-picked-name').textContent=f.name;tell('오디오 폴더를 선택했습니다. 프롬프트 · 오디오 연결하기를 눌러 주세요.');}});});
 
-$('request').onclick=()=>{try{$('request-text').value=makeRequest(plan);$('request-length').textContent=transferInfo($('request-text').value).message;$('copy-feedback').textContent='요청 내용만 생성되며, 전달 후 작업이 시작됩니다.';$('request-copy').textContent='Codex 작업요청 복사';setEditingStep(3);$('request-dialog').showModal();}catch(e){tell(e.message,true);}};
+$('request').onclick=()=>{try{$('request-submit').textContent='요청 접수';$('request-text').value=makeRequest(plan);$('request-length').textContent=transferInfo($('request-text').value).message;$('copy-feedback').textContent='전체 내용을 확인한 후 요청 접수를 눌러 주세요.';$('request-copy').textContent='Codex 작업요청 복사';setEditingStep(3);$('request-dialog').showModal();}catch(e){tell(e.message,true);}};
 $('request-close').onclick=()=>$('request-dialog').close();$('request-dialog').addEventListener('close',()=>setEditingStep(plan?2:1));
 $('request-copy').onclick=async()=>{const copied=await copyRequest($('request-text'));$('copy-feedback').textContent=copied?'요청문 전체 복사 완료 · Slack에서 KWAN에게 전달해 주세요. 전송이 안 되면 요청문 파일을 첨부하세요.':'자동 복사를 완료하지 못했습니다. 선택된 전체 내용을 직접 복사하거나 요청문 파일을 내려받아 주세요.';$('request-copy').textContent=copied?'다시 복사':'Codex 작업요청 복사';};
 $('request-download').onclick=()=>{const url=URL.createObjectURL(requestFile($('request-text').value)),a=document.createElement('a');a.href=url;a.download='편집스크립트_작업요청.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);$('copy-feedback').textContent='내려받은 요청문 파일을 Slack에서 KWAN에게 첨부해 전달해 주세요. 파일 저장만으로 작업이 시작되지는 않습니다.';};
@@ -80,3 +81,5 @@ setup();async function setup(){try{await G.setupGoogle();authReady=true;}catch(e
 async function syncSharedGoogle(){if(!authReady)return;if(busy){authSyncPending=true;return;}if(authSyncing)return;authSyncing=true;try{const user=await G.restoreGoogle();await reportCleanup();$('account').textContent=user?.email||'Google 계정을 연결해 주세요.';$('connect').hidden=Boolean(user);$('disconnect').hidden=!user;sync();}catch(e){tell(e.message,true);}finally{authSyncing=false;}}watchGoogleSession(syncSharedGoogle);
 
 async function reportCleanup(){if(!G.connected())return;const results=await G.cleanupPendingOutputs(),cleaned=results.filter(r=>r.state==='cleaned').length,protectedItems=results.filter(r=>r.state==='protected');if(!cleaned&&!protectedItems.length)return;const box=$('cleanup-feedback');box.hidden=false;box.replaceChildren(node('p','이전 미완성 시트 '+cleaned+'개 정리 · '+protectedItems.length+'개 보호'));for(const item of protectedItems){const row=node('p',item.reason+' ');if(item.id){const link=node('a','파일 확인');link.href=item.url||'https://drive.google.com/file/d/'+item.id+'/view';link.target='_blank';link.rel='noopener';row.append(link);}box.append(row);}}
+
+setupInbox();

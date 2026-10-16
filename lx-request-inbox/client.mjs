@@ -1,0 +1,11 @@
+export const STATUS={queued:'접수 완료',processing:'작업 중',needs_review:'확인 필요',completed:'완료',failed:'처리 실패',cancelled:'취소됨'};
+export async function requestKey(text){const bytes=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)));const hex=Array.from(bytes.slice(0,16),x=>x.toString(16).padStart(2,'0')).join('');return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);}
+export function createInboxClient({url,key,storage=()=>localStorage,fetcher=(...args)=>fetch(...args)}){
+ async function call(path,options={}){const token=storage().getItem('socra_admin_token');if(!token)throw Error('사이트에 로그인한 뒤 요청을 접수해 주세요. Google Drive 연결과 사이트 로그인은 별개입니다.');const r=await fetcher(url+'/rest/v1/lx_work_requests'+path,{...options,headers:{apikey:key,Authorization:'Bearer '+token,'Content-Type':'application/json',Prefer:'return=representation',...options.headers}});const data=await r.json();if(!r.ok){if(r.status===401)throw Error('사이트 로그인 시간이 만료되었습니다. 사이트에 다시 로그인해 주세요. 요청문은 복사·파일 저장으로 보관할 수 있습니다.');if(r.status===403)throw Error('접수 권한이 없습니다. LX팀 계정 권한을 확인해 주세요.');throw Object.assign(Error('요청 접수를 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.'),{code:data.code});}return data;}
+ return {
+ async submit(text,title,senderGoogleEmail=''){const key=await requestKey(senderGoogleEmail+'\n'+text);try{const rows=await call('',{method:'POST',body:JSON.stringify({request_key:key,tool:'editing-script',title,request_text:text,sender_google_email:senderGoogleEmail})});return rows[0];}catch(e){if(e.code!=='23505')throw e;const rows=await call('?request_key=eq.'+key+'&select=*');if(rows[0]?.request_text!==text)throw e;return rows[0];}},
+ list(){return call('?select=id,request_number,request_code,title,sender_google_email,status,progress_done,progress_total,result,created_at&order=created_at.desc&limit=100');},
+ async detail(id){const rows=await call('?id=eq.'+encodeURIComponent(id)+'&select=*');if(!rows[0])throw Error('이 요청을 조회할 수 없습니다.');return rows[0];},
+ async cancel(id){const rows=await call('?id=eq.'+encodeURIComponent(id)+'&status=eq.queued',{method:'PATCH',body:JSON.stringify({status:'cancelled'})});if(!rows.length)throw Error('이미 처리가 시작되어 접수 취소가 불가능합니다.');return rows[0];}
+ };
+}
