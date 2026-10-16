@@ -41,7 +41,7 @@ function render(){
     const options=(plan.audios||[]).filter(a=>!f.scopedAudioIds||f.scopedAudioIds.includes(a.id));for(const audio of options){const option=node('option',f.scopedAudioIds?audio.name:(audio.folderPath?.slice(1).map(x=>x.name).join(' / ')||'')+' / '+audio.name);option.value=audio.id;select.append(option);}select.value=f.audio?.id||'';
     select.onchange=()=>{delete f.rows;delete f.transcript;$('transcript').value='';if(current===f&&mediaURL){URL.revokeObjectURL(mediaURL);mediaURL='';$('player').pause();$('player').removeAttribute('src');$('player').hidden=true;$('local-audio').value='';}f.audio=plan.audios.find(x=>x.id===select.value)||null;f.included=!f.segmentationError;f.match=f.audio?'직접 선택':'오디오 없음 · 선택 또는 제외 필요';syncMissingChoice(plan);render();};audioBox.append(select);
     if(!f.audio)audioBox.append(node('small',f.match||'오디오 선택 필요','match-warning'));
-    const actions=node('div',undefined,'expression-actions');if(f.audio){const a=node('a','듣기');a.href='https://drive.google.com/file/d/'+f.audio.id+'/view';a.target='_blank';a.rel='noopener';a.setAttribute('aria-label',prefix+' 오디오 듣기');actions.append(a);}const review=node('button','검수');review.setAttribute('aria-label',prefix+' 검수');review.onclick=()=>chooseExpression(f);actions.append(review);row.append(part,arrow,audioBox,actions);card.append(row);
+    const actions=node('div',undefined,'expression-actions');if(f.audio){const a=node('a','듣기');a.href='https://drive.google.com/file/d/'+f.audio.id+'/view';a.target='_blank';a.rel='noopener';a.setAttribute('aria-label',prefix+' 오디오 듣기');actions.append(a);}row.append(part,arrow,audioBox,actions);card.append(row);
    }
    section.append(card);
   }
