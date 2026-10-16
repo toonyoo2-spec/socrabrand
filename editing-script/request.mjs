@@ -1,6 +1,6 @@
 import {scopedAudios,groupIdentity,groupLabel} from './group-match.mjs?v=20261016-workflow-3';
-import {expressionWork} from './expression-plan.mjs?v=20261016-selection-1';
-import {policyRequest,EDITING_POLICY} from './policy.mjs?v=20261016-folders-1';
+import {expressionWork} from './expression-plan.mjs?v=20261016-groups-1';
+import {policyRequest,EDITING_POLICY} from './policy.mjs?v=20261016-groups-1';
 const clean=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\.(mp3|wav|pptx)$/,'').replace(/\[[^\]]*\]/g,'').replace(/(피피티|파워포인트|ppt|mp3|wav|최종|편집본|편집|녹음|오디오|완료|수정본)/g,'').replace(/[^a-z0-9가-힣]/g,'');
 function lesson(name){const s=String(name).normalize('NFKC').toLowerCase();const m=s.match(/(?:^|[^0-9])(\d+)\s*(?:일차|강|차시)/)||s.match(/(?:day|lesson)\s*0*(\d+)(?![\d-])/);return m?Number(m[1]):null;}
 export function pairFiles(ppts,audios){return ppts.flatMap(ppt=>{if(ppt.slides){const scope=scopedAudios(ppt,ppts,audios,lesson);return expressionWork(ppt,scope.audios).map(row=>({...row,groupKey:groupIdentity(ppt),groupLabel:groupLabel(ppt),scopedAudioIds:scope.unresolved?null:scope.audios.map(a=>a.id),...(scope.unresolved&&!row.segmentationError?{included:true,match:'강의 폴더 구분 필요 · 오디오 폴더 구조를 확인하거나 직접 선택해 주세요.'}:{})}));}let candidates=audios.filter(a=>clean(a.name)&&clean(a.name)===clean(ppt.name));let method='파일명 일치';if(!candidates.length&&lesson(ppt.name)!==null){candidates=audios.filter(a=>lesson(a.name)===lesson(ppt.name));method='강의 번호 일치';}return {...ppt,audio:candidates.length===1?candidates[0]:null,candidates,match:candidates.length===1?method:candidates.length?'여러 오디오 · 선택 필요':'오디오 없음 · 선택 필요'};});}
