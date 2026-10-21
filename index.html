@@ -753,7 +753,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <span id="refViewTitle" class="reference-viewer-title"></span>
             <button class="close-btn" onclick="closeReferenceView()" aria-label="닫기">✕</button>
         </div>
-        <iframe id="refViewIframe" class="reference-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+        <iframe id="refViewIframe" class="reference-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms allow-presentation" allow="fullscreen; encrypted-media; picture-in-picture"></iframe>
     </div>
     <div id="loadingSpinner">
         <div style="font-size: 1.1rem;" id="spinnerText">⏳ 처리 중...</div>
