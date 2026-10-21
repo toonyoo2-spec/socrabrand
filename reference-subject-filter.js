@@ -1,6 +1,7 @@
 /* Shared, in-memory subject/search filter. Source records remain unchanged. */
 (()=>{
   if(typeof D==='undefined'||typeof render!=='function'||document.getElementById('subject-filter-style'))return;
+  if(!Array.isArray(D.videos)&&!Array.isArray(D.archive))return;
   const originalRender=render;
   const source={};
   for(const key of ['videos','posts','archive','covers','events'])if(Array.isArray(D[key]))source[key]=D[key].slice();
