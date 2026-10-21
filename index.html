@@ -2181,7 +2181,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             // (sandbox의 allow-top-navigation 여부와 무관하게) 메인 탭 라우팅이 깨진다.
             // Blob URL로 고유한 origin을 주면 내부 앵커 이동이 iframe 안에서만 스크롤된다.
             if (currentRefBlobUrl) URL.revokeObjectURL(currentRefBlobUrl);
-            const blob = new Blob([target.raw_html], { type: 'text/html' });
+            // Apply the shared library layout only to the two education reports.
+            const reportUi = ['13', '14'].includes(String(id)) ? '<script src="https://www.socrabrand.cloud/reference-report-ui.js?v=20261021-library-2"><' + '/script>' : '';
+            const reportHtml = reportUi ? target.raw_html.replace(/<\/body>/i, reportUi + '</body>') : target.raw_html;
+            const blob = new Blob([reportHtml], { type: 'text/html' });
             currentRefBlobUrl = URL.createObjectURL(blob);
             document.getElementById('refViewIframe').src = currentRefBlobUrl;
             document.getElementById('referenceViewerContainer').style.display = 'flex';
