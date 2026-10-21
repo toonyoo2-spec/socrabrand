@@ -2194,7 +2194,11 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         }
         function closeReferenceView() {
             if (!referenceViewerOpen) return;
-            history.back();
+            // Direct links and new tabs may have no previous list entry.
+            forceCloseReferenceView();
+            history.replaceState(null, '', '#reference');
+            switchMainTab('reference');
+            document.querySelector('a[href="#reference"]')?.focus();
         }
         function forceCloseReferenceView() {
             document.getElementById('referenceViewerContainer').style.display = 'none';
