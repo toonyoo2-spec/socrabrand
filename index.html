@@ -1057,7 +1057,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         function canSeeTab(tabName) {
             if(tabName === 'creative-six') return creativeOwner === true;
             if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
-                return ['lecture', 'lecture/notes', 'lecture/editing', 'pptauto', 'lecture/pptauto'].includes(tabName);
+                return ['lecture', 'lecture/notes', 'lecture/editing', 'pptauto', 'lecture/pptauto', 'reference'].includes(tabName);
             }
             if (/^lecture\/(notes|editing)$/.test(tabName)) return true;
             if (tabName === 'reference') return true; // 참고자료는 누구나 열람 가능
