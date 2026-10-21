@@ -986,7 +986,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 document.getElementById('inputLoginPw').value = '';
                 btn.textContent = '로그인';
                 btn.disabled = false;
-                if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
+                if (currentUserId === 'aab8ee09-2e09-4bb2-811d-1cec20bb2368') {
                     history.replaceState(null, '', '#reference/youtube');
                 }
                 initApp(); // 앱 실행
@@ -1071,7 +1071,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             return visibleTabs.includes(tabName);
         }
         function defaultTab() {
-            if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') return 'reference';
+            if (currentUserId === 'aab8ee09-2e09-4bb2-811d-1cec20bb2368') return 'reference';
             if (visibleTabs.includes('archive')) return 'archive';
             if (visibleTabs.includes('library')) return 'library';
             if (visibleTabs.includes('lecture')) return 'lecture';
