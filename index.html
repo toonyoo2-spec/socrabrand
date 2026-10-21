@@ -2182,7 +2182,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             // Blob URL로 고유한 origin을 주면 내부 앵커 이동이 iframe 안에서만 스크롤된다.
             if (currentRefBlobUrl) URL.revokeObjectURL(currentRefBlobUrl);
             // Apply the shared library layout only to the two education reports.
-            const reportUi = ['13', '14'].includes(String(id)) ? '<script src="https://www.socrabrand.cloud/reference-report-ui.js?v=20261021-library-2"><' + '/script>' : '';
+            const reportUi = ['13', '14'].includes(String(id)) ? '<script src="https://www.socrabrand.cloud/reference-report-ui.js?v=20261021-library-3"><' + '/script>' : '';
             const reportHtml = reportUi ? target.raw_html.replace(/<\/body>/i, reportUi + '</body>') : target.raw_html;
             const blob = new Blob([reportHtml], { type: 'text/html' });
             currentRefBlobUrl = URL.createObjectURL(blob);
