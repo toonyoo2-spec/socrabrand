@@ -388,7 +388,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
 @media(max-width:1023px){.lx-submenu{position:absolute;top:100%;right:0;min-width:190px;z-index:50;background:#fff;border:1px solid #dbe5df;border-radius:12px;margin:4px 0 0;padding:8px;box-shadow:0 8px 24px #153a2414}.main-menu-wrapper{overflow:visible}.main-menu-container{overflow:visible}}
 </style>
     <link rel="stylesheet" href="brand-tone.css?v=20261015-1">
-<link rel="stylesheet" href="/sidebar-toggle.css?v=20261016-2"><script type="module" src="/sidebar-toggle.mjs?v=20261016-2"></script><link rel="stylesheet" href="/page-consistency.css?v=20261016-1"><script type="module" src="/archive-page-layout.mjs?v=20261016-1"></script></head>
+<link rel="stylesheet" href="/sidebar-toggle.css?v=20261016-2"><script type="module" src="/sidebar-toggle.mjs?v=20261016-2"></script><link rel="stylesheet" href="/page-consistency.css?v=20261016-1"><script type="module" src="/archive-page-layout.mjs?v=20261016-1"></script><link rel="stylesheet" href="./resource-library.css?v=20261023">
+</head>
 <body>
     <!-- 1. 로그인 스크린 -->
     <div id="loginScreen">
@@ -421,9 +422,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <div class="main-menu-container grid-layout-align">
                 <a href="#archive" class="main-menu-tab active">아카이브</a>
                 <a href="#creative-six" class="main-menu-tab" id="creativeOfficeTab" style="display:none">에이전트</a>
+                <a href="#skills" class="main-menu-tab" id="resourceLibraryTab" style="display:none">스킬</a>
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
-                <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
+                <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <div class="lx-menu-group">
                         <a href="#lecture" class="main-menu-tab" id="lectureTab" aria-expanded="false" aria-controls="lxSubmenu">LX팀 <span class="lx-chevron" aria-hidden="true">⌄</span></a>
                         <div id="lxSubmenu" class="lx-submenu" hidden>
@@ -477,6 +479,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             &nbsp;·&nbsp;
             <span id="logoutBtn" style="cursor:pointer; text-decoration:underline; color:var(--text-secondary);" onclick="handleLogout()">로그아웃</span>
         </footer>
+        <main id="resourceLibraryContainer" class="grid-layout-align" style="display:none"></main>
         <main id="creativeOfficeContainer" class="grid-layout-align" style="display:none"><iframe id="creativeOfficeFrame" title="KWAN의 작은 사무실" style="width:100%;height:100svh;min-height:760px;border:0;border-radius:20px" sandbox="allow-scripts allow-same-origin"></iframe></main>
         <!-- 모달 모음 -->
         <div id="projectModal" class="admin-modal-overlay">
@@ -781,6 +784,22 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let currentUserName = localStorage.getItem(USER_NAME_KEY) || null;
         let visibleTabs = JSON.parse(localStorage.getItem(VISIBLE_TABS_KEY) || '["archive","library"]');
         let isAdmin = !!(adminToken && Number(localStorage.getItem(ADMIN_EXP_KEY)) > Date.now() && userRole === 'editor');
+        let resourceLibraryCleanup = null;
+        let resourceLibraryClient = null;
+        async function showResourceLibrary(){
+            const root=document.getElementById("resourceLibraryContainer");
+            resourceLibraryCleanup?.();resourceLibraryCleanup=null;
+            root.replaceChildren();
+            try{
+                const {createResourceClient,mountResourceLibrary}=await import("./resource-library.mjs?v=20261023");
+                if(currentMainTab!=="skills"||!creativeOwner)return;
+                const client=createResourceClient({url:SUPABASE_URL,anonKey:SUPABASE_ANON_KEY,getToken:()=>adminToken});
+                resourceLibraryClient=client;
+                const cleanup=await mountResourceLibrary(root,{client});
+                if(currentMainTab!=="skills"||!creativeOwner){cleanup();return;}
+                resourceLibraryCleanup=cleanup;
+            }catch{root.textContent="자료를 열지 못했습니다. 잠시 후 다시 시도해 주세요.";}
+        }
         let creativeOwner = false;
         let creativeOwnerClient = null;
         async function refreshCreativeOwner() {
@@ -799,6 +818,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         }
         let sessionRefreshTimerId = null;
         function clearSessionState() {
+            resourceLibraryClient?.invalidate();
+            resourceLibraryCleanup?.();resourceLibraryCleanup=null;
+            document.getElementById("resourceLibraryContainer")?.replaceChildren();
+            const resourceTab=document.getElementById("resourceLibraryTab");if(resourceTab)resourceTab.style.display="none";
             creativeOwner=false;
             creativeOwnerClient?.invalidate();
             const officeFrame=document.getElementById('creativeOfficeFrame');
@@ -1036,6 +1059,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let currentFilterMonth = 'ALL';
         function applyAdminMode() {
             document.getElementById('creativeOfficeTab').style.display=creativeOwner?'inline-block':'none';
+            document.getElementById('resourceLibraryTab').style.display=creativeOwner?'inline-block':'none';
             const addProjBtn = document.getElementById('btnAddProject');
             const libraryHeaderAdmin = document.getElementById('libraryHeaderAdmin');
             const archiveTab = document.querySelector('a[href="#archive"]');
@@ -1058,6 +1082,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }
         }
         function canSeeTab(tabName) {
+            if(tabName === 'skills') return creativeOwner === true;
             if(tabName === 'creative-six') return creativeOwner === true;
             if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
                 return ['lecture', 'lecture/notes', 'lecture/editing', 'pptauto', 'lecture/pptauto', 'reference'].includes(tabName);
@@ -1092,8 +1117,9 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 history.replaceState(null, '', '#' + tabName);
             }
             currentMainTab = tabName;
+            if(tabName!=='skills'){resourceLibraryClient?.invalidate();resourceLibraryCleanup?.();resourceLibraryCleanup=null;document.getElementById('resourceLibraryContainer')?.replaceChildren();}
             // Brand-team polish is disabled for LX routes.
-            document.getElementById('appContainer').classList.toggle('brand-tone', ['archive', 'library', 'reference', 'automation'].includes(tabName));
+            document.getElementById('appContainer').classList.toggle('brand-tone', ['archive', 'library', 'reference', 'automation', 'skills'].includes(tabName));
             const tabs = document.querySelectorAll('.main-menu-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
             const activeTab = document.querySelector(`a[href="#${tabName}"]`);
@@ -1116,6 +1142,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (lectureContainer) lectureContainer.style.display = 'none';
             const officeContainer=document.getElementById('creativeOfficeContainer');
             if(officeContainer)officeContainer.style.display='none';
+            const resourceContainer=document.getElementById('resourceLibraryContainer');
+            if(resourceContainer)resourceContainer.style.display='none';
             // 2) 선택된 컨테이너 보여주기
             if(tabName === 'creative-six' && creativeOwner) {
                 officeContainer.style.display='block';
@@ -1125,6 +1153,13 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if(btnAdminReference)btnAdminReference.style.display='none';
                 const frame=document.getElementById('creativeOfficeFrame');
                 if(!frame.getAttribute('src'))frame.src='creative-office.html?v=20261017-title';
+            } else if (tabName === 'skills' && creativeOwner) {
+                resourceContainer.style.display='block';
+                if(navBarWrapper)navBarWrapper.style.display='none';
+                if(addProjBtn)addProjBtn.style.display='none';
+                if(libraryHeaderAdmin)libraryHeaderAdmin.style.display='none';
+                if(btnAdminReference)btnAdminReference.style.display='none';
+                showResourceLibrary();
             } else if (tabName === 'archive') {
                 if (archiveContainer) archiveContainer.style.display = 'block';
                 if (navBarWrapper) navBarWrapper.style.display = 'block';
