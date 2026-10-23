@@ -103,7 +103,7 @@ viewport.addEventListener('pointermove',e=>{
  if(!drag.moved&&Math.hypot(dx,dy)<6)return;
  drag.moved=true;suppressClick=true;
  if(drag.n){
-  const m=maps[active];drag.n.x=Math.max(0,Math.min(m.w-drag.el.offsetWidth,drag.nx+dx/scale));drag.n.y=Math.max(0,Math.min(m.h-drag.el.offsetHeight,drag.ny+dy/scale));
+  const m=maps[active];drag.n.x=Math.max(-m.w,Math.min(2*m.w-drag.el.offsetWidth,drag.nx+dx/scale));drag.n.y=Math.max(-m.h,Math.min(2*m.h-drag.el.offsetHeight,drag.ny+dy/scale));
   drag.el.style.left=drag.n.x+'px';drag.el.style.top=drag.n.y+'px';drag.el.classList.add('moving');drawWires();
  }else{tx=drag.tx+dx;ty=drag.ty+dy;transform();viewport.classList.add('dragging')}
 });
@@ -113,8 +113,8 @@ viewport.addEventListener('pointerup',end);viewport.addEventListener('pointercan
 viewport.addEventListener('keydown',e=>{
  const el=e.target.closest('.node');if(!el||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;
  e.preventDefault();const n=maps[active].nodes.find(n=>n.id===el.dataset.nodeId),step=e.shiftKey?30:10,m=maps[active];
- n.x=Math.max(0,Math.min(m.w-el.offsetWidth,n.x+(e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0)));
- n.y=Math.max(0,Math.min(m.h-el.offsetHeight,n.y+(e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0)));
+ n.x=Math.max(-m.w,Math.min(2*m.w-el.offsetWidth,n.x+(e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0)));
+ n.y=Math.max(-m.h,Math.min(2*m.h-el.offsetHeight,n.y+(e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0)));
  el.style.left=n.x+'px';el.style.top=n.y+'px';drawWires();
 });
 window.addEventListener('resize',fit);render('all');
