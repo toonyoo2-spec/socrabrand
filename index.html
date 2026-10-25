@@ -480,7 +480,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <span id="logoutBtn" style="cursor:pointer; text-decoration:underline; color:var(--text-secondary);" onclick="handleLogout()">로그아웃</span>
         </footer>
         <main id="resourceLibraryContainer" class="grid-layout-align" style="display:none"></main>
-        <main id="creativeOfficeContainer" class="grid-layout-align" style="display:none"><div id="creativeOfficeChatBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:12px;background:#fffdf7;border:1px solid #e6ddd0;border-radius:12px"><span style="font-size:13px;color:#625c4f">오피스에서 요청을 복사한 뒤 기존 채팅에 붙여 넣고 보내세요.</span><a id="creativeOfficeOpenChat" href="codex://threads/01a14405-d55c-7f92-992a-837898331f6e" style="padding:10px 14px;border:1px solid #b9c9ba;border-radius:8px;background:#eef4ed;color:#35573a;font-size:13px;text-decoration:none">이 Codex 채팅 열기 ↗</a></div><iframe id="creativeOfficeFrame" title="KWAN 에이전시 · 10명" style="width:100%;height:100svh;min-height:760px;border:0;border-radius:20px" sandbox="allow-scripts allow-same-origin"></iframe></main>
+        <main id="creativeOfficeContainer" class="grid-layout-align" style="display:none"><div id="creativeOfficeChatBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:12px;background:#fffdf7;border:1px solid #e6ddd0;border-radius:12px"><span style="font-size:13px;color:#625c4f">오피스에서 요청을 복사한 뒤 기존 채팅에 붙여 넣고 보내세요.</span><a id="creativeOfficeOpenChat" href="codex://threads/01a14405-d55c-7f92-992a-837898331f6e" style="padding:10px 14px;border:1px solid #b9c9ba;border-radius:8px;background:#eef4ed;color:#35573a;font-size:13px;text-decoration:none">이 Codex 채팅 열기 ↗</a><button id="creativeOfficeRetry" type="button" onclick="retryCreativeOffice()" style="padding:10px 14px;border:1px solid #d8ccba;border-radius:8px;background:#fff;color:#625c4f;font-size:13px;cursor:pointer">오피스 다시 불러오기</button><a href="creative-office.html?v=20261025-agency10" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:#35573a">에이전시 새탭 열기 ↗</a></div><iframe id="creativeOfficeFrame" title="KWAN 에이전시 · 10명" style="width:100%;height:100svh;min-height:760px;border:0;border-radius:20px" sandbox="allow-scripts allow-same-origin"></iframe></main>
         <!-- 모달 모음 -->
         <div id="projectModal" class="admin-modal-overlay">
             <div class="admin-modal-box">
@@ -801,6 +801,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }catch{root.textContent="자료를 열지 못했습니다. 잠시 후 다시 시도해 주세요.";}
         }
         let creativeOwner = false;
+        let creativeOfficeRetryRequested = false;
         let creativeOwnerClient = null;
         async function refreshCreativeOwner() {
             creativeOwner = false;
@@ -816,6 +817,23 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             } catch { creativeOwner=false; }
             return creativeOwner;
         }
+        // One explicit user retry; never poll, weaken sandbox, or accept a supplied URL.
+        function retryCreativeOffice() {
+            if (!creativeOwner || !adminToken || creativeOfficeRetryRequested) return false;
+            const container=document.getElementById('creativeOfficeContainer');
+            const frame=document.getElementById('creativeOfficeFrame');
+            if (!container || !frame || container.hidden || getComputedStyle(container).display === 'none') return false;
+            const rect=frame.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) return false;
+            const fresh=frame.cloneNode(false);
+            fresh.removeAttribute('srcdoc');
+            fresh.src='creative-office.html?v=20261025-agency10-retry1';
+            creativeOfficeRetryRequested=true;
+            frame.replaceWith(fresh);
+            const button=document.getElementById('creativeOfficeRetry');
+            if (button) { button.disabled=true; button.textContent='재시도 1회 요청됨'; }
+            return true;
+        }
         let sessionRefreshTimerId = null;
         function clearSessionState() {
             resourceLibraryClient?.invalidate();
@@ -823,6 +841,9 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             document.getElementById("resourceLibraryContainer")?.replaceChildren();
             const resourceTab=document.getElementById("resourceLibraryTab");if(resourceTab)resourceTab.style.display="none";
             creativeOwner=false;
+            creativeOfficeRetryRequested=false;
+            const officeRetryButton=document.getElementById('creativeOfficeRetry');
+            if(officeRetryButton){officeRetryButton.disabled=false;officeRetryButton.textContent='오피스 다시 불러오기';}
             const officeChatBar=document.getElementById('creativeOfficeChatBar');
             if(officeChatBar)officeChatBar.style.display='none';
             creativeOwnerClient?.invalidate();
