@@ -1180,7 +1180,12 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if(libraryHeaderAdmin)libraryHeaderAdmin.style.display='none';
                 if(btnAdminReference)btnAdminReference.style.display='none';
                 const frame=document.getElementById('creativeOfficeFrame');
-                if(!frame.getAttribute('src'))frame.src='creative-office.html?v=20261025-agency10';
+                if(!frame.getAttribute('src')) {
+                    const fresh=frame.cloneNode(false);
+                    fresh.removeAttribute('srcdoc');
+                    fresh.src='creative-office.html?v=20261025-agency10';
+                    frame.replaceWith(fresh);
+                }
             } else if (tabName === 'skills' && creativeOwner) {
                 resourceContainer.style.display='block';
                 if(navBarWrapper)navBarWrapper.style.display='none';
