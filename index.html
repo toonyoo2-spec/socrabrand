@@ -421,7 +421,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         <div class="main-menu-wrapper">
             <div class="main-menu-container grid-layout-align">
                 <a href="#archive" class="main-menu-tab active">아카이브</a>
-                <a href="#creative-six" class="main-menu-tab" id="creativeOfficeTab" style="display:none">에이전트</a>
+                <a href="#creative-six" class="main-menu-tab" id="creativeOfficeTab" style="display:none">에이전시</a>
                 <a href="#skills" class="main-menu-tab" id="resourceLibraryTab" style="display:none">스킬</a>
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
@@ -480,7 +480,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <span id="logoutBtn" style="cursor:pointer; text-decoration:underline; color:var(--text-secondary);" onclick="handleLogout()">로그아웃</span>
         </footer>
         <main id="resourceLibraryContainer" class="grid-layout-align" style="display:none"></main>
-        <main id="creativeOfficeContainer" class="grid-layout-align" style="display:none"><iframe id="creativeOfficeFrame" title="KWAN의 작은 사무실" style="width:100%;height:100svh;min-height:760px;border:0;border-radius:20px" sandbox="allow-scripts allow-same-origin"></iframe></main>
+        <main id="creativeOfficeContainer" class="grid-layout-align" style="display:none"><div id="creativeOfficeChatBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:12px;background:#fffdf7;border:1px solid #e6ddd0;border-radius:12px"><span style="font-size:13px;color:#625c4f">오피스에서 요청을 복사한 뒤 기존 채팅에 붙여 넣고 보내세요.</span><a id="creativeOfficeOpenChat" href="codex://threads/01a14405-d55c-7f92-992a-837898331f6e" style="padding:10px 14px;border:1px solid #b9c9ba;border-radius:8px;background:#eef4ed;color:#35573a;font-size:13px;text-decoration:none">이 Codex 채팅 열기 ↗</a></div><iframe id="creativeOfficeFrame" title="KWAN 에이전시 · 10명" style="width:100%;height:100svh;min-height:760px;border:0;border-radius:20px" sandbox="allow-scripts allow-same-origin"></iframe></main>
         <!-- 모달 모음 -->
         <div id="projectModal" class="admin-modal-overlay">
             <div class="admin-modal-box">
@@ -807,9 +807,9 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const token = adminToken;
             if (!token) return false;
             try {
-                const {createOfficeClient} = await import('./creative-office/client.mjs');
+                const {createOwnerClient} = await import('./creative-office/owner-client.mjs?v=20261025-agency10');
                 creativeOwnerClient?.invalidate();
-                const client = createOfficeClient({url:SUPABASE_URL,anonKey:SUPABASE_ANON_KEY,getToken:()=>adminToken});
+                const client = createOwnerClient({url:SUPABASE_URL,anonKey:SUPABASE_ANON_KEY,getToken:()=>adminToken});
                 creativeOwnerClient=client;
                 await client.requireOwner();
                 creativeOwner = token === adminToken && creativeOwnerClient === client;
@@ -823,6 +823,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             document.getElementById("resourceLibraryContainer")?.replaceChildren();
             const resourceTab=document.getElementById("resourceLibraryTab");if(resourceTab)resourceTab.style.display="none";
             creativeOwner=false;
+            const officeChatBar=document.getElementById('creativeOfficeChatBar');
+            if(officeChatBar)officeChatBar.style.display='none';
             creativeOwnerClient?.invalidate();
             const officeFrame=document.getElementById('creativeOfficeFrame');
             officeFrame?.contentWindow?.postMessage({type:'socra:office-lock'},location.origin);
@@ -1059,6 +1061,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let currentFilterMonth = 'ALL';
         function applyAdminMode() {
             document.getElementById('creativeOfficeTab').style.display=creativeOwner?'inline-block':'none';
+            document.getElementById('creativeOfficeChatBar').style.display=creativeOwner?'flex':'none';
             document.getElementById('resourceLibraryTab').style.display=creativeOwner?'inline-block':'none';
             const addProjBtn = document.getElementById('btnAddProject');
             const libraryHeaderAdmin = document.getElementById('libraryHeaderAdmin');
@@ -1083,7 +1086,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         }
         function canSeeTab(tabName) {
             if(tabName === 'skills') return creativeOwner === true;
-            if(tabName === 'creative-six') return creativeOwner === true;
+            if(tabName === 'creative-six' || tabName === 'agency') return creativeOwner === true;
             if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
                 return ['lecture', 'lecture/notes', 'lecture/editing', 'pptauto', 'lecture/pptauto', 'reference'].includes(tabName);
             }
@@ -1103,6 +1106,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             return 'reference';
         }
         function switchMainTab(tabName) {
+            if (tabName === 'agency') {
+                tabName = 'creative-six';
+                history.replaceState(null, '', '#creative-six');
+            }
             if (tabName === 'pptauto' || tabName === 'lecture/pptauto') {
                 tabName = 'lecture/notes';
                 history.replaceState(null, '', '#lecture/notes');
@@ -1152,7 +1159,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 if(libraryHeaderAdmin)libraryHeaderAdmin.style.display='none';
                 if(btnAdminReference)btnAdminReference.style.display='none';
                 const frame=document.getElementById('creativeOfficeFrame');
-                if(!frame.getAttribute('src'))frame.src='creative-office.html?v=20261017-title';
+                if(!frame.getAttribute('src'))frame.src='creative-office.html?v=20261025-agency10';
             } else if (tabName === 'skills' && creativeOwner) {
                 resourceContainer.style.display='block';
                 if(navBarWrapper)navBarWrapper.style.display='none';
@@ -1250,8 +1257,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         function handleHashChange() {
             const hash = window.location.hash.slice(1) || 'archive';
             if (hash === 'agency') {
-                history.replaceState(null, '', '#archive');
-                switchMainTab('archive');
+                history.replaceState(null, '', '#creative-six');
+                switchMainTab('creative-six');
                 return;
             }
 
