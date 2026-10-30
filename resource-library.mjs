@@ -82,15 +82,16 @@ export async function mountResourceLibrary(root,{client}) {
     list.replaceChildren();const shown=filterResources(rows,state);notice.textContent=`${shown.length}개 자료 · 용도별 분류 / 분류 안에서 최신 확인순`;
     if(active&&!shown.some(r=>r.id===active)){active=null;detail.replaceChildren(el('p','rl-empty','목록에서 자료를 선택해 주세요.'));}
     if(!shown.length)list.append(el('p','rl-empty','조건에 맞는 자료가 없습니다. 검색어나 필터를 바꿔보세요.'));
-    for(const group of groupResources(shown)){const section=el('section','rl-group');const groupTitle=el('h2','rl-group-title',`${group.category} / ${group.subcategory}`);groupTitle.append(el('span','',`${group.rows.length}개`));section.append(groupTitle);list.append(section);for(const r of group.rows){const b=el('button','rl-row'+(active===r.id?' is-selected':''));b.type='button';b.setAttribute('aria-pressed',String(active===r.id));const top=el('div','rl-row-top');top.append(el('span','rl-category',resourcePurpose(r).subcategory),el('span','rl-badge rl-'+r.status,STATUS[r.status]||r.status));b.append(top,el('h2','',r.title),el('p','rl-summary',r.summary),el('span','rl-row-meta',`${r.sender?'@'+r.sender:'수집 자료'} · 확인 ${checkedDate(r.checked_at)}`));b.onclick=()=>open(r.id);section.append(b);}}
+    for(const group of groupResources(shown)){const section=el('section','rl-group');const groupTitle=el('h2','rl-group-title',`${group.category} / ${group.subcategory}`);groupTitle.append(el('span','',`${group.rows.length}개`));section.append(groupTitle);list.append(section);for(const r of group.rows){const b=el('button','rl-row'+(active===r.id?' is-selected':''));b.type='button';b.setAttribute('aria-pressed',String(active===r.id));const top=el('div','rl-row-top');top.append(el('span','rl-category',resourcePurpose(r).subcategory),el('span','rl-badge rl-'+r.status,STATUS[r.status]||r.status));b.append(top,el('h2','',r.title),el('p','rl-summary',r.summary),el('span','rl-row-meta',`${r.sender?'@'+r.sender:'수집 자료'} · 확인 ${checkedDate(r.checked_at)}`));b.onclick=()=>open(r.id,{reveal:true});section.append(b);}}
   }
-  async function open(id){
+  async function open(id,{reveal=false}={}){
     active=id;render();detail.replaceChildren(el('p','rl-empty','자료를 불러오고 있습니다.'));try{const r=await client.detail(id);if(disposed||active!==id)return;detail.replaceChildren();const heading=el('div','rl-detail-heading');heading.append(el('span','rl-category',resourcePurpose(r).subcategory),el('h2','',r.title));detail.append(heading,el('p','rl-byline',`${r.sender?'@'+r.sender+' · ':''}${r.checked_at?'확인 '+checkedDate(r.checked_at):''}`),el('p','rl-lead',r.summary));
       if(r.source_url&&safeUrl(r.source_url))detail.append(link('원문 열기 ↗',r.source_url));
       const verdict=el('section','rl-verdict');verdict.append(el('h3','','스킬 반영'),el('p','',r.skill_note||'아직 비교하지 않았습니다. 원문 확보 후 판단합니다.'));detail.append(verdict);
       if(r.reason){detail.append(el('h3','','확보 상태'),el('p','',r.reason));}
       if(r.files?.length){detail.append(el('h3','',`파일 · ${r.files.length}개`));const files=el('ul','rl-files');for(const f of r.files){const li=el('li');li.append(safeUrl(f.url)?link(f.name,f.url):el('span','',f.name));if(f.sha256)li.append(el('small','',`SHA ${f.sha256.slice(0,12)} · ${Number(f.bytes||0).toLocaleString()} bytes`));files.append(li);}detail.append(files);}
       if(r.body){const disclosure=el('details','rl-original');disclosure.append(el('summary','','확보한 원문 텍스트 보기'),el('pre','',r.body));detail.append(disclosure);}
+      if(reveal&&window.matchMedia('(max-width:760px)').matches)detail.scrollIntoView({block:'start'});
     }catch(error){if(!disposed)detail.replaceChildren(el('p','rl-empty',error.message));}
   }
   subcategory.onchange=()=>{state.subcategory=subcategory.value;render();};
