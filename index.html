@@ -808,7 +808,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const root=document.getElementById('kwanStudioContainer'),epoch=++kwanStudioEpoch,token=adminToken;
             root.textContent='권한을 확인하고 있습니다.';
             try{
-                const {mountKwanStudio}=await import('./kwan-studio-launcher.mjs?v=20261102-cloud1');
+                const {mountKwanStudio}=await import('./kwan-studio-launcher.mjs?v=20261102-cloud2');
                 if(epoch!==kwanStudioEpoch||currentMainTab!=='kwan-studio'||!creativeOwner||token!==adminToken)return;
                 const cleanup=await mountKwanStudio(root,{getToken:()=>adminToken,requireOwner:()=>creativeOwnerClient.requireOwner(),apiUrl:SUPABASE_URL,anonKey:SUPABASE_ANON_KEY});
                 if(epoch!==kwanStudioEpoch||currentMainTab!=='kwan-studio'||token!==adminToken){cleanup();return;}

@@ -9,7 +9,7 @@ export async function mountKwanStudio(root,access){
  await verifyStudioAccess(access);let disposed=false;
  const doc=root.ownerDocument,origin=doc.defaultView.location.origin;
  const sheet=doc.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./kwan-studio-launcher.css?v=20261102-cloud1',import.meta.url).href;
- const frame=doc.createElement('iframe');frame.className='kwan-studio-frame';frame.title='Kwan Studio · 클라우드 작업실';frame.src=new URL('./studio/',import.meta.url).href;
+ const frame=doc.createElement('iframe');frame.className='kwan-studio-frame';frame.title='Kwan Studio · 클라우드 작업실';frame.src=new URL('./studio/?v='+Date.now(),import.meta.url).href;
  frame.allow='clipboard-write; fullscreen';
  async function receive(event){if(disposed||event.source!==frame.contentWindow||event.origin!==origin||event.data?.type!=='kwan-studio:ready')return;
   try{await verifyStudioAccess(access);if(disposed)return;
