@@ -423,6 +423,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#archive" class="main-menu-tab active">아카이브</a>
                 <a href="#creative-six" class="main-menu-tab" id="creativeOfficeTab" style="display:none">에이전시</a>
                 <a href="#skills" class="main-menu-tab" id="resourceLibraryTab" style="display:none">스킬</a>
+                <a href="#kwan-studio" class="main-menu-tab" id="kwanStudioTab" style="display:none">Kwan Studio</a>
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
@@ -480,6 +481,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <span id="logoutBtn" style="cursor:pointer; text-decoration:underline; color:var(--text-secondary);" onclick="handleLogout()">로그아웃</span>
         </footer>
         <main id="resourceLibraryContainer" class="grid-layout-align" style="display:none"></main>
+        <main id="kwanStudioContainer" class="grid-layout-align" style="display:none"></main>
         <main id="creativeOfficeContainer" class="grid-layout-align" style="display:none"><div id="creativeOfficeChatBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:12px;background:#fffdf7;border:1px solid #e6ddd0;border-radius:12px"><span style="font-size:13px;color:#625c4f">오피스에서 요청을 복사한 뒤 기존 채팅에 붙여 넣고 보내세요.</span><a id="creativeOfficeOpenChat" href="codex://threads/01a14405-d55c-7f92-992a-837898331f6e" style="padding:10px 14px;border:1px solid #b9c9ba;border-radius:8px;background:#eef4ed;color:#35573a;font-size:13px;text-decoration:none">이 Codex 채팅 열기 ↗</a><button id="creativeOfficeRetry" type="button" onclick="retryCreativeOffice()" style="padding:10px 14px;border:1px solid #d8ccba;border-radius:8px;background:#fff;color:#625c4f;font-size:13px;cursor:pointer">오피스 다시 불러오기</button><a href="creative-office.html?v=20261025-agency10" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:#35573a">에이전시 새탭 열기 ↗</a></div><iframe id="creativeOfficeFrame" title="KWAN 에이전시 · 10명" style="width:100%;height:100svh;min-height:760px;border:0;border-radius:20px" sandbox="allow-scripts allow-same-origin"></iframe></main>
         <!-- 모달 모음 -->
         <div id="projectModal" class="admin-modal-overlay">
@@ -800,6 +802,19 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 resourceLibraryCleanup=cleanup;
             }catch{root.textContent="자료를 열지 못했습니다. 잠시 후 다시 시도해 주세요.";}
         }
+        let kwanStudioCleanup=null,kwanStudioEpoch=0;
+        function disposeKwanStudio(){kwanStudioEpoch++;kwanStudioCleanup?.();kwanStudioCleanup=null;document.getElementById('kwanStudioContainer')?.replaceChildren();}
+        async function showKwanStudio(){
+            const root=document.getElementById('kwanStudioContainer'),epoch=++kwanStudioEpoch,token=adminToken;
+            root.textContent='권한을 확인하고 있습니다.';
+            try{
+                const {mountKwanStudio}=await import('./kwan-studio-launcher.mjs?v=20261101-1');
+                if(epoch!==kwanStudioEpoch||currentMainTab!=='kwan-studio'||!creativeOwner||token!==adminToken)return;
+                const cleanup=await mountKwanStudio(root,{getToken:()=>adminToken,requireOwner:()=>creativeOwnerClient.requireOwner()});
+                if(epoch!==kwanStudioEpoch||currentMainTab!=='kwan-studio'||token!==adminToken){cleanup();return;}
+                kwanStudioCleanup=cleanup;
+            }catch{if(epoch===kwanStudioEpoch)root.textContent='KWAN 전용 작업실입니다. 로그인 상태와 접근 권한을 확인해 주세요.';}
+        }
         let creativeOwner = false;
         let creativeOfficeRetryRequested = false;
         let creativeOwnerClient = null;
@@ -836,6 +851,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         }
         let sessionRefreshTimerId = null;
         function clearSessionState() {
+            disposeKwanStudio();const studioTab=document.getElementById("kwanStudioTab");if(studioTab)studioTab.style.display="none";
             resourceLibraryClient?.invalidate();
             resourceLibraryCleanup?.();resourceLibraryCleanup=null;
             document.getElementById("resourceLibraryContainer")?.replaceChildren();
@@ -1081,6 +1097,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let currentFilterYear = 'ALL';
         let currentFilterMonth = 'ALL';
         function applyAdminMode() {
+            document.getElementById("kwanStudioTab").style.display=creativeOwner?"inline-block":"none";
             document.getElementById('creativeOfficeTab').style.display=creativeOwner?'inline-block':'none';
             document.getElementById('creativeOfficeChatBar').style.display=creativeOwner?'flex':'none';
             document.getElementById('resourceLibraryTab').style.display=creativeOwner?'inline-block':'none';
@@ -1106,6 +1123,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }
         }
         function canSeeTab(tabName) {
+            if(tabName === 'kwan-studio') return creativeOwner === true;
             if(tabName === 'skills') return creativeOwner === true;
             if(tabName === 'creative-six' || tabName === 'agency') return creativeOwner === true;
             if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
@@ -1144,6 +1162,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 tabName = defaultTab();
                 history.replaceState(null, '', '#' + tabName);
             }
+            if(tabName!=='kwan-studio')disposeKwanStudio();
             currentMainTab = tabName;
             if(tabName!=='skills'){resourceLibraryClient?.invalidate();resourceLibraryCleanup?.();resourceLibraryCleanup=null;document.getElementById('resourceLibraryContainer')?.replaceChildren();}
             // Brand-team polish is disabled for LX routes.
@@ -1172,8 +1191,16 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if(officeContainer)officeContainer.style.display='none';
             const resourceContainer=document.getElementById('resourceLibraryContainer');
             if(resourceContainer)resourceContainer.style.display='none';
+            const studioContainer=document.getElementById('kwanStudioContainer');if(studioContainer)studioContainer.style.display='none';
             // 2) 선택된 컨테이너 보여주기
-            if(tabName === 'creative-six' && creativeOwner) {
+            if(tabName === 'kwan-studio' && creativeOwner){
+                studioContainer.style.display='block';
+                if(navBarWrapper)navBarWrapper.style.display='none';
+                if(addProjBtn)addProjBtn.style.display='none';
+                if(libraryHeaderAdmin)libraryHeaderAdmin.style.display='none';
+                if(btnAdminReference)btnAdminReference.style.display='none';
+                void showKwanStudio();
+            } else if(tabName === 'creative-six' && creativeOwner) {
                 officeContainer.style.display='block';
                 if(navBarWrapper)navBarWrapper.style.display='none';
                 if(addProjBtn)addProjBtn.style.display='none';
@@ -1295,7 +1322,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 return;
             }
 
-            if (/^lecture\/(notes|editing)$/.test(hash) || ['archive', 'library', 'automation', 'pptauto', 'lecture/pptauto', 'lecture', 'reference', 'creative-six', 'skills'].includes(hash)) {
+            if (/^lecture\/(notes|editing)$/.test(hash) || ['archive', 'library', 'automation', 'pptauto', 'lecture/pptauto', 'lecture', 'reference', 'creative-six', 'skills', 'kwan-studio'].includes(hash)) {
                 switchMainTab(hash);
             }
         }
