@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>튜토리얼 영상_GV 라이팅</title>
+<style>
+/* 레이아웃: 얇은 머리글 아래 왼쪽 영상, 오른쪽 댓글을 화면 폭 전체에 나란히 */
+@font-face { font-family: "Pretendard RA"; src: url("fonts/pretendard-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Pretendard RA"; src: url("fonts/pretendard-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Pretendard RA"; src: url("fonts/pretendard-800.woff2") format("woff2"); font-weight: 800; font-display: swap; }
+:root {
+  color-scheme: light;
+  --bg:#FFFFFF; --soft:#F3F4F6; --line:#E3E6E9; --ink:#16181B; --gray:#5C6166; --faint:#A2A7AD;
+  --green:#00D37A; --green-ink:#0E955C; --mint:#E6F9ED; --red:#D9402F;
+  --font:"Pretendard RA",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+* { box-sizing:border-box }
+[hidden] { display:none !important }
+html, body { height:100% }
+body { margin:0; background:var(--bg); color:var(--ink); font:500 15px/1.55 var(--font); word-break:keep-all; overflow-wrap:break-word; -webkit-font-smoothing:antialiased }
+button, select, textarea { font:inherit; color:inherit }
+button { cursor:pointer; background:none; border:0; padding:0 }
+button:focus-visible, select:focus-visible, textarea:focus-visible, .bar:focus-visible { outline:2px solid var(--green-ink); outline-offset:2px }
+.gate { position:fixed; inset:0; z-index:5; background:var(--bg); display:grid; place-content:center; justify-items:center; gap:28px; padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px)) }
+.gate img { height:22px }
+.gate h1 { margin:0; font-size:26px; font-weight:800; letter-spacing:-.03em; text-align:center }
+.teams { display:grid; grid-template-columns:repeat(3,minmax(0,150px)); gap:8px }
+.teams button { height:56px; border:1px solid var(--line); border-radius:8px; font-weight:700; font-size:16px; background:var(--bg) }
+.teams button:hover { border-color:var(--ink) }
+.app { height:100%; display:grid; grid-template-rows:auto minmax(0,1fr) }
+.top { display:flex; align-items:center; gap:12px; padding-block:12px; padding-left:max(20px,env(safe-area-inset-left,0px)); padding-right:max(20px,env(safe-area-inset-right,0px)); border-bottom:1px solid var(--line) }
+.top img { height:17px; display:block }
+.top h1 { margin:0; padding-left:12px; border-left:1px solid var(--line); font-size:15px; font-weight:800; white-space:nowrap }
+.who { margin-left:auto; font-size:14px; color:var(--gray); white-space:nowrap }
+.who b { color:var(--ink); font-weight:700 }
+.who button { margin-left:8px; color:var(--gray); text-decoration:underline; font-size:13px }
+.main { display:grid; grid-template-columns:minmax(0,1fr) clamp(340px,30vw,460px); min-height:0 }
+.stage { min-width:0; overflow:auto; padding:20px; background:var(--soft); display:flex; justify-content:center; align-items:flex-start }
+.player { width:100%; max-width:calc((100vh - 232px)*16/9); min-width:min(100%,480px); display:grid; gap:10px }
+video { display:block; width:100%; aspect-ratio:16/9; background:#0B0F0D; border-radius:6px; cursor:pointer }
+.ctl { display:flex; align-items:center; gap:12px; font-variant-numeric:tabular-nums }
+.ctl .play { width:68px; height:34px; border-radius:6px; background:var(--ink); color:#fff; font-weight:700; font-size:14px }
+.ctl .mute { font-size:13px; color:var(--gray) }
+.time { font-size:14px; font-weight:700 }
+.time span { color:var(--gray); font-weight:500 }
+.bar { position:relative; height:26px; cursor:pointer; touch-action:none; user-select:none }
+.track { position:absolute; inset:9px 0; display:flex; gap:2px }
+.track i { display:block; background:#D5D9DD; min-width:2px }
+.prog { position:absolute; left:0; top:9px; bottom:9px; background:var(--green); pointer-events:none }
+.pos { position:absolute; top:3px; bottom:3px; width:3px; margin-left:-1px; background:var(--ink); pointer-events:none }
+.pin { position:absolute; top:0; width:8px; height:8px; margin-left:-4px; border-radius:50%; background:var(--red) }
+.pin.done { background:var(--faint) }
+.scenes { display:flex; flex-wrap:wrap; gap:0 14px; font-size:13px; color:var(--gray) }
+.scenes button { padding:3px 0; border-bottom:2px solid transparent; white-space:nowrap }
+.scenes button:hover { color:var(--ink) }
+.scenes button.cur { color:var(--ink); font-weight:700; border-color:var(--green) }
+.scenes sup { color:var(--red); font-size:11px; font-weight:700; margin-left:2px; line-height:0 }
+.panel { min-height:0; min-width:0; overflow-y:auto; overscroll-behavior:contain; border-left:1px solid var(--line); background:var(--bg); position:relative }
+.block { padding:14px 16px 16px; border-bottom:1px solid var(--line); display:grid; gap:10px; scroll-margin-top:0 }
+.block.cur { background:var(--mint) }
+.bh { display:flex; align-items:baseline; gap:8px }
+.bh h3 { margin:0; font-size:15px; font-weight:800; letter-spacing:-.01em }
+.bh .t { font-size:13px }
+.t { color:var(--green-ink); font-weight:700; font-variant-numeric:tabular-nums }
+.t:hover { text-decoration:underline }
+.script { margin:0; padding:0; list-style:none; font-size:14px; display:grid; gap:3px }
+.script li { display:grid; grid-template-columns:36px minmax(0,1fr); gap:6px }
+.script li.ev { color:var(--gray); font-size:13px }
+.script .t { text-align:left; font-size:13px }
+.group { display:grid; gap:4px }
+.group h4 { margin:0; font-size:13px; font-weight:800; color:var(--ink) }
+.c { font-size:14px; padding-left:10px; border-left:2px solid var(--line); display:grid; gap:1px }
+.c.mine { border-color:var(--green) }
+.c.done { color:var(--gray) }
+.c p { margin:0; white-space:pre-wrap }
+.c .m { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; font-size:12px; color:var(--gray); font-variant-numeric:tabular-nums }
+.c .r { font-size:13px; color:var(--green-ink) }
+.c .x { margin-left:auto; font-size:12px; color:var(--faint) }
+.c .x:hover { color:var(--ink) }
+.notes { display:grid; gap:10px }
+.form { display:flex; gap:6px; align-items:flex-end }
+textarea { flex:1; min-width:0; min-height:38px; height:38px; max-height:30vh; resize:vertical; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); font-size:14px; line-height:1.45 }
+.send { height:38px; padding:0 14px; border-radius:6px; background:var(--green); color:#fff; font-weight:800; font-size:14px; white-space:nowrap }
+.send:hover { background:var(--green-ink) }
+.send:disabled { opacity:.45; cursor:default }
+.msg { margin:0; font-size:13px; color:var(--red) }
+@media (max-width:900px) {
+  html, body { height:auto }
+  .app { height:auto; display:block }
+  .main { display:block }
+  .stage { padding:12px max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px)); overflow:visible }
+  .player { max-width:none; min-width:0 }
+  .panel { border-left:0; border-top:1px solid var(--line); overflow:visible }
+  .top h1 { white-space:normal }
+  .teams { grid-template-columns:repeat(2,minmax(0,150px)) }
+}
+</style>
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <img src="img/logo_dark.png" alt="리얼 아카데미">
+  <h1>튜토리얼 영상_GV 라이팅</h1>
+  <div class="teams" id="teams" role="group" aria-label="팀 선택"></div>
+</div>
+<div class="app">
+  <header class="top">
+    <img src="img/logo_dark.png" alt="리얼 아카데미">
+    <h1>튜토리얼 영상_GV 라이팅</h1>
+    <span class="who" id="who"></span>
+  </header>
+  <div class="main">
+    <section class="stage">
+      <div class="player">
+        <video id="v" playsinline preload="auto" poster="poster_short_v4.jpg" src="gv-writing-short-v4-r5c.mp4"></video>
+        <div class="bar" id="bar" role="slider" tabindex="0" aria-label="재생 위치" aria-valuemin="0">
+          <div class="track" id="track"></div><div class="prog" id="prog"></div><div class="pos" id="pos"></div><div id="pins"></div>
+        </div>
+        <div class="ctl">
+          <button type="button" class="play" id="play">재생</button>
+          <span class="time"><b id="now">0:00</b> <span>/ <span id="dur"></span></span></span>
+          <button type="button" class="mute" id="mute">소리 끄기</button>
+        </div>
+        <div class="scenes" id="scenes"></div>
+      </div>
+    </section>
+    <aside class="panel" id="panel"><p class="msg" id="msg" hidden style="padding:10px 16px 0"></p><div id="blocks"></div></aside>
+  </div>
+</div>
+<script>
+const SECTIONS=[{"id": "home", "title": "홈 · 레벨 변경", "start": 0, "end": 9.6, "lines": [{"t": 0.1, "text": "GV 라이팅 레슨에 대해 알아볼게요."}, {"t": 2.97, "text": "화면 위쪽에서는 레벨을 바꿀 수 있어요."}], "events": [{"t": 6.3, "kind": "tap", "name": "레벨 변경", "mode": "echo"}, {"t": 7.7, "kind": "tap", "name": "레벨 닫기", "mode": "press"}]}, {"id": "curri", "title": "커리큘럼", "start": 9.6, "end": 20.9, "lines": [{"t": 9.7, "text": "그 옆에서는 지금 레벨의 커리큘럼을 볼 수 있어요."}, {"t": 14.5, "text": "이번 레벨에서 배울 레슨들이 쭉 나와 있어요."}], "events": [{"t": 13.7, "kind": "tap", "name": "커리큘럼", "mode": "echo"}, {"t": 19.3, "kind": "tap", "name": "닫기 X", "mode": "ring"}]}, {"id": "start", "title": "레슨 시작", "start": 20.9, "end": 24.9, "lines": [{"t": 21.07, "text": "자, 이제 레슨으로 들어가 볼까요?"}], "events": [{"t": 24.8, "kind": "tap", "name": "시작", "mode": "echo"}]}, {"id": "st1", "title": "1단계 · 글쓰기", "start": 24.9, "end": 33.1, "lines": [{"t": 25.23, "text": "첫 번째 단계는 오늘의 주제를 한국어로,"}, {"t": 28.27, "text": "그다음 영어로 글을 써 보는 거예요."}], "events": [{"t": 32.9, "kind": "tap", "name": "다음", "mode": "ring"}]}, {"id": "st2", "title": "2단계 · 문법 패턴 트레이닝", "start": 33.1, "end": 47.5, "lines": [{"t": 33.37, "text": "두 번째는 문법 패턴 트레이닝이에요."}, {"t": 36.27, "text": "내가 쓴 글에 나오는 문법과 단어를 연습해요."}], "events": [{"t": 47.3, "kind": "tap", "name": "다음", "mode": "ring"}]}, {"id": "st3", "title": "3단계 · 리아 선생님과 완성", "start": 47.5, "end": 68.1, "lines": [{"t": 47.73, "text": "세 번째는 내가 쓴 글을 리아 선생님과 영어로 완성하는 단계예요."}, {"t": 56.5, "text": "틀린 부분이 있으면 리아 선생님이 힌트를 줘요."}, {"t": 60.3, "text": "힌트를 보고 고쳐서 다시 써 보면 돼요."}], "events": [{"t": 57.5, "kind": "tap", "name": "오답 말풍선 강조", "mode": "emph"}, {"t": 60.0, "kind": "tap", "name": "힌트 말풍선 강조", "mode": "emph"}, {"t": 67.9, "kind": "tap", "name": "다음", "mode": "ring"}]}, {"id": "st4", "title": "4단계 · 에코와 대화", "start": 68.1, "end": 87.6, "lines": [{"t": 68.4, "text": "그리고 마지막 네 번째, 에코와 대화를 나눠요."}, {"t": 72.8, "text": "내가 쓴 이야기를 에코한테 영어로 말해 보는 거예요."}, {"t": 82.7, "text": "그러면 에코가 내 말을 듣고 대답해 줘요."}], "events": [{"t": 77.8, "kind": "tap", "name": "마이크", "mode": "ring"}, {"t": 78.1, "kind": "voice", "name": "학생 음성 \"I have been doing taekwondo for two years.\"", "note": "(아이 TTS 생성 한계, 좋은 대안이 있으면 의견 주시거나 차후 실제 아이 목소리로 적용 필요)"}]}, {"id": "done", "title": "완료 · 오늘 모은 블록", "start": 87.6, "end": 95.5, "lines": [{"t": 87.8, "text": "레슨이 끝나면 오늘 모은 블록들을 이렇게 볼 수 있어요."}], "events": [{"t": 93.9, "kind": "tap", "name": "확인", "mode": "ring"}]}, {"id": "note", "title": "홈 복귀 · GV 노트", "start": 95.5, "end": 111.5, "lines": [{"t": 95.67, "text": "자, 다시 홈 화면으로 나왔어요."}, {"t": 98.63, "text": "왼쪽에 있는 GV 노트를 눌러 볼까요?"}, {"t": 102.1, "text": "GV 노트에서는 내가 지금까지 진행한 레슨과,"}, {"t": 105.47, "text": "각각의 레슨에서 어떻게 글을 쓰고 말했는지 볼 수 있어요."}], "events": [{"t": 101.7, "kind": "tap", "name": "GV 노트", "mode": "echo"}]}, {"id": "block", "title": "G 블록 · V 블록", "start": 111.5, "end": 132.73, "lines": [{"t": 114.3, "text": "이번에는 G 블록을 눌러 볼까요?"}, {"t": 118.83, "text": "여기 G 블록과, 옆에 있는 V 블록에서는"}, {"t": 122.0, "text": "내가 지금까지 학습한 블록들을 볼 수 있어요."}, {"t": 127.9, "text": "GV 블록을 100%까지 모으는 것도 재미있을 거예요."}], "events": [{"t": 117.2, "kind": "tap", "name": "G 블록", "mode": "echo"}, {"t": 125.9, "kind": "tap", "name": "V 블록", "mode": "ring"}]}];const TOTAL=132.73;
+const TEAMS=["운영팀","세일즈팀","LX팀","마케팅팀","리아팀","브랜드팀"];
+const $=id=>document.getElementById(id);
+const v=$("v");let team=null,notes=[];
+const API="https://eoljasmgogdcvnytaoax.supabase.co/rest/v1/",KEY="sb_publishable_FsdOrzNSaHLmsuykEg9BVw_QbhI3h11",HEAD={apikey:KEY,"Content-Type":"application/json"};
+function store(k,fallback){try{const x=localStorage.getItem(k);return x==null?fallback:x}catch{return fallback}}
+function keep(k,x){try{localStorage.setItem(k,x)}catch{}}
+const uuid=()=>crypto.randomUUID?crypto.randomUUID():"10000000-1000-4000-8000-100000000000".replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+const clientId=store("ra_client",null)||uuid();keep("ra_client",clientId);
+let myIds=[];try{myIds=JSON.parse(store("ra_mine","[]"))}catch{}
+const remember=id=>{myIds.push(id);keep("ra_mine",JSON.stringify(myIds))};
+const fmt=t=>{t=Math.floor(t);return Math.floor(t/60)+":"+String(t%60).padStart(2,"0")};
+const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML};
+const secAt=t=>SECTIONS.find(s=>t>=s.start&&t<s.end)||SECTIONS[SECTIONS.length-1];
+const secTitle=id=>id==="all"?"영상 전체":(SECTIONS.find(s=>s.id===id)||{}).title||"";
+const MODE={echo:"에코",ring:"강조",emph:"강조",press:"눌림"};
+function loadTeam(){try{return localStorage.getItem("ra_team")}catch{return null}}
+function saveTeam(t){try{localStorage.setItem("ra_team",t)}catch{}}
+function setTeam(t){team=t;saveTeam(t);$("gate").hidden=true;$("who").innerHTML="<b>"+esc(t)+"</b><button type='button' id='chg'>변경</button>";$("chg").onclick=()=>{$("gate").hidden=false};render()}
+$("teams").innerHTML=TEAMS.map(t=>"<button type='button'>"+t+"</button>").join("");
+$("teams").querySelectorAll("button").forEach(b=>b.onclick=()=>setTeam(b.textContent));
+$("track").innerHTML=SECTIONS.map(s=>"<i style='flex:"+(s.end-s.start)+" 0 0'></i>").join("");
+$("dur").textContent=fmt(TOTAL);$("bar").setAttribute("aria-valuemax",TOTAL);
+const BLOCKS=[{id:"all",title:"영상 전체"},...SECTIONS];
+function blockHTML(b){
+  const it=b.id==="all"?[]:[...b.lines.map(l=>({t:l.t,h:esc(l.text)})),...b.events.map(e=>({t:e.t,ev:1,h:e.kind==="voice"?esc(e.name)+(e.note?"<br>"+esc(e.note):""):esc(e.name)+(e.mode==="emph"?"":" 클릭")+" · "+(MODE[e.mode]||"")}))].sort((x,y)=>x.t-y.t);
+  return "<section class='block' id='b-"+b.id+"'><div class='bh'>"+(b.id==="all"?"":"<button type='button' class='t' data-t='"+b.start+"'>"+fmt(b.start)+"</button>")+"<h3>"+esc(b.title)+"</h3></div>"+
+    (it.length?"<ul class='script'>"+it.map(i=>"<li"+(i.ev?" class='ev'":"")+"><button type='button' class='t' data-t='"+i.t+"'>"+fmt(i.t)+"</button><span>"+i.h+"</span></li>").join("")+"</ul>":"")+
+    "<div class='notes' id='n-"+b.id+"'></div><form class='form' data-id='"+b.id+"'><textarea id='ta-"+b.id+"' aria-label='"+esc(b.title)+" 코멘트' placeholder='코멘트'></textarea><button class='send' type='submit'>남기기</button></form></section>";
+}
+$("blocks").innerHTML=BLOCKS.map(blockHTML).join("");
+function commentHTML(n){
+  const done=n.status==="done",mine=myIds.includes(n.id);
+  return "<div class='c"+(done?" done":"")+(mine?" mine":"")+"'><p>"+esc(n.text)+"</p>"+
+    (n.reply?"<div class='r'>"+esc(n.reply)+"</div>":"")+
+    "<div class='m'>"+(n.t!=null?"<button type='button' class='t' data-t='"+n.t+"'>"+fmt(n.t)+"</button>":"")+(done?"<span>반영 완료</span>":"")+
+    (mine?"<button type='button' class='x' data-del='"+n.id+"'>삭제</button>":"")+"</div></div>";
+}
+function render(){
+  BLOCKS.forEach(b=>{
+    const list=notes.filter(n=>n.section===b.id).sort((x,y)=>(x.t??0)-(y.t??0)||String(x.created_at).localeCompare(String(y.created_at)));
+    const teams=TEAMS.filter(t=>list.some(n=>n.team===t));
+    const extra=list.filter(n=>!TEAMS.includes(n.team));
+    $("n-"+b.id).innerHTML=teams.map(t=>"<div class='group'><h4>"+t+"</h4>"+list.filter(n=>n.team===t).map(commentHTML).join("")+"</div>").join("")+extra.map(commentHTML).join("");
+  });
+  $("pins").innerHTML=notes.filter(n=>n.t!=null).map(n=>"<button type='button' class='pin"+(n.status==="done"?" done":"")+"' data-t='"+n.t+"' style='left:"+(n.t/TOTAL*100)+"%' aria-label='"+fmt(n.t)+" 코멘트'></button>").join("");
+  $("scenes").innerHTML=SECTIONS.map(s=>{const n=notes.filter(x=>x.section===s.id&&x.status!=="done").length;
+    return "<button type='button' data-t='"+s.start+"' data-id='"+s.id+"'>"+esc(s.title)+(n?"<sup>"+n+"</sup>":"")+"</button>"}).join("");
+  lastSec=null;tick();
+}
+let lastSec=null,dragging=false,dragT=0,pendingT=null,resumeAfter=false;
+function flushSeek(){if(pendingT!==null&&!v.seeking){v.currentTime=pendingT;pendingT=null}}
+function tick(){
+  const t=dragging?dragT:(v.currentTime||0),p=t/TOTAL*100;
+  $("prog").style.width=p+"%";$("pos").style.left=p+"%";$("now").textContent=fmt(t);$("bar").setAttribute("aria-valuenow",t.toFixed(1));
+  const s=secAt(t);
+  if(s.id!==lastSec){
+    const first=lastSec===null;lastSec=s.id;
+    document.querySelectorAll("#scenes button").forEach(b=>b.classList.toggle("cur",b.dataset.id===s.id));
+    document.querySelectorAll(".block").forEach(e=>e.classList.toggle("cur",e.id==="b-"+s.id));
+    if(!first&&document.activeElement?.tagName!=="TEXTAREA"&&$("panel").scrollHeight>$("panel").clientHeight){
+      const e=$("b-"+s.id);$("panel").scrollTo({top:e.offsetTop-$("panel").offsetTop,behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});
+    }
+  }
+}
+const seek=t=>{v.currentTime=Math.max(0,Math.min(TOTAL,t))};
+const toggle=()=>v.paused?v.play():v.pause();
+v.addEventListener("click",toggle);$("play").onclick=toggle;
+v.addEventListener("play",()=>$("play").textContent="일시정지");
+v.addEventListener("pause",()=>$("play").textContent="재생");
+$("mute").onclick=()=>{v.muted=!v.muted;$("mute").textContent=v.muted?"소리 켜기":"소리 끄기"};
+document.addEventListener("click",e=>{
+  const j=e.target.closest("[data-t]");if(j){seek(+j.dataset.t);return}
+  const d=e.target.closest("[data-del]");
+  if(d){if(d.dataset.armed){removeNote(d.dataset.del)}else{d.dataset.armed="1";d.textContent="한 번 더 누르면 삭제"}}
+});
+const bar=$("bar");
+const dragTo=e=>{const r=bar.getBoundingClientRect();dragT=Math.max(0,Math.min(TOTAL,(e.clientX-r.left)/r.width*TOTAL));pendingT=dragT;flushSeek();tick()};
+bar.addEventListener("pointerdown",e=>{if(e.button!==0||e.target.closest(".pin"))return;e.preventDefault();bar.setPointerCapture(e.pointerId);dragging=true;resumeAfter=!v.paused;v.pause();dragTo(e)});
+bar.addEventListener("pointermove",e=>{if(dragging)dragTo(e)});
+const endDrag=()=>{if(!dragging)return;dragging=false;pendingT=null;v.currentTime=dragT;if(resumeAfter)v.play()};
+bar.addEventListener("pointerup",endDrag);bar.addEventListener("pointercancel",endDrag);
+bar.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"){seek(v.currentTime-1);e.preventDefault()}if(e.key==="ArrowRight"){seek(v.currentTime+1);e.preventDefault()}});
+v.addEventListener("seeked",flushSeek);v.addEventListener("timeupdate",tick);v.addEventListener("seeked",tick);
+(function raf(){if(!v.paused)tick();requestAnimationFrame(raf)})();
+document.addEventListener("focusin",e=>{if(e.target.tagName==="TEXTAREA")v.pause()});
+function showMsg(m){$("msg").textContent=m;$("msg").hidden=!m}
+document.addEventListener("keydown",e=>{
+  if(e.code!=="Space"||e.repeat)return;
+  const t=e.target.tagName;if(t==="TEXTAREA"||t==="INPUT"||t==="SELECT")return;
+  if(!$("gate").hidden)return;
+  e.preventDefault();if(t==="BUTTON")e.target.blur();toggle();
+});
+document.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const f=e.target,id=f.dataset.id,ta=$("ta-"+id),text=ta.value.trim();if(!text||!team){if(!team)$("gate").hidden=false;return}
+  const cur=v.currentTime||0,sec=SECTIONS.find(s=>s.id===id),btn=f.querySelector(".send");
+  const t=id==="all"?null:Number((cur>=sec.start&&cur<sec.end?cur:sec.start).toFixed(2));
+  btn.disabled=true;
+  try{
+    const r=await fetch(API+"tutorial_review_notes?select=id",{method:"POST",headers:{...HEAD,Prefer:"return=representation"},body:JSON.stringify({team,section:id,t,text,client_id:clientId})});
+    if(!r.ok)throw 0;
+    const row=(await r.json())[0];remember(row.id);ta.value="";showMsg("");await load();
+  }catch{showMsg("저장하지 못했습니다. 다시 눌러 주세요.")}
+  finally{btn.disabled=false}
+});
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter"&&e.target.tagName==="TEXTAREA")e.target.form.requestSubmit()});
+const saved=loadTeam();if(saved&&TEAMS.includes(saved))setTeam(saved);else{$("gate").hidden=false;render()}
+async function removeNote(id){
+  try{
+    const r=await fetch(API+"rpc/delete_tutorial_review_note",{method:"POST",headers:HEAD,body:JSON.stringify({p_id:id,p_client_id:clientId})});
+    if(!r.ok||!(await r.json()))throw 0;
+    showMsg("");await load();
+  }catch{showMsg("삭제하지 못했습니다.")}
+}
+let lastJson="",loading=false,failed=false;
+async function load(){
+  if(loading)return;loading=true;
+  try{
+    const r=await fetch(API+"tutorial_review_notes?select=id,team,section,t,text,status,reply,created_at&page=eq.gv-writing-short-v4&order=created_at",{headers:HEAD});
+    if(!r.ok)throw 0;
+    const body=await r.text();
+    if(failed){failed=false;showMsg("")}
+    if(body!==lastJson){lastJson=body;notes=JSON.parse(body);render()}
+  }catch{failed=true;showMsg("코멘트를 불러오지 못했습니다.")}
+  finally{loading=false}
+}
+load();setInterval(()=>{if(!document.hidden)load()},15000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)load()});
+</script>
+</body>
+</html>
