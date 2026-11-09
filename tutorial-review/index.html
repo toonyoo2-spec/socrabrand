@@ -82,6 +82,8 @@ video { display:block; width:100%; aspect-ratio:16/9; background:#0B0F0D; border
 .c .r { font-size:13px; color:var(--green-ink) }
 .c .x { margin-left:auto; font-size:12px; color:var(--faint) }
 .c .x:hover { color:var(--ink) }
+.c.old { color:var(--gray); border-left-style:dashed }
+.c .old-tag { font-weight:700 }
 .notes { display:grid; gap:10px }
 .form { display:flex; gap:6px; align-items:flex-end }
 textarea { flex:1; min-width:0; min-height:38px; height:38px; max-height:30vh; resize:vertical; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); font-size:14px; line-height:1.45 }
@@ -136,7 +138,7 @@ textarea { flex:1; min-width:0; min-height:38px; height:38px; max-height:30vh; r
 const SECTIONS=[{"id": "home", "title": "홈 · 레벨 변경", "start": 0, "end": 9.6, "lines": [{"t": 0.1, "text": "GV 라이팅에서는 내 이야기를 영어로 쓰고 말해 봐요."}, {"t": 3.83, "text": "화면 위쪽에서는 레벨을 바꿀 수 있어요."}], "events": [{"t": 6.93, "kind": "tap", "name": "레벨 변경", "mode": "echo"}, {"t": 8.07, "kind": "tap", "name": "레벨 닫기", "mode": "press"}]}, {"id": "curri", "title": "커리큘럼", "start": 9.6, "end": 18.73, "lines": [{"t": 9.7, "text": "그 옆에서는 지금 레벨의 커리큘럼을 볼 수 있어요."}, {"t": 14.0, "text": "이번 레벨에서 배울 레슨들이 쭉 나와 있어요."}], "events": [{"t": 13.3, "kind": "tap", "name": "커리큘럼", "mode": "echo"}, {"t": 18.7, "kind": "tap", "name": "닫기 X", "mode": "ring"}]}, {"id": "start", "title": "오늘의 레슨 · 시작", "start": 18.73, "end": 24.87, "lines": [{"t": 20.2, "text": "오늘 할 레슨은 화면 아래에 있어요."}, {"t": 22.8, "text": "시작해 볼까요?"}], "events": [{"t": 20.8, "kind": "tap", "name": "레슨 카드 강조", "mode": "emph"}, {"t": 24.83, "kind": "tap", "name": "시작", "mode": "echo"}]}, {"id": "st1", "title": "1단계 · 한국어로 이야기", "start": 24.87, "end": 32.57, "lines": [{"t": 25.3, "text": "먼저 오늘의 주제로 한국어로 이야기해요."}, {"t": 28.3, "text": "그러면 리아 선생님이 영어 문장으로 바꿔 줘요."}], "events": [{"t": 32.53, "kind": "tap", "name": "다음", "mode": "ring"}]}, {"id": "st2", "title": "2단계 · 문법 패턴 트레이닝", "start": 32.57, "end": 44.73, "lines": [{"t": 32.93, "text": "두 번째는 문법 패턴 트레이닝이에요."}, {"t": 35.63, "text": "패턴 문장을 써 보고,"}, {"t": 40.83, "text": "단어를 순서대로 놓아 문장을 만들어요."}], "events": [{"t": 40.93, "kind": "tap", "name": "문장 만들기 화면 강조", "mode": "emph"}, {"t": 44.7, "kind": "tap", "name": "다음", "mode": "ring"}]}, {"id": "st3", "title": "3단계 · 직접 영어로 쓰기", "start": 44.73, "end": 63.97, "lines": [{"t": 45.07, "text": "세 번째는 앞에서 연습한 걸로, 그 글을 직접 영어로 써 보는 단계예요."}, {"t": 53.83, "text": "틀린 부분이 있으면 리아 선생님이 힌트를 줘요."}, {"t": 57.47, "text": "힌트를 보고 아래 칸에 고쳐 쓰면 돼요."}], "events": [{"t": 53.93, "kind": "tap", "name": "오답 말풍선 강조", "mode": "emph"}, {"t": 55.17, "kind": "tap", "name": "힌트 말풍선 강조", "mode": "emph"}, {"t": 58.37, "kind": "tap", "name": "입력칸 강조", "mode": "emph"}, {"t": 63.93, "kind": "tap", "name": "다음", "mode": "ring"}]}, {"id": "st4", "title": "4단계 · 에코와 대화", "start": 63.97, "end": 81.37, "lines": [{"t": 64.33, "text": "그리고 마지막 네 번째, 에코와 대화를 나눠요."}, {"t": 68.33, "text": "내가 쓴 이야기를 에코한테 영어로 말해 보는 거예요."}, {"t": 77.8, "text": "그러면 에코가 내 말을 듣고 대답해 줘요."}], "events": [{"t": 72.9, "kind": "tap", "name": "마이크", "mode": "ring"}, {"t": 73.2, "kind": "voice", "name": "학생 음성 \"I have been doing taekwondo for two years.\"", "note": "(아이 TTS 생성 한계, 좋은 대안이 있으면 의견 주시거나 차후 실제 아이 목소리로 적용 필요)"}]}, {"id": "done", "title": "완료 · 오늘 모은 블록", "start": 81.37, "end": 88.33, "lines": [{"t": 82.9, "text": "레슨이 끝나면 오늘 모은 블록들을 이렇게 볼 수 있어요."}], "events": [{"t": 88.3, "kind": "tap", "name": "확인", "mode": "ring"}]}, {"id": "note", "title": "GV 노트", "start": 88.33, "end": 97.8, "lines": [{"t": 90.93, "text": "오늘 쓴 글은 GV 노트에서 다시 볼 수 있어요."}, {"t": 94.3, "text": "지금까지 쓰고 말한 레슨이 다 모여 있어요."}], "events": [{"t": 93.77, "kind": "tap", "name": "GV 노트", "mode": "echo"}]}, {"id": "block", "title": "G 블록 · V 블록", "start": 97.8, "end": 113.33, "lines": [{"t": 100.33, "text": "이번에는 G 블록과 V 블록을 볼까요?"}, {"t": 104.67, "text": "G 블록에는 문법이, V 블록에는 단어가 모여요."}, {"t": 108.87, "text": "GV 블록을 100%까지 모으는 것도 재미있을 거예요."}], "events": [{"t": 103.0, "kind": "tap", "name": "G 블록", "mode": "echo"}, {"t": 106.9, "kind": "tap", "name": "V 블록", "mode": "ring"}]}];const TOTAL=113.33;
 const TEAMS=["운영팀","세일즈팀","LX팀","마케팅팀","리아팀","브랜드팀"];
 const $=id=>document.getElementById(id);
-const v=$("v");let team=null,notes=[];const SINCE="2026-11-08T13:33:18";
+const v=$("v");let team=null,notes=[];const SINCE="2026-11-08T13:33:18";const isOld=n=>String(n.created_at)<SINCE;
 const API="https://eoljasmgogdcvnytaoax.supabase.co/rest/v1/",KEY="sb_publishable_FsdOrzNSaHLmsuykEg9BVw_QbhI3h11",HEAD={apikey:KEY,"Content-Type":"application/json"};
 function store(k,fallback){try{const x=localStorage.getItem(k);return x==null?fallback:x}catch{return fallback}}
 function keep(k,x){try{localStorage.setItem(k,x)}catch{}}
@@ -165,7 +167,10 @@ function blockHTML(b){
 }
 $("blocks").innerHTML=BLOCKS.map(blockHTML).join("");
 function commentHTML(n){
-  const done=n.status==="done",mine=myIds.includes(n.id);
+  const done=n.status==="done",mine=myIds.includes(n.id),old=isOld(n);
+  if(old)return "<div class='c old"+(mine?" mine":"")+"'><p>"+esc(n.text)+"</p>"+(n.reply?"<div class='r'>"+esc(n.reply)+"</div>":"")+
+    "<div class='m'><span class='old-tag'>이전 영상 의견</span>"+(n.t!=null?"<span>이전 영상 "+fmt(n.t)+"</span>":"")+
+    (mine?"<button type='button' class='x' data-del='"+n.id+"'>삭제</button>":"")+"</div></div>";
   return "<div class='c"+(done?" done":"")+(mine?" mine":"")+"'><p>"+esc(n.text)+"</p>"+
     (n.reply?"<div class='r'>"+esc(n.reply)+"</div>":"")+
     "<div class='m'>"+(n.t!=null?"<button type='button' class='t' data-t='"+n.t+"'>"+fmt(n.t)+"</button>":"")+(done?"<span>반영 완료</span>":"")+
@@ -173,13 +178,13 @@ function commentHTML(n){
 }
 function render(){
   BLOCKS.forEach(b=>{
-    const list=notes.filter(n=>n.section===b.id).sort((x,y)=>(x.t??0)-(y.t??0)||String(x.created_at).localeCompare(String(y.created_at)));
+    const list=notes.filter(n=>n.section===b.id).sort((x,y)=>isOld(x)-isOld(y)||(x.t??0)-(y.t??0)||String(x.created_at).localeCompare(String(y.created_at)));
     const teams=TEAMS.filter(t=>list.some(n=>n.team===t));
     const extra=list.filter(n=>!TEAMS.includes(n.team));
     $("n-"+b.id).innerHTML=teams.map(t=>"<div class='group'><h4>"+t+"</h4>"+list.filter(n=>n.team===t).map(commentHTML).join("")+"</div>").join("")+extra.map(commentHTML).join("");
   });
-  $("pins").innerHTML=notes.filter(n=>n.t!=null).map(n=>"<button type='button' class='pin"+(n.status==="done"?" done":"")+"' data-t='"+n.t+"' style='left:"+(n.t/TOTAL*100)+"%' aria-label='"+fmt(n.t)+" 코멘트'></button>").join("");
-  $("scenes").innerHTML=SECTIONS.map(s=>{const n=notes.filter(x=>x.section===s.id&&x.status!=="done").length;
+  $("pins").innerHTML=notes.filter(n=>n.t!=null&&!isOld(n)).map(n=>"<button type='button' class='pin"+(n.status==="done"?" done":"")+"' data-t='"+n.t+"' style='left:"+(n.t/TOTAL*100)+"%' aria-label='"+fmt(n.t)+" 코멘트'></button>").join("");
+  $("scenes").innerHTML=SECTIONS.map(s=>{const n=notes.filter(x=>x.section===s.id&&x.status!=="done"&&!isOld(x)).length;
     return "<button type='button' data-t='"+s.start+"' data-id='"+s.id+"'>"+esc(s.title)+(n?"<sup>"+n+"</sup>":"")+"</button>"}).join("");
   lastSec=null;tick();
 }
@@ -257,7 +262,7 @@ async function load(){
     if(!r.ok)throw 0;
     const body=await r.text();
     if(failed){failed=false;showMsg("")}
-    if(body!==lastJson){lastJson=body;notes=JSON.parse(body).filter(n=>n.created_at>=SINCE);render()}
+    if(body!==lastJson){lastJson=body;notes=JSON.parse(body);render()}
   }catch{failed=true;showMsg("코멘트를 불러오지 못했습니다.")}
   finally{loading=false}
 }
