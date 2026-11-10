@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>초등 영단어 체크</title>
+<meta name="description" content="그림과 문장으로 영어 단어를 맞혀 봐요.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="우리 아이, 이 영단어 알까요?">
+<meta property="og:description" content="초등 1~6학년 영단어 체크">
+<meta property="og:url" content="https://www.socrabrand.cloud/word-check/">
+<meta property="og:image" content="https://www.socrabrand.cloud/word-check/img/umbrella.jpg">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+/* 레이아웃: 상단 배너 → 블로그형 헤더 → 소개(히어로 · 근거 3개) 또는 체크 카드 → 결과 + 무료체험 팝업 → 푸터. 색은 리얼 아카데미 블로그 값 */
+@font-face { font-family: "Pretendard RA"; src: url("fonts/pretendard-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Pretendard RA"; src: url("fonts/pretendard-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Pretendard RA"; src: url("fonts/pretendard-800.woff2") format("woff2"); font-weight: 800; font-display: swap; }
+:root {
+  color-scheme: light;
+  --bg: #FFFFFF; --soft: #F3F4F6; --line: #EBEDEF; --ink: #16181B; --gray: #64696E; --faint: #A2A7AD;
+  --green: #00D37A; --green-ink: #0E955C; --green-deep: #0A7A4B; --mint: #E6F9ED; --red: #F0584A; --red-soft: #FDECEA;
+  --font: "Pretendard RA", -apple-system, "system-ui", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: break-word; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--mint); }
+a, button { cursor: pointer; }
+button { font-family: inherit; color: inherit; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 8px; }
+.wide { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.narrow { max-width: 680px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sns { background: var(--bg); }
+.sns .wide { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-block: 8px 48px; }
+.sns-card { position: relative; overflow: hidden; display: flex; align-items: center; min-height: 150px; padding: 24px 32px; border-radius: 24px; color: #fff; text-decoration: none; transition: transform .15s; }
+.sns-card:hover { transform: translateY(-2px); }
+.sns-yt { background: linear-gradient(90deg, #16181B 0, #16181B 35%, #4A1518 100%); }
+.sns-ig { background: linear-gradient(90deg, #5B3CD4, #C13584); }
+.sns-txt { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.sns-lbl { font-size: 12px; font-weight: 700; }
+.sns-yt .sns-lbl { color: #FF6B66; }
+.sns-ig .sns-lbl { color: #F8D0F0; }
+.sns-ttl { font-size: 18px; font-weight: 700; line-height: 1.4; }
+.sns-btn { margin-top: 6px; background: #fff; color: var(--ink); border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 700; }
+.sns-card img { position: absolute; right: 24px; bottom: -34px; height: 170px; pointer-events: none; }
+.banner { background: var(--mint); }
+.banner .wide { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 20px; padding-block: 9px; font-size: 14px; font-weight: 700; }
+.banner a { color: var(--green-deep); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: opacity .15s; }
+.banner a:hover { opacity: .75; }
+.banner a.trial { background: var(--green); color: #fff; border-radius: 999px; padding: 5px 12px; }
+.banner svg { width: 16px; height: 16px; flex: none; }
+.top { border-bottom: 1px solid var(--line); background: var(--bg); }
+.top .wide { display: flex; align-items: center; gap: 10px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand img { height: 18px; width: auto; display: block; }
+.brand span { padding-left: 10px; border-left: 1px solid var(--line); font-weight: 800; color: var(--green); font-size: 15px; }
+.top nav { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+.top nav a { color: var(--ink); text-decoration: none; font-weight: 700; font-size: 14px; }
+.top nav a.cta { background: var(--green); color: #fff; border-radius: 999px; padding: 9px 16px; transition: background .15s; }
+.top nav a.cta:hover { background: var(--green-ink); }
+@media (max-width: 560px) { .top nav a.hide-s { display: none; } }
+.brand span, .top nav a { white-space: nowrap; }
+@media (max-width: 420px) { .top nav .long { display: none; } .brand span { font-size: 14px; } }
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 40px; align-items: center; padding-block: 48px 36px; }
+@media (max-width: 760px) { .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-block: 32px 24px; } }
+.eyebrow { color: var(--green-ink); font-weight: 700; font-size: 15px; margin: 0 0 10px; }
+h1 { margin: 0; font-weight: 800; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.035em; line-height: 1.25; text-wrap: balance; }
+.lead { color: var(--gray); font-size: 17px; line-height: 1.7; margin: 14px 0 0; max-width: 42ch; }
+.hero .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 26px; }
+.basis { font-size: 13px; font-weight: 700; color: var(--gray); }
+.mosaic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mosaic img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 22px; display: block; background: var(--soft); }
+.proof { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding-block: 8px 56px; }
+@media (max-width: 640px) { .proof { grid-template-columns: minmax(0, 1fr); } }
+.proof div { border: 1px solid var(--line); border-radius: 20px; padding: 18px; }
+.proof b { display: block; font-size: 16px; margin-bottom: 6px; }
+.proof span { color: var(--gray); font-size: 14px; line-height: 1.6; font-weight: 500; }
+.btn { border: 0; border-radius: 999px; padding: 15px 24px; font-weight: 800; font-size: 17px; background: var(--green); color: #fff; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 8px; transition: background .15s, transform .1s; }
+.btn:hover { background: var(--green-ink); }
+.btn:active { transform: translateY(1px); }
+.btn.block { width: 100%; }
+.btn.line { background: var(--bg); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.btn.line:hover { background: var(--soft); }
+.check { padding-block: 32px 64px; }
+.card { border: 1px solid var(--line); border-radius: 28px; padding: clamp(18px, 4vw, 28px); display: flex; flex-direction: column; gap: 18px; }
+.progress { display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--gray); font-size: 14px; font-variant-numeric: tabular-nums; }
+.pbar { flex: 1; height: 8px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--green); border-radius: 99px; transition: width .3s; }
+.pic { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 20px; background: var(--soft); display: block; }
+.fillq { background: var(--soft); border-radius: 20px; padding: 28px 20px; display: grid; gap: 10px; text-align: center; }
+.blank-en { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.5; letter-spacing: -0.01em; text-wrap: balance; }
+.blank-ko { margin: 0; font-size: 15px; color: var(--gray); }
+.gap { display: inline-block; min-width: 4.5em; border-bottom: 3px solid var(--green); }
+.gap.filled { min-width: 0; color: var(--green-ink); }
+.row-w { width: 52px; height: 52px; border-radius: 12px; background: var(--soft); display: grid; place-items: center; font-weight: 800; font-size: 22px; flex: none; }
+.q { margin: 0; font-weight: 800; font-size: 22px; text-align: center; letter-spacing: -0.02em; }
+.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 460px) { .choices { grid-template-columns: minmax(0, 1fr); } }
+.choice { border: 2px solid var(--line); border-radius: 18px; background: var(--bg); padding: 16px 8px; font-weight: 800; font-size: clamp(19px, 3vw, 22px); transition: border-color .15s, background .15s; }
+.choice:hover:not(:disabled) { border-color: var(--ink); }
+.choice.right { border-color: var(--green); background: var(--mint); color: var(--green-deep); }
+.choice.wrong { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+.choice:disabled { cursor: default; }
+.idk { border: 0; background: none; color: var(--gray); font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; align-self: center; padding: 6px; }
+.answer { border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.answer.ok { background: var(--mint); }
+.answer.no { background: var(--soft); }
+.answer .tag { font-weight: 800; font-size: 14px; }
+.answer.ok .tag { color: var(--green-deep); }
+.answer.no .tag { color: var(--gray); }
+.answer .word { font-weight: 800; font-size: 30px; letter-spacing: -0.01em; }
+.answer .word small { font-size: 16px; color: var(--gray); font-weight: 700; margin-left: 8px; }
+.answer .sent { font-weight: 700; font-size: 18px; }
+.answer .sent b { color: var(--green-ink); }
+.answer .ko { color: var(--gray); font-size: 14px; font-weight: 500; }
+.listen { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip { border: 0; border-radius: 999px; background: var(--bg); padding: 9px 14px; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; box-shadow: inset 0 0 0 1px var(--line); transition: background .15s; }
+.chip:hover { background: var(--soft); }
+.chip svg { width: 16px; height: 16px; }
+.score { text-align: center; }
+.score b { display: block; font-size: 52px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.score b em { font-style: normal; color: var(--green-ink); }
+.score p { margin: 6px 0 0; color: var(--gray); font-weight: 500; line-height: 1.6; }
+.list h2 { font-size: 16px; font-weight: 800; margin: 0 0 10px; }
+.rows { display: flex; flex-direction: column; gap: 8px; }
+.row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 16px; padding: 8px 12px 8px 8px; }
+.row img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
+.row b { font-size: 17px; }
+.row .k { color: var(--gray); font-size: 14px; font-weight: 700; margin-left: 6px; }
+.row .s { display: block; color: var(--gray); font-size: 13px; font-weight: 500; margin-top: 2px; }
+.mark { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: #fff; }
+.mark svg { width: 14px; height: 14px; }
+.play { border: 0; background: var(--soft); border-radius: 999px; width: 38px; height: 38px; display: grid; place-items: center; }
+.play svg { width: 16px; height: 16px; }
+.promo { border-radius: 22px; background: var(--ink); color: #fff; padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+.promo b { font-size: 18px; }
+.promo p { margin: 0; color: #C9CDD2; font-size: 14px; line-height: 1.6; }
+.promo .btn { align-self: flex-start; }
+.modal { position: fixed; inset: 0; z-index: 20; background: rgba(22,24,27,.45); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); animation: fade .2s ease-out; }
+@keyframes fade { from { opacity: 0; } }
+.sheet { width: min(420px, 100%); background: var(--bg); border-radius: 28px; padding: 28px 22px 18px; display: flex; flex-direction: column; gap: 12px; text-align: center; animation: rise .3s cubic-bezier(.2,.8,.2,1); }
+@keyframes rise { from { transform: translateY(24px); } }
+.sheet .eyebrow { margin: 0; }
+.sheet h2 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.35; }
+.sheet p { margin: 0; color: var(--gray); line-height: 1.6; font-size: 15px; }
+.sheet .gift { background: var(--mint); color: var(--green-deep); border-radius: 14px; padding: 11px; font-weight: 800; font-size: 14px; }
+.sheet .social { display: flex; justify-content: center; gap: 18px; font-size: 14px; font-weight: 700; margin-top: 2px; }
+.sheet .social a { color: var(--gray); text-decoration: none; }
+.sheet .close { border: 0; background: none; color: var(--gray); font-weight: 700; padding: 8px; }
+.steps { display: flex; gap: 8px; margin-top: -6px; }
+.steps span { font-size: 13px; font-weight: 800; color: var(--faint); background: var(--soft); border-radius: 999px; padding: 5px 10px; }
+.steps span.on { color: #fff; background: var(--green); }
+.steps span.done { color: var(--green-deep); background: var(--mint); }
+.sentcard { border-radius: 20px; background: var(--soft); padding: 22px 18px; text-align: center; display: flex; flex-direction: column; gap: 10px; }
+.sentcard .cue { margin: 0; color: var(--gray); font-weight: 700; font-size: 15px; }
+.sline { margin: 0; font-weight: 800; font-size: clamp(24px, 4vw, 30px); letter-spacing: -0.01em; line-height: 1.4; }
+.sline b { color: var(--green-ink); }
+.blank { display: inline-block; min-width: 4.2em; height: 1.1em; vertical-align: -0.18em; border-bottom: 4px solid var(--green); }
+.choices.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.say { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; }
+.say span { color: var(--green-deep); font-weight: 700; font-size: 14px; }
+.scores { display: flex; justify-content: center; gap: 12px; }
+.scores div { border: 1px solid var(--line); border-radius: 20px; padding: 14px 22px; min-width: 130px; }
+.scores span { display: block; color: var(--gray); font-weight: 700; font-size: 14px; }
+.scores b { font-size: 40px; }
+.dock { margin-top: 14px; }
+@media (max-width: 640px) {
+  .sns .wide { grid-template-columns: minmax(0, 1fr); gap: 10px; padding-block: 0 32px; }
+  .sns-card { min-height: 128px; padding: 20px 22px; border-radius: 20px; }
+  .sns-ttl { font-size: 16px; }
+  .sns-card img { right: 12px; bottom: -28px; height: 140px; }
+  .banner .wide { flex-wrap: nowrap; gap: 10px; padding-block: 8px; font-size: 12.5px; }
+  .banner a { white-space: nowrap; }
+  .banner a.trial { padding: 5px 10px; }
+  .banner .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .hero { padding-block: 24px 16px; gap: 20px; }
+  .lead { font-size: 16px; }
+  .hero .actions .btn { width: 100%; }
+  .basis { width: 100%; text-align: center; }
+  .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; order: -1; }
+  .mosaic img { border-radius: 14px; }
+  .proof { padding-block: 0 32px; gap: 8px; }
+  .proof div { padding: 14px 16px; }
+  .check { padding-block: 12px 40px; }
+  body:has(.dock:not([hidden])) .sns { padding-bottom: 84px; }
+  .card { border: 0; padding: 0; gap: 14px; }
+  .pic { aspect-ratio: 16 / 10; max-height: 32vh; }
+  .q { font-size: 20px; }
+  .choice { padding: 14px 8px; }
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; margin: 0; background: rgba(255,255,255,.96); border-top: 1px solid var(--line);
+    padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .scores div { min-width: 0; flex: 1; padding: 12px; }
+  .scores b { font-size: 34px; }
+  .modal { place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .sheet { width: min(400px, 100%); border-radius: 26px; max-height: calc(100dvh - 32px); overflow: auto; }
+  @keyframes rise { from { transform: translateY(14px) scale(.97); opacity: 0; } }
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ko-line { font-size: clamp(22px, 3.6vw, 26px) !important; }
+.hintline { margin: 4px 0 0; font-weight: 800; font-size: clamp(20px, 3.4vw, 24px); letter-spacing: .02em; color: var(--ink); }
+.hintline i { font-style: normal; color: var(--faint); letter-spacing: .12em; }
+.hintline b { color: var(--green-ink); }
+#typed { width: 100%; border: 2px solid var(--line); border-radius: 18px; padding: 14px 16px; font: 700 20px/1.4 var(--font); color: var(--ink); resize: none; background: var(--bg); transition: border-color .15s; }
+#typed:focus { outline: none; border-color: var(--green); }
+#typed:disabled { background: var(--soft); color: var(--gray); }
+#typed.shake { animation: shake .3s; border-color: var(--red); }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.hintbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hintbar span { color: var(--gray); font-size: 14px; font-weight: 500; }
+.fb { min-height: 0; }
+.fb.no { border-radius: 16px; background: var(--red-soft); padding: 12px 14px; }
+.fb p { margin: 0 0 4px; font-weight: 800; font-size: 18px; }
+.fb span { color: var(--gray); font-size: 14px; font-weight: 500; }
+.okw { color: var(--green-ink); }
+.badw { color: var(--red); text-decoration: underline; text-underline-offset: 4px; }
+.tabs { display: flex; gap: 22px; }
+.tabs a { color: var(--gray) !important; font-weight: 700; font-size: 15px; text-decoration: none; padding-block: 4px; border-bottom: 2px solid transparent; }
+.tabs a[aria-current="page"] { color: var(--ink) !important; border-bottom-color: var(--green); }
+.top .mtab { display: none; }
+@media (max-width: 640px) {
+  .top .tabs { display: none; }
+  .top .mtab { display: flex; margin: 0; gap: 22px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); }
+  .mtab a { color: var(--gray); font-weight: 700; font-size: 15px; text-decoration: none; padding: 10px 0 9px; border-bottom: 2px solid transparent; }
+  .mtab a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--green); }
+}
+.grades { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 22px; max-width: 460px; }
+.grades button { border: 2px solid var(--line); background: var(--bg); border-radius: 16px; padding: 14px 4px; font-weight: 800; font-size: 17px; transition: border-color .15s, background .15s; }
+.grades button:hover { border-color: var(--ink); }
+.grades button[aria-pressed="true"] { border-color: var(--green); background: var(--mint); color: var(--green-deep); }
+.lv-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .lv-meta { grid-template-columns: minmax(0, 1fr); } }
+.paper-wrap { position: relative; padding: 10px 6px 26px; }
+.paper-wrap::before { content: ""; position: absolute; inset: 22px 0 12px 18px; border-radius: 18px; background: var(--mint); transform: rotate(3deg); }
+.paper { position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 16px; transform: rotate(-1.2deg); box-shadow: 0 18px 40px -24px rgba(10,122,75,.35); }
+.pp-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 12px; border-bottom: 2px solid var(--ink); }
+.pp-head b { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.pp-head span { font-size: 12px; font-weight: 700; color: var(--gray); }
+.pp-q { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px dashed var(--line); }
+.pp-q:last-child { border-bottom: 0; padding-bottom: 0; }
+.pp-q .area { align-self: flex-start; }
+.pp-q p { margin: 0; font-weight: 700; font-size: 15px; line-height: 1.5; color: var(--ink); }
+.pp-q .pp-passage { font-weight: 500; font-size: 13.5px; color: var(--gray); background: var(--soft); border-radius: 10px; padding: 10px 12px; }
+.pp-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.pp-opts span { border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; color: var(--gray); }
+.pp-echo { position: absolute; right: -14px; bottom: -10px; height: 170px; pointer-events: none; }
+@media (max-width: 640px) { .pp-echo { height: 118px; } .paper { padding: 18px; } }
+.lv-side { border-radius: 24px; background: var(--soft); padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.lv-side b { font-size: 16px; }
+.lv-side ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.lv-side li { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; font-size: 15px; }
+.lv-side li span { color: var(--gray); font-weight: 500; }
+.area { align-self: flex-start; font-size: 13px; font-weight: 800; color: var(--green-deep); background: var(--mint); border-radius: 999px; padding: 4px 10px; }
+.passage { border-radius: 20px; background: var(--soft); padding: 18px 20px; font-size: 16.5px; line-height: 1.75; font-weight: 500; }
+.passage p { margin: 0; }
+.passage .dlg { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+.passage .dlg b { color: var(--green-ink); }
+.lq { margin: 0; font-weight: 800; font-size: 19px; line-height: 1.5; letter-spacing: -0.01em; }
+.lq u { text-decoration-color: var(--green); text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; border: 2px solid var(--line); border-radius: 16px; background: var(--bg); padding: 14px 16px; font-weight: 700; font-size: 16.5px; line-height: 1.45; transition: border-color .15s, background .15s; }
+.opt:hover { border-color: var(--ink); }
+.opt[aria-pressed="true"] { border-color: var(--green); background: var(--mint); color: var(--green-deep); }
+.lvband { text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.lvband .big { font-size: 52px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.lvband .big em { font-style: normal; color: var(--green-ink); }
+.lvband .lbl2 { align-self: center; background: var(--ink); color: #fff; border-radius: 999px; padding: 7px 16px; font-weight: 800; font-size: 15px; }
+.lvband p { margin: 4px 0 0; color: var(--gray); line-height: 1.6; }
+.bars { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; }
+.bars div { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; font-weight: 800; font-size: 14px; }
+.bars i { display: block; height: 8px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+.bars i s { display: block; height: 100%; background: var(--green); border-radius: 99px; }
+.bars span:last-child { text-align: right; color: var(--gray); font-variant-numeric: tabular-nums; }
+.review { border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.review .rq { font-weight: 700; font-size: 15px; line-height: 1.5; }
+.review .ra { font-size: 14px; font-weight: 700; }
+.review .ra .mine { color: var(--red); text-decoration: line-through; margin-right: 8px; }
+.review .ra .right { color: var(--green-ink); }
+.review .why { color: var(--gray); font-size: 14px; line-height: 1.6; font-weight: 500; }
+.bench { margin: 12px 0 0; color: var(--gray); font-size: 14px; font-weight: 500; line-height: 1.6; }
+.bench b { color: var(--green-deep); margin-right: 6px; }
+.bench.c { margin: 0; text-align: center; font-size: 13px; }
+.perks { margin-top: 6px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.14); display: flex; flex-direction: column; gap: 8px; }
+.perks span { color: #5BE3A4; font-size: 13px; font-weight: 800; }
+.perks ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.perks li { color: #fff; font-size: 14px; font-weight: 700; padding-left: 22px; position: relative; }
+.perks li::before { content: ""; position: absolute; left: 2px; top: 4px; width: 10px; height: 6px; border-left: 2.5px solid #5BE3A4; border-bottom: 2.5px solid #5BE3A4; transform: rotate(-45deg); }
+.sheet-perks { font-size: 13px !important; font-weight: 700; color: var(--green-deep) !important; }
+.wgr { margin: 22px 0 4px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.more { border-radius: 22px; background: var(--mint); padding: 20px; display: flex; flex-direction: column; gap: 8px; text-align: center; }
+.more b { font-size: 19px; font-weight: 800; color: var(--green-deep); }
+.more p { margin: 0; color: var(--gray); font-size: 15px; line-height: 1.6; }
+.more .btn { margin-top: 4px; }
+.flow-note b { color: var(--ink); font-weight: 700; margin-right: 4px; }
+.share { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.share .btn { padding: 13px 10px; font-size: 15px; }
+.copybox { display: flex; gap: 8px; }
+.copybox input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: 500 14px var(--font); color: var(--ink); background: var(--soft); }
+.toast { text-align: center; font-size: 14px; font-weight: 700; color: var(--green-deep); min-height: 20px; margin: 0; }
+.shot img { width: 100%; border-radius: 18px; border: 1px solid var(--line); display: block; }
+.shot p { margin: 0; color: var(--gray); font-size: 14px; text-align: center; }
+.shared-head { text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.shared-head .eyebrow { margin: 0; }
+.shared-head h1 { font-size: clamp(26px, 6vw, 34px); }
+.time { margin: 10px 0 0; font-size: 15px; color: var(--gray); }
+.time b { color: var(--ink); font-weight: 700; }
+.next { border-radius: 22px; background: linear-gradient(160deg, #FFF6D6, var(--mint)); padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 8px; text-align: center; align-items: center; }
+.next-badge { background: #FFC93C; color: #5A3D00; font-weight: 800; font-size: 13px; border-radius: 999px; padding: 4px 12px; }
+.next b { font-size: 22px; font-weight: 800; color: var(--ink); }
+.next p { margin: 0; color: var(--ink); font-size: 15.5px; line-height: 1.6; }
+.next .btn { margin-top: 6px; }
+.more.trial .btn { margin-top: 6px; }
+.trial-sub { font-weight: 800; color: var(--green-deep) !important; font-size: 15px !important; }
+.note { color: var(--faint); font-size: 13px; line-height: 1.6; text-align: center; margin: 0; }
+footer { border-top: 1px solid var(--line); }
+footer .wide { padding-block: 24px 40px; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; color: var(--faint); font-size: 13px; }
+footer img { height: 14px; opacity: .55; }
+footer a { color: var(--gray); text-decoration: none; font-weight: 700; }
+/* 개편: 상단 띠 제거 → 고정 헤더, 제품 미리보기 히어로, 진행 흐름, 크게 보이는 무료체험 영역 */
+body::before { background: var(--bg); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: rgba(255,255,255,.94); backdrop-filter: blur(8px); }
+.btn.big { padding: 17px 28px; font-size: 18px; box-shadow: 0 8px 20px -10px rgba(10,122,75,.55); }
+.textlink { color: var(--green-deep); font-weight: 800; font-size: 16px; text-decoration: none; padding: 8px 4px; }
+.textlink:hover { text-decoration: underline; text-underline-offset: 4px; }
+.trust { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 18px 0 0; color: var(--gray); font-size: 14px; font-weight: 700; }
+.trust span { display: inline-flex; align-items: center; gap: 6px; }
+.trust span::before { content: ""; width: 9px; height: 5px; border-left: 2.5px solid var(--green); border-bottom: 2.5px solid var(--green); transform: rotate(-45deg) translateY(-2px); }
+.hero { padding-block: 56px 48px; }
+.preview { position: relative; justify-self: center; width: min(400px, 100%); padding: 22px 22px 70px; }
+.preview::before { content: ""; position: absolute; inset: 0 0 30px; border-radius: 36px; background: var(--mint); z-index: -1; }
+.pv-card { background: var(--bg); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 18px 40px -22px rgba(10,122,75,.45), 0 0 0 1px var(--line); }
+.pv-top { display: flex; gap: 6px; }
+.pv-chip { font-size: 12px; font-weight: 800; color: #fff; background: var(--green); border-radius: 999px; padding: 4px 10px; }
+.pv-chip.off { color: var(--faint); background: var(--soft); }
+.pv-card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 16px; display: block; }
+.pv-q { margin: 0; text-align: center; font-weight: 800; font-size: 18px; }
+.pv-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pv-opts span { border: 2px solid var(--line); border-radius: 12px; padding: 9px 2px; text-align: center; font-weight: 800; font-size: 14px; }
+.pv-opts span.ok { border-color: var(--green); background: var(--mint); color: var(--green-deep); }
+.pv-sent { position: absolute; left: 0; bottom: 8px; background: var(--ink); color: #fff; border-radius: 18px; padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 14px 30px -16px rgba(22,24,27,.6); }
+.pv-sent span { font-weight: 800; font-size: 17px; }
+.pv-sent b { color: #5BE3A4; }
+.pv-sent small { color: #C9CDD2; font-size: 12.5px; font-weight: 500; }
+.pv-echo { position: absolute; right: 4px; bottom: 0; height: 150px; width: auto; }
+.flow { padding-block: 8px 64px; display: flex; flex-direction: column; gap: 20px; }
+.flow h2 { margin: 0; font-size: clamp(22px, 3vw, 28px); font-weight: 800; letter-spacing: -0.03em; }
+.flow-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; position: relative; }
+.fl { display: flex; flex-direction: column; gap: 8px; min-width: 0; position: relative; }
+.fl:not(:last-child)::after { content: "→"; position: absolute; right: -24px; top: 54px; color: var(--faint); font-weight: 800; font-size: 18px; }
+.fl b { font-size: 17px; margin-top: 6px; }
+.fl > span { color: var(--gray); font-size: 15px; line-height: 1.6; font-weight: 500; }
+.fl-pic, .fl-hint, .fl-play { height: 124px; border-radius: 20px; margin: 0; }
+.fl-pic { width: 100%; object-fit: cover; display: block; }
+.fl-hint, .fl-play { background: var(--soft); display: flex; align-items: center; justify-content: center; padding: 12px; text-align: center; font-weight: 800; font-size: 19px; letter-spacing: .02em; }
+.fl-hint i { font-style: normal; color: var(--faint); letter-spacing: .12em; }
+.fl-hint b { color: var(--green-ink); font-size: inherit; margin: 0; }
+.fl-play { gap: 10px; font-size: 16px; color: var(--ink); }
+.fl-play svg { width: 34px; height: 34px; flex: none; color: #fff; background: var(--green); border-radius: 50%; padding: 8px; }
+.flow-note { margin: 0; color: var(--faint); font-size: 13px; font-weight: 700; }
+#lintro .proof { padding-block: 8px 64px; }
+#lintro .proof div { border: 0; background: var(--soft); }
+.offer { background: var(--mint); overflow: hidden; }
+.offer-in { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding-block: 48px 0; }
+.offer-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-bottom: 48px; }
+.offer-txt .eyebrow { margin: 0; color: var(--green-deep); }
+.offer h2 { margin: 0; font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.25; text-wrap: balance; }
+.offer-txt > p:not(.eyebrow) { margin: 0 0 8px; color: var(--green-deep); font-size: 16px; line-height: 1.6; font-weight: 500; max-width: 40ch; }
+.offer-in > img { height: 230px; width: auto; display: block; }
+body:has(#check:not([hidden])) .offer, body:has(#ltest:not([hidden])) .offer { display: none; }
+.sns .wide { padding-block: 48px; }
+.score .cheer { margin: 14px 0 0; font-size: 19px; font-weight: 800; color: var(--ink); line-height: 1.5; text-wrap: balance; }
+.score .cheer + p { margin-top: 6px; }
+.review .ra .mine { color: var(--gray); text-decoration: none; }
+.review .ra .mine::before { content: "고른 답 "; font-weight: 500; }
+.fb.no { background: var(--soft); }
+.badw { color: #D9573F; }
+@media (max-width: 760px) {
+  .hero { padding-block: 28px 32px; }
+  .preview { width: min(340px, 100%); }
+  .pv-echo { height: 116px; }
+  .flow-row { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .fl:not(:last-child)::after { content: none; }
+  .fl { display: grid; grid-template-columns: 112px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 14px; row-gap: 2px; }
+  .fl-pic, .fl-hint, .fl-play { grid-row: span 2; height: 96px; font-size: 13px; border-radius: 16px; }
+  .fl-play { flex-direction: column; font-size: 11.5px; gap: 6px; }
+  .fl b { margin-top: 4px; font-size: 16px; }
+  .fl > span { font-size: 14px; }
+  .offer-in { grid-template-columns: minmax(0, 1fr); padding-block: 36px 0; }
+  .offer-txt { padding-bottom: 0; }
+  .offer-txt .btn { width: 100%; }
+  .offer-in > img { height: 150px; justify-self: end; margin-top: -24px; }
+  .hero .actions .textlink { width: 100%; text-align: center; }
+  .trust { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+.score .cheer, .lvband .cheer { word-break: keep-all; text-wrap: balance; }
+.score .cheer2 { margin: 8px 0 0; color: var(--gray); font-size: 15px; line-height: 1.6; word-break: keep-all; text-wrap: balance; }
+.lvband .cheer { margin: 12px 0 0; font-size: 17px; font-weight: 700; line-height: 1.6; color: var(--ink); }
+.sheet.cta2 { gap: 14px; padding-top: 30px; }
+.sheet.cta2 .score-chip { align-self: center; margin: 0; background: var(--mint); color: var(--green-deep); font-weight: 800; font-size: 13px; border-radius: 999px; padding: 6px 14px; }
+.sheet.cta2 h2:focus { outline: none; }
+.sheet.cta2 h2 { font-size: 25px; line-height: 1.35; word-break: keep-all; }
+.sheet.cta2 .gift2 { margin: 0; color: var(--gray); font-size: 15px; line-height: 1.6; }
+.sheet.cta2 .gift2 b { color: var(--green-deep); font-weight: 800; }
+.sheet.cta2 .btn.big { min-height: 60px; font-size: 19px; font-weight: 800; box-shadow: 0 10px 24px -10px rgba(0,180,100,.55); margin-top: 4px; }
+.sheet.cta2 .close { font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; padding: 6px; outline: none; }
+.sheet.cta2 .close:focus-visible { outline: 2px solid var(--green); border-radius: 8px; }
+.build { min-height: 64px; border: 2px dashed var(--line); border-radius: 18px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; margin: 14px 0 10px; background: var(--bg); }
+.build:empty::before { content: "아래 단어를 순서대로 눌러요"; color: var(--gray); font-size: 14px; align-self: center; margin: 0 auto; }
+.build.ok { border-color: var(--green); border-style: solid; background: var(--mint); }
+.build.no { border-color: #E5484D; border-style: solid; }
+.pool { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
+.wt { border: 2px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 17px; font-weight: 700; border-radius: 12px; padding: 9px 14px; cursor: pointer; transition: transform .12s, background .15s; }
+.wt:active { transform: scale(.95); }
+.pool .wt.used { visibility: hidden; }
+.build .wt { border-color: var(--green); background: var(--mint); color: var(--green-deep); }
+.build .wt.bad { border-color: #E5484D; background: #FFF0F0; color: #C4262C; }
+.next.merged .trial-sub { margin: 8px 0 4px; }
+.next.merged #nextg { margin-top: 10px; }
+</style>
+
+<header class="top"><div class="wide">
+  <a class="brand" href="#" id="home"><img src="img/logo_dark.png" alt="리얼 아카데미"><span id="brandname">영단어 체크</span></a>
+  <nav><a class="cta" href="https://www.realacademy.co.kr/promotion?utm_source=wordcheck&amp;utm_medium=web&amp;utm_campaign=word_check&amp;utm_content=header" target="_blank" rel="noopener">무료체험<span class="long"> 시작하기</span></a></nav>
+</div>
+</header>
+
+<main>
+  <section id="intro">
+    <div class="wide hero">
+      <div>
+        <p class="eyebrow">초등 1~6학년 영단어 체크</p>
+        <h1>우리 아이, 이 영단어 알까요?</h1>
+        <p class="lead">그림과 문장으로 영어 단어를 맞혀 봐요.</p>
+        <p class="time"><b>10단어</b> 3분 내외 · 이어서 <b>10단어</b>는 문장까지</p>
+        <div class="grades wgr" role="group" aria-label="학년 선택"><button data-wg="12">1·2학년</button><button data-wg="34">3·4학년</button><button data-wg="56">5·6학년</button></div>
+        <div class="actions"><button class="btn big" id="go" disabled>학년을 골라 주세요</button></div>
+        <p class="trust"><span>무료</span><span>회원가입 없이</span><span>아이와 함께 풀기</span></p>
+      </div>
+      <div class="preview" aria-hidden="true">
+        <div class="pv-card">
+          <div class="pv-top"><span class="pv-chip">단어 찾기</span><span class="pv-chip off">문장 쓰기</span></div>
+          <img src="img/umbrella.jpg" alt="">
+          <p class="pv-q">비 오는 날 아이가 들고 있는 이것, 영어로 뭐라고 할까요?</p>
+          <div class="pv-opts"><span>raincoat</span><span class="ok">umbrella</span><span>rainbow</span></div>
+        </div>
+        <div class="pv-sent"><span>Take your <b>umbrella</b>.</span><small>우산 챙겨 가.</small></div>
+        <img class="pv-echo" src="img/echo_wave.png" alt="">
+      </div>
+    </div>
+    <div class="wide flow">
+      <h2>10단어, 이렇게 체크해요</h2>
+      <div class="flow-row">
+        <div class="fl"><img class="fl-pic" src="img/library.jpg" alt="도서관 그림"><b>그림 보고 단어 고르기</b><span>소리와 철자가 비슷한 보기 사이에서 골라요.</span></div>
+        <div class="fl"><p class="fl-hint">L<i>___</i>'s g<i>_</i> t<i>_</i> t<i>__</i> <b>library</b>.</p><b>이어서 10단어는 문장까지</b><span>단어 조각을 골라 문장을 완성해요.</span></div>
+        <div class="fl"><p class="fl-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Let's go to the library.</p><b>듣고 따라 말하기</b><span>원어민 발음으로 단어와 문장을 듣고 소리 내어 따라 해요.</span></div>
+      </div>
+      <p class="flow-note"><b>단어 출처</b> 교육부 2022 개정 교육과정 초등 권장 800단어 · <b>학년 기준</b> 교육과정 학년군 성취기준</p>
+    </div>
+  </section>
+  <section id="lintro" hidden>
+    <div class="wide hero">
+      <div>
+        <p class="eyebrow">초등 1~6학년 레벨테스트</p>
+        <h1>대치동 학원 기준<br>우리 아이의 레벨은?</h1>
+        <p class="lead">대치동 학원 입학 테스트처럼 어휘·문법·독해 10문제를 풀어요.</p>
+        <p class="time"><b>소요시간</b> : 10분 내외</p>
+        <div class="grades" role="group" aria-label="학년 선택"><button data-g="2">1·2학년</button><button data-g="4">3·4학년</button><button data-g="6">5·6학년</button></div>
+        <p class="bench" id="lbench">학년마다 대치동 레벨 기준에 맞춘 10문제예요.</p>
+        <div class="actions"><button class="btn" id="lgo" disabled>학년을 골라 주세요</button><span class="basis">어휘 3 · 문법 4 · 독해 3</span></div>
+      </div>
+      <div class="paper-wrap" aria-label="예시 문제">
+        <div class="paper">
+          <div class="pp-head"><b>대치동 레벨테스트</b><span>예시 문제</span></div>
+          <div class="pp-q"><span class="area">어휘</span><p>It was so ______ that we stayed inside all day.</p><div class="pp-opts"><span>cold</span><span>kind</span><span>brave</span><span>tall</span></div></div>
+          <div class="pp-q"><span class="area">문법</span><p>She ______ to the library every Saturday.</p><div class="pp-opts"><span>goes</span><span>go</span><span>going</span><span>gone</span></div></div>
+          <div class="pp-q"><span class="area">독해</span><p class="pp-passage">Penguins cannot fly, but they are excellent swimmers. They use their wings like flippers…</p><p>What is the passage mainly about?</p></div>
+        </div>
+        <img class="pp-echo" src="img/echo_think.png" alt="">
+      </div>
+    </div>
+  </section>
+  <section class="narrow check" id="ltest" hidden><div class="card" id="lcard" aria-live="polite"></div><div class="dock" id="ldock" hidden></div></section>
+  <section class="narrow check" id="check" hidden><div class="card" id="card" aria-live="polite"></div><div class="dock" id="dock" hidden></div></section>
+  <section class="narrow check" id="shared" hidden><div class="card" id="scard"></div></section>
+</main>
+
+<section class="offer" aria-labelledby="offer-t"><div class="wide offer-in">
+  <div class="offer-txt">
+    <p class="eyebrow">리얼 아카데미 무료체험</p>
+    <h2 id="offer-t">무료체험 신청하면<br>초등필수 영단어 100% 증정</h2>
+    <p>집에서 수강하는 대치동 영어학원. 오늘 체크한 단어부터 수업에서 말하고 써 봐요.</p>
+    <a class="btn big" href="https://www.realacademy.co.kr/promotion?utm_source=wordcheck&amp;utm_medium=web&amp;utm_campaign=word_check&amp;utm_content=offer" target="_blank" rel="noopener">무료체험 신청하기</a>
+  </div>
+  <img src="img/echo_party.png" alt="">
+</div></section>
+
+<div class="sns"><div class="wide">
+  <a class="sns-card sns-yt" href="https://www.youtube.com/@realacademy_official" target="_blank" rel="noopener"><span class="sns-txt"><span class="sns-lbl">리얼 아카데미 공식 유튜브</span><span class="sns-ttl">더 많은 리얼 아카데미 소식은<br>유튜브 채널에서 만나보세요</span><span class="sns-btn">유튜브 바로가기</span></span><img src="img/echo_yt.png" alt=""></a>
+  <a class="sns-card sns-ig" href="https://www.instagram.com/realacademy_official/" target="_blank" rel="noopener"><span class="sns-txt"><span class="sns-lbl">리얼 아카데미 공식 인스타그램</span><span class="sns-ttl">아이와 함께하는 일상,<br>알아두면 유용한 이야기</span><span class="sns-btn">인스타 바로가기</span></span><img src="img/echo_ig.png" alt=""></a>
+</div></div>
+<footer><div class="wide">
+  <img src="img/logo_dark.png" alt="리얼 아카데미"><span>집에서 수강하는 대치동 영어학원</span>
+  <a href="https://blog.realacademy.co.kr" target="_blank" rel="noopener">블로그</a>
+  <a href="https://www.instagram.com/realacademy_official/" target="_blank" rel="noopener">인스타그램</a>
+  <a href="https://www.youtube.com/@realacademy_official" target="_blank" rel="noopener">유튜브</a>
+</div></footer>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle" hidden></div>
+
+<script>
+// 공유 링크로 들어온 방문은 utm_medium=share로 구분한다(이 페이지 안에서 이동해도 유지)
+// 영단어 체크와 레벨테스트는 같은 소스에서 두 페이지로 나눠 배포한다(MODE). 자체 도메인 배포 때 PAGES 주소만 바꾼다
+const MODE = "word";
+const PAGES = { word: "https://claude.ai/artifact/PAZPvGUPxpeZHA3yym1jFY", level: "https://claude.ai/artifact/NgkrmQC6WmbnBdXadha4zP" };
+let LAND = "https://www.realacademy.co.kr/promotion?utm_source=wordcheck&utm_medium=web&utm_campaign=word_check";
+const WORDS = [
+  ["umbrella", "우산", "Take your umbrella.", "우산 챙겨 가요."],
+  ["kitchen", "부엌", "Mom is in the kitchen.", "엄마는 부엌에 계세요."],
+  ["library", "도서관", "Let's go to the library.", "도서관에 가요."],
+  ["breakfast", "아침 식사", "I eat breakfast at seven.", "나는 7시에 아침을 먹어요."],
+  ["jacket", "재킷", "Put on your jacket.", "재킷을 입어요."],
+  ["homework", "숙제", "I do my homework.", "나는 숙제를 해요."],
+  ["hospital", "병원", "Where is the hospital?", "병원이 어디예요?"],
+  ["scissors", "가위", "Can I use your scissors?", "가위 좀 써도 돼요?"],
+  ["vegetable", "채소", "Eat your vegetables.", "채소를 먹어요."],
+  ["watermelon", "수박", "How much is the watermelon?", "수박은 얼마예요?"]
+];
+// 학년별 20단어: 2022 개정 교육과정 초등 권장 800단어(별표 3) 안. 1·2학년 그림 명사, 3·4학년 그림+문장 빈칸(기분·동작·날씨·위치·묘사), 5·6학년 그림 없는 문장 빈칸(추상어)
+const WG = {"2": [["pig", "돼지", "The pig is pink.", "돼지는 분홍색이에요."], ["ball", "공", "Kick the ball.", "공을 차요."], ["bed", "침대", "Go to bed.", "자러 가요."], ["bird", "새", "I see a bird.", "새가 보여요."], ["book", "책", "Open your book.", "책을 펴요."], ["bus", "버스", "The bus is yellow.", "버스는 노란색이에요."], ["cake", "케이크", "I like cake!", "나는 케이크가 좋아요!"], ["car", "자동차", "I see a red car.", "빨간 자동차가 보여요."], ["cat", "고양이", "I have a cat.", "나는 고양이가 있어요."], ["chair", "의자", "Sit on the chair, please.", "의자에 앉으세요."], ["cow", "소", "Look at the cow.", "소를 봐요."], ["dog", "개, 강아지", "This is my dog.", "이건 우리 강아지예요."], ["duck", "오리", "The duck is on the water.", "오리가 물 위에 있어요."], ["egg", "달걀", "I like eggs.", "나는 달걀을 좋아해요."], ["hat", "모자", "Put on your hat.", "모자를 써요."], ["horse", "말", "The horse is big.", "말은 커요."], ["milk", "우유", "I drink milk.", "나는 우유를 마셔요."], ["sun", "해", "The sun is hot.", "해가 뜨거워요."], ["tree", "나무", "The tree is green.", "나무는 초록색이에요."], ["door", "문", "Close the door.", "문을 닫아요."]], "4": [["tired", "피곤한", "I'm tired after the race.", "달리기를 하고 나서 피곤해요."], ["sleepy", "졸린", "I'm sleepy at night.", "나는 밤에 졸려요."], ["thirsty", "목마른", "The dog is thirsty.", "강아지가 목말라요."], ["cold", "추운", "I'm cold in the snow.", "눈 속에 있으니 추워요."], ["swim", "헤엄치다", "Fish can swim.", "물고기는 헤엄칠 수 있어요."], ["hurry", "서두르다", "We hurry to school.", "우리는 학교에 서둘러 가요."], ["climb", "오르다", "The monkey can climb the tree.", "원숭이는 나무에 올라갈 수 있어요."], ["dance", "춤추다", "We dance to the music.", "우리는 음악에 맞춰 춤을 춰요."], ["draw", "그리다", "I draw a cat on paper.", "나는 종이에 고양이를 그려요."], ["rainy", "비 오는", "It's rainy today.", "오늘은 비가 와요."], ["afraid", "무서워하는", "The boy is afraid of the big dog.", "남자아이가 큰 개를 무서워해요."], ["windy", "바람 부는", "It's windy today.", "오늘은 바람이 불어요."], ["cloudy", "흐린", "The sky is cloudy.", "하늘이 흐려요."], ["winter", "겨울", "We play in the snow in winter.", "우리는 겨울에 눈 속에서 놀아요."], ["heavy", "무거운", "The box is heavy.", "상자가 무거워요."], ["fast", "빠르게", "The rabbit runs fast.", "토끼가 빠르게 달려요."], ["tall", "키가 큰", "My dad is tall.", "우리 아빠는 키가 커요."], ["long", "긴", "The train is long.", "기차가 길어요."], ["under", "~ 아래에", "The cat is under the table.", "고양이가 탁자 아래에 있어요."], ["behind", "~ 뒤에", "The boy is behind the tree.", "남자아이가 나무 뒤에 있어요."]], "6": [["culture", "문화", "Kimchi is a big part of Korean culture.", "김치는 한국 문화의 큰 부분이에요."], ["festival", "축제", "Our town has a big music festival every summer.", "우리 동네는 여름마다 큰 음악 축제를 해요."], ["history", "역사", "We learn about old kings in history class.", "우리는 역사 시간에 옛날 왕들에 대해 배워요."], ["future", "미래", "In the future, I want to be a pilot.", "미래에 나는 조종사가 되고 싶어요."], ["nature", "자연", "We should keep nature clean.", "우리는 자연을 깨끗하게 지켜야 해요."], ["introduce", "소개하다", "I want to introduce my new friend.", "내 새 친구를 소개하고 싶어요."], ["memory", "기억, 추억", "I have a happy memory of that trip.", "나는 그 여행에 대한 행복한 추억이 있어요."], ["habit", "습관", "Brushing your teeth is a good habit.", "이를 닦는 것은 좋은 습관이에요."], ["honest", "정직한", "He is honest, so he never tells lies.", "그는 정직해서 절대 거짓말을 하지 않아요."], ["brave", "용감한", "She was brave, so she saved the cat.", "그녀는 용감해서 고양이를 구했어요."], ["worry", "걱정하다", "Don't worry about the test.", "시험 걱정은 하지 마세요."], ["agree", "동의하다", "I agree with you.", "나는 네 말에 동의해요."], ["idea", "생각, 아이디어", "I have a good idea for the party.", "나는 파티에 대한 좋은 생각이 있어요."], ["energy", "에너지, 힘", "Breakfast gives me energy.", "아침밥은 나에게 힘을 줘요."], ["exercise", "운동하다", "I exercise every morning to be strong.", "나는 튼튼해지려고 매일 아침 운동해요."], ["collect", "모으다", "My brother likes to collect toy cars.", "우리 형은 장난감 자동차 모으는 걸 좋아해요."], ["borrow", "빌리다", "I want to borrow a book from the library.", "나는 도서관에서 책을 빌리고 싶어요."], ["invite", "초대하다", "I will invite my friends to my party.", "나는 내 파티에 친구들을 초대할 거예요."], ["doctor", "의사", "A doctor helps sick people.", "의사는 아픈 사람들을 도와줘요."], ["hospital", "병원", "I was sick, so I went to the hospital.", "아파서 병원에 갔어요."]]};
+const WTR = {"pig": ["big", "bag"], "ball": ["bell", "doll"], "bed": ["bad", "red"], "bird": ["bike", "bear"], "book": ["look", "cook"], "bus": ["but", "box"], "cake": ["lake", "make"], "car": ["card", "cap"], "cat": ["cap", "cut"], "chair": ["hair", "child"], "cow": ["coat", "cup"], "dog": ["doll", "day"], "duck": ["desk", "truck"], "egg": ["leg", "ear"], "hat": ["hot", "bat"], "horse": ["house", "nose"], "milk": ["mail", "walk"], "sun": ["run", "sand"], "tree": ["three", "train"], "door": ["four", "food"], "tired": ["tried", "tire"], "sleepy": ["sleep", "slow"], "thirsty": ["thirty", "third"], "cold": ["hot", "gold"], "swim": ["sing", "skate"], "hurry": ["happy", "hot"], "climb": ["clean", "close"], "dance": ["drive", "wash"], "draw": ["drink", "drop"], "rainy": ["sunny", "rain"], "afraid": ["after", "short"], "windy": ["window", "wind"], "cloudy": ["cloud", "clock"], "winter": ["summer", "window"], "heavy": ["light", "happy"], "fast": ["slow", "fat"], "tall": ["small", "tail"], "long": ["short", "song"], "under": ["on", "in"], "behind": ["on", "inside"], "culture": ["weather", "money"], "festival": ["kitchen", "farm"], "history": ["math", "science"], "future": ["forest", "river"], "nature": ["news", "number"], "introduce": ["give", "sell"], "memory": ["money", "market"], "habit": ["heart", "hand"], "honest": ["short", "sad"], "brave": ["afraid", "wet"], "worry": ["wash", "wear"], "agree": ["add", "ask"], "idea": ["ear", "ice"], "energy": ["end", "east"], "exercise": ["cry", "lie"], "collect": ["cook", "call"], "borrow": ["burn", "bake"], "invite": ["paint", "push"], "doctor": ["singer", "driver"], "hospital": ["beach", "zoo"]};
+// 단어마다 소리·철자·뜻이 비슷한 함정 보기
+const TRAPS = {
+  umbrella: [["rainbow", "raincoat"], "raincoat"],
+  kitchen: [["chicken", "kitten"], "chicken"],
+  library: [["bookstore", "liberty"], "bookstore"],
+  breakfast: [["lunch", "bracelet"], "lunch"],
+  jacket: [["pocket", "rocket"], "pocket"],
+  homework: [["housework", "homeroom"], "housework"],
+  hospital: [["hotel", "hostel"], "hotel"],
+  scissors: [["sisters", "stickers"], "stickers"],
+  vegetable: [["vitamin", "table"], "fruits"],
+  watermelon: [["waterfall", "wallet"], "waterfall"]
+};
+for (const [w, t] of Object.entries(WTR)) TRAPS[w] = [t];
+const ALLW = Object.values(WG).flat();
+// 학년 묶음: 1·2학년(2학년 기준), 3·4학년(4학년 기준), 5·6학년(6학년 기준)
+const BN = { 12: "1·2학년", 34: "3·4학년", 56: "5·6학년", 2: "1·2학년", 4: "3·4학년", 6: "5·6학년" };
+const WB = { 12: 2, 34: 4, 56: 6 }, NEXT = { 12: 34, 34: 56, 2: 4, 4: 6 };
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const SPK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+const CHECK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+let clip = null;
+// 문장 음성 파일: 기본은 s_단어, 다른 버전에서 문장이 바뀐 단어만 SFILE로 따로 지정
+const SFILE = {"bird": "c_bird", "bus": "c_bus", "cow": "c_cow", "duck": "c_duck", "horse": "c_horse", "tree": "c_tree", "tired": "c_tired", "sleepy": "c_sleepy", "thirsty": "c_thirsty", "cold": "c_cold", "swim": "c_swim", "hurry": "c_hurry", "climb": "c_climb", "dance": "c_dance", "draw": "c_draw", "rainy": "c_rainy", "afraid": "c_afraid", "windy": "c_windy", "cloudy": "c_cloudy", "winter": "c_winter", "heavy": "c_heavy", "fast": "c_fast", "tall": "c_tall", "long": "c_long", "under": "c_under", "behind": "c_behind", "culture": "c_culture", "festival": "c_festival", "history": "c_history", "future": "c_future", "nature": "c_nature", "introduce": "c_introduce", "honest": "c_honest", "brave": "c_brave", "worry": "c_worry", "agree": "c_agree", "idea": "c_idea", "energy": "c_energy", "exercise": "c_exercise", "collect": "c_collect", "borrow": "c_borrow", "invite": "c_invite", "doctor": "c_doctor", "hospital": "c_hospital", "pig": "b_pig"};
+const sfile = w => SFILE[w] || "s_" + w;
+function play(file, text) { try { if (clip) clip.pause(); clip = new Audio(`audio/${file}.mp3`); clip.play().catch(() => tts(text)); } catch (e) { tts(text); } }
+function tts(text) { try { const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = .85; speechSynthesis.speak(u); } catch (e) {} }
+const sentHtml = (w, s) => esc(s).replace(new RegExp(w, "i"), m => `<b>${m}</b>`);
+
+// 한 단어 = 1단계 그림 보고 단어 고르기 → 2단계 문장 빈칸에 넣기 → 듣고 따라 말하기
+let quiz = [], i = 0, known = [], sentOk = [], step = "word", wg = 0, pool = [], round = 1, total = { k: 0, m: 0 };
+const bar = () => `<div class="progress"><div class="pbar"><i style="width:${(i + (step === "sent" ? .5 : 0)) / quiz.length * 100}%"></i></div><span>${round === 2 ? "추가 " : ""}${i + 1} / ${quiz.length}</span></div>
+  <div class="steps" aria-label="단계"><span class="${step === "word" ? "on" : "done"}">단어 찾기</span>${round === 2 ? `<span class="${step === "sent" ? "on" : ""}">문장 쓰기</span>` : ""}</div>`;
+function start(r = 1) {
+  if (r === 1) { pool = shuffle(WG[WB[wg]]); total = { k: 0, m: 0 }; }
+  round = r; quiz = pool.slice((r - 1) * 10, r * 10); i = 0; known = []; sentOk = [];
+  $("#intro").hidden = true; $("#check").hidden = false; window.scrollTo(0, 0); ask();
+}
+// 5·6학년: 그림 대신 문장 빈칸 + 우리말 문장(답한 뒤 공개)
+const NOPIC = () => WB[wg] === 6;
+const blankRe = w => new RegExp(`\\b${w}\\b`, "i");
+function blankCard([w, , s, sko], q = "빈칸에 들어갈 단어를 골라요.") {
+  return `<div class="fillq"><p class="blank-en">${esc(s).replace(blankRe(w), '<span class="gap">　</span>')}</p><p class="blank-ko" hidden>${esc(sko)}</p></div>
+    <p class="q">${q}</p>`;
+}
+// 3·4학년: 그림을 힌트로 문장 빈칸 채우기
+const PICBLANK = () => WB[wg] === 4;
+function dock(html) { const d = $("#dock"); d.innerHTML = html; d.hidden = !html; }
+function ask() {
+  step = "word"; dock("");
+  const [w] = quiz[i], opts = shuffle([w, ...TRAPS[w][0]]);
+  $("#card").innerHTML = `${bar()}
+    ${NOPIC() ? blankCard(quiz[i]) : PICBLANK() ? `<img class="pic" src="img/${w}.jpg" alt="문제 그림">${blankCard(quiz[i], "그림을 보고 빈칸에 들어갈 단어를 골라요.")}` : `<img class="pic" src="img/${w}.jpg" alt="문제 그림">
+    <p class="q">${QS[w] || "이 그림, 영어로 뭐라고 할까요?"}</p>`}
+    <div class="choices">${opts.map(o => `<button class="choice" data-o="${o}">${o}</button>`).join("")}</div>
+    <button class="idk" id="idk">모르겠어요</button><div id="ans"></div>`;
+  $("#card").querySelectorAll("[data-o]").forEach(b => b.onclick = () => answerWord(b.dataset.o));
+  $("#idk").onclick = () => answerWord(null);
+}
+function answerWord(pick) {
+  const [w, ko] = quiz[i], ok = pick === w;
+  if (ok) known.push(w);
+  $("#card").querySelectorAll("[data-o]").forEach(b => { b.disabled = true; if (b.dataset.o === w) b.classList.add("right"); else if (b.dataset.o === pick) b.classList.add("wrong"); });
+  $("#idk").hidden = true;
+  const gap = $("#card .gap"); if (gap) { gap.textContent = w; gap.classList.add("filled"); } const bko = $("#card .blank-ko"); if (bko) bko.hidden = false;
+  $("#ans").outerHTML = `<div class="answer ${ok ? "ok" : "no"}"><span class="tag">${ok ? "맞았어요" : "정답은 이 단어예요"}</span>
+    <div class="word">${esc(w)}<small>${esc(ko)}</small></div>
+    <div class="listen"><button class="chip" id="lw">${SPK}단어 듣기</button></div></div>`;
+  play(w, w);
+  $("#lw").onclick = () => play(w, w);
+  // 1차는 단어만, 2차(체험하기)부터 문장 쓰기까지
+  if (round === 1) { dock(`<button class="btn block" id="next">${i + 1 < quiz.length ? "다음 단어" : "결과 보기"}</button>`); $("#next").onclick = () => { i++; i < quiz.length ? ask() : result(); window.scrollTo({ top: 0 }); }; }
+  else { dock(`<button class="btn block" id="next">이 단어로 문장 쓰기</button>`); $("#next").onclick = askSentence; } $("#next").focus({ preventScroll: true });
+}
+// 2단계: 우리말을 보고 영어 문장을 직접 쓴다. 힌트는 누를 때마다 하나씩 더 열린다
+const QS = {"cat": "러그 위에 앉아 있는 이 동물, 영어로 뭐라고 할까요?", "dog": "마당 잔디에 앉아 있는 이 동물, 영어로 뭐라고 할까요?", "cake": "촛불이 켜진 이 음식, 영어로 뭐라고 할까요?", "egg": "둥지 안에 있는 이것, 영어로 뭐라고 할까요?", "bus": "길을 달리는 노란 탈것, 영어로 뭐라고 할까요?", "sun": "하늘에서 반짝이는 이것, 영어로 뭐라고 할까요?", "hat": "바닷가에 놓인 이 물건, 영어로 뭐라고 할까요?", "bed": "방 안에 있는 잠자는 가구, 영어로 뭐라고 할까요?", "apple": "식탁 위에 있는 빨간 과일, 영어로 뭐라고 할까요?", "ball": "축구장에 있는 이 물건, 영어로 뭐라고 할까요?", "book": "책상 위에 펼쳐진 이것, 영어로 뭐라고 할까요?", "bag": "복도에 놓인 이 물건, 영어로 뭐라고 할까요?", "car": "길을 달리는 빨간 탈것, 영어로 뭐라고 할까요?", "cow": "농장 풀밭에 서 있는 이 동물, 영어로 뭐라고 할까요?", "duck": "연못에서 헤엄치는 이 동물, 영어로 뭐라고 할까요?", "milk": "식탁 위 컵에 담긴 하얀 음료, 영어로 뭐라고 할까요?", "pen": "종이 위에 놓인 이 물건, 영어로 뭐라고 할까요?", "tree": "공원에 우뚝 서 있는 이것, 영어로 뭐라고 할까요?", "bird": "하늘을 나는 이 동물, 영어로 뭐라고 할까요?", "door": "집 앞에 있는 이것, 영어로 뭐라고 할까요?", "banana": "부엌에 있는 노란 과일, 영어로 뭐라고 할까요?", "chair": "앉을 때 쓰는 이 가구, 영어로 뭐라고 할까요?", "clock": "벽에 걸려 시간을 알려 주는 이것, 영어로 뭐라고 할까요?", "flower": "정원에 피어 있는 이것, 영어로 뭐라고 할까요?", "monkey": "나뭇가지에 매달린 이 동물, 영어로 뭐라고 할까요?", "pencil": "뾰족하게 깎인 노란 이것, 영어로 뭐라고 할까요?", "train": "철길을 달리는 이 탈것, 영어로 뭐라고 할까요?", "juice": "컵에 담긴 주황색 음료, 영어로 뭐라고 할까요?", "horse": "풀밭을 달리는 이 동물, 영어로 뭐라고 할까요?", "tiger": "바위 위에서 자는 이 동물, 영어로 뭐라고 할까요?", "robot": "놀이방에서 춤추는 이것, 영어로 뭐라고 할까요?", "piano": "건반을 눌러 치는 이 악기, 영어로 뭐라고 할까요?", "window": "밖이 보이는 유리 달린 이것, 영어로 뭐라고 할까요?", "chicken": "농장 마당에 있는 이 동물, 영어로 뭐라고 할까요?", "crayon": "아이가 색칠할 때 쓰는 이 물건, 영어로 뭐라고 할까요?", "shirt": "아이가 입고 있는 이 옷, 영어로 뭐라고 할까요?", "tomato": "텃밭에 열린 빨간 이것, 영어로 뭐라고 할까요?", "grape": "덩굴에 주렁주렁 열린 이 과일, 영어로 뭐라고 할까요?", "elephant": "코가 아주 긴 이 동물, 영어로 뭐라고 할까요?", "guitar": "줄을 튕겨 연주하는 이 악기, 영어로 뭐라고 할까요?", "rabbit": "당근을 먹는 이 동물, 영어로 뭐라고 할까요?", "bottle": "돗자리 위에 있는 물 담는 이 물건, 영어로 뭐라고 할까요?", "helmet": "아이가 머리에 쓰고 있는 물건, 영어로 뭐라고 할까요?", "sandwich": "접시 위에 있는 이 음식, 영어로 뭐라고 할까요?", "mountain": "꼭대기에 눈이 쌓인 이곳, 영어로 뭐라고 할까요?", "puppy": "꼬리를 쫓는 이 아기 동물, 영어로 뭐라고 할까요?", "cheese": "도마 위에 있는 구멍 난 노란 음식, 영어로 뭐라고 할까요?", "cloud": "하늘에 떠 있는 하얀 이것, 영어로 뭐라고 할까요?", "coat": "눈 오는 날 입는 이 옷, 영어로 뭐라고 할까요?", "doctor": "병원에서 아이를 진료하는 사람의 직업, 영어로 뭐라고 할까요?", "lion": "바위 위에 선 이 동물, 영어로 뭐라고 할까요?", "map": "탁자 위에 펼쳐진 이것, 영어로 뭐라고 할까요?", "moon": "밤하늘에 뜬 이것, 영어로 뭐라고 할까요?", "nurse": "병원 복도에 있는 사람의 직업, 영어로 뭐라고 할까요?", "river": "골짜기를 따라 흐르는 이것, 영어로 뭐라고 할까요?", "salad": "그릇에 담긴 채소 음식, 영어로 뭐라고 할까요?", "soup": "김이 나는 그릇 속 음식, 영어로 뭐라고 할까요?", "ticket": "영화관 앞에서 들고 있는 이것, 영어로 뭐라고 할까요?", "camera": "탁자 위에 있는 사진 찍는 이 물건, 영어로 뭐라고 할까요?", "potato": "흙에서 캐낸 이것, 영어로 뭐라고 할까요?", "market": "과일과 채소를 파는 이곳, 영어로 뭐라고 할까요?", "forest": "나무가 빽빽한 이곳, 영어로 뭐라고 할까요?", "lake": "언덕 사이에 물이 넓게 고인 이곳, 영어로 뭐라고 할까요?", "present": "리본이 달린 이 상자, 영어로 뭐라고 할까요?", "comic": "그림 칸이 나뉜 이 책, 영어로 뭐라고 할까요?", "star": "밤하늘에서 빛나는 이것, 영어로 뭐라고 할까요?", "glass": "물이 담긴 이 투명한 컵, 영어로 뭐라고 할까요?", "road": "자동차가 다니는 이 길, 영어로 뭐라고 할까요?", "city": "높은 건물이 많은 이곳, 영어로 뭐라고 할까요?", "party": "풍선으로 꾸민 이 모임, 영어로 뭐라고 할까요?", "bridge": "강 위를 건너는 이것, 영어로 뭐라고 할까요?", "brush": "그림 그릴 때 쓰는 이 물건, 영어로 뭐라고 할까요?", "butter": "토스트에 바르는 노란 이것, 영어로 뭐라고 할까요?", "finger": "아이가 위로 펴서 들고 있는 이것, 영어로 뭐라고 할까요?", "fork": "접시 옆에 있는 이 식기, 영어로 뭐라고 할까요?", "key": "아이가 들고 있는 이 물건, 영어로 뭐라고 할까요?", "knife": "도마 위에서 채소를 자르는 이것, 영어로 뭐라고 할까요?", "money": "저금통 옆에 있는 이것, 영어로 뭐라고 할까요?", "newspaper": "할아버지가 읽고 있는 이것, 영어로 뭐라고 할까요?", "pilot": "비행기 앞에 서 있는 사람의 직업, 영어로 뭐라고 할까요?", "pizza": "식탁 위에 있는 둥근 음식, 영어로 뭐라고 할까요?", "queen": "왕관을 쓰고 왕좌에 앉은 이 여자, 영어로 뭐라고 할까요?", "restaurant": "요리사가 음식을 내오는 이곳, 영어로 뭐라고 할까요?", "spoon": "냄비 속을 젓고 있는 이것, 영어로 뭐라고 할까요?", "sugar": "찻잔에 넣고 있는 하얀 이것, 영어로 뭐라고 할까요?", "taxi": "비 오는 길을 달리는 노란 차, 영어로 뭐라고 할까요?", "violin": "악보대 앞에 놓인 이 악기, 영어로 뭐라고 할까요?", "ring": "보석함 속에 있는 이것, 영어로 뭐라고 할까요?", "earth": "우주에 떠 있는 이것, 영어로 뭐라고 할까요?", "king": "왕관을 쓰고 왕좌에 앉은 이 남자, 영어로 뭐라고 할까요?", "marathon": "많은 사람이 함께 달리는 이 경주, 영어로 뭐라고 할까요?", "medal": "시상식에서 받은 이것, 영어로 뭐라고 할까요?", "textbook": "과학 시간에 펴는 이 책, 영어로 뭐라고 할까요?", "notebook": "줄이 그어져 글씨를 쓰는 이것, 영어로 뭐라고 할까요?", "curtain": "창문을 가리는 이것, 영어로 뭐라고 할까요?", "tent": "호숫가에 세운 이것, 영어로 뭐라고 할까요?", "drum": "무대 위에 있는 두드리는 악기, 영어로 뭐라고 할까요?", "album": "사진이 가득 꽂힌 이 책, 영어로 뭐라고 할까요?", "laser": "빨간 빛을 쏘아 화면을 가리키는 이것, 영어로 뭐라고 할까요?", "bell": "학교 건물에서 울리는 이것, 영어로 뭐라고 할까요?", "basket": "사과가 가득 담긴 이것, 영어로 뭐라고 할까요?", "rose": "정원에 핀 빨간 이 꽃, 영어로 뭐라고 할까요?", "prince": "작은 왕관을 쓴 이 소년, 영어로 뭐라고 할까요?", "subway": "지하 역에 들어오는 이 탈것, 영어로 뭐라고 할까요?", "gentleman": "모자와 정장 차림의 이 할아버지, 영어로 뭐라고 할까요?", "ribbon": "선물 상자에 묶인 이것, 영어로 뭐라고 할까요?", "spaghetti": "토마토소스를 얹은 긴 면 요리, 영어로 뭐라고 할까요?", "mathematics": "숫자와 도형을 배우는 이 과목, 영어로 뭐라고 할까요?", "wedding": "신랑 신부가 함께하는 이 행사, 영어로 뭐라고 할까요?", "weight": "체중계에 올라가 재는 이것, 영어로 뭐라고 할까요?", "breakfast": "아침 식탁에 차려진 이 식사, 영어로 뭐라고 할까요?", "homework": "아이가 책상에서 하고 있는 이것, 영어로 뭐라고 할까요?", "hospital": "구급차가 서 있는 이 건물, 영어로 뭐라고 할까요?", "jacket": "아이가 입고 있는 이 겉옷, 영어로 뭐라고 할까요?", "kitchen": "엄마가 요리하는 이곳, 영어로 뭐라고 할까요?", "library": "책을 빌려 읽는 이곳, 영어로 뭐라고 할까요?", "scissors": "색종이를 자르는 이 물건, 영어로 뭐라고 할까요?", "umbrella": "비 오는 날 아이가 들고 있는 이것, 영어로 뭐라고 할까요?", "vegetable": "바구니에 담긴 당근·브로콜리 같은 이것, 영어로 뭐라고 할까요?", "watermelon": "줄무늬가 있는 이 큰 과일, 영어로 뭐라고 할까요?", "pig": "농장 진흙 웅덩이 위에 서 있는 이 동물, 영어로 뭐라고 할까요?"};
+const lines = t => String(t).replace(/([.!?])\s+(?=\S)/g, "$1<br>");
+const norm = t => t.toLowerCase().replace(/[’‘`]/g, "'").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim();
+const HINTS = ["첫 단어", "문장 듣기", "정답 보기"];
+let hint = 0, tries = 0;
+function askSentence() {
+  step = "sent"; hint = 0; tries = 0;
+  renderSentence();
+  dock(`<button class="btn block" id="submit">확인하기</button>`);
+  $("#submit").onclick = checkSentence;
+  window.scrollTo({ top: 0 });
+}
+function hintLine() {
+  const [w, , s] = quiz[i], words = s.replace(/[.?!]$/, "").split(" "), end = s.slice(-1);
+  if (hint < 1) return "";
+  return words.map(t => {
+    const isKey = norm(t).startsWith(w);
+    if (hint >= 3 && isKey) return `<b>${esc(t)}</b>`;
+    const body = t.replace(/[^A-Za-z']/g, "");
+    return hint >= 2 ? esc(body[0]) + "<i>" + "_".repeat(body.length - 1) + "</i>" : "<i>" + "_".repeat(body.length) + "</i>";
+  }).join(" ") + end;
+}
+// 문장 만들기: 섞인 단어 조각을 눌러 순서대로 놓는다
+let tiles = [], built = [];
+function makeTiles(s) {
+  const keep = ["I", "Seoul", "Busan", "Grandma", "Mom", "Dad", "Monkeys"].filter(x => x !== "Monkeys");
+  return s.replace(/[.?!]$/, "").split(" ").map((t, k) => k === 0 && !keep.includes(t.replace(/[^A-Za-z]/g, "")) ? t.charAt(0).toLowerCase() + t.slice(1) : t);
+}
+function renderSentence(prev = "") {
+  const [w, , s, sko] = quiz[i];
+  if (!prev) { tiles = shuffle(makeTiles(s).map((t, k) => ({ t, k }))); built = []; }
+  $("#card").innerHTML = `${bar()}
+    <div class="sentcard"><p class="cue">단어 조각을 골라 문장을 만들어 봐요</p><p class="sline ko-line">${esc(sko)}</p></div>
+    <div class="build" id="build" aria-label="만든 문장">${built.map((n, j) => `<button class="wt" data-b="${j}">${esc(tiles[n].t)}</button>`).join("")}</div>
+    <div class="pool" aria-label="단어 조각">${tiles.map((x, n) => `<button class="wt ${built.includes(n) ? "used" : ""}" data-n="${n}">${esc(x.t)}</button>`).join("")}</div>
+    <div class="hintbar">${hint < HINTS.length ? `<button class="chip" id="hint">힌트 · ${HINTS[hint]}</button>` : ""}<span>${hint ? `힌트 ${hint}개 사용` : "막히면 힌트를 열어 보세요"}</span></div>
+    <div id="fb" class="fb" aria-live="polite"></div><div id="ans"></div>`;
+  $("#card").querySelectorAll("[data-n]").forEach(b => b.onclick = () => { const n = +b.dataset.n; if (!built.includes(n)) { built.push(n); renderSentence("keep"); } });
+  $("#card").querySelectorAll("[data-b]").forEach(b => b.onclick = () => { built.splice(+b.dataset.b, 1); renderSentence("keep"); });
+  const h = $("#hint"); if (h) h.onclick = () => {
+    hint++;
+    const name = HINTS[hint - 1];
+    if (name === "첫 단어") { const first = tiles.findIndex(x => x.k === 0); built = built.filter(n => n !== first); built.unshift(first); }
+    if (name === "문장 듣기") play(sfile(w), s);
+    if (name === "정답 보기") { built = tiles.map((x, n) => [x.k, n]).sort((a, b) => a[0] - b[0]).map(p => p[1]); renderSentence("keep"); finishSentence(false, true); return; }
+    renderSentence("keep");
+  };
+}
+function renderSentenceOld(prev = "") {
+  const [w, , s, sko] = quiz[i];
+  $("#card").innerHTML = `${bar()}
+    <div class="sentcard"><p class="cue">이 말을 영어로 써 보세요</p><p class="sline ko-line">${esc(sko)}</p>
+      ${hint ? `<p class="hintline" aria-label="힌트">${hintLine()}</p>` : ""}</div>
+    <label class="sr" for="typed">영어 문장 입력</label>
+    <textarea id="typed" rows="2" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="영어 문장을 써 보세요">${esc(prev)}</textarea>
+    <div class="hintbar">${hint < HINTS.length ? `<button class="chip" id="hint">힌트 · ${HINTS[hint]}</button>` : ""}<span>${hint ? `힌트 ${hint}개 사용` : "막히면 힌트를 하나씩 열어 보세요"}</span></div>
+    <div id="fb" class="fb" aria-live="polite"></div><div id="ans"></div>`;
+  const ta = $("#typed");
+  ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); checkSentence(); } });
+  const h = $("#hint"); if (h) h.onclick = () => {
+    const keep = ta.value; hint++;
+    if (HINTS[hint - 1] === "문장 듣기") play(sfile(w), s);
+    if (HINTS[hint - 1] === "정답 보기") { renderSentence(keep); finishSentence(false, true); return; }
+    renderSentence(keep); $("#typed").focus();
+  };
+  if (window.matchMedia("(min-width: 641px)").matches) ta.focus();
+}
+function checkSentence() {
+  const [w, , s] = quiz[i]; if (!$("#build")) return;
+  const got = norm(built.map(n => tiles[n].t).join(" ")), want = norm(s);
+  if (got && built.length === tiles.length && got !== want) {
+    const ww = want.split(" ");
+    $("#build").className = "build no";
+    $("#build").querySelectorAll(".wt").forEach((b, j) => { if (norm(tiles[built[j]].t) !== ww[j]) b.classList.add("bad"); });
+    $("#fb").innerHTML = `<span>빨간 조각을 눌러 빼고 다시 놓아 보세요.${hint < HINTS.length ? " 힌트를 열어 봐도 좋아요." : ""}</span>`; $("#fb").className = "fb no"; tries++; return;
+  }
+  if (got && built.length < tiles.length) { $("#fb").textContent = "단어 조각을 모두 놓아 주세요."; $("#fb").className = "fb no"; return; }
+  if (!got) { $("#fb").textContent = "문장을 먼저 써 주세요."; $("#fb").className = "fb no"; return; }
+  if (got === want) { finishSentence(true, false); return; }
+  tries++;
+  const gw = got.split(" "), ww = want.split(" ");
+  const marks = ww.map((t, k) => gw[k] === t ? `<span class="okw">${esc(t)}</span>` : `<span class="badw">${esc(gw[k] || "＿")}</span>`).join(" ");
+  $("#fb").innerHTML = `<p>${marks}</p><span>${gw.length !== ww.length ? `단어 ${ww.length}개로 된 문장이에요. ` : ""}빨간 단어를 고쳐 보세요.${tries >= 2 && hint < HINTS.length ? " 힌트를 열어 봐도 좋아요." : ""}</span>`;
+  $("#fb").className = "fb no";
+  sfxNo();
+}
+function sfxNo() { const t = $("#typed") || $("#build"); if (t) { t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); } }
+function finishSentence(ok, revealed) {
+  const [w, , s, sko] = quiz[i];
+  if (ok && !revealed) sentOk.push(w);
+  const ta = $("#typed"); if (ta) { ta.disabled = true; if (revealed) ta.value = s; }
+  const bd = $("#build"); if (bd) { bd.className = "build ok"; bd.querySelectorAll(".wt").forEach(b => { b.disabled = true; b.classList.remove("bad"); }); $(".pool") && ($(".pool").hidden = true); }
+  const hb = $(".hintbar"); if (hb) hb.hidden = true;
+  $("#fb").innerHTML = ""; $("#fb").className = "fb";
+  $("#ans").outerHTML = `<div class="answer ${ok ? "ok" : "no"}"><span class="tag">${ok ? (hint ? `문장 완성! (힌트 ${hint}개)` : "문장 완성!") : "정답 문장이에요"}</span>
+    <div class="sent">${sentHtml(w, s)}</div><div class="ko">${esc(sko)}</div>
+    <div class="say"><button class="chip" id="ls">${SPK}문장 듣기</button><span>따라 말해 보세요</span></div></div>`;
+  play(sfile(w), s);
+  $("#ls").onclick = () => play(sfile(w), s);
+  dock(`<button class="btn block" id="next">${i + 1 < quiz.length ? "다음 단어" : "결과 보기"}</button>`);
+  $("#next").onclick = () => { i++; i < quiz.length ? ask() : result(); window.scrollTo({ top: 0 }); };
+  $("#next").focus({ preventScroll: true });
+}
+function result() {
+  dock("");
+  const n = quiz.length, k = known.length, m = sentOk.length;
+  total.k += k; total.m += m;
+  // 아이와 학부모가 함께 보는 화면: 맞힌 개수마다 다른 응원 문구, 부족한 점 대신 다음 한 걸음만 말한다
+  const WORD_CHEER = [
+    "괜찮아요! 오늘 처음 만난 단어 10개, 이제 내 단어로 만들 차례예요. 아래에서 한 번씩 소리 내어 들어 봐요.",
+    "1개 성공! 첫 단어를 찾아냈어요. 나머지 단어도 한 번씩 들어 보면 금방 기억나요.",
+    "2개 성공! 조금씩 감이 오고 있어요. 다음에는 더 많이 맞힐 수 있어요.",
+    "3개 성공! 헷갈리는 보기 속에서 정답을 찾아냈어요. 눈썰미가 좋아요.",
+    "4개 성공! 절반이 코앞이에요. 아래 단어만 한 번 더 들어 보면 돼요.",
+    "5개 성공! 벌써 반이나 알고 있어요. 나머지 5개도 금방 내 단어가 돼요.",
+    "6개 성공! 아는 단어가 더 많아요. 정말 잘하고 있어요.",
+    "7개 성공! 단어 실력이 쑥쑥 자라고 있어요. 조금만 더 가면 만점이에요.",
+    "8개 성공! 거의 다 왔어요. 2개만 더 익히면 모두 내 단어예요.",
+    "9개 성공! 딱 하나 남았어요. 정말 멋져요!",
+    "10개 모두 성공! 완벽해요."
+  ];
+  const sentCheer = m === n ? "문장도 모두 혼자 써 냈어요. 이제 영어로 말할 준비 완료!"
+    : m >= 7 ? `문장을 ${m}개나 직접 썼어요. 문장 만드는 힘이 정말 좋아요.`
+    : m >= 4 ? `문장 ${m}개 완성! 힌트를 보고 쓴 문장도 모두 내 실력이에요.`
+    : m >= 1 ? `문장 ${m}개 완성! 처음 써 보는 문장은 누구나 어려워요. 써 본 것만으로도 대단해요.`
+    : "문장 쓰기는 이제 시작이에요. 정답 문장을 듣고 따라 말해 보면 다음엔 꼭 쓸 수 있어요.";
+  const msg = `<p class="cheer">${lines(WORD_CHEER[k])}</p>${round === 2 ? `<p class="cheer2">${lines(sentCheer)}</p>` : ""}`;
+  const both = x => known.includes(x[0]) && (round === 1 || sentOk.includes(x[0]));
+  const row = ([w, ko, s], good) => `<div class="row">${NOPIC() ? `<span class="row-w" aria-hidden="true">${esc(w[0].toUpperCase())}</span>` : `<img src="img/${w}.jpg" alt="">`}<div><b>${esc(w)}</b><span class="k">${esc(ko)}</span><span class="s">${esc(s)}</span></div>
+    ${good ? `<span class="mark" aria-label="알아요">${CHECK}</span>` : `<button class="play" data-p="${w}" aria-label="${esc(w)} 문장 듣기">${SPK}</button>`}</div>`;
+  const learn = quiz.filter(x => !both(x)), knew = quiz.filter(both);
+  $("#card").innerHTML = `<div class="score"><div class="scores"><div><span>단어</span><b><em>${k}</em>/${n}</b></div>${round === 2 ? `<div><span>문장</span><b><em>${m}</em>/${n}</b></div>` : ""}</div>${msg}</div>
+    ${learn.length ? `<div class="list"><h2>한 번 더 들어 볼 단어 ${learn.length}개</h2><div class="rows">${learn.map(x => row(x, false)).join("")}</div></div>` : ""}
+    ${knew.length ? `<div class="list"><h2>내가 아는 단어 ${knew.length}개</h2><div class="rows">${knew.map(x => row(x, true)).join("")}</div></div>` : ""}
+    <div class="promo"><b>리얼아카데미랑 하면 더 빨리 늘어요</b><p>오늘 만난 단어로 리얼 아카데미 선생님과 직접 말하고 써 봐요.</p><a class="btn" href="${LAND}&utm_content=result" target="_blank" rel="noopener">무료체험 신청하기</a></div>
+    <button class="btn line block" id="again">${BN[wg]} 처음부터 다시 하기</button><button class="btn line block" id="other">다른 학년 고르기</button>`;
+  const perfect1 = round === 1 && k === n;
+  if (round === 1 && !perfect1) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="more trial"><b>새 단어 10개, 더 도전해 볼까요?</b><button class="btn block" id="more">리얼아카데미 체험하기</button><p class="trial-sub">단어뿐 아니라 문장까지!</p></div>`);
+  else if (round === 2) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="more done"><b>${BN[wg]} 단어 20개를 모두 만났어요!</b><p>단어 ${total.k}/20 · 문장 ${total.m}/10. 끝까지 해낸 내가 최고예요.</p></div>`);
+  $("#card").querySelector(".score").insertAdjacentHTML("afterend", shareBlock({ t: round === 2 ? `w${wg}-${total.k}-${total.m}-20` : `w${wg}-${k}-0-10` }));
+  bindShare($("#card"));
+  // 1차 만점: 칭찬·체험하기·다음 학년 도전을 상자 하나로 (공유 버튼은 그 아래)
+  if (perfect1) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="next merged"><span class="next-badge">만점</span><b>와, 정말 대단해요!</b><p>${BN[wg]} 단어를 모두 알고 있어요.</p><button class="btn block" id="more">리얼아카데미 체험하기</button><p class="trial-sub">단어뿐 아니라 문장까지!</p>${NEXT[wg] ? `<button class="btn line block" id="nextg">${BN[NEXT[wg]]} 단어 도전하기</button>` : ""}</div>`);
+  const star = round === 1 ? false : total.k >= 18;
+  if (star && NEXT[wg]) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="next"><span class="next-badge">${round === 1 ? "만점" : "최고 기록"}</span><b>와, 정말 대단해요!</b><p>${BN[wg]} 단어를 ${round === 1 ? "모두" : "거의 다"} 알고 있어요. ${BN[NEXT[wg]]} 단어에도 도전해 볼까요?</p><button class="btn block" id="nextg">${BN[NEXT[wg]]} 단어 도전하기</button></div>`);
+  else if (star) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="next"><span class="next-badge">최고 학년</span><b>와, 정말 대단해요!</b><p>5·6학년 단어까지 해냈어요. 정말 최고예요!</p></div>`);
+  const ng = $("#nextg"); if (ng) ng.onclick = () => { pickWG(NEXT[wg]); start(1); };
+  const more = $("#more"); if (more) more.onclick = () => start(2);
+  $("#other").onclick = () => { $("#check").hidden = true; $("#intro").hidden = false; dock(""); window.scrollTo(0, 0); };
+  $("#card").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { const x = ALLW.find(y => y[0] === b.dataset.p); play(sfile(x[0]), x[2]); });
+  $("#again").onclick = () => start(1);
+  window.scrollTo(0, 0);
+  if (round === 2) setTimeout(() => openCta(total.k, 20, total.m, `단어 ${total.k}/20 · 문장 ${total.m}/10`), 700);
+}
+function openCta(k, n, sk, head, line, src = "popup") {
+  const m = $("#modal");
+  m.innerHTML = `<div class="sheet cta2"><p class="score-chip">${head || `단어 ${k}/${n} · 문장 ${sk}/${n}`}</p><h2 id="mtitle">리얼아카데미에서<br>이어서 해 볼까요?</h2>
+    <p class="gift2">무료체험 신청하면<br><b>초등필수 영단어 100% 증정</b></p>${src === "level_popup" ? `<p class="sheet-perks">수강하면 정식 레벨테스트 · 토플주니어 응모권</p>` : ""}
+    <a class="btn block big" id="mgo" href="${LAND}&utm_content=${src}" target="_blank" rel="noopener">무료체험 신청하기</a>
+    <button class="close" id="mclose">결과 다시 보기</button></div>`;
+  m.hidden = false; $("#mtitle").setAttribute("tabindex", "-1"); $("#mtitle").focus({ preventScroll: true });
+  const close = () => { m.hidden = true; document.removeEventListener("keydown", onKey); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  $("#mclose").onclick = close; m.onclick = e => { if (e.target === m) close(); };
+  document.addEventListener("keydown", onKey);
+}
+document.addEventListener("keydown", e => {
+  if (!$("#modal").hidden) return;
+  if ($("#check").hidden) return;
+  const opts = [...document.querySelectorAll(".choice:not(:disabled)")];
+  if (opts.length && ["1", "2", "3"].includes(e.key) && opts[+e.key - 1]) opts[+e.key - 1].click();
+});
+function pickWG(g) {
+  wg = g;
+  document.querySelectorAll("[data-wg]").forEach(b => b.setAttribute("aria-pressed", b.dataset.wg == g));
+  $("#go").disabled = false; $("#go").textContent = `${BN[g]} 10단어 시작하기`;
+  try { localStorage.setItem("wg", g); } catch (e) {}
+}
+document.querySelectorAll("[data-wg]").forEach(b => { b.setAttribute("aria-pressed", "false"); b.onclick = () => pickWG(+b.dataset.wg); });
+try { const g = +localStorage.getItem("wg"); if (WB[g]) pickWG(g); } catch (e) {}
+$("#go").onclick = () => start(1);
+
+// 레벨테스트: 학년별 10문제(어휘 3 · 문법 4 · 독해 3). 보기의 첫 항목이 정답이고 화면에서는 섞어서 보여 준다
+const LV = {
+  1: {
+    bench: "미국 교과서 1학년 · AR 1점대 · TOEFL Primary Step 1",
+    passage: "Sam has a small brown dog. The dog's name is Max. Every morning, Sam and Max walk to the park. Max likes to run after a red ball. One day, the ball rolled into the pond. Max jumped in and swam to get it. Sam laughed. Max was all wet, but he was very happy.",
+    qs: [
+      { a: "어휘", q: "I am ______. I want to eat something.", o: ["hungry", "sleepy", "sad", "cold"], why: "무언가 먹고 싶다고 했으니 '배고픈(hungry)'이 맞아요." },
+      { a: "어휘", q: "Which word is the opposite of <u>big</u>?", o: ["small", "tall", "long", "old"], why: "big(큰)의 반대말은 small(작은)이에요." },
+      { a: "어휘", q: "Look! It's raining. Take your ______.", o: ["umbrella", "sunglasses", "swimsuit", "kite"], why: "비가 오니 우산(umbrella)을 챙겨야 해요." },
+      { a: "문법", q: "I ______ a little sister.", o: ["have", "has", "am", "is"], why: "주어가 I일 때는 have를 써요. has는 he, she, it과 써요." },
+      { a: "문법", q: "There are two ______ on the bed.", o: ["cats", "cat", "a cat", "the cat"], why: "two(둘)처럼 여럿일 때는 -s를 붙여 cats라고 해요." },
+      { a: "문법", q: "A: ______ is your name?<br>B: My name is Jiho.", o: ["What", "Who", "Where", "How"], why: "이름을 물을 때는 What is your name?이라고 해요." },
+      { a: "문법", q: "Yesterday, I ______ my grandma.", o: ["visited", "visit", "visits", "visiting"], why: "Yesterday(어제)는 지난 일이라 과거형 visited를 써요." },
+      { a: "독해", p: 1, q: "Why was Max all wet?", o: ["He jumped into the pond.", "It rained on him.", "Sam gave him a bath.", "He drank a lot of water."], why: "공을 가지러 연못에 뛰어들어 헤엄쳤기 때문에 흠뻑 젖었어요." },
+      { a: "독해", p: 1, q: "Where did the ball go?", o: ["into the pond", "under the bed", "to school", "up a tree"], why: "공이 연못(pond) 속으로 굴러갔다고 나와요." },
+      { a: "독해", p: 1, q: "How did Max feel at the end?", o: ["happy", "angry", "scared", "sleepy"], why: "마지막 문장에 흠뻑 젖었지만 아주 행복했다고 나와요." }
+    ]
+  },
+  2: {
+    bench: "미국 교과서 2학년 · AR 2점대 · TOEFL Primary Step 1",
+    passage: "Jina's class planted beans in small cups. First, they put soil in each cup. Then they pushed two beans into the soil and gave them a little water. Their teacher put the cups by the window so they could get sunlight. After five days, Jina saw a tiny green sprout. Every day, she measured it with a ruler. By the end of the month, her plant was taller than her pencil! Jina drew a picture of it in her notebook.",
+    qs: [
+      { a: "어휘", q: "My little brother is ______ of the dark.", o: ["afraid", "proud", "full", "sure"], why: "be afraid of는 '~을 무서워하다'예요." },
+      { a: "어휘", q: "Please be ______. The baby is sleeping.", o: ["quiet", "loud", "busy", "angry"], why: "아기가 자고 있으니 '조용히(quiet)' 해야 해요." },
+      { a: "어휘", q: "Which word is the opposite of <u>early</u>?", o: ["late", "fast", "first", "soon"], why: "early(일찍)의 반대말은 late(늦게)예요." },
+      { a: "문법", q: "Look! She ______ TV right now.", o: ["is watching", "watches", "watched", "watch"], why: "right now(지금)는 현재진행형 be + -ing와 써요." },
+      { a: "문법", q: "We ______ to the zoo last Sunday.", o: ["went", "go", "goes", "going"], why: "last Sunday(지난 일요일)이니 과거형이에요. go의 과거형은 went예요." },
+      { a: "문법", q: "My bag is ______ than your bag.", o: ["bigger", "big", "biggest", "more big"], why: "than이 있으면 비교급이에요. big은 g를 한 번 더 써서 bigger예요." },
+      { a: "문법", q: "There ______ any water in the bottle.", o: ["isn't", "aren't", "don't", "doesn't"], why: "water는 셀 수 없어서 There isn't를 써요." },
+      { a: "독해", p: 1, q: "What did the class plant?", o: ["beans", "flowers", "apples", "trees"], why: "첫 문장에 컵에 콩(beans)을 심었다고 나와요." },
+      { a: "독해", p: 1, q: "Why did the teacher put the cups by the window?", o: ["so the beans could get sunlight", "so the cups would stay cold", "so the students could see outside", "so the beans would dry"], why: "햇빛을 받을 수 있도록(so they could get sunlight) 창가에 두었어요." },
+      { a: "독해", p: 1, q: "What did the class do first?", o: ["They put soil in each cup.", "They pushed two beans into the soil.", "They gave the beans a little water.", "They put the cups by the window."], why: "First(먼저) 컵에 흙을 넣었고, 그다음(Then) 콩을 넣고 물을 줬어요. 창가에 둔 건 선생님이에요." }
+    ]
+  },
+  3: {
+    bench: "미국 교과서 3학년 · AR 3점대 · TOEFL Primary Step 2",
+    passage: "Every Saturday, Leo helps his grandfather at the community garden. This week, they planted tomatoes and sunflowers. Grandpa showed Leo how to dig a small hole, drop in the seeds, and cover them gently with soil. \"Plants need three things,\" Grandpa said. \"Water, sunlight, and patience.\" Leo watered the rows carefully, but he wanted to see the plants right away. The next morning, he ran to the garden before breakfast. Nothing had changed. The soil looked exactly the same, and Leo felt disappointed. About ten days later, tiny green leaves finally pushed up through the ground. Leo smiled. Now he understood what Grandpa meant by the last word.",
+    qs: [
+      { a: "어휘", q: "Mia was ______ because she lost her favorite bracelet at the park.", o: ["upset", "proud", "excited", "brave"], why: "아끼는 팔찌를 잃어버렸으니 '속상한(upset)'이 맞아요." },
+      { a: "어휘", q: "The blue whale is <u>enormous</u>. It is longer than two buses.<br>The word <u>enormous</u> is closest in meaning to ______.", o: ["very big", "very old", "very fast", "very gentle"], why: "버스 두 대보다 길다는 설명이 힌트예요. enormous는 '거대한'이에요." },
+      { a: "어휘", q: "Ben forgot his lunch, so his friend ______ her sandwich with him.", o: ["shared", "showed", "sold", "saved"], why: "share A with B는 'A를 B와 나누다'예요. 뒤의 with him이 힌트예요." },
+      { a: "문법", q: "Last night, I ______ a strange noise outside my window.", o: ["heard", "hear", "heared", "hearing"], why: "Last night이니 과거형이에요. hear의 과거형은 불규칙으로 heard예요." },
+      { a: "문법", q: "Mount Everest is the ______ mountain in the world.", o: ["highest", "higher", "most high", "high"], why: "the ~ in the world는 최상급이에요. high의 최상급은 highest예요." },
+      { a: "문법", q: "We can't make pancakes. There isn't ______ milk in the fridge.", o: ["any", "some", "many", "a"], why: "부정문에서는 some 대신 any를 써요. milk는 셀 수 없어서 many와 a는 안 돼요." },
+      { a: "문법", q: "My brother is really good at ______ pictures of animals.", o: ["drawing", "draw", "draws", "to draw"], why: "전치사 at 뒤에는 동명사(-ing)가 와요." },
+      { a: "독해", p: 1, q: "What is the story mainly about?", o: ["Leo learning that plants take time to grow", "Leo cooking breakfast with Grandpa", "how to buy seeds at a store", "a flower contest at the garden"], why: "씨를 심고 기다리며 식물이 자라는 데 시간이 걸린다는 걸 알게 되는 이야기예요." },
+      { a: "독해", p: 1, q: "Why did Leo feel disappointed the next morning?", o: ["The plants had not come up yet.", "Grandpa did not come to the garden.", "The sunflowers were eaten by birds.", "He forgot to water the seeds."], why: "다음 날 아침 흙이 그대로였어요. 싹이 아직 나지 않아서 실망했어요." },
+      { a: "독해", p: 1, q: "In the last sentence, \"the last word\" refers to ______.", o: ["patience", "water", "sunlight", "soil"], why: "할아버지가 말한 세 가지 중 마지막 단어는 patience(인내심)예요. 기다린 끝에 싹이 나서 그 뜻을 알게 됐어요." }
+    ]
+  },
+  4: {
+    bench: "미국 교과서 4학년 · AR 4점대 · TOEFL Primary Step 2 상위",
+    passage: "Honeybees are famous for making honey, but they have another important job. As a bee moves from flower to flower to collect nectar, a yellow powder called pollen sticks to its fuzzy body. When the bee visits the next flower, some of that pollen falls off. This process, called pollination, helps plants make seeds and fruit. In fact, about one out of every three bites of food we eat depends on animals like bees. Sadly, many kinds of bees are in trouble around the world. Scientists believe that disease, chemicals used on farms, and the loss of wildflowers are all part of the problem. Some cities are trying to help by planting flower gardens on rooftops and along roads. Even a small pot of flowers on a balcony can give a hungry bee a place to rest.",
+    qs: [
+      { a: "어휘", q: "It's going to rain all day, so we have to ______ our picnic until next weekend.", o: ["postpone", "finish", "repeat", "enjoy"], why: "비 때문에 소풍을 다음 주로 '미뤄야(postpone, 연기하다)' 해요." },
+      { a: "어휘", q: "Although she was nervous, Ji-woo gave a ______ speech in front of the whole school.", o: ["confident", "confused", "careless", "crowded"], why: "Although(~했지만) 뒤라서 긴장과 반대되는 '자신감 있는(confident)'이 와요." },
+      { a: "어휘", q: "Which word means \"to look at something carefully to learn about it\"?", o: ["examine", "ignore", "borrow", "imagine"], why: "examine은 '자세히 살펴보다, 조사하다'예요." },
+      { a: "문법", q: "I ______ my homework when my mom called me for dinner.", o: ["was doing", "am doing", "do", "have done"], why: "과거 어느 순간에 하고 있던 일은 과거진행형(was + -ing)이에요." },
+      { a: "문법", q: "Have you ever ______ a kangaroo in real life?", o: ["seen", "saw", "see", "seeing"], why: "Have you ever + 과거분사는 경험을 묻는 현재완료예요. see의 과거분사는 seen이에요." },
+      { a: "문법", q: "You ______ wear a helmet when you ride a bike here. It's the rule.", o: ["must", "might", "would", "could"], why: "'규칙이다'라고 했으니 의무를 나타내는 must예요." },
+      { a: "문법", q: "Which sentence is <u>NOT</u> correct?", o: ["She has two childs.", "There are many sheep on the farm.", "He bought three boxes of cookies.", "The women are talking."], why: "child의 복수형은 불규칙으로 children이에요." },
+      { a: "독해", p: 1, q: "What is the passage mainly about?", o: ["why bees matter and how people can help them", "how honey is sold in stores", "why bees sting people", "how to grow tomatoes on a rooftop"], why: "벌이 하는 중요한 일과 벌을 돕는 방법을 함께 다룬 글이에요." },
+      { a: "독해", p: 1, q: "According to the passage, what is pollination?", o: ["moving pollen between flowers so plants can make seeds", "turning nectar into honey", "building gardens on rooftops", "using chemicals on farms"], why: "꽃가루가 다른 꽃으로 옮겨져 씨와 열매가 생기는 과정이라고 설명해요." },
+      { a: "독해", p: 1, q: "Why does the writer mention a small pot of flowers?", o: ["to show that anyone can help bees", "to explain how honey is made", "to warn that bees are dangerous", "to describe a kind of chemical"], why: "작은 화분 하나도 벌에게 쉴 곳이 된다며, 누구나 도울 수 있다는 걸 보여 줘요." }
+    ]
+  },
+  5: {
+    bench: "미국 교과서 5학년 · AR 5점대 · TOEFL Junior 입문",
+    passage: "Have you ever wondered why the sky is blue? Sunlight looks white, but it is actually made of many colors. When sunlight enters the air, it hits tiny bits of gas. Blue light is scattered, or spread out, much more than red, orange, and yellow light because it travels in shorter waves. That is why we see blue almost everywhere we look. Scientists call this effect Rayleigh scattering, named after the British scientist who explained it in the 1870s. The same idea explains why faraway mountains often look slightly blue. At sunset, however, sunlight must pass through much more air to reach our eyes. Most of the blue light is scattered away before it arrives, so we see more red and orange. Interestingly, the opposite happens on Mars. Its thin air is full of fine red dust, so the daytime sky looks orange-pink, while sunsets there appear blue.",
+    qs: [
+      { a: "어휘", q: "Tom was <u>reluctant</u> to jump into the cold lake, so he waited on the shore.<br>The word <u>reluctant</u> is closest in meaning to ______.", o: ["not wanting to do something", "very excited about something", "able to do something well", "allowed to do something"], why: "뒤에 '물가에서 기다렸다'가 힌트예요. reluctant는 '내키지 않는'이에요." },
+      { a: "어휘", q: "With hard work and patience, you can ______ your goals.", o: ["achieve", "avoid", "admit", "admire"], why: "achieve는 '이루다'예요. a-로 시작하는 비슷한 모양의 단어들이 함정이에요." },
+      { a: "어휘", q: "At the start of the party, Amy told a funny joke to <u>break the ice</u>.<br>What does <u>break the ice</u> mean here?", o: ["to help people feel relaxed", "to stop a fight", "to make the room colder", "to leave the party early"], why: "break the ice는 '어색한 분위기를 깨다'라는 관용 표현이에요." },
+      { a: "문법", q: "I ______ in Busan since I was six years old.", o: ["have lived", "live", "lived", "am living"], why: "since(~부터 지금까지)는 현재완료 have + 과거분사와 써요." },
+      { a: "문법", q: "A new bridge ______ across the river next year.", o: ["will be built", "will build", "is building", "builds"], why: "다리는 '지어지는' 것이라 수동태, 내년 일이라 will be built예요." },
+      { a: "문법", q: "The girl ______ bag was stolen called the police.", o: ["whose", "who", "which", "whom"], why: "'그녀의 가방'처럼 소유를 나타내는 관계대명사는 whose예요." },
+      { a: "문법", q: "She asked me ______ I wanted to join the book club.", o: ["whether", "that", "what", "because"], why: "'~인지 아닌지' 물을 때는 whether(if)를 써요." },
+      { a: "독해", p: 1, q: "What is the passage mainly about?", o: ["why the sky can appear in different colors", "how rainbows are made", "why sunlight is hot", "where gas comes from"], why: "하늘이 파랗게, 노을은 붉게, 화성에선 반대로 보이는 이유까지 하늘 색이 달라지는 원리를 다룬 글이에요." },
+      { a: "독해", p: 1, q: "According to the passage, why is blue light scattered more than red or orange light?", o: ["It travels in shorter waves.", "It is brighter than other colors.", "It is warmer than other colors.", "It comes from the ocean."], why: "파란빛은 파장이 짧아서 더 많이 흩어진다고 나와요." },
+      { a: "독해", p: 1, q: "Why do we see more red and orange at sunset?", o: ["Most blue light is scattered away first.", "The sun becomes colder.", "Clouds are red in the evening.", "There is less air at sunset."], why: "해 질 녘엔 빛이 공기를 더 길게 지나와 파란빛이 먼저 다 흩어져요." }
+    ]
+  },
+  6: {
+    bench: "미국 교과서 6~7학년 · AR 6점대 이상 · TOEFL Junior Standard",
+    passage: "For many years, people believed that the Great Wall of China could be seen from space with the naked eye. The myth spread even further in 1932, when a widely read newspaper feature claimed that the wall was the only human-made object visible from the Moon. Over the years, the idea appeared in books and even in school lessons. However, most astronauts who have orbited Earth say that it is almost impossible to see without a camera or binoculars. Although the wall is extremely long, it is very narrow, only a few meters wide in most places, and its color is similar to the land around it. In fact, astronauts report that highways and city lights at night are much easier to spot. When China's first astronaut, Yang Liwei, returned from space in 2003, he said he had not been able to see the wall at all. Seeing an object from far away depends less on its length than on its width and how much it stands out from the background. The story shows how an idea can spread widely even when no one has checked whether it is accurate.",
+    qs: [
+      { a: "어휘", q: "To protect sea animals, the new law will ______ the use of plastic bags in all supermarkets.", o: ["prohibit", "propose", "predict", "provide"], why: "바다 동물을 보호하려고 비닐봉지 사용을 '금지하는(prohibit)' 거예요. pro-/pre-로 시작하는 비슷한 단어들이 함정이에요." },
+      { a: "어휘", q: "The results of the experiment were <u>ambiguous</u>; they could be explained in two different ways, so the scientists decided to repeat the experiment.<br>The word <u>ambiguous</u> is closest in meaning to ______.", o: ["unclear", "accurate", "surprising", "disappointing"], why: "두 가지로 해석될 수 있었다는 게 힌트예요. ambiguous는 '애매한, 분명하지 않은'이에요." },
+      { a: "어휘", q: "Her <u>groundbreaking</u> research changed the way doctors treat the disease.<br>The word <u>groundbreaking</u> means ______.", o: ["completely new and important", "dangerous and risky", "done underground", "very expensive"], why: "치료 방식을 바꿨다는 내용이 힌트예요. groundbreaking은 '획기적인'이에요." },
+      { a: "문법", q: "Not only ______ the test, but she also got the highest score in her class.", o: ["did she pass", "she passed", "passed she", "she did pass"], why: "Not only가 문장 앞에 오면 조동사와 주어 순서가 바뀌어요(도치)." },
+      { a: "문법", q: "By the time we arrived at the theater, the movie ______.", o: ["had already started", "has already started", "already starts", "was already start"], why: "도착한 과거 시점보다 더 먼저 일어난 일이라 과거완료 had + 과거분사예요." },
+      { a: "문법", q: "______ from the top of the tower, the city looked like a toy town.", o: ["Seen", "Seeing", "To see", "Saw"], why: "도시가 '보이는' 쪽이라 수동의 분사구문 Seen이 맞아요." },
+      { a: "문법", q: "If I ______ harder, I would have passed the exam.", o: ["had studied", "studied", "have studied", "would study"], why: "과거 사실과 반대를 가정할 때는 If + had + 과거분사, would have + 과거분사를 써요." },
+      { a: "독해", p: 1, q: "What is the main purpose of the passage?", o: ["to correct a common false belief", "to explain how the wall was built", "to describe an astronaut's daily life", "to compare highways around the world"], why: "많은 사람이 믿던 잘못된 생각을 바로잡는 글이에요." },
+      { a: "독해", p: 1, q: "In the passage, the word <u>spot</u> is closest in meaning to ______.", o: ["notice", "clean", "paint", "visit"], why: "고속도로와 도시 불빛이 '눈에 띄기' 더 쉽다는 뜻이라 notice가 가까워요. paint는 spot의 다른 뜻(점을 찍다)을 노린 함정이에요." },
+      { a: "독해", p: 1, q: "What lesson does the writer suggest in the last sentence?", o: ["People should check facts before believing them.", "Newspapers in 1932 were usually inaccurate.", "Most people have stopped believing the myth.", "Only astronauts can know what is visible from space."], why: "확인하지 않은 생각도 널리 퍼질 수 있으니 사실을 확인해야 한다는 뜻이에요. 1932년 신문 전체가 틀렸다거나, 이제 아무도 믿지 않는다는 말은 글에 없어요." }
+    ]
+  }
+};
+// 등수·백분위처럼 근거 없는 숫자는 쓰지 않는다. 다음 단계와 궁금증만 보여 준다
+const PERKS = `<div class="perks"><span>수강하면 받는 혜택</span><ul><li>정식 레벨테스트로 정확한 레벨 확인</li><li>토플주니어 시험 응모권</li></ul></div>`;
+const OBJ = { "어휘": "어휘를", "문법": "문법을", "독해": "독해를" };
+// 정답 수마다 다른 응원 문구. 아이와 학부모가 함께 보므로 부족함 대신 해낸 것과 다음 한 걸음만 말한다
+const LV_CHEER = [
+  (w, g) => `대치동 기준 문제라 정말 어려웠을 거예요. 10문제를 끝까지 푼 용기가 멋져요! 아래 해설로 하나씩 알아 가요.`,
+  (w, g) => `1문제 성공! 처음 보는 문제가 많았을 텐데 끝까지 해냈어요. 해설을 보면 다음엔 더 쉬워져요.`,
+  (w, g) => `2문제 성공! 어려운 문제에도 포기하지 않았어요. ${OBJ[w]} 해설로 같이 살펴봐요.`,
+  (w, g) => `3문제 성공! 대치동 기준 문제에서 점수를 냈어요. ${OBJ[w]} 조금씩 다지면 쑥쑥 올라가요.`,
+  (w, g) => `4문제 성공! 다음 레벨까지 딱 1문제 남았어요. ${OBJ[w]} 살짝만 채우면 돼요.`,
+  (w, g) => `5문제 성공! 기본기가 탄탄해요. ${OBJ[w]} 다지면 한 단계 위로 올라갈 수 있어요.`,
+  (w, g) => `6문제 성공! 절반을 넘었어요. 다음 레벨까지 1문제만 더!`,
+  (w, g) => `7문제 성공! 실력이 정말 탄탄해요. 상위반까지 2문제, ${OBJ[w]} 채우면 닿을 수 있어요.`,
+  (w, g) => `8문제 성공! 대단해요. 상위반까지 딱 1문제 남았어요.`,
+  (w, g) => g < 6 ? `9문제 성공! 거의 다 맞혔어요. 실력이 정말 탄탄해요.` : `9문제 성공! 5·6학년 문제를 거의 다 맞혔어요. 중학 영어도 자신 있게 시작할 수 있어요.`,
+  (w, g) => g < 6 ? `10문제 모두 성공! 완벽해요. 정말 최고예요!` : `10문제 모두 성공! 5·6학년 문제를 완벽하게 풀었어요. 정말 최고예요!`
+];
+const BANDS = [[9, "대치 상위반"], [7, "대치 중위반"], [5, "대치 기본반"], [0, "기초 다지기"]];
+let lg = 0, lqs = [], li = 0, lpick = [];
+const ldock = html => { const d = $("#ldock"); d.innerHTML = html; d.hidden = !html; };
+function showTab(t) {
+  const lv = t === "level";
+  $("#shared").hidden = true; $("#intro").hidden = lv; $("#check").hidden = true; $("#lintro").hidden = !lv; $("#ltest").hidden = true;
+  document.querySelectorAll("[data-tab]").forEach(a => a.dataset.tab === t ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  document.title = lv ? "초등 영어 레벨테스트" : "초등 영단어 체크";
+  if (clip) clip.pause();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-tab]").forEach(a => {
+  if (a.dataset.tab !== MODE) { a.href = PAGES[a.dataset.tab]; a.target = "_blank"; a.rel = "noopener"; return; }
+  a.onclick = e => { e.preventDefault(); showTab(a.dataset.tab); };
+});
+function pickGrade(g) {
+  lg = g;
+  document.querySelectorAll("[data-g]").forEach(b => b.setAttribute("aria-pressed", b.dataset.g == g));
+  $("#lgo").disabled = false; $("#lgo").textContent = `${BN[g]} 10문제 시작하기`;
+  $("#lbench").innerHTML = `<b>${BN[g]} 기준</b> ${LV[g].bench}`;
+}
+document.querySelectorAll("[data-g]").forEach(b => { b.setAttribute("aria-pressed", "false"); b.onclick = () => pickGrade(+b.dataset.g); });
+function lstart() {
+  lqs = LV[lg].qs.map(q => ({ ...q, ord: shuffle(q.o) })); li = 0; lpick = [];
+  $("#lintro").hidden = true; $("#ltest").hidden = false; window.scrollTo(0, 0); lask();
+}
+function lask() {
+  const q = lqs[li];
+  $("#lcard").innerHTML = `<div class="progress"><div class="pbar"><i style="width:${li / lqs.length * 100}%"></i></div><span>${li + 1} / ${lqs.length}</span></div>
+    <span class="area">${BN[lg]} · ${q.a}</span>
+    ${q.p ? `<div class="passage"><p>${esc(LV[lg].passage)}</p></div>` : ""}
+    <p class="lq">${q.q}</p>
+    <div class="opts">${q.ord.map(o => `<button class="opt" aria-pressed="${lpick[li] === o}" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
+  $("#lcard").querySelectorAll("[data-v]").forEach(b => b.onclick = () => {
+    lpick[li] = b.dataset.v;
+    $("#lcard").querySelectorAll("[data-v]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $("#lnext").disabled = false;
+  });
+  ldock(`<button class="btn block" id="lnext" ${lpick[li] ? "" : "disabled"}>${li + 1 < lqs.length ? "다음 문제" : "결과 보기"}</button>`);
+  $("#lnext").onclick = () => { li++; li < lqs.length ? lask() : lresult(); window.scrollTo({ top: 0 }); };
+}
+function lresult() {
+  ldock("");
+  const ok = lqs.map((q, k) => lpick[k] === q.o[0]), n = ok.filter(Boolean).length;
+  const area = a => { const idx = lqs.map((q, k) => q.a === a ? k : -1).filter(k => k >= 0); return [idx.filter(k => ok[k]).length, idx.length]; };
+  const weak = ["어휘", "문법", "독해"].reduce((m, a) => { const [g, t] = area(a); return g / t < m[1] ? [a, g / t] : m; }, ["어휘", 2])[0];
+  const [, band] = BANDS.find(b => n >= b[0]), msg = LV_CHEER[n](weak, lg);
+  const bars = ["어휘", "문법", "독해"].map(a => { const [g, t] = area(a); return `<div><span>${a}</span><i><s style="width:${g / t * 100}%"></s></i><span>${g}/${t}</span></div>`; }).join("");
+  const wrong = lqs.map((q, k) => ok[k] ? "" : `<div class="review"><span class="area">${q.a}</span><div class="rq">${q.q.replace(/<br>/g, " ")}</div>
+    <div class="ra">${lpick[k] ? `<span class="mine">${esc(lpick[k])}</span>` : ""}<span class="right">정답 ${esc(q.o[0])}</span></div><div class="why">${esc(q.why)}</div></div>`).join("");
+  $("#lcard").innerHTML = `<div class="lvband"><span class="big"><em>${n}</em>/10</span><span class="lbl2">${BN[lg]} 기준 · ${band}</span><p class="cheer">${lines(msg)}</p><p class="bench c">${LV[lg].bench}</p></div>
+    ${n >= 9 && lg < 6 ? `<div class="next"><span class="next-badge">${n === 10 ? "만점" : "거의 만점"}</span><b>와, 정말 대단해요!</b><p>${BN[lg]} 문제를 ${n === 10 ? "모두" : "거의 다"} 맞혔어요. ${BN[lg + 2]} 문제에도 도전해 볼까요?</p><button class="btn block" id="lup">${BN[lg + 2]} 문제 도전하기</button></div>` : n >= 9 ? `<div class="next"><span class="next-badge">최고 학년</span><b>와, 정말 대단해요!</b><p>5·6학년 문제까지 해냈어요. 중학 영어도 자신 있게 시작할 수 있어요.</p></div>` : ""}
+    <div class="bars">${bars}</div>
+    ${shareBlock({ t: `l${lg}-${n}-${AREAS.indexOf(weak)}` })}
+    ${wrong ? `<div class="list"><h2>해설로 같이 알아볼 문제 ${10 - n}개</h2><div class="rows">${wrong}</div></div>` : ""}
+    <div class="promo"><b>다음 레벨까지,<br>선생님이 같이 갈게요</b><p>무료체험 수업에서 내 레벨에 딱 맞는 수업을 들어 봐요.</p><a class="btn" href="${LAND}&utm_content=level_result" target="_blank" rel="noopener">무료체험 신청하기</a>${PERKS}</div>
+    ${lg < 6 && n < 9 ? `<button class="btn line block" id="lup">${BN[lg + 2]} 문제도 풀어 보기</button>` : ""}
+    <button class="btn line block" id="lagain">다른 학년 고르기</button>
+    <p class="note">대치동 학원 레벨 기준(미국 교과서 학년·AR)과 TOEFL Primary·Junior 공식 샘플 수준을 참고해 새로 만든 문제예요. 결과는 참고용이에요.</p>`;
+  bindShare($("#lcard"));
+  const up = $("#lup"); if (up) up.onclick = () => { pickGrade(lg + 2); lstart(); };
+  $("#lagain").onclick = () => showTab("level");
+  window.scrollTo(0, 0);
+  setTimeout(() => openCta(0, 0, 0, `${BN[lg]} 레벨테스트 ${n}/10 · ${band}`, "다음 레벨까지 선생님이 같이 갈게요. 무료체험 수업에서 내 레벨에 맞는 수업을 들어 봐요.", "level_popup"), 700);
+}
+$("#lgo").onclick = lstart;
+$("#home").onclick = e => { e.preventDefault(); if (clip) clip.pause(); dock(""); ldock(""); $("#modal").hidden = true; history.replaceState(null, "", location.pathname); showTab(MODE); };
+if (MODE === "level") showTab("level");
+
+// 결과 공유: 결과를 링크 뒤 짧은 코드(#w4-7-6-10, #l4-7-1)로 담아 결과만 보이는 화면을 연다. 자체 도메인에서는 그 주소를, 지금은 아티팩트 주소를 쓴다
+const shareBase = () => /(realacademy\.co\.kr|socrabrand\.cloud)$/.test(location.hostname) ? location.origin + location.pathname : PAGES[MODE];
+const AREAS = ["어휘", "문법", "독해"];
+const ratioCheer = (k, n) => k / n >= .9 ? "거의 다 맞혔어요. 정말 멋져요!" : k / n >= .7 ? "단어 실력이 쑥쑥 자라고 있어요." : k / n >= .5 ? "절반 넘게 알고 있어요. 잘하고 있어요!" : "새 단어를 열심히 만나는 중이에요. 멋진 출발이에요!";
+function shareInfo(t) {
+  let m = /^w(12|34|56)-(\d{1,2})-(\d{1,2})-(10|20)$/.exec(t);
+  if (m) { const [g, k, s, n] = m.slice(1).map(Number); if (k > n || s > 10) return null;
+    return { t, g, kind: "word", title: `초등 ${BN[g]} 영단어 체크`, big: `${k}/${n}`, label: n === 10 ? `단어 ${k}/10` : `단어 ${k}/20 · 문장 ${s}/10`, cheer: ratioCheer(k, n) }; }
+  m = /^l([246])-(\d{1,2})-([0-2])$/.exec(t);
+  if (m) { const [g, n, w] = m.slice(1).map(Number); if (n > 10) return null;
+    const band = BANDS.find(b => n >= b[0])[1];
+    return { t, g, kind: "level", title: `초등 ${BN[g]} 레벨테스트`, big: `${n}/10`, label: `${BN[g]} 기준 · ${band}`, cheer: LV_CHEER[n](AREAS[w], g) }; }
+  return null;
+}
+function shareBlock(info) {
+  return `<div class="share"><button class="btn line" data-copy="${info.t}">결과 링크 복사</button><button class="btn line" data-shot="${info.t}">이미지로 저장</button></div><p class="toast" aria-live="polite"></p>`;
+}
+function bindShare(root) {
+  root.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => copyLink(b));
+  root.querySelectorAll("[data-shot]").forEach(b => b.onclick = () => saveShot(shareInfo(b.dataset.shot)));
+}
+function copyLink(b) {
+  const url = `${shareBase()}#${b.dataset.copy}`, toast = b.closest(".card").querySelector(".toast");
+  const fallback = () => { toast.innerHTML = `<span class="copybox"><input id="copyurl" value="${esc(url)}" readonly aria-label="결과 링크"></span>`; const i = $("#copyurl"); i.focus(); i.select(); };
+  try { navigator.clipboard.writeText(url).then(() => { toast.textContent = "링크를 복사했어요. 카카오톡에 붙여 넣어 보내 보세요."; }, fallback); } catch (e) { fallback(); }
+}
+// 결과 카드 이미지(1080×1350)를 그린다. 휴대폰은 공유 시트의 '이미지 저장'으로 사진첩에, PC는 파일로 내려받는다
+async function drawShot(info) {
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1350; const x = c.getContext("2d");
+  try { await document.fonts.ready; } catch (e) {}
+  const F = w => `${w} ${"Pretendard RA"}, -apple-system, "Apple SD Gothic Neo", sans-serif`;
+  const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+  const [logo, echo] = await Promise.all([load("img/logo_dark.png"), load("img/echo_party.png")]);
+  x.fillStyle = "#FFFFFF"; x.fillRect(0, 0, 1080, 1350);
+  x.fillStyle = "#E6F9ED"; x.beginPath(); x.roundRect(60, 60, 960, 1230, 48); x.fill();
+  if (logo) { const h = 40, w = logo.width * h / logo.height; x.drawImage(logo, 120, 130, w, h); }
+  x.textAlign = "center"; x.fillStyle = "#0A7A4B"; x.font = F("800 44px"); x.fillText(info.title, 540, 300);
+  x.fillStyle = "#16181B"; x.font = F("800 200px"); x.fillText(info.big, 540, 520);
+  x.font = F("800 40px"); const lw = x.measureText(info.label).width + 80;
+  x.fillStyle = "#16181B"; x.beginPath(); x.roundRect(540 - lw / 2, 580, lw, 84, 42); x.fill();
+  x.fillStyle = "#FFFFFF"; x.fillText(info.label, 540, 636);
+  x.fillStyle = "#3D4247"; x.font = F("600 38px");
+  const words = info.cheer.split(" "); let line = "", y = 760;
+  for (const w of words) { const t = line ? line + " " + w : w; if (x.measureText(t).width > 780) { x.fillText(line, 540, y); line = w; y += 58; } else line = t; }
+  if (line) x.fillText(line, 540, y);
+  if (echo) { const h = 300, w = echo.width * h / echo.height; x.drawImage(echo, 540 - w / 2, 900, w, h); }
+  x.fillStyle = "#64696E"; x.font = F("600 30px"); x.fillText("집에서 수강하는 대치동 영어학원 · 리얼 아카데미", 540, 1240);
+  return c;
+}
+async function saveShot(info) {
+  const c = await drawShot(info), name = `realacademy_${info.t}.png`;
+  const blob = await new Promise(r => c.toBlob(r, "image/png"));
+  const file = new File([blob], name, { type: "image/png" });
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: info.title }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  try { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+  // 내려받기가 막힌 환경(카카오톡 인앱 브라우저 등)을 위해 이미지를 띄워 길게 눌러 저장하게 한다
+  const m = $("#modal");
+  m.innerHTML = `<div class="sheet shot"><h2 id="mtitle">결과 이미지</h2><img src="${c.toDataURL("image/png")}" alt="${esc(info.title)} 결과 이미지"><p>저장이 안 되면 이미지를 길게 눌러 '사진에 저장'을 눌러 주세요.</p><button class="close" id="mclose">닫기</button></div>`;
+  m.hidden = false; $("#mclose").onclick = () => { m.hidden = true; }; m.onclick = e => { if (e.target === m) m.hidden = true; };
+}
+function showShared(info) {
+  ["#intro", "#check", "#lintro", "#ltest"].forEach(id => $(id).hidden = true);
+  $("#shared").hidden = false;
+  $("#scard").innerHTML = `<div class="shared-head"><p class="eyebrow">공유받은 결과예요</p><h1>${esc(info.title)}</h1></div>
+    <div class="lvband"><span class="big"><em>${info.big.split("/")[0]}</em>/${info.big.split("/")[1]}</span><span class="lbl2">${esc(info.label)}</span><p class="cheer">${lines(esc(info.cheer))}</p></div>
+    ${shareBlock(info)}
+    <button class="btn block" id="go${MODE}" data-ev="shared_to_${MODE}">${MODE === "word" ? "나도 영단어 체크하기" : "나도 레벨테스트 하기"}</button>
+    <div class="promo"><b>리얼아카데미랑 하면 더 빨리 늘어요</b><p>무료체험 수업에서 내 레벨에 딱 맞는 수업을 들어 봐요.</p><a class="btn" href="${LAND}&utm_content=shared_${info.kind}" target="_blank" rel="noopener">무료체험 신청하기</a>${PERKS}</div>`;
+  bindShare($("#scard"));
+  $(`#go${MODE}`).onclick = () => { $("#shared").hidden = true; history.replaceState(null, "", location.pathname); showTab(MODE); };
+}
+function markShared() {
+  try { sessionStorage.setItem("via", "share"); } catch (e) {}
+  LAND = LAND.replace("utm_medium=web", "utm_medium=share");
+  document.querySelectorAll('a[href*="utm_source=wordcheck"]').forEach(a => a.href = a.href.replace("utm_medium=web", "utm_medium=share"));
+}
+{ const info = shareInfo(location.hash.slice(1)); let via = null; try { via = sessionStorage.getItem("via"); } catch (e) {}
+  if (info || via === "share") markShared();
+  if (info) showShared(info); }
+</script>
