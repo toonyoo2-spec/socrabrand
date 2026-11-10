@@ -54,7 +54,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--green); outline
 .banner svg { width: 16px; height: 16px; flex: none; }
 .top { border-bottom: 1px solid var(--line); background: var(--bg); }
 .top .wide { display: flex; align-items: center; gap: 10px; padding-block: 14px; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand a { display: flex; align-items: center; text-decoration: none; }
 .brand img { height: 18px; width: auto; display: block; }
 .brand span { padding-left: 10px; border-left: 1px solid var(--line); font-weight: 800; color: var(--green); font-size: 15px; }
 .top nav { margin-left: auto; display: flex; align-items: center; gap: 20px; }
@@ -424,7 +425,7 @@ body:has(#check:not([hidden])) .offer, body:has(#ltest:not([hidden])) .offer { d
 </style>
 
 <header class="top"><div class="wide">
-  <a class="brand" href="#" id="home"><img src="img/logo_dark.png" alt="리얼 아카데미"><span id="brandname">영단어 체크</span></a>
+  <div class="brand"><a href="https://www.realacademy.co.kr/" target="_blank" rel="noopener"><img src="img/logo_dark.png" alt="리얼 아카데미 홈페이지"></a><a href="#" id="home"><span id="brandname">영단어 체크</span></a></div>
   <nav><a class="cta" href="https://www.realacademy.co.kr/promotion?utm_source=wordcheck&amp;utm_medium=web&amp;utm_campaign=word_check&amp;utm_content=header" target="_blank" rel="noopener">무료체험<span class="long"> 시작하기</span></a></nav>
 </div>
 </header>
@@ -504,7 +505,8 @@ body:has(#check:not([hidden])) .offer, body:has(#ltest:not([hidden])) .offer { d
   <a class="sns-card sns-ig" href="https://www.instagram.com/realacademy_official/" target="_blank" rel="noopener"><span class="sns-txt"><span class="sns-lbl">리얼 아카데미 공식 인스타그램</span><span class="sns-ttl">아이와 함께하는 일상,<br>알아두면 유용한 이야기</span><span class="sns-btn">인스타 바로가기</span></span><img src="img/echo_ig.png" alt=""></a>
 </div></div>
 <footer><div class="wide">
-  <img src="img/logo_dark.png" alt="리얼 아카데미"><span>집에서 수강하는 대치동 영어학원</span>
+  <a href="https://www.realacademy.co.kr/" target="_blank" rel="noopener"><img src="img/logo_dark.png" alt="리얼 아카데미 홈페이지"></a><span>집에서 수강하는 대치동 영어학원</span>
+  <a href="https://www.realacademy.co.kr/" target="_blank" rel="noopener">홈페이지</a>
   <a href="https://blog.realacademy.co.kr" target="_blank" rel="noopener">블로그</a>
   <a href="https://www.instagram.com/realacademy_official/" target="_blank" rel="noopener">인스타그램</a>
   <a href="https://www.youtube.com/@realacademy_official" target="_blank" rel="noopener">유튜브</a>
@@ -746,12 +748,12 @@ function result() {
     <div class="promo"><b>리얼아카데미랑 하면 더 빨리 늘어요</b><p>오늘 만난 단어로 리얼 아카데미 선생님과 직접 말하고 써 봐요.</p><a class="btn" href="${LAND}&utm_content=result" target="_blank" rel="noopener">무료체험 신청하기</a></div>
     <button class="btn line block" id="again">${BN[wg]} 처음부터 다시 하기</button><button class="btn line block" id="other">다른 학년 고르기</button>`;
   const perfect1 = round === 1 && k === n;
-  if (round === 1 && !perfect1) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="more trial"><b>새 단어 10개, 더 도전해 볼까요?</b><button class="btn block" id="more">리얼아카데미 체험하기</button><p class="trial-sub">단어뿐 아니라 문장까지!</p></div>`);
+  if (round === 1 && !perfect1) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="more trial"><b>새 단어 10개, 더 도전해 볼까요?</b><button class="btn block" id="more">새 단어 10개 더 풀기</button><p class="trial-sub">단어뿐 아니라 문장까지!</p></div>`);
   else if (round === 2) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="more done"><b>${BN[wg]} 단어 20개를 모두 만났어요!</b><p>단어 ${total.k}/20 · 문장 ${total.m}/10. 끝까지 해낸 내가 최고예요.</p></div>`);
   $("#card").querySelector(".score").insertAdjacentHTML("afterend", shareBlock({ t: round === 2 ? `w${wg}-${total.k}-${total.m}-20` : `w${wg}-${k}-0-10` }));
   bindShare($("#card"));
   // 1차 만점: 칭찬·체험하기·다음 학년 도전을 상자 하나로 (공유 버튼은 그 아래)
-  if (perfect1) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="next merged"><span class="next-badge">만점</span><b>와, 정말 대단해요!</b><p>${BN[wg]} 단어를 모두 알고 있어요.</p><button class="btn block" id="more">리얼아카데미 체험하기</button><p class="trial-sub">단어뿐 아니라 문장까지!</p>${NEXT[wg] ? `<button class="btn line block" id="nextg">${BN[NEXT[wg]]} 단어 도전하기</button>` : ""}</div>`);
+  if (perfect1) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="next merged"><span class="next-badge">만점</span><b>와, 정말 대단해요!</b><p>${BN[wg]} 단어를 모두 알고 있어요.</p><button class="btn block" id="more">새 단어 10개 더 풀기</button><p class="trial-sub">단어뿐 아니라 문장까지!</p>${NEXT[wg] ? `<button class="btn line block" id="nextg">${BN[NEXT[wg]]} 단어 도전하기</button>` : ""}</div>`);
   const star = round === 1 ? false : total.k >= 18;
   if (star && NEXT[wg]) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="next"><span class="next-badge">${round === 1 ? "만점" : "최고 기록"}</span><b>와, 정말 대단해요!</b><p>${BN[wg]} 단어를 ${round === 1 ? "모두" : "거의 다"} 알고 있어요. ${BN[NEXT[wg]]} 단어에도 도전해 볼까요?</p><button class="btn block" id="nextg">${BN[NEXT[wg]]} 단어 도전하기</button></div>`);
   else if (star) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="next"><span class="next-badge">최고 학년</span><b>와, 정말 대단해요!</b><p>5·6학년 단어까지 해냈어요. 정말 최고예요!</p></div>`);
