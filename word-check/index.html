@@ -95,6 +95,7 @@ h1 { margin: 0; font-weight: 800; font-size: clamp(30px, 5vw, 44px); letter-spac
 .blank-en { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.5; letter-spacing: -0.01em; text-wrap: balance; }
 .blank-ko { margin: 0; font-size: 15px; color: var(--gray); }
 .gap { display: inline-block; min-width: 4.5em; border-bottom: 3px solid var(--green); }
+.gapw { white-space: nowrap; }
 .gap.filled { min-width: 0; color: var(--green-ink); }
 .row-w { width: 52px; height: 52px; border-radius: 12px; background: var(--soft); display: grid; place-items: center; font-weight: 800; font-size: 22px; flex: none; }
 .q { margin: 0; font-weight: 800; font-size: 22px; text-align: center; letter-spacing: -0.02em; }
@@ -576,9 +577,9 @@ function start(r = 1) {
 }
 // 5·6학년: 그림 대신 문장 빈칸 + 우리말 문장(답한 뒤 공개)
 const NOPIC = () => WB[wg] === 6;
-const blankRe = w => new RegExp(`\\b${w}\\b`, "i");
+const blankRe = w => new RegExp(`\\b${w}\\b([,.!?]?)`, "i");
 function blankCard([w, , s, sko], q = "빈칸에 들어갈 단어를 골라요.") {
-  return `<div class="fillq"><p class="blank-en">${esc(s).replace(blankRe(w), '<span class="gap">　</span>')}</p><p class="blank-ko" hidden>${esc(sko)}</p></div>
+  return `<div class="fillq"><p class="blank-en">${esc(s).replace(blankRe(w), (m, p) => `<span class="gapw"><span class="gap">　</span>${p}</span>`)}</p><p class="blank-ko" hidden>${esc(sko)}</p></div>
     <p class="q">${q}</p>`;
 }
 // 3·4학년: 그림을 힌트로 문장 빈칸 채우기
