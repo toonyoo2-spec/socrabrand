@@ -427,7 +427,7 @@ body:has(#check:not([hidden])) .offer, body:has(#ltest:not([hidden])) .offer { d
 
 <header class="top"><div class="wide">
   <div class="brand"><a href="https://www.realacademy.co.kr/" target="_blank" rel="noopener"><img src="img/logo_dark.png" alt="리얼 아카데미 홈페이지"></a><a href="#" id="home"><span id="brandname">영단어 체크</span></a></div>
-  <nav><a class="cta" href="https://www.realacademy.co.kr/promotion?utm_source=wordcheck&amp;utm_medium=web&amp;utm_campaign=word_check&amp;utm_content=header" target="_blank" rel="noopener">무료체험<span class="long"> 시작하기</span></a></nav>
+  <nav><a class="cta" href="https://www.realacademy.co.kr/promotion?utm_source=ownedmedia&amp;utm_medium=ig_profile&amp;utm_campaign=vocatest_261110" target="_blank" rel="noopener">무료체험<span class="long"> 시작하기</span></a></nav>
 </div>
 </header>
 
@@ -496,7 +496,7 @@ body:has(#check:not([hidden])) .offer, body:has(#ltest:not([hidden])) .offer { d
     <p class="eyebrow">리얼 아카데미 무료체험</p>
     <h2 id="offer-t">무료체험 신청하면<br>초등필수 영단어 100% 증정</h2>
     <p>집에서 수강하는 대치동 영어학원. 오늘 체크한 단어부터 수업에서 말하고 써 봐요.</p>
-    <a class="btn big" href="https://www.realacademy.co.kr/promotion?utm_source=wordcheck&amp;utm_medium=web&amp;utm_campaign=word_check&amp;utm_content=offer" target="_blank" rel="noopener">무료체험 신청하기</a>
+    <a class="btn big" href="https://www.realacademy.co.kr/promotion?utm_source=ownedmedia&amp;utm_medium=ig_profile&amp;utm_campaign=vocatest_261110" target="_blank" rel="noopener">무료체험 신청하기</a>
   </div>
   <img src="img/echo_party.png" alt="">
 </div></section>
@@ -515,11 +515,11 @@ body:has(#check:not([hidden])) .offer, body:has(#ltest:not([hidden])) .offer { d
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle" hidden></div>
 
 <script>
-// 공유 링크로 들어온 방문은 utm_medium=share로 구분한다(이 페이지 안에서 이동해도 유지)
+// 무료체험 링크는 마케팅팀이 발급한 UTM 하나로 통일(2026-11-10)
 // 영단어 체크와 레벨테스트는 같은 소스에서 두 페이지로 나눠 배포한다(MODE). 자체 도메인 배포 때 PAGES 주소만 바꾼다
 const MODE = "word";
 const PAGES = { word: "https://claude.ai/artifact/PAZPvGUPxpeZHA3yym1jFY", level: "https://claude.ai/artifact/NgkrmQC6WmbnBdXadha4zP" };
-let LAND = "https://www.realacademy.co.kr/promotion?utm_source=wordcheck&utm_medium=web&utm_campaign=word_check";
+let LAND = "https://www.realacademy.co.kr/promotion?utm_source=ownedmedia&utm_medium=ig_profile&utm_campaign=vocatest_261110";
 const WORDS = [
   ["umbrella", "우산", "Take your umbrella.", "우산 챙겨 가요."],
   ["kitchen", "부엌", "Mom is in the kitchen.", "엄마는 부엌에 계세요."],
@@ -746,7 +746,7 @@ function result() {
   $("#card").innerHTML = `<div class="score"><div class="scores"><div><span>단어</span><b><em>${k}</em>/${n}</b></div>${round === 2 ? `<div><span>문장</span><b><em>${m}</em>/${n}</b></div>` : ""}</div>${msg}</div>
     ${learn.length ? `<div class="list"><h2>한 번 더 들어 볼 단어 ${learn.length}개</h2><div class="rows">${learn.map(x => row(x, false)).join("")}</div></div>` : ""}
     ${knew.length ? `<div class="list"><h2>내가 아는 단어 ${knew.length}개</h2><div class="rows">${knew.map(x => row(x, true)).join("")}</div></div>` : ""}
-    <div class="promo"><b>리얼 아카데미랑 하면 더 빨리 늘어요</b><p>오늘 만난 단어로 리얼 아카데미 선생님과 직접 말하고 써 봐요.</p><a class="btn" href="${LAND}&utm_content=result" target="_blank" rel="noopener">무료체험 신청하기</a></div>
+    <div class="promo"><b>리얼 아카데미랑 하면 더 빨리 늘어요</b><p>오늘 만난 단어로 리얼 아카데미 선생님과 직접 말하고 써 봐요.</p><a class="btn" href="${LAND}" target="_blank" rel="noopener">무료체험 신청하기</a></div>
     <button class="btn line block" id="again">${BN[wg]} 처음부터 다시 하기</button><button class="btn line block" id="other">다른 학년 고르기</button>`;
   const perfect1 = round === 1 && k === n;
   if (round === 1 && !perfect1) $("#card").querySelector(".score").insertAdjacentHTML("afterend", `<div class="more trial"><b>새 단어 10개, 더 도전해 볼까요?</b><button class="btn block" id="more">새 단어 10개 더 풀기</button><p class="trial-sub">단어뿐 아니라 문장까지!</p></div>`);
@@ -770,7 +770,7 @@ function openCta(k, n, sk, head, line, src = "popup") {
   const m = $("#modal");
   m.innerHTML = `<div class="sheet cta2"><p class="score-chip">${head || `단어 ${k}/${n} · 문장 ${sk}/${n}`}</p><h2 id="mtitle">리얼 아카데미에서<br>이어서 해 볼까요?</h2>
     <p class="gift2">무료체험 신청하면<br><b>초등필수 영단어 100% 증정</b></p>${src === "level_popup" ? `<p class="sheet-perks">수강하면 정식 레벨테스트 · 토플주니어 응모권</p>` : ""}
-    <a class="btn block big" id="mgo" href="${LAND}&utm_content=${src}" target="_blank" rel="noopener">무료체험 신청하기</a>
+    <a class="btn block big" id="mgo" href="${LAND}" target="_blank" rel="noopener">무료체험 신청하기</a>
     <button class="close" id="mclose">결과 다시 보기</button></div>`;
   m.hidden = false; $("#mtitle").setAttribute("tabindex", "-1"); $("#mtitle").focus({ preventScroll: true });
   const close = () => { m.hidden = true; document.removeEventListener("keydown", onKey); };
@@ -965,7 +965,7 @@ function lresult() {
     <div class="bars">${bars}</div>
     ${shareBlock({ t: `l${lg}-${n}-${AREAS.indexOf(weak)}` })}
     ${wrong ? `<div class="list"><h2>해설로 같이 알아볼 문제 ${10 - n}개</h2><div class="rows">${wrong}</div></div>` : ""}
-    <div class="promo"><b>다음 레벨까지,<br>선생님이 같이 갈게요</b><p>무료체험 수업에서 내 레벨에 딱 맞는 수업을 들어 봐요.</p><a class="btn" href="${LAND}&utm_content=level_result" target="_blank" rel="noopener">무료체험 신청하기</a>${PERKS}</div>
+    <div class="promo"><b>다음 레벨까지,<br>선생님이 같이 갈게요</b><p>무료체험 수업에서 내 레벨에 딱 맞는 수업을 들어 봐요.</p><a class="btn" href="${LAND}" target="_blank" rel="noopener">무료체험 신청하기</a>${PERKS}</div>
     ${lg < 6 && n < 9 ? `<button class="btn line block" id="lup">${BN[lg + 2]} 문제도 풀어 보기</button>` : ""}
     <button class="btn line block" id="lagain">다른 학년 고르기</button>
     <p class="note">대치동 학원 레벨 기준(미국 교과서 학년·AR)과 TOEFL Primary·Junior 공식 샘플 수준을 참고해 새로 만든 문제예요. 결과는 참고용이에요.</p>`;
@@ -1046,14 +1046,12 @@ function showShared(info) {
     <div class="lvband"><span class="big"><em>${info.big.split("/")[0]}</em>/${info.big.split("/")[1]}</span><span class="lbl2">${esc(info.label)}</span><p class="cheer">${lines(esc(info.cheer))}</p></div>
     ${shareBlock(info)}
     <button class="btn block" id="go${MODE}" data-ev="shared_to_${MODE}">${MODE === "word" ? "나도 영단어 체크하기" : "나도 레벨테스트 하기"}</button>
-    <div class="promo"><b>리얼 아카데미랑 하면 더 빨리 늘어요</b><p>무료체험 수업에서 내 레벨에 딱 맞는 수업을 들어 봐요.</p><a class="btn" href="${LAND}&utm_content=shared_${info.kind}" target="_blank" rel="noopener">무료체험 신청하기</a>${PERKS}</div>`;
+    <div class="promo"><b>리얼 아카데미랑 하면 더 빨리 늘어요</b><p>무료체험 수업에서 내 레벨에 딱 맞는 수업을 들어 봐요.</p><a class="btn" href="${LAND}" target="_blank" rel="noopener">무료체험 신청하기</a>${PERKS}</div>`;
   bindShare($("#scard"));
   $(`#go${MODE}`).onclick = () => { $("#shared").hidden = true; history.replaceState(null, "", location.pathname); showTab(MODE); };
 }
 function markShared() {
   try { sessionStorage.setItem("via", "share"); } catch (e) {}
-  LAND = LAND.replace("utm_medium=web", "utm_medium=share");
-  document.querySelectorAll('a[href*="utm_source=wordcheck"]').forEach(a => a.href = a.href.replace("utm_medium=web", "utm_medium=share"));
 }
 { const info = shareInfo(location.hash.slice(1)); let via = null; try { via = sessionStorage.getItem("via"); } catch (e) {}
   if (info || via === "share") markShared();
