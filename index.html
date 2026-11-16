@@ -428,6 +428,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
                 <a href="gv-report/" class="main-menu-tab" id="gvReportTab" style="display:none">GV 리포트</a>
+                <a href="tutorial-tabs/" class="main-menu-tab" id="tutorialTab" style="display:none">튜토리얼</a>
                 <div class="lx-menu-group">
                         <a href="#lecture" class="main-menu-tab" id="lectureTab" aria-expanded="false" aria-controls="lxSubmenu">LX팀 <span class="lx-chevron" aria-hidden="true">⌄</span></a>
                         <div id="lxSubmenu" class="lx-submenu" hidden>
@@ -932,17 +933,23 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }, 5 * 60 * 1000); // 5분마다 만료 임박 여부 확인
         }
         let currentMainTab = 'archive';
-        // 탭 권한이 바뀌어도 다시 로그인하지 않게, 앱을 열 때마다 profiles.visible_tabs를 새로 읽는다
+        // 탭 권한이 바뀌어도 다시 로그인하지 않게, 앱을 열 때마다 profiles의 role·visible_tabs를 새로 읽는다
+        // (예전에 로그인해 role이 저장되지 않은 KWAN 계정도 다시 로그인 없이 편집 권한을 되찾는다)
         async function refreshVisibleTabs() {
             if (!adminToken || !currentUserId) return;
             try {
-                const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${currentUserId}&select=visible_tabs`, {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${currentUserId}&select=role,visible_tabs`, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${adminToken}` }
                 });
                 const rows = await res.json();
                 if (Array.isArray(rows) && rows[0] && Array.isArray(rows[0].visible_tabs) && rows[0].visible_tabs.length > 0) {
                     visibleTabs = rows[0].visible_tabs;
                     localStorage.setItem(VISIBLE_TABS_KEY, JSON.stringify(visibleTabs));
+                }
+                if (Array.isArray(rows) && rows[0] && rows[0].role) {
+                    userRole = rows[0].role;
+                    localStorage.setItem(USER_ROLE_KEY, userRole);
+                    isAdmin = (userRole === 'editor');
                 }
             } catch (e) { /* 실패하면 저장된 권한 그대로 사용 */ }
         }
@@ -1098,8 +1105,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         let currentFilterYear = 'ALL';
         let currentFilterMonth = 'ALL';
         function applyAdminMode() {
-            document.getElementById("kwanStudioTab").style.display=creativeOwner?"inline-block":"none";
-            document.getElementById('creativeOfficeTab').style.display=creativeOwner?'inline-block':'none';
+            document.getElementById("kwanStudioTab").style.display="none"; // 메뉴에서 숨김(2026-11-16 요청)
+            document.getElementById('creativeOfficeTab').style.display='none'; // 메뉴에서 숨김(2026-11-16 요청)
             document.getElementById('creativeOfficeChatBar').style.display=creativeOwner?'flex':'none';
             document.getElementById('resourceLibraryTab').style.display=creativeOwner?'inline-block':'none';
             const addProjBtn = document.getElementById('btnAddProject');
@@ -1114,6 +1121,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             document.getElementById('referenceTab').style.display = canSeeTab('reference') ? 'inline-block' : 'none';
             document.getElementById('automationTab').style.display = canSeeTab('automation') ? 'inline-block' : 'none';
             document.getElementById('gvReportTab').style.display = canSeeTab('gv-report') ? 'inline-block' : 'none';
+            document.getElementById('tutorialTab').style.display = canSeeTab('tutorial') ? 'inline-block' : 'none';
             const lxMenuGroup = document.querySelector('.lx-menu-group');
             if (lxMenuGroup) lxMenuGroup.style.display = canSeeTab('lecture') ? '' : 'none';
             if (isAdmin) {
@@ -1132,8 +1140,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if(tabName === 'creative-six' || tabName === 'agency') return creativeOwner === true;
             // 편집 권한(KWAN) 계정은 나머지 탭을 모두 본다
             if (userRole === 'editor') return true;
-            // GV 리포트만 받은 계정(CX팀 등)은 visible_tabs에 적힌 탭만 본다 (예: ['gv-report','reference'])
-            if (visibleTabs.includes('gv-report') && !visibleTabs.some(t => ['archive', 'library', 'lecture'].includes(t))) {
+            // 아카이브·자료실·LX가 없는 팀 계정(CX·RA 등)은 visible_tabs에 적힌 탭만 본다 (예: ['gv-report','reference','tutorial'])
+            if (!visibleTabs.some(t => ['archive', 'library', 'lecture'].includes(t))) {
                 return visibleTabs.includes(tabName);
             }
             if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
@@ -1148,6 +1156,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             return visibleTabs.includes(tabName);
         }
         function defaultTab() {
+            // 튜토리얼만 받은 계정(RA팀)은 로그인하면 바로 튜토리얼 페이지로 간다
+            if (visibleTabs.length === 1 && visibleTabs[0] === 'tutorial') { location.replace('tutorial-tabs/'); return 'reference'; }
             if (currentUserId === 'aab8ee09-2e09-4bb2-811d-1cec20bb2368') return 'reference';
             if (visibleTabs.includes('archive')) return 'archive';
             if (visibleTabs.includes('library')) return 'library';
