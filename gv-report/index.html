@@ -546,7 +546,25 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 .topic span { background: var(--ground); border-radius: 12px; padding: 8px 12px; }
 .topic span.now { background: var(--green-wash); color: var(--green-ink); }
 .topic svg { color: var(--faint); }
-/* 지표 전체 보기 */
+/* 지표 전체 보기: 텍스트 문서 */
+.doc .doc-body { background: var(--paper); padding-block: 22px 28px; font-size: 14.5px; line-height: 1.65; }
+.doc h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.doc .doc-meta { margin-top: 4px; font-size: 13px; color: var(--sub); }
+.doc-body > div > p:last-child { margin-top: 10px; color: var(--sub); }
+.doc section { margin-top: 26px; padding-top: 18px; border-top: 2px solid var(--ink); }
+.doc h2 { font-size: 17px; font-weight: 800; }
+.doc h2 small { font-size: 13px; font-weight: 700; color: var(--sub); margin-left: 4px; }
+.doc h3 { margin-top: 14px; font-size: 14px; font-weight: 800; color: var(--green-ink); }
+.doc ul { margin: 6px 0 0; padding-left: 18px; }
+.doc li { margin-top: 8px; }
+.doc li b { font-weight: 800; }
+.doc li strong { font-weight: 800; color: var(--green-ink); }
+.doc li span { display: block; font-size: 13px; color: var(--sub); }
+.doc li span.nb { color: #8A4A12; }
+.doc li.no { color: var(--faint); }
+.doc li.no b { color: var(--sub); }
+.doc .ai-note { margin-top: 26px; }
+/* (이전 카드형 지표 화면 스타일) */
 .cnt { margin-top: 12px; display: grid; gap: 8px; }
 .cnt-i { width: 100%; display: grid; grid-template-columns: 76px minmax(0, 1fr) 44px; align-items: center; gap: 10px; border: 0; background: var(--ground); border-radius: 14px; padding: 12px 14px; font: inherit; text-align: left; cursor: pointer; }
 .cnt-k { font-size: 13.5px; font-weight: 800; }

@@ -100,9 +100,18 @@
     return '<span class="dots' + (cls ? " " + cls : "") + '" aria-hidden="true">' + s + "</span>";
   }
   function how(t) { return t ? '<p class="how">' + rich(t) + "</p>" : ""; }
+  function growCards(G, d) {
+    return (G.compares || []).map(function (c) {
+        return '<section class="card stat" data-item="' + esc(c.key) + '" data-name="' + esc(c.title) + '"><div class="stat-h"><b>' + esc(c.title) + '</b><span class="up-tag">' + esc(c.tag) + "</span></div>" +
+          '<div class="ba"><div><span>처음</span>' + dots(c.a, c.of, "dim") + "<em>" + c.a + "/" + c.of + '</em></div><div class="now"><span>지금</span>' + dots(c.b, c.of) + "<em>" + c.b + "/" + c.of + "</em></div></div>" +
+          '<p class="say">' + rich(c.say) + "</p>" + how(c.how) + "</section>";
+      }).join("") +
+      (G.topic ? '<section class="card stat" data-item="grow-topic" data-name="쓰는 글의 주제"><div class="stat-h"><b>쓰는 글의 주제</b></div><div class="topic"><span>' + esc(G.topic[0]) + "</span>" + ARROW + "<span class=\"now\">" + esc(G.topic[1]) + '</span></div><p class="say">' + rich(G.topic[2]) + "</p></section>" : "") +
+      (d.then && d.now ? '<section class="card" style="padding-bottom:16px" data-item="grow-notes" data-name="처음 글과 지금 글"><span class="eyebrow">직접 쓴 글</span><h2>처음 쓴 글과 지금 쓴 글</h2><p class="lead">피드백을 받기 전, 처음 쓴 그대로예요.<br>작은 글씨는 쓰려고 했던 뜻이에요.</p></section>' + note("then", d.then) + note("now", d.now) : "");
+  }
   function renderSheet(id, d) {
     var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생", S = d.skill || {}, G = d.grow || {}, N = d.next || {};
-    var tabs = [["summary", "한눈에"], ["skill", "실력"], ["grow", "성장"], ["next", "다음 학습"]];
+    var tabs = [["summary", "한눈에"], ["skill", S.tab || "실력"]].concat(d.grow ? [["grow", "성장"]] : []).concat([["next", "다음 학습"]]);
     var h = '<div class="app sheet-tpl"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>GV 라이팅 리포트</span>' +
       '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
       '<nav class="tabbar pad" aria-label="리포트 탭"><div class="tabs" role="tablist">' +
@@ -113,7 +122,7 @@
     h += '<div class="panel" role="tabpanel" id="p-summary" aria-labelledby="t-summary" tabindex="0">' +
       '<section class="card s-cover" data-item="sum-cover" data-name="표지"><p class="who">' + esc(nm + " · " + d.period) + "</p><h1>" + rich(d.headline, "em") + "</h1>" +
       '<button type="button" class="level-strip" id="lvOpen" aria-haspopup="dialog"><span class="ls-lv">LV ' + d.level + '</span><span class="ls-txt"><b>' + esc(lv.title) + "</b><small>CEFR " + esc(lv.cefr) + " · 눌러서 자세히 보기</small></span>" + CHEV + "</button></section>" +
-      '<section class="card" data-item="sum-results" data-name="세 가지로 본 결과"><span class="eyebrow">세 가지로 봤어요</span><div class="res">' +
+      '<section class="card" data-item="sum-results" data-name="영역별 결과"><span class="eyebrow">' + (["", "한 가지로", "두 가지로", "세 가지로"][(d.results || []).length] || "나눠서") + ' 봤어요</span><div class="res">' +
       (d.results || []).map(function (r) {
         var tag = r.go ? "button" : "div";
         return "<" + tag + (r.go ? ' type="button" data-go="' + esc(r.go) + '"' : "") + ' class="res-i ' + esc(r.tone || "mid") + '"><span class="res-k">' + esc(r.area) + '</span><b class="res-v">' + rich(r.value) + "</b>" +
@@ -128,19 +137,12 @@
       (S.cards || []).map(function (c) {
         return '<section class="card stat" data-item="' + esc(c.key) + '" data-name="' + esc(c.title) + '"><div class="stat-h"><b>' + esc(c.title) + '</b><span class="stat-n">' + c.n + "<small>/" + c.of + "</small></span></div>" +
           dots(c.n, c.of) + '<p class="say">' + rich(c.say) + "</p>" + how(c.how) + "</section>";
-      }).join("") + "</div>";
-
-    /* 성장 */
-    h += '<div class="panel" role="tabpanel" id="p-grow" aria-labelledby="t-grow" tabindex="0" hidden>' +
-      '<section class="card" style="padding-bottom:16px"><span class="eyebrow">성장 추세</span><h2>' + rich(G.title) + '</h2><p class="lead">' + rich(G.lead) + "</p></section>" +
-      (G.compares || []).map(function (c) {
-        return '<section class="card stat" data-item="' + esc(c.key) + '" data-name="' + esc(c.title) + '"><div class="stat-h"><b>' + esc(c.title) + '</b><span class="up-tag">' + esc(c.tag) + "</span></div>" +
-          '<div class="ba"><div><span>처음</span>' + dots(c.a, c.of, "dim") + "<em>" + c.a + "/" + c.of + '</em></div><div class="now"><span>지금</span>' + dots(c.b, c.of) + "<em>" + c.b + "/" + c.of + "</em></div></div>" +
-          '<p class="say">' + rich(c.say) + "</p>" + how(c.how) + "</section>";
       }).join("") +
-      (G.topic ? '<section class="card stat" data-item="grow-topic" data-name="쓰는 글의 주제"><div class="stat-h"><b>쓰는 글의 주제</b></div><div class="topic"><span>' + esc(G.topic[0]) + "</span>" + ARROW + "<span class=\"now\">" + esc(G.topic[1]) + '</span></div><p class="say">' + rich(G.topic[2]) + "</p></section>" : "") +
-      (d.then && d.now ? '<section class="card" style="padding-bottom:16px" data-item="grow-notes" data-name="처음 글과 지금 글"><span class="eyebrow">직접 쓴 글</span><h2>처음 쓴 글과 지금 쓴 글</h2><p class="lead">피드백을 받기 전, 처음 쓴 그대로예요.<br>작은 글씨는 쓰려고 했던 뜻이에요.</p></section>' + note("then", d.then) + note("now", d.now) : "") +
-      "</div>";
+      (S.grow ? '<section class="card" style="padding-bottom:16px" data-item="skill-grow" data-name="처음보다 늘어난 점"><span class="eyebrow">처음과 비교하면</span><h2>' + rich(S.grow.title) + '</h2><p class="lead">' + rich(S.grow.lead) + "</p></section>" + growCards(S.grow, d) : "") + "</div>";
+
+    /* 성장 (따로 탭이 있을 때만) */
+    if (d.grow) h += '<div class="panel" role="tabpanel" id="p-grow" aria-labelledby="t-grow" tabindex="0" hidden>' +
+      '<section class="card" style="padding-bottom:16px"><span class="eyebrow">성장 추세</span><h2>' + rich(G.title) + '</h2><p class="lead">' + rich(G.lead) + "</p></section>" + growCards(G, d) + "</div>";
 
     /* 다음 학습 */
     h += '<div class="panel" role="tabpanel" id="p-next" aria-labelledby="t-next" tabindex="0" hidden>' +
@@ -160,56 +162,36 @@
 
 
   /* ---------- 지표 전체 보기: 평가 항목 시트의 모든 지표를 순서대로. 값이 없으면 필요한 데이터를 적는다 ---------- */
-  function aRow(it) {
-    if (it.missing) {
-      return '<div class="srow wait"><div class="srow-k"><b>' + esc(it.name) + "</b><small>" + esc(it.q) + '</small></div><span class="soon">데이터 없음</span>' +
-        '<p class="srow-basis"><b>필요한 데이터</b> ' + esc(it.missing) + "</p></div>";
-    }
-    return '<div class="srow"><div class="srow-k"><b>' + esc(it.name) + "</b><small>" + esc(it.q) + '</small></div><div class="srow-v"><b>' + rich(it.value) + "</b></div>" +
-      (it.basis ? '<p class="srow-basis">' + rich(it.basis) + "</p>" : "") +
-      (it.note ? '<p class="srow-note">' + rich(it.note) + "</p>" : "") +
-      (it.lvbtn ? '<button type="button" class="btn ghost sm" id="lvOpen" aria-haspopup="dialog">레벨별 수준 보기</button>' : "") + "</div>";
+  function docItem(it) {
+    if (it.missing) return '<li class="no"><b>' + esc(it.name) + '</b> — 데이터 없음<span>필요한 데이터: ' + esc(it.missing) + "</span></li>";
+    return "<li><b>" + esc(it.name) + "</b> — <strong>" + rich(it.value) + "</strong>" +
+      (it.basis ? "<span>" + rich(it.basis) + "</span>" : "") + (it.note ? '<span class="nb">※ ' + rich(it.note) + "</span>" : "") + "</li>";
   }
   function countArea(a) {
     var n = 0, t = 0;
     (a.groups || []).forEach(function (g) { g.items.forEach(function (x) { t++; if (!x.missing) n++; }); });
     return [n, t];
   }
+  /* 지표 전체 보기: 디자인 없이 텍스트 문서로. 평가 항목 시트 순서 그대로 */
   function renderAll(id, d) {
-    var nm = d.name || "학생", A = d.areas || [];
-    var tabs = [["summary", "요약"]].concat(A.map(function (a) { return [a.key, a.tab]; }));
-    var h = '<div class="app sheet-tpl"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>GV 라이팅 리포트</span>' +
-      '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
-      '<nav class="tabbar pad" aria-label="리포트 탭"><div class="tabs" role="tablist">' +
-      tabs.map(function (t, i) { return '<button type="button" role="tab" id="t-' + t[0] + '" aria-controls="p-' + t[0] + '" aria-selected="' + (i ? "false" : "true") + '"' + (i ? ' tabindex="-1"' : "") + ">" + esc(t[1]) + "</button>"; }).join("") +
-      '</div></nav><main class="pad">';
-    var all = [0, 0];
+    var nm = d.name || "학생", A = d.areas || [], all = [0, 0];
     A.forEach(function (a) { var c = countArea(a); all[0] += c[0]; all[1] += c[1]; });
-    h += '<div class="panel" role="tabpanel" id="p-summary" aria-labelledby="t-summary" tabindex="0">' +
-      '<section class="card s-cover" data-item="all-cover" data-name="지표 전체 보기 안내"><p class="who">' + esc(nm + " · " + d.period) + "</p><h1>" + rich(d.headline, "em") + "</h1>" +
-      '<p class="lead">' + rich(d.intro) + "</p></section>" +
-      '<section class="card" data-item="all-count" data-name="영역별 연결 현황"><span class="eyebrow">지금 데이터로 채운 지표</span><h2>' + all[1] + "개 중 " + all[0] + "개</h2><div class=\"cnt\">" +
-      A.map(function (a) {
-        var c = countArea(a);
-        return '<button type="button" class="cnt-i" data-go="' + esc(a.key) + '"><span class="cnt-k">' + esc(a.title) + '</span><span class="cnt-bar"><i style="width:' + (c[0] / c[1] * 100).toFixed(1) + '%"></i></span><b>' + c[0] + "<small>/" + c[1] + "</small></b></button>";
-      }).join("") + "</div></section>" +
-      '<section class="card" data-item="all-needs" data-name="필요한 데이터"><span class="eyebrow">더 채우려면</span><h2>이런 데이터가 필요해요</h2><div class="needs">' +
-      (d.needs || []).map(function (n) { return '<div class="need"><b>' + esc(n[0]) + "</b><span>" + esc(n[1]) + "</span></div>"; }).join("") + "</div>" + AI_NOTE + "</section></div>";
+    var h = '<div class="app doc"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>지표 전체 보기</span>' +
+      '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header><main class="pad doc-body">' +
+      '<div data-item="all-cover" data-name="개요"><h1>' + esc(nm) + " · 평가 항목 전체</h1>" +
+      '<p class="doc-meta">' + esc(d.period) + " · GV LV " + d.level + " · 레슨 " + d.lessons + "개<br>평가 항목 " + all[1] + "개 중 " + all[0] + "개를 지금 데이터로 채웠어요.</p>" +
+      "<p>" + rich(d.intro) + "</p></div>";
     A.forEach(function (a) {
       var c = countArea(a);
-      h += '<div class="panel" role="tabpanel" id="p-' + a.key + '" aria-labelledby="t-' + a.key + '" tabindex="0" hidden>' +
-        '<section class="card" style="padding-bottom:16px"><span class="eyebrow">' + esc(a.title) + "</span><h2>" + rich(a.head) + '</h2><p class="lead">' + c[1] + "개 지표 중 " + c[0] + "개를 지금 데이터로 채웠어요.</p></section>" +
-        a.groups.map(function (g) {
-          var k = g.items.filter(function (x) { return !x.missing; }).length;
-          return '<section class="card" data-item="' + esc(g.key) + '" data-name="' + esc(a.tab + " · " + g.name) + '"><div class="ghead"><b>' + esc(g.name) + "</b><small>" + k + " / " + g.items.length + "</small></div>" +
-            '<div class="srows">' + g.items.map(aRow).join("") + "</div></section>";
-        }).join("") +
-        (a.extra ? '<section class="card" data-item="' + esc(a.key) + '-extra" data-name="' + esc(a.tab + " · 시트 밖 지표") + '"><div class="ghead"><b>시트에는 없지만 있는 지표</b></div><div class="srows">' + a.extra.map(aRow).join("") + "</div></section>" : "") +
-        (a.key === "growth" && d.then && d.now ? note("then", d.then) + note("now", d.now) : "") + "</div>";
+      h += '<section data-item="all-' + esc(a.key) + '" data-name="' + esc(a.title) + '"><h2>' + esc(a.title) + " <small>" + c[0] + " / " + c[1] + "</small></h2>" +
+        a.groups.map(function (g) { return "<h3>" + esc(g.name) + "</h3><ul>" + g.items.map(docItem).join("") + "</ul>"; }).join("") +
+        (a.extra ? "<h3>시트에는 없지만 있는 지표</h3><ul>" + a.extra.map(docItem).join("") + "</ul>" : "") + "</section>";
     });
-    h += "</main>" +
+    h += '<section data-item="all-needs" data-name="필요한 데이터"><h2>더 채우려면 필요한 데이터</h2><ul>' +
+      (d.needs || []).map(function (n) { return "<li><b>" + esc(n[0]) + "</b><span>" + esc(n[1]) + "</span></li>"; }).join("") + "</ul></section>" +
+      AI_NOTE + "</main>" +
       '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
-    return h + levelSheet(d, nm);
+    return h;
   }
 
   window.renderReport = function (id, d) {
