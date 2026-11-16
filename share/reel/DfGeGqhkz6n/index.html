@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Instagram 릴스">
+  <meta property="og:description" content="인스타 앱으로 열기">
+  <meta property="og:url" content="https://www.socrabrand.cloud/share/reel/DfGeGqhkz6n/">
+  <title>Instagram 릴스 열기</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f8f7fa;
+      color: #1c1924;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+    }
+    main {
+      width: min(100%, 400px);
+      padding: clamp(24px, 7vw, 36px);
+      border: 1px solid #e6e3eb;
+      border-radius: 24px;
+      background: #fff;
+    }
+    h1 { margin: 0 0 10px; font-size: 1.65rem; letter-spacing: -.035em; }
+    p { margin: 0 0 24px; color: #625b6b; line-height: 1.6; }
+    a { display: block; padding: 14px 16px; text-align: center; }
+    .open {
+      border-radius: 12px;
+      color: #fff;
+      background: #582bb3;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .original { margin-top: 8px; color: #514660; }
+    a:focus-visible { outline: 3px solid #7a4bca; outline-offset: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Instagram 릴스</h1>
+    <p>앱이 열리지 않으면 카톡 메뉴에서 다른 브라우저로 열어 주세요.</p>
+    <a class="open" id="open-instagram" href="https://www.instagram.com/reel/DfGeGqhkz6n/">인스타 앱으로 열기</a>
+    <a class="original" href="https://www.instagram.com/reel/DfGeGqhkz6n/">인스타 웹에서 보기</a>
+  </main>
+  <script>
+    if (/Android/i.test(navigator.userAgent)) {
+      const appLink = document.getElementById("open-instagram");
+      const reelUrl = new URL(appLink.href);
+      appLink.href = "intent://" + reelUrl.host + reelUrl.pathname
+        + "#Intent;scheme=https;package=com.instagram.android;S.browser_fallback_url="
+        + encodeURIComponent(reelUrl.href) + ";end";
+    }
+  </script>
+</body>
+</html>
