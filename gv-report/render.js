@@ -163,7 +163,7 @@
 
   /* ---------- 지표 전체 보기: 평가 항목 시트의 모든 지표를 순서대로. 값이 없으면 필요한 데이터를 적는다 ---------- */
   function docItem(it) {
-    if (it.missing) return '<li class="no"><b>' + esc(it.name) + '</b> — 데이터 없음<span>필요한 데이터: ' + esc(it.missing) + "</span></li>";
+    if (it.missing) return '<li class="no"><b>' + esc(it.name) + '</b> — ' + esc(it.missingLabel || "데이터 없음") + '<span>필요한 데이터: ' + esc(it.missing) + "</span></li>";
     return "<li><b>" + esc(it.name) + "</b> — <strong>" + rich(it.value) + "</strong>" +
       (it.basis ? "<span>" + rich(it.basis) + "</span>" : "") + (it.note ? '<span class="nb">※ ' + rich(it.note) + "</span>" : "") + "</li>";
   }
@@ -179,7 +179,7 @@
     var h = '<div class="app doc"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>지표 전체 보기</span>' +
       '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header><main class="pad doc-body">' +
       '<div data-item="all-cover" data-name="개요"><h1>' + esc(nm) + " · 평가 항목 전체</h1>" +
-      '<p class="doc-meta">' + esc(d.period) + " · GV LV " + d.level + " · 레슨 " + d.lessons + "개<br>평가 항목 " + all[1] + "개 중 " + all[0] + "개를 지금 데이터로 채웠어요.</p>" +
+      '<p class="doc-meta">' + esc(d.period) + " · GV LV " + d.level + (d.lessons == null ? "" : " · 레슨 " + esc(d.lessons) + "개") + "<br>평가 항목 " + all[1] + "개 · 확인값·표본 비교 " + all[0] + "개 · 추가 확인 " + (all[1] - all[0]) + "개</p>" +
       "<p>" + rich(d.intro) + "</p></div>";
     A.forEach(function (a) {
       var c = countArea(a);

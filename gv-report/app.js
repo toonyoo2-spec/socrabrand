@@ -100,7 +100,7 @@
   function say(kind, text) { addMsg.className = "add-msg " + kind; addMsg.textContent = text; addMsg.hidden = !text; }
   function item(x) {
     var ready = x.status === "ready";
-    var meta = ready ? "LV " + (x.level || "-") + " · " + (x.lessons || "-") + "레슨" : "학습 기록을 기다리는 중";
+    var meta = ready ? "LV " + (x.level || "-") + (x.lessons == null ? "" : " · " + x.lessons + "레슨") : "학습 기록을 기다리는 중";
     return '<li data-row="' + esc(x.id) + '"><button type="button" data-rid="' + esc(x.id) + '"' + (current && current.id === x.id ? ' aria-current="true"' : "") + ">" +
       '<b><span class="nm">' + esc(x.name || "새 학생") + '</span><span class="id">' + esc(x.student_id) + "</span>" + (x.variant ? '<span class="vtag">' + esc(x.variant) + "</span>" : "") + "</b>" +
       '<em class="' + (ready ? "ready" : "wait") + '">' + (ready ? "완성" : "준비 중") + "</em><small>" + esc(meta) + "</small></button></li>";
