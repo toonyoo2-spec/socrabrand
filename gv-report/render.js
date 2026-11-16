@@ -83,7 +83,7 @@
     return '<div class="sheet-bg" id="lvBg" hidden></div><div class="sheet" id="lvSheet" role="dialog" aria-modal="true" aria-labelledby="lvTitle" hidden><div class="sheet-in">' +
       '<div class="sheet-head"><b id="lvTitle">지금 배우는 수준</b><button type="button" id="lvClose" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>' +
       '<div class="sheet-body" data-item="level"><p class="sh-title">LV ' + d.level + "은<br>" + esc(lv.title) + "예요</p>" +
-      '<p class="lead">레벨마다 배우는 문장의 수준을 정리했어요. ' + esc(nm) + "의 실력을 매긴 게 아니라, 지금 배우고 있는 내용이 어느 정도인지 보여 드리는 거예요.</p>" +
+      '<p class="lead">레벨마다 배우는 문장의 수준이에요.<br>' + esc(nm) + "의 실력을 매긴 게 아니라,<br>지금 배우는 내용의 수준을 보여 드려요.</p>" +
       '<ol class="ladder" aria-label="GV 라이팅 레벨별 수준">' + ladder + "</ol>" +
       '<div class="lv-detail"><div><span>LV ' + d.level + ' 대표 문장</span><p class="ex">' + esc(lv.rep) + "</p></div>" +
       "<div><span>LV " + d.level + "에서 익히는 문법</span><p>" + esc(lv.grammar) + "</p></div>" +
@@ -93,13 +93,13 @@
   }
 
   /* ---------- 수정 샘플 틀: 평가 항목(성취도 · 참여도 · 성장 추세)을 학부모가 바로 읽을 수 있게 ---------- */
-  var AI_NOTE = '<p class="ai-note">본 학습 리포트는 리얼 아카데미 AI 학습 관리 시스템을 통해 분석 및 작성되었습니다.</p>';
+  var AI_NOTE = '<p class="ai-note">본 학습 리포트는 리얼 아카데미<br>AI 학습 관리 시스템을 통해 분석 및 작성되었습니다.</p>';
   function dots(n, of, cls) {
     var s = "";
     for (var i = 0; i < of; i++) s += "<i" + (i < n ? ' class="on"' : "") + "></i>";
     return '<span class="dots' + (cls ? " " + cls : "") + '" aria-hidden="true">' + s + "</span>";
   }
-  function how(t) { return t ? '<p class="how">' + esc(t) + "</p>" : ""; }
+  function how(t) { return t ? '<p class="how">' + rich(t) + "</p>" : ""; }
   function renderSheet(id, d) {
     var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생", S = d.skill || {}, G = d.grow || {}, N = d.next || {};
     var tabs = [["summary", "한눈에"], ["skill", "실력"], ["grow", "성장"], ["next", "다음 학습"]];
@@ -116,15 +116,15 @@
       '<section class="card" data-item="sum-results" data-name="세 가지로 본 결과"><span class="eyebrow">세 가지로 봤어요</span><div class="res">' +
       (d.results || []).map(function (r) {
         var tag = r.go ? "button" : "div";
-        return "<" + tag + (r.go ? ' type="button" data-go="' + esc(r.go) + '"' : "") + ' class="res-i ' + esc(r.tone || "mid") + '"><span class="res-k">' + esc(r.area) + '</span><b class="res-v">' + esc(r.value) + "</b>" +
-          '<span class="res-s">' + esc(r.line) + "</span>" + (r.go ? CHEV : "") + "</" + tag + ">";
+        return "<" + tag + (r.go ? ' type="button" data-go="' + esc(r.go) + '"' : "") + ' class="res-i ' + esc(r.tone || "mid") + '"><span class="res-k">' + esc(r.area) + '</span><b class="res-v">' + rich(r.value) + "</b>" +
+          '<span class="res-s">' + rich(r.line) + "</span>" + (r.go ? CHEV : "") + "</" + tag + ">";
       }).join("") + "</div></section>" +
       '<section class="card next-one" data-item="sum-next" data-name="다음에 연습할 것"><span class="eyebrow">다음에 연습할 것</span><p>' + rich(d.goal) + "</p>" +
       '<button type="button" class="btn ghost" data-go="next" style="margin-top:14px">추천 학습 보기</button>' + AI_NOTE + "</section></div>";
 
     /* 실력 */
     h += '<div class="panel" role="tabpanel" id="p-skill" aria-labelledby="t-skill" tabindex="0" hidden>' +
-      '<section class="card" style="padding-bottom:16px"><span class="eyebrow">학습 성취도</span><h2>' + rich(S.title) + '</h2><p class="lead">' + esc(S.lead) + "</p></section>" +
+      '<section class="card" style="padding-bottom:16px"><span class="eyebrow">학습 성취도</span><h2>' + rich(S.title) + '</h2><p class="lead">' + rich(S.lead) + "</p></section>" +
       (S.cards || []).map(function (c) {
         return '<section class="card stat" data-item="' + esc(c.key) + '" data-name="' + esc(c.title) + '"><div class="stat-h"><b>' + esc(c.title) + '</b><span class="stat-n">' + c.n + "<small>/" + c.of + "</small></span></div>" +
           dots(c.n, c.of) + '<p class="say">' + rich(c.say) + "</p>" + how(c.how) + "</section>";
@@ -132,14 +132,14 @@
 
     /* 성장 */
     h += '<div class="panel" role="tabpanel" id="p-grow" aria-labelledby="t-grow" tabindex="0" hidden>' +
-      '<section class="card" style="padding-bottom:16px"><span class="eyebrow">성장 추세</span><h2>' + rich(G.title) + '</h2><p class="lead">' + esc(G.lead) + "</p></section>" +
+      '<section class="card" style="padding-bottom:16px"><span class="eyebrow">성장 추세</span><h2>' + rich(G.title) + '</h2><p class="lead">' + rich(G.lead) + "</p></section>" +
       (G.compares || []).map(function (c) {
         return '<section class="card stat" data-item="' + esc(c.key) + '" data-name="' + esc(c.title) + '"><div class="stat-h"><b>' + esc(c.title) + '</b><span class="up-tag">' + esc(c.tag) + "</span></div>" +
           '<div class="ba"><div><span>처음</span>' + dots(c.a, c.of, "dim") + "<em>" + c.a + "/" + c.of + '</em></div><div class="now"><span>지금</span>' + dots(c.b, c.of) + "<em>" + c.b + "/" + c.of + "</em></div></div>" +
           '<p class="say">' + rich(c.say) + "</p>" + how(c.how) + "</section>";
       }).join("") +
       (G.topic ? '<section class="card stat" data-item="grow-topic" data-name="쓰는 글의 주제"><div class="stat-h"><b>쓰는 글의 주제</b></div><div class="topic"><span>' + esc(G.topic[0]) + "</span>" + ARROW + "<span class=\"now\">" + esc(G.topic[1]) + '</span></div><p class="say">' + rich(G.topic[2]) + "</p></section>" : "") +
-      (d.then && d.now ? '<section class="card" style="padding-bottom:16px" data-item="grow-notes" data-name="처음 글과 지금 글"><span class="eyebrow">직접 쓴 글</span><h2>처음 쓴 글과 지금 쓴 글</h2><p class="lead">피드백을 받기 전, 처음 쓴 그대로예요. 작은 글씨는 쓰려고 했던 뜻이에요.</p></section>' + note("then", d.then) + note("now", d.now) : "") +
+      (d.then && d.now ? '<section class="card" style="padding-bottom:16px" data-item="grow-notes" data-name="처음 글과 지금 글"><span class="eyebrow">직접 쓴 글</span><h2>처음 쓴 글과 지금 쓴 글</h2><p class="lead">피드백을 받기 전, 처음 쓴 그대로예요.<br>작은 글씨는 쓰려고 했던 뜻이에요.</p></section>' + note("then", d.then) + note("now", d.now) : "") +
       "</div>";
 
     /* 다음 학습 */
@@ -151,7 +151,7 @@
       '<section class="card" data-item="next-recs" data-name="추천 학습"><span class="eyebrow">추천 학습</span><h2>' + rich(N.title) + "</h2>" +
       (N.recs || []).map(function (r) {
         return '<div class="srec"><div class="srec-h"><b>' + esc(r.name) + "</b>" + (r.tag ? "<span>" + esc(r.tag) + "</span>" : "") + "</div><p>" + rich(r.why) + "</p></div>";
-      }).join("") + (N.note ? '<p class="how" style="margin-top:14px">' + esc(N.note) + "</p>" : "") + "</section></div>";
+      }).join("") + (N.note ? '<p class="how" style="margin-top:14px">' + rich(N.note) + "</p>" : "") + "</section></div>";
 
     h += "</main>" +
       '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
