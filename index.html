@@ -427,6 +427,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
                 <a href="#reference" class="main-menu-tab" id="referenceTab">참고자료</a>
+                <a href="gv-report/" class="main-menu-tab" id="gvReportTab" style="display:none">GV 리포트</a>
                 <div class="lx-menu-group">
                         <a href="#lecture" class="main-menu-tab" id="lectureTab" aria-expanded="false" aria-controls="lxSubmenu">LX팀 <span class="lx-chevron" aria-hidden="true">⌄</span></a>
                         <div id="lxSubmenu" class="lx-submenu" hidden>
@@ -1112,6 +1113,9 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             // LX-only accounts cannot enter brand-team pages.
             document.getElementById('referenceTab').style.display = canSeeTab('reference') ? 'inline-block' : 'none';
             document.getElementById('automationTab').style.display = canSeeTab('automation') ? 'inline-block' : 'none';
+            document.getElementById('gvReportTab').style.display = canSeeTab('gv-report') ? 'inline-block' : 'none';
+            const lxMenuGroup = document.querySelector('.lx-menu-group');
+            if (lxMenuGroup) lxMenuGroup.style.display = canSeeTab('lecture') ? '' : 'none';
             if (isAdmin) {
                 if (currentMainTab === 'archive') addProjBtn.style.display = 'block';
                 if (libraryHeaderAdmin && currentMainTab === 'library') libraryHeaderAdmin.style.display = 'flex';
@@ -1126,6 +1130,12 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if(tabName === 'kwan-studio') return creativeOwner === true;
             if(tabName === 'skills') return creativeOwner === true;
             if(tabName === 'creative-six' || tabName === 'agency') return creativeOwner === true;
+            // 편집 권한(KWAN) 계정은 나머지 탭을 모두 본다
+            if (userRole === 'editor') return true;
+            // GV 리포트만 받은 계정(CX팀 등)은 visible_tabs에 적힌 탭만 본다 (예: ['gv-report','reference'])
+            if (visibleTabs.includes('gv-report') && !visibleTabs.some(t => ['archive', 'library', 'lecture'].includes(t))) {
+                return visibleTabs.includes(tabName);
+            }
             if (visibleTabs.length === 1 && visibleTabs[0] === 'lecture') {
                 return ['lecture', 'lecture/notes', 'lecture/editing', 'pptauto', 'lecture/pptauto', 'reference'].includes(tabName);
             }
