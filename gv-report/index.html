@@ -357,6 +357,87 @@ body.review [data-item] { outline: none; }
 .gate-list small { font-size: 12.5px; color: var(--sub); font-weight: 700; font-variant-numeric: tabular-nums; }
 .link-btn { border: 0; background: none; padding: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--sub); text-decoration: underline; text-underline-offset: 3px; justify-self: start; }
 .msg-del { border: 0; background: none; padding: 0 0 0 6px; font: inherit; font-size: 11.5px; font-weight: 700; color: var(--faint); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---- 3단 화면: 왼쪽 학생 목록 · 가운데 리포트 · 오른쪽 항목별 피드백 ----
+   넓은 화면(1180px 이상)은 세 칸을 나란히, 좁은 화면은 목록·피드백을 버튼으로 여는 팝업으로 */
+.side { display: none; flex-direction: column; background: var(--paper); border-radius: 24px; box-shadow: 0 24px 60px -24px rgba(20, 23, 26, .35); overflow: hidden; }
+.side-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+.side-ttl { flex: 1; min-width: 0; }
+.side-ttl b { display: block; font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.side-ttl small { display: block; font-size: 12.5px; font-weight: 700; color: var(--sub); font-variant-numeric: tabular-nums; line-height: 1.45; }
+.side-x { border: 0; background: var(--ground); border-radius: 999px; width: 44px; height: 44px; display: grid; place-items: center; flex: none; }
+.side-backdrop { position: fixed; inset: 0; background: rgba(20, 23, 26, .45); z-index: 50; }
+
+/* 학생 목록 */
+.add-form { padding: 14px 18px; display: grid; gap: 8px; border-bottom: 1px solid var(--line); }
+.add-form label { font-size: 13px; font-weight: 800; }
+.add-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.add-row input { min-width: 0; min-height: 46px; border: 1.5px solid var(--line); border-radius: 14px; padding: 8px 12px; font: 700 16px/1.3 var(--font); color: var(--ink); background: var(--paper); font-variant-numeric: tabular-nums; }
+.add-row input:focus { outline: none; border-color: var(--green); }
+.add-row button { border: 0; min-height: 46px; border-radius: 14px; padding: 0 14px; background: var(--green-ink); color: #fff; font: 800 14.5px var(--font); white-space: nowrap; }
+.add-row button:disabled { background: var(--ground); color: var(--faint); }
+.add-help { font-size: 12.5px; color: var(--sub); line-height: 1.5; }
+.add-msg { font-size: 13px; font-weight: 700; line-height: 1.5; border-radius: 12px; padding: 9px 11px; }
+.add-msg.warn { background: #FFF4E5; color: #8A4B00; }
+.add-msg.ok { background: var(--green-wash); color: var(--green-ink); }
+.add-msg.err { background: #FDECEA; color: #A23A28; }
+.rlist { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 8px 10px 14px; display: grid; gap: 4px; align-content: start; }
+.rlist button { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: var(--ink); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 11px 12px; border-radius: 14px; }
+.rlist button:hover { background: var(--ground); }
+.rlist button[aria-current="true"] { background: var(--green-wash); box-shadow: inset 0 0 0 1.5px var(--green); }
+.rlist b { font-size: 15.5px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.rlist small { grid-column: 1; font-size: 12px; color: var(--sub); font-weight: 700; }
+.rlist em { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-size: 12px; font-weight: 800; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.rlist em.ready { background: var(--green); color: #fff; }
+.rlist em.wait { background: #FFF4E5; color: #8A4B00; }
+.rlist .flash { animation: flashIt 1.4s ease-out; }
+.list-empty { padding: 14px 8px; font-size: 13.5px; color: var(--sub); line-height: 1.6; }
+
+/* 만드는 중 화면 */
+.wait-card { margin: 16px; background: var(--paper); border-radius: 22px; padding: 26px 20px; display: grid; gap: 10px; justify-items: center; text-align: center; }
+.wait-card img { width: 86px; height: auto; }
+.wait-card h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.4; }
+.wait-card p { font-size: 14.5px; color: var(--sub); line-height: 1.65; }
+.wait-card small { font-size: 12.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* 항목별 피드백 */
+.fb-groups { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px 18px 14px; display: grid; gap: 6px; align-content: start; }
+.fb-group { border-bottom: 1px solid var(--line); padding-bottom: 12px; display: grid; gap: 8px; }
+.fb-group:last-child { border-bottom: 0; }
+.fb-group-h { width: 100%; border: 0; background: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 10px 0 2px; font: inherit; text-align: left; color: var(--ink); }
+.fb-group-h span { min-width: 0; }
+.fb-group-h b { display: block; font-size: 14.5px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.35; }
+.fb-group-h small { display: block; font-size: 11.5px; font-weight: 700; color: var(--sub); }
+.fb-group-h em { font-style: normal; font-size: 12px; font-weight: 800; color: var(--green-ink); background: var(--green-wash); border-radius: 999px; padding: 2px 9px; font-variant-numeric: tabular-nums; }
+@media (hover: hover) { .fb-group-h:hover b { text-decoration: underline; text-underline-offset: 3px; } }
+.fb-group .msg { max-width: 100%; }
+.fb-compose { border-top: 1px solid var(--line); padding: 10px 18px 14px; display: grid; gap: 8px; }
+.fb-target-l { font-size: 12.5px; font-weight: 800; color: var(--sub); }
+.fb-compose select { width: 100%; min-height: 42px; border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 10px; font: 700 14px/1.3 var(--font); color: var(--ink); background: var(--paper); }
+.fb-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; align-items: end; }
+.fb-row textarea { width: 100%; height: 44px; max-height: 120px; resize: none; border: 1.5px solid var(--line); border-radius: 14px; padding: 9px 12px; font: 500 15px/1.5 var(--font); color: var(--ink); background: var(--paper); }
+.fb-tip { font-size: 12px; color: var(--faint); line-height: 1.45; }
+@keyframes flashIt { 0%, 60% { box-shadow: 0 0 0 3px var(--green); } 100% { box-shadow: 0 0 0 3px transparent; } }
+.fb-flash { animation: flashIt 1.2s ease-out; }
+.only-narrow { display: inline-flex; }
+
+@media (max-width: 1179px) {
+  .side.open { display: flex; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(380px, calc(100vw - 32px)); height: min(680px, calc(100vh - 40px)); height: min(680px, calc(100dvh - 40px)); z-index: 51; }
+  .fb-tip { display: none; }
+}
+@media (min-width: 1180px) {
+  #reportWrap:not([hidden]) { display: grid; grid-template-columns: 300px 390px 380px; column-gap: 24px; justify-content: center; align-items: start; }
+  .center { grid-column: 2; }
+  #reportWrap .frame-label { width: 390px; margin: 0 0 12px; }
+  #reportWrap .app { margin: 0; }
+  #listPanel { grid-column: 1; grid-row: 1; }
+  #fbPanel { grid-column: 3; grid-row: 1; }
+  .side { display: flex; position: sticky; top: 20px; height: calc(100vh - 40px); }
+  .side-x, .side-backdrop, .only-narrow { display: none !important; }
+  #report [data-item] { cursor: pointer; transition: box-shadow .15s; }
+  #report [data-item]:hover { box-shadow: 0 0 0 2px var(--mint-2); }
+  #report [data-item].fb-picked { box-shadow: 0 0 0 2.5px var(--green); }
+}
 </style>
 </head>
 <body>
@@ -392,21 +473,43 @@ body.review [data-item] { outline: none; }
 
 <!-- 로그인 후 채워지는 리포트 -->
 <div id="reportWrap" hidden>
-  <div class="frame-label"><span><b id="barTitle">GV 라이팅 리포트</b></span><span class="bar-actions"><a class="bar-btn" href="../" style="text-decoration:none;display:inline-flex;align-items:center">사이트</a><button type="button" class="bar-btn" id="memoToggle" aria-pressed="false">검토 메모</button><button type="button" class="bar-btn" id="logoutBtn">로그아웃</button></span></div>
-  <div id="report"></div>
-</div>
-
-<div class="sheet-bg" id="chatBg" hidden></div>
-<div class="sheet chat" id="chatSheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle" hidden>
-  <div class="sheet-in">
-    <div class="sheet-head"><div class="chat-ttl"><b id="chatTitle">리포트 피드백</b><small id="chatSub"></small></div><button type="button" id="chatClose" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
-    <div class="chat-list" id="chatList" aria-live="polite"></div>
-    <form class="chat-form" id="chatForm">
-      <textarea id="chatText" rows="1" placeholder="의견을 적어 주세요" maxlength="1000" aria-label="의견"></textarea>
-      <button type="submit" class="chat-send" id="chatSend" aria-label="보내기" disabled><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3.5M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <aside class="side" id="listPanel" aria-labelledby="listTitle">
+    <div class="side-head">
+      <div class="side-ttl"><b id="listTitle">학생 리포트</b><small>학생 ID를 넣으면 리포트를 만들어요</small></div>
+      <button type="button" class="side-x" data-close="listPanel" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <form class="add-form" id="addForm" novalidate>
+      <label for="addId">학생 ID</label>
+      <div class="add-row"><input id="addId" inputmode="numeric" autocomplete="off" placeholder="예: 5577277" maxlength="12"><button type="submit" id="addBtn" disabled>리포트 만들기</button></div>
+      <p class="add-help">학생 ID 숫자를 넣고 ‘리포트 만들기’를 눌러 주세요.</p>
+      <p class="add-msg" id="addMsg" role="status" hidden></p>
     </form>
+    <ul class="rlist" id="rlist" aria-label="만든 리포트 목록"></ul>
+  </aside>
+
+  <div class="center">
+    <div class="frame-label"><span><b id="barTitle">GV 라이팅 리포트</b></span><span class="bar-actions"><button type="button" class="bar-btn only-narrow" data-open="listPanel">학생 목록</button><button type="button" class="bar-btn" id="logoutBtn">로그아웃</button></span></div>
+    <div id="report"></div>
   </div>
+
+  <aside class="side" id="fbPanel" aria-labelledby="fbTitle">
+    <div class="side-head">
+      <div class="side-ttl"><b id="fbTitle">항목별 피드백</b><small id="fbSub"></small></div>
+      <button type="button" class="side-x" data-close="fbPanel" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="fb-groups" id="fbGroups" aria-live="polite"></div>
+    <form class="fb-compose" id="fbForm">
+      <label class="fb-target-l" for="fbSection">어느 부분에 대한 의견인가요?</label>
+      <select id="fbSection"></select>
+      <div class="fb-row">
+        <textarea id="fbText" rows="1" placeholder="의견을 적어 주세요" maxlength="1000" aria-label="의견"></textarea>
+        <button type="submit" class="chat-send" id="fbSend" aria-label="보내기" disabled><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3.5M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <p class="fb-tip">가운데 리포트에서 의견을 남길 곳을 누르면 바로 골라져요.</p>
+    </form>
+  </aside>
 </div>
+<div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="app.js"></script>
