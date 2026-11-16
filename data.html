@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>데이터 · Socra Brandteam</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="brand-tone.css?v=20261015-1">
+<style>
+:root{--font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;--radius:10px;
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--grid:#e6ebe6;--muted:#8a978f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg,#f6f7f4);color:var(--text-primary,#23372b);line-height:1.55;-webkit-font-smoothing:antialiased}
+main{max-width:1200px;margin:0 auto;padding:24px 16px 80px}
+header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+header.top h1{font-size:1.5rem;letter-spacing:-.02em}
+header.top a{color:var(--text-secondary,#596b60);font-size:.9rem;text-decoration:none}
+.meta{color:var(--text-secondary,#596b60);font-size:.85rem}
+nav.tabs{display:flex;gap:18px;border-bottom:1px solid var(--border-color,#dce3dc);margin-bottom:20px;overflow-x:auto}
+nav.tabs button{background:none;border:0;padding:10px 0;font:inherit;font-weight:600;color:var(--text-secondary,#596b60);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected=true]{color:var(--text-primary,#23372b);border-bottom-color:var(--accent,#006b40)}
+section.panel{display:none}section.panel.on{display:block}
+h2{font-size:1.05rem;margin:28px 0 10px}
+.note{color:var(--text-secondary,#596b60);font-size:.85rem;margin-bottom:10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile{background:var(--surface,#fff);border:1px solid var(--border-color,#dce3dc);border-radius:var(--radius);padding:14px 16px}
+.tile .k{font-size:.8rem;color:var(--text-secondary,#596b60)}
+.tile .v{font-size:1.6rem;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.tile .d{font-size:.8rem;color:var(--text-secondary,#596b60)}
+.card{background:var(--surface,#fff);border:1px solid var(--border-color,#dce3dc);border-radius:var(--radius);padding:16px;margin-top:10px;position:relative}
+.card h3{font-size:.95rem;margin-bottom:2px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;color:var(--text-secondary,#596b60);margin:6px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--font);font-size:11px;fill:var(--text-secondary,#596b60)}
+.tip{position:absolute;pointer-events:none;background:var(--text-primary,#23372b);color:#fff;font-size:.78rem;padding:6px 8px;border-radius:6px;white-space:nowrap;display:none;z-index:5}
+.tablewrap{overflow-x:auto;margin-top:10px;border:1px solid var(--border-color,#dce3dc);border-radius:var(--radius);background:var(--surface,#fff)}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface-2,#eff3ef);cursor:pointer;font-weight:600;color:var(--text-secondary,#596b60)}
+td.l,th.l{text-align:left;white-space:normal;min-width:220px}
+tr:hover td{background:#f8faf8}
+.tag{display:inline-block;font-size:.72rem;padding:1px 6px;border-radius:4px;background:var(--surface-2,#eff3ef);color:var(--text-secondary,#596b60);margin-left:4px}
+.list li{list-style:none;padding:10px 0;border-bottom:1px solid var(--grid);font-size:.9rem}
+.list li small{display:block;color:var(--text-secondary,#596b60);font-size:.8rem;margin-top:2px}
+.gate{max-width:420px;margin:80px auto;text-align:center}
+.gate a{color:var(--accent,#006b40)}
+.empty{color:var(--muted);font-size:.85rem;padding:12px 0}
+</style>
+</head>
+<body>
+<main id="app"><div class="gate"><p>불러오는 중…</p></div></main>
+<script type="module">
+const URL_ = "https://eoljasmgogdcvnytaoax.supabase.co";
+const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvbGphc21nb2dkY3ZueXRhb2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NzIwMDEsImV4cCI6MjEwMTQ0ODAwMX0.G8wiFPCgvzoDwGlk__SDkn8SxP6lDMHY6g6pt61-a5o";
+const app = document.getElementById("app");
+const token = localStorage.getItem("socra_admin_token");
+const exp = Number(localStorage.getItem("socra_admin_token_exp") || 0);
+const gate = msg => { app.innerHTML = `<div class="gate"><p>${msg}</p><p style="margin-top:10px"><a href="/">메인에서 로그인하기</a></p></div>`; };
+if (!token || exp < Date.now()) { gate("로그인이 필요합니다."); throw 0; }
+
+async function q(path) {
+  const r = await fetch(`${URL_}/rest/v1/${path}`, { headers: { apikey: ANON, Authorization: `Bearer ${token}` } });
+  if (r.status === 401) throw new Error("auth");
+  if (!r.ok) throw new Error(path);
+  return r.json();
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (v, d = 0) => v == null || Number.isNaN(v) ? "—" : Number(v).toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: d });
+const avg = a => { const b = a.filter(x => x != null && !Number.isNaN(x)); return b.length ? b.reduce((s, x) => s + x, 0) / b.length : null; };
+const sum = a => a.filter(x => x != null).reduce((s, x) => s + x, 0);
+const md = s => { const d = new Date(s); return `${d.getMonth() + 1}/${d.getDate()}`; };
+const weekOf = s => { const d = new Date(s + "T00:00:00"); const k = (d.getDay() + 6) % 7; d.setDate(d.getDate() - k); return d.toISOString().slice(0, 10); };
+
+let posts, metrics, learnings, watch;
+try {
+  [posts, metrics, learnings, watch] = await Promise.all([
+    q("agency_content_log?channel=eq.instagram&select=posted_date,title,bucket,slot,metrics,measured_at,source&order=posted_date.desc&limit=500"),
+    q("agency_brand_metrics?select=period,metric,subject,value,meta&order=period.asc&limit=2000"),
+    q("agency_learnings?status=in.(active,watch)&select=learning,evidence,applies_to,status,confidence,updated_at&order=updated_at.desc&limit=40"),
+    q(`agency_watch?captured_date=gte.${new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10)}&select=brand,channel,title,url,published_at,metrics,format,kind&limit=500`)
+  ]);
+} catch (e) { gate(e.message === "auth" ? "로그인이 만료되었습니다." : "데이터를 불러오지 못했습니다."); throw e; }
+if (!posts.length && !metrics.length && !learnings.length) { gate("이 계정에는 데이터 열람 권한이 없습니다."); throw 0; }
+
+/* ---------- 공통 차트: 선 그래프(단일 축) + 호버 ---------- */
+function lineChart(card, series, { yFmt = v => fmt(v), yMax, height = 220 } = {}) {
+  const W = 760, H = height, L = 44, R = 92, T = 12, B = 26;
+  const xs = [...new Set(series.flatMap(s => s.pts.map(p => p[0])))].sort();
+  if (!xs.length) { card.insertAdjacentHTML("beforeend", `<p class="empty">아직 데이터가 없습니다.</p>`); return; }
+  const top = yMax ?? (Math.max(...series.flatMap(s => s.pts.map(p => p[1]))) * 1.1 || 1);
+  const X = i => L + (xs.length === 1 ? (W - L - R) / 2 : i * (W - L - R) / (xs.length - 1));
+  const Y = v => T + (H - T - B) * (1 - v / top);
+  let g = "";
+  for (let i = 0; i <= 4; i++) { const v = top * i / 4, y = Y(v); g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="var(--grid)"/><text x="${L - 6}" y="${y + 4}" text-anchor="end">${yFmt(v)}</text>`; }
+  const step = Math.max(1, Math.ceil(xs.length / 8));
+  xs.forEach((x, i) => { if ((i % step === 0 && xs.length - 1 - i >= step / 2) || i === xs.length - 1) g += `<text x="${X(i)}" y="${H - 6}" text-anchor="middle">${md(x)}</text>`; });
+  let lines = "", labels = [];
+  series.forEach(s => {
+    const pts = s.pts.map(p => [X(xs.indexOf(p[0])), Y(p[1])]);
+    lines += `<path d="${pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("")}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const last = pts[pts.length - 1]; if (last) labels.push({ y: last[1], x: last[0], s });
+  });
+  labels.sort((a, b) => a.y - b.y).forEach((l, i, a) => { if (i && l.y - a[i - 1].y < 13) l.y = a[i - 1].y + 13; });
+  labels.forEach(l => { lines += `<circle cx="${l.x}" cy="${series.length > 1 ? Y(l.s.pts.at(-1)[1]) : l.y}" r="4" fill="${l.s.color}" stroke="var(--surface,#fff)" stroke-width="2"/><text x="${l.x + 8}" y="${l.y + 4}" style="fill:var(--text-primary,#23372b)">${esc(l.s.name)} ${yFmt(l.s.pts.at(-1)[1])}</text>`; });
+  const id = "c" + Math.random().toString(36).slice(2);
+  card.insertAdjacentHTML("beforeend", `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(card.dataset.title || "")}"><g>${g}</g><g>${lines}</g><line id="${id}x" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3" style="display:none"/><rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" id="${id}h"/></svg><div class="tip" id="${id}t"></div>`);
+  const svg = card.querySelector("svg:last-of-type"), hit = svg.querySelector(`#${id}h`), cross = svg.querySelector(`#${id}x`), tip = card.querySelector(`#${id}t`);
+  hit.addEventListener("pointermove", e => {
+    const r = svg.getBoundingClientRect(), vx = (e.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(xs.length - 1, Math.round((vx - L) / ((W - L - R) / Math.max(1, xs.length - 1)))));
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.style.display = "";
+    tip.innerHTML = `<b>${md(xs[i])} 주</b><br>` + series.map(s => { const p = s.pts.find(p => p[0] === xs[i]); return `${esc(s.name)} ${p ? yFmt(p[1]) : "—"}`; }).join("<br>");
+    tip.style.display = "block"; const cr = card.getBoundingClientRect();
+    tip.style.left = Math.min(cr.width - 160, e.clientX - cr.left + 12) + "px"; tip.style.top = (e.clientY - cr.top - 10) + "px";
+  });
+  hit.addEventListener("pointerleave", () => { tip.style.display = "none"; cross.style.display = "none"; });
+}
+
+/* ---------- 화면 ---------- */
+const lastMeasured = posts.map(p => p.measured_at).filter(Boolean).sort().at(-1);
+app.innerHTML = `
+<header class="top"><h1>데이터</h1><span class="meta">인스타 마지막 수집 ${lastMeasured ? md(lastMeasured) : "—"} · <a href="/">메인으로</a></span></header>
+<nav class="tabs" role="tablist">
+  <button role="tab" data-p="brand" aria-selected="true">브랜드 건강도</button>
+  <button role="tab" data-p="insta" aria-selected="false">인스타 성과</button>
+  <button role="tab" data-p="learn" aria-selected="false">배운 것</button>
+  <button role="tab" data-p="comp" aria-selected="false">경쟁사</button>
+</nav>
+<section class="panel on" id="p-brand"></section>
+<section class="panel" id="p-insta"></section>
+<section class="panel" id="p-learn"></section>
+<section class="panel" id="p-comp"></section>`;
+app.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
+  app.querySelectorAll("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  app.querySelectorAll("section.panel").forEach(s => s.classList.toggle("on", s.id === "p-" + b.dataset.p));
+  try { localStorage.setItem("data_tab", b.dataset.p); } catch {}
+});
+try { const t = localStorage.getItem("data_tab"); if (t) app.querySelector(`nav.tabs button[data-p="${t}"]`)?.click(); } catch {}
+
+/* 브랜드 건강도 */
+{
+  const P = app.querySelector("#p-brand");
+  const share = metrics.filter(m => m.metric === "naver_search_share").map(m => [m.period, +m.value]);
+  const last4 = avg(share.slice(-4).map(p => p[1])), prev4 = avg(share.slice(-8, -4).map(p => p[1]));
+  const assoc = metrics.filter(m => m.metric.startsWith("assoc_") && !m.metric.startsWith("assoc_neg_"));
+  const neg = metrics.filter(m => m.metric.startsWith("assoc_neg_"));
+  const lastP = [...assoc, ...neg].map(m => m.period).sort().at(-1);
+  const top = assoc.filter(m => m.period === lastP).sort((a, b) => b.value - a.value)[0];
+  const cons = metrics.filter(m => m.metric === "consistency_pass").at(-1);
+  P.innerHTML = `
+  <p class="note">맨 위 기준은 브랜드입니다. 원하는 연상: 유익한 정보 · AI 회사 · 신뢰감 · 온라인 학원</p>
+  <div class="tiles">
+    <div class="tile"><div class="k">네이버 검색 점유율(4주 평균)</div><div class="v">${fmt(last4, 1)}%</div><div class="d">직전 4주 ${fmt(prev4, 1)}% · 경쟁 4곳 대비</div></div>
+    <div class="tile"><div class="k">가장 많이 나온 연상(지난주)</div><div class="v" style="font-size:1.2rem">${top ? esc(top.metric.replace("assoc_", "")) + " " + fmt(top.value) + "건" : "—"}</div><div class="d">${lastP ? "반대 연상 " + fmt(sum(neg.filter(m => m.period === lastP).map(m => +m.value))) + "건" : "월요일 루틴부터 쌓입니다"}</div></div>
+    <div class="tile"><div class="k">브랜드 체크 통과율</div><div class="v">${cons ? fmt(cons.value) + "%" : "—"}</div><div class="d">${cons ? md(cons.period) + " 주 기획안" : "수요일 루틴부터 쌓입니다"}</div></div>
+  </div>
+  <div class="card" data-title="리얼아카데미 검색 점유율"><h3>리얼아카데미 검색 점유율</h3><p class="note">리얼아카데미·꾸그·잉글리시에그·밀크T초등·엘리하이 검색량 합에서 우리 비율. 주 단위, 네이버 데이터랩.</p></div>
+  <div class="card" data-title="브랜드별 검색 상대값"><h3>브랜드별 검색 상대값</h3><p class="note">한 번에 조회한 5개 브랜드 중 최댓값을 100으로 둔 값. 절대 검색 수가 아닙니다.</p><div class="legend"></div></div>`;
+  const [c1, c2] = P.querySelectorAll(".card");
+  lineChart(c1, [{ name: "점유율", color: "var(--accent,#006b40)", pts: share }], { yFmt: v => fmt(v, 1) + "%" });
+  const names = ["리얼아카데미", "꾸그", "잉글리시에그", "밀크T초등", "엘리하이"], cols = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)", "var(--s5)"];
+  c2.querySelector(".legend").innerHTML = names.map((n, i) => `<span><i style="background:${cols[i]}"></i>${n}</span>`).join("");
+  lineChart(c2, names.map((n, i) => ({ name: n, color: cols[i], pts: metrics.filter(m => m.metric === "naver_search_ratio" && m.subject === n).map(m => [m.period, +m.value]) })), { yMax: 100, height: 260 });
+}
+
+/* 인스타 성과 */
+{
+  const P = app.querySelector("#p-insta");
+  const rows = posts.map(p => { const m = p.metrics || {}; return { ...p, m, saveRate: m.reach ? m.saves / m.reach * 100 : null }; });
+  const cutoff = new Date(Date.now() - 28 * 864e5).toISOString().slice(0, 10);
+  const r4 = rows.filter(r => r.posted_date >= cutoff);
+  const weeks = {};
+  rows.forEach(r => { const w = weekOf(r.posted_date); (weeks[w] ||= []).push(r); });
+  const wk = Object.keys(weeks).sort();
+  P.innerHTML = `
+  <p class="note">갤럭시 인스타 앱 인사이트에서 매주 월요일 자동 수집. 숫자는 수집한 날 기준 누적값입니다.</p>
+  <div class="tiles">
+    <div class="tile"><div class="k">최근 4주 게시물</div><div class="v">${r4.length}</div><div class="d">개</div></div>
+    <div class="tile"><div class="k">평균 도달(조회한 사람)</div><div class="v">${fmt(avg(r4.map(r => r.m.reach)))}</div><div class="d">게시물당</div></div>
+    <div class="tile"><div class="k">평균 비팔로워 비율</div><div class="v">${fmt(avg(r4.map(r => r.m.nonfollower_pct)), 1)}%</div><div class="d">새 사람에게 닿은 정도</div></div>
+    <div class="tile"><div class="k">평균 저장률</div><div class="v">${fmt(avg(r4.map(r => r.saveRate)), 2)}%</div><div class="d">저장 ÷ 도달</div></div>
+    <div class="tile"><div class="k">게시물발 팔로우</div><div class="v">${fmt(sum(r4.map(r => r.m.follows)))}</div><div class="d">4주 합계</div></div>
+  </div>
+  <div class="card" data-title="주별 평균 비팔로워 비율"><h3>주별 평균 비팔로워 비율</h3></div>
+  <div class="card" data-title="주별 평균 저장률"><h3>주별 평균 저장률</h3></div>
+  <h2>게시물별</h2><p class="note">열 제목을 누르면 정렬됩니다.</p>
+  <div class="tablewrap"><table><thead><tr>
+    <th data-k="posted_date">날짜</th><th class="l" data-k="title">게시물</th><th data-k="views">조회</th><th data-k="reach">도달</th>
+    <th data-k="nonfollower_pct">비팔로워%</th><th data-k="saves">저장</th><th data-k="saveRate">저장률</th><th data-k="shares">공유</th>
+    <th data-k="comments">댓글</th><th data-k="likes">좋아요</th><th data-k="follows">팔로우</th><th data-k="profile_visits">프로필 방문</th></tr></thead><tbody></tbody></table></div>`;
+  const [c1, c2] = P.querySelectorAll(".card");
+  lineChart(c1, [{ name: "비팔로워", color: "var(--s1)", pts: wk.map(w => [w, avg(weeks[w].map(r => r.m.nonfollower_pct))]).filter(p => p[1] != null) }], { yFmt: v => fmt(v, 0) + "%" });
+  lineChart(c2, [{ name: "저장률", color: "var(--accent,#006b40)", pts: wk.map(w => [w, avg(weeks[w].map(r => r.saveRate))]).filter(p => p[1] != null) }], { yFmt: v => fmt(v, 2) + "%" });
+  const tb = P.querySelector("tbody"); let key = "posted_date", dir = -1;
+  const val = (r, k) => k === "posted_date" || k === "title" ? r[k] : k === "saveRate" ? r.saveRate : r.m[k];
+  const draw = () => {
+    const s = [...rows].sort((a, b) => { const x = val(a, key), y = val(b, key); return (x == null) - (y == null) || (x > y ? 1 : x < y ? -1 : 0) * dir; });
+    tb.innerHTML = s.map(r => `<tr><td>${md(r.posted_date)}</td><td class="l">${esc(r.title)}${r.m.type ? `<span class="tag">${{ carousel: "카드", photo: "사진", video: "영상", clips: "릴스", reel: "릴스" }[r.m.type] || esc(r.m.type)}</span>` : ""}${r.bucket ? `<span class="tag">${esc(r.bucket)}</span>` : ""}</td>
+      <td>${fmt(r.m.views)}</td><td>${fmt(r.m.reach)}</td><td>${fmt(r.m.nonfollower_pct, 1)}</td><td>${fmt(r.m.saves)}</td><td>${fmt(r.saveRate, 2)}%</td>
+      <td>${fmt(r.m.shares)}</td><td>${fmt(r.m.comments)}</td><td>${fmt(r.m.likes)}</td><td>${fmt(r.m.follows)}</td><td>${fmt(r.m.profile_visits)}</td></tr>`).join("") || `<tr><td colspan="12" class="l empty">아직 수집된 게시물이 없습니다.</td></tr>`;
+  };
+  P.querySelectorAll("th").forEach(th => th.onclick = () => { const k = th.dataset.k; dir = key === k ? -dir : -1; key = k; draw(); });
+  draw();
+}
+
+/* 배운 것 */
+{
+  const P = app.querySelector("#p-learn");
+  const st = { active: "확정", watch: "관찰 중" };
+  P.innerHTML = `<p class="note">에이전시가 데이터로 쌓은 학습. 관찰 중은 근거 1건, 확정은 같은 방향 2건 이상.</p><ul class="list">${learnings.map(l => `<li>${esc(l.learning)}<span class="tag">${st[l.status] || l.status}</span>${l.applies_to ? `<span class="tag">${esc(l.applies_to)}</span>` : ""}<small>${esc(l.evidence || "")}</small></li>`).join("") || `<li class="empty">아직 없습니다.</li>`}</ul>`;
+}
+
+/* 경쟁사 */
+{
+  const P = app.querySelector("#p-comp");
+  const w = watch.filter(x => x.kind === "competitor" && x.metrics?.outlier).sort((a, b) => b.metrics.outlier - a.metrics.outlier).slice(0, 15);
+  P.innerHTML = `<p class="note">최근 2주 수집분 중 채널 평소(60일 중앙값) 대비 조회가 많이 나온 콘텐츠. 코덱스가 매주 금요일 수집.</p>
+  <div class="tablewrap"><table><thead><tr><th class="l">콘텐츠</th><th>브랜드</th><th>형식</th><th>조회</th><th>평소 대비</th><th>업로드</th></tr></thead><tbody>
+  ${w.map(x => `<tr><td class="l">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" style="color:inherit">${esc(x.title)}</a>` : esc(x.title)}</td><td>${esc(x.brand)}</td><td>${esc(x.format || "")}</td><td>${fmt(x.metrics.views)}</td><td>${fmt(x.metrics.outlier, 1)}배</td><td>${x.published_at ? md(x.published_at) : "—"}</td></tr>`).join("") || `<tr><td colspan="6" class="l empty">최근 2주 수집분이 없습니다.</td></tr>`}
+  </tbody></table></div>`;
+}
+</script>
+</body>
+</html>
