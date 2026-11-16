@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>KWAN Agency</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  --bg:#f6f7f4;--surface:#fff;--surface-2:#eff3ef;--line:#dce3dc;--grid:#e6ebe6;--text:#23372b;--sub:#596b60;--muted:#8a978f;
+  --accent:#006b40;--accent-soft:#eaf3ec;--warn:#9a5b00;--warn-soft:#fff4df;--bad:#b23a2a;--bad-soft:#fdecea;--chal:#5b4bb7;--chal-soft:#efedfb;--r:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+.hide{display:none!important}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 80px}
+/* 로그인 */
+.gate{max-width:360px;margin:12vh auto 0;padding:28px 24px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.gate h1{font-size:1.25rem;letter-spacing:-.02em}
+.gate p{color:var(--sub);font-size:.88rem;margin:6px 0 18px}
+.gate label{display:block;font-size:.8rem;color:var(--sub);margin:10px 0 4px}
+.gate input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.gate button{width:100%;margin-top:16px;padding:12px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+.err{color:var(--bad);font-size:.85rem;min-height:1.2em;margin-top:10px}
+/* 상단 */
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+header.top h1{font-size:1.35rem;letter-spacing:-.02em}
+header.top .r{display:flex;gap:12px;align-items:center;font-size:.85rem;color:var(--sub)}
+.lnk{background:none;border:0;color:var(--sub);cursor:pointer;text-decoration:underline;font-size:.85rem}
+nav.tabs{display:flex;gap:20px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+nav.tabs button{background:none;border:0;padding:10px 0;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--accent)}
+nav.tabs .n{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--warn-soft);color:var(--warn);font-size:.72rem;text-align:center}
+/* 공통 */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:12px}
+.note{color:var(--sub);font-size:.85rem}
+.chip{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:5px;background:var(--surface-2);color:var(--sub);margin-left:4px;vertical-align:1px;white-space:nowrap}
+.chip.g{background:var(--accent-soft);color:var(--accent)}.chip.a{background:var(--warn-soft);color:var(--warn)}.chip.r{background:var(--bad-soft);color:var(--bad)}.chip.k{background:var(--chal-soft);color:var(--chal)}.chip.b{background:#e8f0fb;color:#2a5ea8}
+.empty{color:var(--muted);font-size:.88rem;padding:14px 0}
+.btn{padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-size:.85rem}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+textarea,select,input.t{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:.88rem}
+textarea{min-height:64px;resize:vertical}
+.row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.row>select{width:auto;min-width:140px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 16px;border-radius:8px;font-size:.88rem;z-index:20}
+/* 회의 */
+.mlist{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.mlist button{flex:0 0 auto;text-align:left;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;max-width:240px}
+.mlist button[aria-current=true]{border-color:var(--accent);background:var(--accent-soft)}
+.mlist b{display:block;font-size:.82rem}.mlist span{display:block;font-size:.75rem;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mhead h2{font-size:1.15rem;letter-spacing:-.01em;margin-top:6px}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.step{font-size:.75rem;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--sub)}
+.step.ok{border-color:#b9d8c3;background:var(--accent-soft);color:var(--accent)}.step.fail{border-color:#efc2bc;background:var(--bad-soft);color:var(--bad)}
+.step b{font-weight:600;margin-right:4px}
+.esc{border-left:3px solid var(--warn);padding:8px 12px;background:var(--warn-soft);border-radius:6px;margin-top:8px;font-size:.88rem}
+.dec h3{font-size:1rem;line-height:1.45}
+.dec .why{color:var(--sub);font-size:.85rem;margin-top:4px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.plan{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fff;position:relative}
+.plan.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.plan.chal{border-color:var(--chal)}
+.plan.pick{background:var(--accent-soft)}
+.plan .l{font-weight:700;font-size:1rem;margin-right:6px}
+.plan .t{font-weight:600}
+.plan dl{margin-top:8px;font-size:.82rem}
+.plan dt{color:var(--muted);font-size:.74rem;margin-top:6px}
+.plan dd{color:var(--text)}
+.plan .out{margin-top:8px;padding:8px;border-radius:6px;background:var(--surface-2);font-size:.82rem;white-space:pre-wrap}
+.plan .pickb{margin-top:10px;width:100%}
+.yk{margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:.88rem}
+.yk b{color:var(--accent)}
+details.tr{margin-top:10px}
+details.tr summary{cursor:pointer;font-size:.85rem;color:var(--sub)}
+.msg{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--grid);font-size:.86rem}
+.msg .who{flex:0 0 42px;font-weight:700;font-size:.78rem;color:var(--accent);padding-top:2px}
+.msg .who.k{color:var(--chal)}
+.msg .ev{display:block;color:var(--muted);font-size:.75rem;margin-top:2px}
+.msg.dis{background:#fffaf2}
+.st{font-size:.75rem;font-weight:700;color:var(--muted);margin:12px 0 2px;letter-spacing:.02em}
+.ivbox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.ivlist li{list-style:none;padding:10px 0;border-bottom:1px solid var(--grid);font-size:.88rem}
+.ivlist small{display:block;color:var(--sub);font-size:.8rem;margin-top:3px}
+.qcard textarea{margin-top:8px}
+iframe.data{width:100%;height:calc(100svh - 150px);min-height:600px;border:0;border-radius:var(--r);background:var(--surface)}
+@media (max-width:600px){.plans{grid-template-columns:1fr}.wrap{padding:14px 12px 60px}}
+</style>
+</head>
+<body>
+<!-- 로그인 전에는 이 폼만 보인다. 데이터는 Supabase RLS가 소유자 계정에만 내준다. -->
+<section id="vLogin" class="gate hide">
+  <h1>KWAN Agency</h1>
+  <p>KWAN 전용 페이지입니다.</p>
+  <form id="loginForm" autocomplete="on">
+    <label for="lid">아이디</label><input id="lid" name="username" autocomplete="username" required>
+    <label for="lpw">비밀번호</label><input id="lpw" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">로그인</button>
+    <div class="err" id="lerr" role="alert"></div>
+  </form>
+</section>
+<section id="vDenied" class="gate hide">
+  <h1>권한 없음</h1>
+  <p>이 계정은 에이전시 열람 권한이 없습니다.</p>
+  <button type="button" class="lnk" id="logout2">다른 계정으로 로그인</button>
+</section>
+<section id="vLoading" class="gate"><p>불러오는 중…</p></section>
+
+<div id="vApp" class="wrap hide">
+  <header class="top">
+    <h1>KWAN Agency</h1>
+    <div class="r"><span id="who"></span><a href="/">메인</a><button type="button" class="lnk" id="logout">로그아웃</button></div>
+  </header>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-t="meet" aria-selected="true">회의</button>
+    <button role="tab" data-t="iv" aria-selected="false">개입 <span class="n hide" id="ivN"></span></button>
+    <button role="tab" data-t="q" aria-selected="false">질문 <span class="n hide" id="qN"></span></button>
+    <button role="tab" data-t="data" aria-selected="false">데이터</button>
+  </nav>
+  <section id="t-meet"></section>
+  <section id="t-iv" class="hide"></section>
+  <section id="t-q" class="hide"></section>
+  <section id="t-data" class="hide"></section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = "https://eoljasmgogdcvnytaoax.supabase.co";
+const SUPABASE_KEY = "sb_publishable_FsdOrzNSaHLmsuykEg9BVw_QbhI3h11"; // 공개용 키. 실제 접근은 RLS(is_agency_owner)가 막는다.
+// 이 페이지에서 로그인한 세션이 있으면 그걸 쓰고, 없으면 메인(index.html) 로그인 토큰을 빌려 쓴다.
+function indexToken(){ try { const t = localStorage.getItem("socra_admin_token"), e = Number(localStorage.getItem("socra_admin_token_exp")); return t && e > Date.now() ? t : null; } catch(e){ return null; } }
+let OWN = false;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global:{ fetch:(url, o = {}) => {
+  if (!OWN && !String(url).includes("/auth/v1/")) { const t = indexToken(); if (t) { const h = new Headers(o.headers || {}); h.set("Authorization", "Bearer " + t); o = { ...o, headers:h }; } }
+  return fetch(url, o);
+} } });
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const linkify = t => esc(t).replace(/https?:\/\/[^\s<)"]+/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u.length > 60 ? u.slice(0, 57) + "…" : u}</a>`);
+const WD = ["일","월","화","수","목","금","토"];
+const fmtD = d => { const x = new Date(d + "T00:00:00"); return `${x.getMonth()+1}/${x.getDate()}(${WD[x.getDay()]})`; };
+const fmtT = t => { const x = new Date(t); return `${x.getMonth()+1}/${x.getDate()} ${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`; };
+const KIND = { auto:["자동","b"], manual:["수동",""], deep:["깊은 회의","k"], monthly:["월간 리포트","g"] };
+const DAY = { mon:"월 주간 브리프", wed:"수 다음 주 기획", fri:"금 스캔" };
+const TAG = { 근거:"b", 사실:"b", 추정:"a", 의견:"", 반론:"r", 흡수:"g", 검증:"a", 재설계:"a", 추천:"g", 도전안:"k", 질문:"b" };
+const STEP = { trigger:"트리거", holiday:"공휴일", memory:"기억", intervene:"개입", learn:"학습", collect:"수집", agenda:"안건", meeting:"회의", verify:"YK 검증", save:"저장", dm:"DM" };
+const IVK = { reply:"답장", redo:"다시 논의", hold:"보류", add_plan:"내 안 추가", agenda:"안건 올리기", exclude:"앞으로 빼기", direction:"방향 지시", pause:"회의 쉬기" };
+let AG = {}, MEETINGS = [], IV = [], PROFILE = [], CUR = null;
+
+function show(v){ ["vLogin","vDenied","vLoading","vApp"].forEach(id => $("#" + id).classList.toggle("hide", id !== v)); }
+function toast(m){ const d = document.createElement("div"); d.className = "toast"; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+function store(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e){ return null; } }
+
+async function boot(){
+  show("vLoading");
+  const { data:{ session } } = await sb.auth.getSession();
+  OWN = !!session;
+  if (!OWN && !indexToken()) return show("vLogin");
+  $("#who").textContent = OWN ? (session.user.email || "").replace("@internal.local", "") : "";
+  $("#logout").classList.toggle("hide", !OWN);
+  // RLS가 본인 행만 돌려주므로 행이 있으면 소유자
+  const { data: own, error: oe } = await sb.from("agency_owners").select("user_id").limit(1).maybeSingle();
+  if (!own && !OWN) return show("vLogin"); // 메인 토큰이 만료·무효면 여기서 로그인
+  if (oe && /JWT|expired/i.test(oe.message)) { await sb.auth.signOut(); OWN = false; return show("vLogin"); }
+  if (!own) return show("vDenied");
+  show("vApp");
+  await load();
+  const h = (location.hash || "").slice(1);
+  tab(["meet","iv","q","data"].includes(h) ? h : (store("agency-tab") || "meet"));
+}
+
+async function load(){
+  const [ag, mt, iv, pf] = await Promise.all([
+    sb.from("agency_agents").select("code,name,role,active").order("sort"),
+    sb.from("agency_meetings").select("*").neq("kind", "chat").order("meeting_date", { ascending:false }).order("created_at", { ascending:false }).limit(40),
+    sb.from("agency_interventions").select("*").order("created_at", { ascending:false }).limit(120),
+    sb.from("agency_profile").select("*").order("created_at")
+  ]);
+  AG = {}; (ag.data || []).forEach(a => AG[a.code] = a);
+  MEETINGS = mt.data || []; IV = iv.data || []; PROFILE = pf.data || [];
+  if (!CUR || !MEETINGS.find(m => m.id === CUR)) CUR = (MEETINGS.find(m => m.status === "done" && (m.decisions || []).length) || MEETINGS[0] || {}).id;
+  renderMeet(); renderIV(); renderQ();
+}
+
+function tab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
+  ["meet","iv","q","data"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== t));
+  if (t === "data" && !$("#t-data").innerHTML) $("#t-data").innerHTML = `<iframe class="data" src="data.html" title="데이터"></iframe>`;
+  store("agency-tab", t); history.replaceState(null, "", "#" + t);
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => tab(b.dataset.t));
+
+/* ---------- 회의 ---------- */
+function who(c){ const a = AG[c]; return a ? `${esc(c)}` : esc(c || ""); }
+function renderMeet(){
+  const P = $("#t-meet");
+  if (!MEETINGS.length) { P.innerHTML = `<p class="empty">아직 회의 기록이 없습니다.</p>`; return; }
+  const list = MEETINGS.map(m => {
+    const k = KIND[m.kind] || [m.kind, ""];
+    const sub = m.status === "no_agenda" ? "안건 없음" : m.status === "error" ? "오류" : (m.title || "");
+    return `<button type="button" data-id="${m.id}" aria-current="${m.id === CUR}"><b>${fmtD(m.meeting_date)} · ${esc(k[0])}${m.kind === "auto" && m.meta?.day ? " · " + esc(DAY[m.meta.day] || m.meta.day) : ""}</b><span>${esc(sub)}</span></button>`;
+  }).join("");
+  const m = MEETINGS.find(x => x.id === CUR) || MEETINGS[0];
+  P.innerHTML = `<div class="mlist" role="list">${list}</div><div id="mbody">${meetingHtml(m)}</div>`;
+  P.querySelectorAll(".mlist button").forEach(b => b.onclick = () => { CUR = b.dataset.id; renderMeet(); });
+  bindMeeting(m);
+}
+function meetingHtml(m){
+  const meta = m.meta || {}, k = KIND[m.kind] || [m.kind, ""], ch = m.choices || {};
+  const steps = (meta.steps || []).map(s => `<span class="step ${s.s === "ok" ? "ok" : s.s === "fail" ? "fail" : ""}" title="${esc(s.n || "")}"><b>${esc(STEP[s.k] || s.k)}</b>${esc(s.n || "")}</span>`).join("");
+  const escs = (m.escalations || []).map(e => `<div class="esc"><b>${who(e.owner)}</b> ${esc(e.title)}<br><span class="note">${linkify(e.body)}</span></div>`).join("");
+  const decs = (m.decisions || []).map(d => decisionHtml(m, d, ch[d.id])).join("");
+  const note = meta.note ? `<p class="note" style="margin-top:8px">${esc(meta.note)}</p>` : "";
+  const err = meta.error ? `<div class="esc" style="border-color:var(--bad);background:var(--bad-soft)">오류: ${esc(meta.error)}</div>` : "";
+  const q = meta.question ? `<div class="card"><b>오늘의 질문</b><p style="margin-top:4px">${esc(meta.question)}</p><p class="note" style="margin-top:4px">답은 '질문' 탭에서 남길 수 있어요.</p></div>` : "";
+  return `<div class="card mhead">
+      <div class="note">${fmtD(m.meeting_date)} · ${esc(k[0])}${meta.attendees ? " · 참석 " + meta.attendees.map(esc).join("·") : ""}</div>
+      <h2>${esc(m.title || "회의")}</h2>
+      ${meta.agenda_reason ? `<p class="note" style="margin-top:4px">${esc(meta.agenda_reason)}</p>` : ""}
+      ${steps ? `<div class="steps">${steps}</div>` : ""}${note}${err}${escs}
+    </div>
+    ${decs}${q}
+    <div class="card"><b>이 회의에 피드백</b><p class="note">자유롭게 남기면 다음 루틴이 학습에 반영합니다.</p>
+      ${m.feedback ? `<p style="margin-top:8px;white-space:pre-wrap;font-size:.88rem">${esc(m.feedback)}</p>` : ""}
+      <textarea id="fbIn" placeholder="예: B안 방향은 좋은데 공수가 커요" style="margin-top:8px"></textarea>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn p" id="fbBtn">피드백 남기기</button></div>
+    </div>`;
+}
+function decisionHtml(m, d, picked){
+  const plans = (d.plans || []).map(p => {
+    const cls = ["plan", p.l === d.rec ? "rec" : "", p.l === d.chal ? "chal" : "", p.l === picked ? "pick" : ""].join(" ");
+    const badge = (p.l === d.rec ? `<span class="chip g">YK 추천</span>` : "") + (p.l === d.chal ? `<span class="chip k">도전안</span>` : "") + (p.l === picked ? `<span class="chip a">내 선택</span>` : "");
+    const row = (k, v) => v ? `<dt>${k}</dt><dd>${linkify(v)}</dd>` : "";
+    return `<div class="${cls}"><div><span class="l">${esc(p.l)}</span><span class="t">${esc(p.t)}</span>${badge}</div>
+      <p style="margin-top:6px;font-size:.88rem">${linkify(p.d)}</p>
+      <dl>${row("가설", p.h)}${row("비용·공수", p.c)}${row("판정 기준", p.m)}${row("브랜드 체크", p.brand)}${row("제안", p.by)}</dl>
+      ${p.out ? `<div class="out">${linkify(p.out)}</div>` : ""}
+      <button type="button" class="btn ${p.l === picked ? "" : "p"} pickb" data-m="${m.id}" data-d="${esc(d.id)}" data-l="${esc(p.l)}">${p.l === picked ? "선택 취소" : esc(p.l) + "안 선택"}</button></div>`;
+  }).join("");
+  const q = d.blog || d.reel ? `<div class="plans">${d.blog ? `<div class="plan"><span class="t">블로그</span><div class="out">${linkify(typeof d.blog === "string" ? d.blog : JSON.stringify(d.blog, null, 1))}</div></div>` : ""}${d.reel ? `<div class="plan"><span class="t">릴스</span><div class="out">${linkify(typeof d.reel === "string" ? d.reel : JSON.stringify(d.reel, null, 1))}</div></div>` : ""}</div>` : "";
+  const tr = ((m.transcript || {})[d.id] || []).map(x => x.st ? `<div class="st">${esc(x.st)}</div>` :
+    `<div class="msg ${x.dissent ? "dis" : ""}"><div class="who ${x.a === "YK" ? "k" : ""}">${esc(x.a)}</div><div>${linkify(x.p)}${(x.tag || []).map(t => `<span class="chip ${TAG[t] ?? ""}">${esc(t)}</span>`).join("")}${x.dissent ? `<span class="chip r">반론 보존</span>` : ""}${(x.ev || []).length ? `<span class="ev">${x.ev.map(linkify).join(" · ")}</span>` : ""}</div></div>`).join("");
+  const ivs = IV.filter(i => i.meeting_id === m.id && i.decision_id === d.id);
+  return `<div class="card dec" id="dec-${esc(d.id)}">
+    <div class="note">${esc(d.proj || "")}${d.task ? " · " + esc(d.task) : ""}</div>
+    <h3>${esc(d.q || (d.id === "q" ? "이번 주 학부모 질문" : ""))}</h3>
+    ${d.why ? `<p class="why">${linkify(d.why)}</p>` : ""}
+    ${plans ? `<div class="plans">${plans}</div>` : ""}${q}
+    ${d.yk ? `<div class="yk"><b>YK</b> ${linkify(d.yk)}${d.rec ? ` <span class="chip g">추천 ${esc(d.rec)}</span>` : ""}${d.chal ? `<span class="chip k">도전안 ${esc(d.chal)}</span>` : ""}</div>` : ""}
+    ${tr ? `<details class="tr"><summary>회의 발언 보기</summary>${tr}</details>` : ""}
+    ${ivs.length ? `<ul class="ivlist" style="margin-top:8px">${ivs.map(ivItem).join("")}</ul>` : ""}
+    <div class="ivbox"><div class="row"><select data-ivk>${["reply","redo","add_plan","hold"].map(k => `<option value="${k}">${IVK[k]}</option>`).join("")}</select></div>
+      <textarea data-ivt placeholder="에이전시에게 할 말 (다음 루틴이 가장 먼저 처리합니다)" style="margin-top:8px"></textarea>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn" data-ivs data-m="${m.id}" data-d="${esc(d.id)}">남기기</button></div></div>
+  </div>`;
+}
+function bindMeeting(m){
+  const P = $("#t-meet");
+  P.querySelectorAll(".pickb").forEach(b => b.onclick = () => pick(b.dataset.m, b.dataset.d, b.dataset.l, b));
+  P.querySelectorAll("[data-ivs]").forEach(b => b.onclick = () => {
+    const box = b.closest(".ivbox"), body = box.querySelector("[data-ivt]").value.trim();
+    if (!body) return toast("내용을 적어 주세요");
+    addIV({ kind: box.querySelector("[data-ivk]").value, body, meeting_id: b.dataset.m, decision_id: b.dataset.d }, b);
+  });
+  const fb = $("#fbBtn"); if (fb) fb.onclick = async () => {
+    const t = $("#fbIn").value.trim(); if (!t) return toast("내용을 적어 주세요");
+    fb.disabled = true;
+    const stamp = new Date().toLocaleString("ko-KR", { month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit" });
+    const next = (m.feedback ? m.feedback + "\n" : "") + `[${stamp}] ${t}`;
+    const { error } = await sb.from("agency_meetings").update({ feedback: next, learned: false }).eq("id", m.id);
+    fb.disabled = false;
+    if (error) return toast("저장하지 못했어요: " + error.message);
+    m.feedback = next; toast("피드백을 남겼어요"); renderMeet();
+  };
+}
+async function pick(mid, did, l, btn){
+  const m = MEETINGS.find(x => x.id === mid); if (!m) return;
+  const ch = { ...(m.choices || {}) };
+  if (ch[did] === l) delete ch[did]; else ch[did] = l;
+  btn.disabled = true;
+  const { error } = await sb.from("agency_meetings").update({ choices: ch, learned: false }).eq("id", mid);
+  btn.disabled = false;
+  if (error) return toast("저장하지 못했어요: " + error.message);
+  m.choices = ch; toast(ch[did] ? `${l}안을 골랐어요` : "선택을 취소했어요"); renderMeet();
+}
+async function addIV(row, btn){
+  btn.disabled = true;
+  const { data, error } = await sb.from("agency_interventions").insert({ ...row, status: "open" }).select().single();
+  btn.disabled = false;
+  if (error) return toast("저장하지 못했어요: " + error.message);
+  IV.unshift(data); toast("남겼어요. 다음 루틴이 처리합니다"); renderMeet(); renderIV();
+}
+
+/* ---------- 개입 ---------- */
+function ivItem(i){
+  const st = i.status === "open" ? `<span class="chip a">대기</span>` : i.status === "done" ? `<span class="chip g">반영</span>` : `<span class="chip">닫힘</span>`;
+  return `<li><span class="chip">${esc(IVK[i.kind] || i.kind)}</span>${st} ${linkify(i.body)}<small>${fmtT(i.created_at)}${i.response ? ` · ${esc(i.responder || "")}: ${linkify(i.response)}` : ""}</small></li>`;
+}
+function renderIV(){
+  const open = IV.filter(i => i.status === "open").length;
+  $("#ivN").textContent = open; $("#ivN").classList.toggle("hide", !open);
+  const P = $("#t-iv");
+  P.innerHTML = `<div class="card"><b>에이전시에 지시 남기기</b><p class="note">다음 회의(월·수 루틴 또는 "개입 반영해")가 가장 먼저 처리합니다.</p>
+    <div class="row" style="margin-top:10px"><select id="gk">${["agenda","direction","exclude","pause"].map(k => `<option value="${k}">${IVK[k]}</option>`).join("")}</select></div>
+    <textarea id="gt" placeholder="예: 다음 주는 겨울방학 영어 준비를 우선으로" style="margin-top:8px"></textarea>
+    <p class="note" id="gh" style="margin-top:4px"></p>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn p" id="gs">남기기</button></div></div>
+    <div class="card"><b>최근 개입</b>${IV.length ? `<ul class="ivlist">${IV.slice(0, 60).map(ivItem).join("")}</ul>` : `<p class="empty">아직 없습니다.</p>`}</div>`;
+  const hint = { agenda:"다음 회의 결정 안건 1순위로 올립니다.", direction:"다음 회의 모든 제안의 최우선 제약이 됩니다.", exclude:"취소할 때까지 매 회의 안건 후보에서 뺍니다.", pause:"적힌 날짜까지 회의를 쉽니다. 예: 11/30까지" };
+  const sync = () => $("#gh").textContent = hint[$("#gk").value]; $("#gk").onchange = sync; sync();
+  $("#gs").onclick = () => { const t = $("#gt").value.trim(); if (!t) return toast("내용을 적어 주세요"); addIV({ kind: $("#gk").value, body: t }, $("#gs")); };
+}
+
+/* ---------- 질문 ---------- */
+function renderQ(){
+  const qs = PROFILE.filter(p => p.kind === "question" && ["active","asked"].includes(p.status));
+  $("#qN").textContent = qs.length; $("#qN").classList.toggle("hide", !qs.length);
+  const done = PROFILE.filter(p => p.kind === "question" && p.status === "answered");
+  const pats = PROFILE.filter(p => ["pref","rule","pattern"].includes(p.kind) && p.status === "active");
+  const P = $("#t-q");
+  P.innerHTML = `${qs.length ? qs.map(p => `<div class="card qcard"><div class="note">${p.status === "asked" ? "회의에서 물어본 질문" : "대기 중 질문"}</div><p style="margin-top:4px">${linkify(p.body)}</p>
+      <textarea data-qa="${p.id}" placeholder="답을 적어 주세요"></textarea><div class="row" style="margin-top:8px"><button type="button" class="btn p" data-qs="${p.id}">답 보내기</button></div></div>`).join("")
+    : `<p class="empty">지금 답할 질문이 없습니다.</p>`}
+    ${done.length ? `<div class="card"><b>답한 질문</b><ul class="ivlist">${done.map(p => `<li>${linkify(p.body)}<small>답: ${linkify(p.answer)}</small></li>`).join("")}</ul></div>` : ""}
+    <div class="card"><b>에이전시가 아는 KWAN</b><p class="note">회의에서 YK가 KWAN을 미러링할 때 쓰는 선호·규칙·패턴입니다.</p>
+      <ul class="ivlist">${pats.map(p => `<li><span class="chip">${esc({ pref:"선호", rule:"규칙", pattern:"패턴" }[p.kind])}</span>${p.confidence ? `<span class="chip">${esc(p.confidence)}</span>` : ""} ${linkify(p.body)}</li>`).join("") || `<li class="empty">아직 없습니다.</li>`}</ul></div>`;
+  P.querySelectorAll("[data-qs]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.qs, t = P.querySelector(`[data-qa="${id}"]`).value.trim(); if (!t) return toast("답을 적어 주세요");
+    b.disabled = true;
+    const { error } = await sb.from("agency_profile").update({ answer: t, status: "answered", updated_at: new Date().toISOString() }).eq("id", id);
+    b.disabled = false;
+    if (error) return toast("저장하지 못했어요: " + error.message);
+    const p = PROFILE.find(x => String(x.id) === id); p.answer = t; p.status = "answered"; toast("답을 보냈어요"); renderQ();
+  });
+}
+
+/* ---------- 로그인 ---------- */
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("#lerr").textContent = "";
+  let id = $("#lid").value.trim(); if (!id.includes("@")) id += "@internal.local";
+  const { error } = await sb.auth.signInWithPassword({ email: id, password: $("#lpw").value });
+  if (error) { $("#lerr").textContent = "아이디 또는 비밀번호가 맞지 않아요."; return; }
+  $("#lpw").value = ""; boot();
+});
+for (const b of ["#logout", "#logout2"]) $(b).addEventListener("click", async () => { if (OWN) await sb.auth.signOut(); OWN = false; location.hash = ""; show("vLogin"); });
+boot();
+</script>
+</body>
+</html>

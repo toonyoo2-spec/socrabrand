@@ -55,9 +55,11 @@ tr:hover td{background:#f8faf8}
 const URL_ = "https://eoljasmgogdcvnytaoax.supabase.co";
 const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvbGphc21nb2dkY3ZueXRhb2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NzIwMDEsImV4cCI6MjEwMTQ0ODAwMX0.G8wiFPCgvzoDwGlk__SDkn8SxP6lDMHY6g6pt61-a5o";
 const app = document.getElementById("app");
-const token = localStorage.getItem("socra_admin_token");
-const exp = Number(localStorage.getItem("socra_admin_token_exp") || 0);
-const gate = msg => { app.innerHTML = `<div class="gate"><p>${msg}</p><p style="margin-top:10px"><a href="/">메인에서 로그인하기</a></p></div>`; };
+// 에이전시 페이지(agency.html) 로그인 세션을 먼저 쓰고, 없으면 메인(index.html) 로그인 토큰을 쓴다
+let token = null, exp = 0;
+try { const s = JSON.parse(localStorage.getItem("sb-eoljasmgogdcvnytaoax-auth-token") || "null"); if (s?.access_token && (s.expires_at || 0) * 1000 > Date.now()) { token = s.access_token; exp = s.expires_at * 1000; } } catch {}
+if (!token) { token = localStorage.getItem("socra_admin_token"); exp = Number(localStorage.getItem("socra_admin_token_exp") || 0); }
+const gate = msg => { app.innerHTML = `<div class="gate"><p>${msg}</p><p style="margin-top:10px"><a href="agency.html">에이전시에서 로그인하기</a> · <a href="/">메인</a></p></div>`; };
 if (!token || exp < Date.now()) { gate("로그인이 필요합니다."); throw 0; }
 
 async function q(path) {

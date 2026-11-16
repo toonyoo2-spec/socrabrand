@@ -424,6 +424,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 <a href="#creative-six" class="main-menu-tab" id="creativeOfficeTab" style="display:none">에이전시</a>
                 <a href="#skills" class="main-menu-tab" id="resourceLibraryTab" style="display:none">스킬</a>
                 <a href="data.html" class="main-menu-tab" id="dataTab" style="display:none">데이터</a>
+                <a href="agency.html" class="main-menu-tab" id="agencyPageTab" style="display:none">에이전시</a>
                 <a href="#kwan-studio" class="main-menu-tab" id="kwanStudioTab" style="display:none">Kwan Studio</a>
                 <a href="#library" class="main-menu-tab" id="libraryTab">자료실</a>
                 <a href="#automation" class="main-menu-tab" id="automationTab">자동화</a>
@@ -1111,6 +1112,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             document.getElementById('creativeOfficeChatBar').style.display=creativeOwner?'flex':'none';
             document.getElementById('resourceLibraryTab').style.display=creativeOwner?'inline-block':'none';
             document.getElementById('dataTab').style.display=creativeOwner?'inline-block':'none'; // 데이터 탭(2026-11-16 KWAN)
+            document.getElementById('agencyPageTab').style.display=creativeOwner?'inline-block':'none'; // 에이전시 회의 페이지(2026-11-16 KWAN)
             const addProjBtn = document.getElementById('btnAddProject');
             const libraryHeaderAdmin = document.getElementById('libraryHeaderAdmin');
             const archiveTab = document.querySelector('a[href="#archive"]');
