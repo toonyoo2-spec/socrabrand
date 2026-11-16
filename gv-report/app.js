@@ -303,7 +303,7 @@
     fb.loading = true; var done; fb.pending = new Promise(function (r) { done = r; });
     var rid = current.id;
     try {
-      var docs = await api("gv_report_feedback?select=id,section,author_id,author_name,body,created_at&report_id=eq." + encodeURIComponent(rid) + "&order=created_at.asc");
+      var docs = await api("gv_report_feedback?select=id,section,author_id,author_name,body,created_at,done,done_by_name,done_at&report_id=eq." + encodeURIComponent(rid) + "&order=created_at.asc");
       if (current && current.id === rid) { fb.docs = docs || []; renderFb(); }
     } catch (err) { expired(err); }
     finally { fb.loading = false; done(); }
@@ -311,17 +311,22 @@
   }
   function badges(by) {
     document.querySelectorAll("#report [data-fb]").forEach(function (el) { el.removeAttribute("data-fb"); });
-    Object.keys(by).forEach(function (k) { if (!k) return; var el = document.querySelector('#report [data-item="' + k + '"]'); if (el) el.setAttribute("data-fb", by[k].length); });
+    Object.keys(by).forEach(function (k) { if (!k) return; var el = document.querySelector('#report [data-item="' + k + '"]'); var n = openCount(by[k]); if (el && n) el.setAttribute("data-fb", n); });
   }
+  function openCount(list) { return list.filter(function (d) { return !d.done; }).length; }
+  var CHECK = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function msgHtml(d, me) {
     var mine = d.author_id === me;
-    return '<div class="msg' + (mine ? " me" : "") + '"><span class="msg-meta">' + (mine ? "나" : esc(d.author_name || "팀원")) + " · " + fmt(d.created_at) +
-      (mine ? '<button type="button" class="msg-del" data-del="' + esc(d.id) + '">지우기</button>' : "") + '</span><div class="msg-bubble">' + esc(d.body) + "</div></div>";
+    return '<div class="msg' + (mine ? " me" : "") + (d.done ? " done" : "") + '"><span class="msg-meta">' + (mine ? "나" : esc(d.author_name || "팀원")) + " · " + fmt(d.created_at) +
+      (mine ? '<button type="button" class="msg-del" data-del="' + esc(d.id) + '">지우기</button>' : "") + '</span><div class="msg-bubble">' + esc(d.body) + "</div>" +
+      '<button type="button" class="msg-done" data-done="' + esc(d.id) + '" aria-pressed="' + (d.done ? "true" : "false") + '"><span class="box">' + CHECK + "</span>" +
+      (d.done ? "완료 · " + esc(d.done_by_name || "팀원") + (d.done_at ? " · " + fmt(d.done_at) : "") : "반영했으면 완료 표시") + "</button></div>";
   }
+  function sortDone(list) { return list.slice().sort(function (a, b) { return (a.done ? 1 : 0) - (b.done ? 1 : 0); }); }
   function renderFb() {
-    var cnt = $("chatCount"); if (cnt) cnt.textContent = fb.docs.length;
+    var cnt = $("chatCount"); if (cnt) cnt.textContent = openCount(fb.docs);
     var me = ls(K.uid), by = {};
-    fb.docs.forEach(function (d) { var k = d.section || ""; (by[k] = by[k] || []).push(d); });
+    sortDone(fb.docs).forEach(function (d) { var k = d.section || ""; (by[k] = by[k] || []).push(d); });
     badges(by);
     var flt = $("fbFilter");
     if (filterSec) {
@@ -344,12 +349,20 @@
     groups.innerHTML = order.filter(function (k) { return by[k]; }).map(function (k) {
       var x = secOf(k);
       return '<section class="fb-group"><button type="button" class="fb-group-h" data-jump="' + esc(k) + '"><span><b>' + esc(x.name) + "</b>" +
-        (x.tab ? "<small>" + esc(x.tab) + " 탭 · 눌러서 그 부분으로 가기</small>" : "") + "</span><em>" + by[k].length + "</em></button>" +
+        (x.tab ? "<small>" + esc(x.tab) + " 탭 · 눌러서 그 부분으로 가기</small>" : "") + "</span>" + (openCount(by[k]) ? "<em>" + openCount(by[k]) + "</em>" : '<em class="all-done">' + CHECK + "완료</em>") + "</button>" +
         by[k].map(function (d) { return msgHtml(d, me); }).join("") + "</section>";
     }).join("");
     groups.scrollTop = keep;
   }
   groups.addEventListener("click", async function (e) {
+    var dn = e.target.closest("[data-done]");
+    if (dn) {
+      var fid = dn.getAttribute("data-done"), on = dn.getAttribute("aria-pressed") !== "true";
+      dn.disabled = true;
+      try { await api("rpc/gv_feedback_set_done", { method: "POST", body: { fid: fid, val: on } }); await loadFb(); if (on) toast("완료로 표시했어요"); }
+      catch (err) { if (!expired(err)) { toast("저장하지 못했어요. 다시 눌러 주세요."); dn.disabled = false; } }
+      return;
+    }
     var del = e.target.closest("[data-del]");
     if (del) {
       del.disabled = true;

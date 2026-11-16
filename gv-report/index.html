@@ -461,6 +461,16 @@ body.review [data-item] { outline: none; }
 .fb-group-h em { font-style: normal; font-size: 12px; font-weight: 800; color: var(--green-ink); background: var(--green-wash); border-radius: 999px; padding: 2px 9px; font-variant-numeric: tabular-nums; }
 @media (hover: hover) { .fb-group-h:hover b { text-decoration: underline; text-underline-offset: 3px; } }
 .fb-group .msg { max-width: 100%; }
+/* 의견 완료 표시 */
+.msg-done { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; border: 0; background: none; padding: 2px 0; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--sub); cursor: pointer; }
+.msg-done .box { width: 18px; height: 18px; display: grid; place-items: center; border: 1.5px solid #C5CCC7; border-radius: 6px; background: var(--paper); color: transparent; transition: background .15s, border-color .15s; }
+@media (hover: hover) { .msg-done:hover .box { border-color: var(--green-ink); } }
+.msg-done[aria-pressed="true"] { color: var(--green-ink); }
+.msg-done[aria-pressed="true"] .box { background: var(--green-ink); border-color: var(--green-ink); color: #fff; }
+.msg.done .msg-bubble { opacity: .55; text-decoration: line-through; text-decoration-color: rgba(20,23,26,.35); }
+.fb-group-h em.all-done { display: inline-flex; align-items: center; gap: 3px; color: #fff; background: var(--green-ink); }
+/* AI 작성 안내 */
+.ai-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.55; color: var(--sub); }
 .fb-compose { border-top: 1px solid var(--line); padding: 10px 18px 14px; display: grid; gap: 8px; }
 .fb-target-l { font-size: 12.5px; font-weight: 800; color: var(--sub); }
 .fb-compose select { width: 100%; min-height: 42px; border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 10px; font: 700 14px/1.3 var(--font); color: var(--ink); background: var(--paper); }

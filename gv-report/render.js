@@ -94,7 +94,8 @@
       '<button type="button" class="level-strip" id="lvOpen" aria-haspopup="dialog"><span class="ls-lv">LV ' + d.level + '</span><span class="ls-txt"><b>' + esc(lv.title) + "</b><small>CEFR " + esc(lv.cefr) + " · 눌러서 자세히 보기</small></span>" + CHEV + "</button></div></section>" +
       '<section class="card teacher" data-item="lia-message"><div class="t-head"><span class="t-avatar"><svg aria-hidden="true"><use href="#cube"/></svg></span><div><b>리아 선생님</b><small>' + esc(nm) + " 학부모님께</small></div></div>" +
       (d.letter || []).map(function (p) { return "<p>" + rich(p) + "</p>"; }).join("") +
-      '<div class="next-goal"><span>다음 목표</span><p>' + esc(d.goal) + "</p></div></section>" +
+      '<div class="next-goal"><span>다음 목표</span><p>' + esc(d.goal) + "</p></div>" +
+      '<p class="ai-note">본 학습 리포트는 리얼 아카데미 AI 학습 관리 시스템을 통해 분석 및 작성되었습니다.</p></section>' +
       '<section class="card" data-item="highlight"><span class="eyebrow">' + (hl.kind === "compare" ? "가장 크게 달라진 점" : "지금 가장 잘하고 있는 점") + "</span><h2>" + rich(hl.title) + "</h2>" +
       (hl.kind === "compare" ? compare(hl.title, hl.a, hl.of_a, hl.b, hl.of_b, hl.unit || "문장") + '<p class="lead">' + esc(hl.lead) + "</p>"
         : '<p class="quote">' + esc(hl.quote) + '</p><p class="lead">' + esc(hl.text) + "</p>") +
@@ -103,7 +104,7 @@
     /* 글 비교 */
     h += '<div class="panel" role="tabpanel" id="p-writing" aria-labelledby="t-writing" tabindex="0" hidden>' +
       '<section class="card" style="padding-bottom:16px"><span class="eyebrow">GV 노트</span><h2>' + esc(nm) + "이 직접 쓴 첫 영작이에요</h2>" +
-      '<p class="lead">제가 손대기 전, ' + esc(nm) + "이 처음 쓴 그대로 옮겨 왔어요. 문장 아래 작은 글씨는 쓰려고 했던 뜻이에요.</p></section>" +
+      '<p class="lead">피드백을 받기 전, ' + esc(nm) + "이 처음 쓴 그대로 옮겨 왔어요. 문장 아래 작은 글씨는 쓰려고 했던 뜻이에요.</p></section>" +
       note("then", d.then) + note("now", d.now) +
       '<section class="card change" data-item="before-after"><span class="eyebrow">무엇이 달라졌나요</span>' +
       (d.changes || []).map(function (c) { return '<div class="change-item"><svg width="22" height="22" aria-hidden="true"><use href="#' + (c[0] ? "check" : "dot") + '"/></svg><span>' + rich(c[1], "b") + "</span></div>"; }).join("") + "</section></div>";
@@ -149,7 +150,7 @@
       '<div class="choices" id="praiseChips">' + (d.praise || []).map(function (p) { return '<button type="button" class="choice" aria-pressed="false">' + esc(p) + "</button>"; }).join("") + "</div>" +
       '<button type="button" class="btn" id="praiseSend" disabled>보낼 말을 골라 주세요</button></section>' +
       '<section class="card" data-item="parent-guide"><span class="eyebrow">리포트 보는 법</span><div class="guide">' +
-      [["혼자 쓴 문장만 봤어요", "제가 고쳐 주기 전에 아이가 처음 쓴 문장으로만 비교했어요."],
+      [["혼자 쓴 문장만 봤어요", "피드백을 받기 전에 아이가 처음 쓴 문장으로만 비교했어요."],
        ["처음과 지금을 나란히 봤어요", "첫 수업 세 번과 최근 수업 세 번을 비교했어요."],
        ["레벨이 오르면 잠깐 주춤할 수 있어요", "문장이 길고 어려워지면서 처음엔 틀리는 곳이 늘 수 있어요. 새 레벨에 익숙해지는 동안 생기는 일이니 너무 걱정하지 않으셔도 돼요."],
        ["힌트를 쓰는 건 괜찮아요", "힌트도 어려운 표현을 배우는 과정이에요. 다음에 비슷한 문장을 쓸 때 힌트 없이 써 내는지를 함께 지켜봐 주세요."]]
