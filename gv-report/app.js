@@ -8,7 +8,7 @@
   var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvbGphc21nb2dkY3ZueXRhb2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NzIwMDEsImV4cCI6MjEwMTQ0ODAwMX0.G8wiFPCgvzoDwGlk__SDkn8SxP6lDMHY6g6pt61-a5o";
   var K = { token: "socra_admin_token", exp: "socra_admin_token_exp", refresh: "socra_refresh_token", uid: "socra_user_id",
             role: "socra_user_role", email: "socra_user_email", name: "socra_user_name", tabs: "socra_visible_tabs" };
-  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons&order=is_sample.desc,created_at.asc";
+  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons,variant:data->>variant&order=is_sample.desc,created_at.asc";
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -102,13 +102,13 @@
     var ready = x.status === "ready";
     var meta = ready ? "LV " + (x.level || "-") + " · " + (x.lessons || "-") + "레슨" : "학습 기록을 기다리는 중";
     return '<li data-row="' + esc(x.id) + '"><button type="button" data-rid="' + esc(x.id) + '"' + (current && current.id === x.id ? ' aria-current="true"' : "") + ">" +
-      '<b><span class="nm">' + esc(x.name || "새 학생") + '</span><span class="id">' + esc(x.student_id) + "</span></b>" +
+      '<b><span class="nm">' + esc(x.name || "새 학생") + '</span><span class="id">' + esc(x.student_id) + "</span>" + (x.variant ? '<span class="vtag">' + esc(x.variant) + "</span>" : "") + "</b>" +
       '<em class="' + (ready ? "ready" : "wait") + '">' + (ready ? "완성" : "준비 중") + "</em><small>" + esc(meta) + "</small></button></li>";
   }
   function renderList() {
     var sample = reports.filter(function (x) { return x.is_sample; }), rest = reports.filter(function (x) { return !x.is_sample; });
     rest.sort(function (a, b) { return (a.status === b.status ? 0 : a.status === "ready" ? -1 : 1) || String(a.name || "~").localeCompare(String(b.name || "~"), "ko") || a.id.localeCompare(b.id); });
-    sampleBox.innerHTML = sample.length ? '<div class="sample"><span class="sample-tag">' + STAR + "대표 샘플</span><p>처음 보시는 분은 이 리포트부터 보세요. 다른 리포트도 같은 기준으로 만들었어요.</p><ul class=\"rlist\">" + sample.map(item).join("") + "</ul></div>" : "";
+    sampleBox.innerHTML = sample.length ? '<div class="sample"><span class="sample-tag">' + STAR + "대표 샘플</span><p>처음 보시는 분은 이 리포트부터 보세요." + (sample.length > 1 ? " 위는 처음 안, ‘수정 샘플’은 평가 항목 시트대로 다시 만든 안이에요." : " 다른 리포트도 같은 기준으로 만들었어요.") + "</p><ul class=\"rlist\">" + sample.map(item).join("") + "</ul></div>" : "";
     $("allLabel").textContent = "전체 학생 " + rest.length + "명";
     rlist.innerHTML = rest.length ? rest.map(item).join("") : '<li class="list-empty">아직 다른 학생이 없어요. 위 칸에 학생 ID를 넣어 만들어 보세요.</li>';
     $("listCount").textContent = "모두 " + reports.length + "명 · 학생을 누르면 가운데에 리포트가 나와요";
@@ -193,9 +193,10 @@
   }
 
   /* 리포트 안의 동작. 리포트를 바꿔도 한 번만 걸리도록 문서에 위임한다 */
-  var TABS = ["summary", "writing", "skills", "next", "items"];
+  function tabIds() { return Array.prototype.map.call(document.querySelectorAll("#report [role=tab]"), function (b) { return b.id.slice(2); }); }
   function showTab(name, scroll) {
-    if (TABS.indexOf(name) < 0 || !$("t-" + name)) name = "summary";
+    var TABS = tabIds();
+    if (TABS.indexOf(name) < 0) name = TABS[0];
     TABS.forEach(function (t) {
       var b = $("t-" + t), p = $("p-" + t); if (!b || !p) return;
       var on = t === name; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; p.hidden = !on;
@@ -216,7 +217,7 @@
       stickObs = new IntersectionObserver(function (es) { bar.classList.toggle("stuck", !es[0].isIntersecting); }, { rootMargin: "-1px 0px 0px 0px" });
       stickObs.observe(s);
     }
-    var h = location.hash.slice(1); showTab(TABS.indexOf(h) >= 0 ? h : "summary", false);
+    var h = location.hash.slice(1); showTab(tabIds().indexOf(h) >= 0 ? h : "summary", false);
     buildSections();
   }
   function lvShow() { var s = $("lvSheet"), b = $("lvBg"); if (!s) return; s.hidden = false; b.hidden = false; var body = s.querySelector(".sheet-body"); if (body) body.scrollTop = 0; $("lvClose").focus(); }
@@ -242,7 +243,7 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { lvHide(); closeSide("fbPanel"); closeSide("listPanel"); return; }
     if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && e.target.closest && e.target.closest("#report [role=tab]")) {
-      var have = TABS.filter(function (t) { return $("t-" + t); });
+      var have = tabIds();
       var cur = have.indexOf(document.querySelector("#report [role=tab][aria-selected=true]").id.slice(2));
       var nx = have[(cur + (e.key === "ArrowRight" ? 1 : have.length - 1)) % have.length];
       showTab(nx, true); $("t-" + nx).focus();
@@ -283,7 +284,8 @@
       var id = el.getAttribute("data-item");
       if (!/^[a-z0-9-]{1,64}$/.test(id) || sections.some(function (x) { return x.id === id; })) return;
       var pn = el.closest(".panel");
-      sections.push({ id: id, name: NAMES[id] || id, tab: pn ? (TABNAME[pn.id] || "") : (id === "level" ? "요약" : ""), panel: pn ? pn.id.slice(2) : (id === "level" ? "summary" : "") });
+      var tb = pn && $("t-" + pn.id.slice(2));
+      sections.push({ id: id, name: el.getAttribute("data-name") || NAMES[id] || id, tab: pn ? (tb ? tb.textContent.trim() : (TABNAME[pn.id] || "")) : (id === "level" ? "요약" : ""), panel: pn ? pn.id.slice(2) : (id === "level" ? "summary" : "") });
     });
     sel.innerHTML = sections.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.tab ? x.tab + " · " + x.name : x.name) + "</option>"; }).join("");
   }

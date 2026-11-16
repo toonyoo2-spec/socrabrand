@@ -72,7 +72,104 @@
       (it.recs_note ? '<section class="card" data-item="items-recs"><span class="eyebrow">추천학습 기준</span><p class="lead" style="margin-top:4px">' + esc(it.recs_note) + "</p></section>" : "") + "</div>";
   }
 
+  /* 레벨 팝업 (두 틀이 같이 쓴다) */
+  function levelSheet(d, nm) {
+    var lv = LEVELS[d.level] || LEVELS[1];
+    var ladder = [8, 7, 6, 5, 4, 3, 2, 1].map(function (n) {
+      var L = LEVELS[n], cur = n === d.level;
+      return '<li class="' + (cur ? "cur" : "up") + '"' + (cur ? ' aria-current="step"' : "") + '><span class="lv">LV ' + n + '</span><span class="sch">' + esc(L.short) + (cur ? "<em>지금</em>" : "") + '</span><span class="cefr">' + esc(L.cefr) + "</span></li>";
+    }).join("");
+    var nx = LEVELS[d.level + 1];
+    return '<div class="sheet-bg" id="lvBg" hidden></div><div class="sheet" id="lvSheet" role="dialog" aria-modal="true" aria-labelledby="lvTitle" hidden><div class="sheet-in">' +
+      '<div class="sheet-head"><b id="lvTitle">지금 배우는 수준</b><button type="button" id="lvClose" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>' +
+      '<div class="sheet-body" data-item="level"><p class="sh-title">LV ' + d.level + "은<br>" + esc(lv.title) + "예요</p>" +
+      '<p class="lead">레벨마다 배우는 문장의 수준을 정리했어요. ' + esc(nm) + "의 실력을 매긴 게 아니라, 지금 배우고 있는 내용이 어느 정도인지 보여 드리는 거예요.</p>" +
+      '<ol class="ladder" aria-label="GV 라이팅 레벨별 수준">' + ladder + "</ol>" +
+      '<div class="lv-detail"><div><span>LV ' + d.level + ' 대표 문장</span><p class="ex">' + esc(lv.rep) + "</p></div>" +
+      "<div><span>LV " + d.level + "에서 익히는 문법</span><p>" + esc(lv.grammar) + "</p></div>" +
+      "<div><span>학교 영어와 비교하면</span><p>" + esc(lv.school) + " 학년(" + esc(lv.grade) + ")은 참고로만 봐 주세요. 레벨이 학년과 딱 맞아떨어지지는 않거든요.</p></div>" +
+      (nx ? "<div><span>LV " + (d.level + 1) + "에서 새로 배우는 것</span><p>" + esc(nx.title) + "로 넘어가요.</p></div>" : "") +
+      "</div></div></div></div>";
+  }
+
+  /* ---------- 평가 항목 틀 (기획 시트 「평가 항목」 그대로: 성취도 · 참여도 · 성장 추세 + 추천 학습) ---------- */
+  var AI_NOTE = '<p class="ai-note">본 학습 리포트는 리얼 아카데미 AI 학습 관리 시스템을 통해 분석 및 작성되었습니다.</p>';
+  function gradeChip(g) { return g ? '<span class="grade ' + (GRADE[g] || "wait") + '">' + esc(g) + "</span>" : '<span class="grade wait">판정 전</span>'; }
+  function sItem(it) {
+    if (it.status === "wait") {
+      return '<div class="srow wait"><div class="srow-k"><b>' + esc(it.name) + "</b><small>" + esc(it.q) + '</small></div><span class="soon">준비 중</span>' +
+        (it.basis ? '<p class="srow-basis">' + esc(it.basis) + "</p>" : "") + "</div>";
+    }
+    var vis = "";
+    if (it.pct != null) vis = '<span class="sbar" aria-hidden="true"><i style="width:' + Math.max(2, Math.min(100, it.pct)) + '%"></i></span>';
+    if (it.from != null) vis = '<div class="sft" aria-hidden="true"><div><span>처음</span><span class="sbar dim"><i style="width:' + Math.max(2, it.from) + '%"></i></span><em>' + it.from + (it.unit || "%") + "</em></div>" +
+      '<div><span>지금</span><span class="sbar"><i style="width:' + Math.max(2, it.to) + '%"></i></span><em>' + it.to + (it.unit || "%") + "</em></div></div>";
+    return '<div class="srow"><div class="srow-k"><b>' + esc(it.name) + "</b><small>" + esc(it.q) + '</small></div><div class="srow-v"><b>' + rich(it.value) + "</b>" +
+      (it.diff ? '<span class="ibadge">기준이 달라요</span>' : "") + "</div>" +
+      (vis ? '<div class="srow-vis">' + vis + "</div>" : "") +
+      (it.sub ? '<p class="srow-sub">' + rich(it.sub) + "</p>" : "") +
+      (it.basis ? '<p class="srow-basis">' + esc(it.basis) + "</p>" : "") +
+      (it.lvbtn ? '<button type="button" class="btn ghost sm" id="lvOpen" aria-haspopup="dialog">레벨별 수준 자세히 보기</button>' : "") + "</div>";
+  }
+  function sArea(key, a) {
+    return '<section class="card" data-item="' + key + '-head" data-name="' + esc(a.title + " 판정") + '"><div class="ihead"><div><span class="eyebrow">' + esc(a.eyebrow) + "</span><h2>" + rich(a.title) + "</h2></div>" + gradeChip(a.grade) + "</div>" +
+      '<p class="lead">' + rich(a.lead) + "</p></section>" +
+      (a.groups || []).map(function (g) {
+        var ok = g.items.filter(function (x) { return x.status !== "wait"; }).length;
+        return '<section class="card" data-item="' + esc(g.key) + '" data-name="' + esc(g.name) + '"><div class="ghead"><b>' + esc(g.name) + "</b><small>" + ok + " / " + g.items.length + " 항목 확인</small></div>" +
+          '<div class="srows">' + g.items.map(sItem).join("") + "</div></section>";
+      }).join("");
+  }
+  function renderSheet(id, d) {
+    var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생", A = d.areas || {}, R = d.recs || {};
+    var tabs = [["summary", "종합"], ["ach", "성취도"], ["eng", "참여도"], ["growth", "성장 추세"], ["recs", "추천 학습"]];
+    var h = '<div class="app sheet-tpl"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>GV 라이팅 리포트</span>' +
+      '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
+      '<nav class="tabbar pad" aria-label="리포트 탭"><div class="tabs five" role="tablist">' +
+      tabs.map(function (t, i) { return '<button type="button" role="tab" id="t-' + t[0] + '" aria-controls="p-' + t[0] + '" aria-selected="' + (i ? "false" : "true") + '"' + (i ? ' tabindex="-1"' : "") + ">" + t[1] + "</button>"; }).join("") +
+      '</div></nav><main class="pad">';
+
+    /* 종합 */
+    h += '<div class="panel" role="tabpanel" id="p-summary" aria-labelledby="t-summary" tabindex="0">' +
+      '<section class="card s-cover" data-item="sum-cover" data-name="표지"><p class="who">' + esc(nm + " · ID " + id + " · " + d.period) + "</p><h1>" + rich(d.headline, "em") + "</h1>" +
+      '<div class="facts"><div><span>지금 레벨</span><b>LV ' + d.level + '</b></div><div><span>콘텐츠 수준</span><b class="sm">CEFR ' + esc(lv.cefr) + '</b></div><div><span>완료한 레슨</span><b>' + d.lessons + "<small>개</small></b></div></div></section>" +
+      '<section class="card" data-item="sum-grades" data-name="영역별 결과"><span class="eyebrow">영역별 결과</span><h2>세 영역으로 나눠서 봤어요</h2><div class="glines">' +
+      (d.grades || []).map(function (g) {
+        return '<button type="button" class="gline" data-go="' + esc(g.go) + '"><span class="gl-t"><b>' + esc(g.label) + "</b><small>" + esc(g.line) + "</small></span>" + gradeChip(g.grade) + CHEV + "</button>";
+      }).join("") + "</div></section>" +
+      '<section class="card" data-item="sum-type" data-name="학습 유형"><div class="ihead"><div><span class="eyebrow">성취도 × 참여도</span><h2>학습 유형</h2></div>' + gradeChip(d.type && d.type.result) + "</div>" +
+      '<div class="quad" aria-hidden="true"><span>잠재력형<small>실력은 좋고, 학습 습관을 잡는 중</small></span><span>우수 지속형<small>실력과 학습 습관 모두 좋음</small></span><span>학습 지원형<small>실력과 습관 모두 도움이 필요함</small></span><span>성실 노력형<small>꾸준하지만 실력을 더 키우는 중</small></span></div>' +
+      '<p class="lead">' + esc(d.type && d.type.note) + "</p></section>" +
+      '<section class="card" data-item="sum-text" data-name="한눈에 보기"><span class="eyebrow">한눈에 보기</span>' + (d.overview || []).map(function (p) { return '<p class="say">' + rich(p) + "</p>"; }).join("") + AI_NOTE + "</section>" +
+      '<section class="card" data-item="sum-guide" data-name="리포트 보는 법"><span class="eyebrow">리포트 보는 법</span><div class="guide">' +
+      (d.guide || []).map(function (g, i) { return '<div class="gi"><span class="n">' + (i + 1) + "</span><div><b>" + esc(g[0]) + "</b><span>" + esc(g[1]) + "</span></div></div>"; }).join("") + "</div></section></div>";
+
+    /* 성취도 · 참여도 · 성장 추세 */
+    ["ach", "eng", "growth"].forEach(function (k) {
+      h += '<div class="panel" role="tabpanel" id="p-' + k + '" aria-labelledby="t-' + k + '" tabindex="0" hidden>' + (A[k] ? sArea(k, A[k]) : "") +
+        (k === "growth" && d.then && d.now ? '<section class="card" style="padding-bottom:16px" data-item="growth-proof" data-name="처음 글과 지금 글"><span class="eyebrow">근거가 된 글</span><h2>처음 쓴 글과 지금 쓴 글</h2><p class="lead">피드백을 받기 전, ' + esc(nm) + "이 처음 쓴 그대로 옮겼어요. 문장 아래 작은 글씨는 쓰려고 했던 뜻이에요.</p></section>" + note("then", d.then) + note("now", d.now) : "") +
+        "</div>";
+    });
+
+    /* 추천 학습 */
+    h += '<div class="panel" role="tabpanel" id="p-recs" aria-labelledby="t-recs" tabindex="0" hidden>' +
+      '<section class="card" data-item="recs-list" data-name="추천 학습"><span class="eyebrow">추천 학습</span><h2>' + rich(R.title || "이렇게 이어 가면 좋아요") + '</h2><p class="lead">' + esc(R.lead) + "</p>" +
+      (R.list || []).map(function (r) {
+        return '<div class="srec"><div class="srec-h"><b>' + esc(r.name) + "</b>" + (r.tag ? "<span>" + esc(r.tag) + "</span>" : "") + "</div><p>" + rich(r.why) + "</p>" + (r.basis ? "<small>" + esc(r.basis) + "</small>" : "") + "</div>";
+      }).join("") + "</section>" +
+      (R.focus && R.focus.length ? '<section class="card" data-item="recs-focus" data-name="연습할 문장"><span class="eyebrow">연습할 문장</span><h2>' + rich(R.focus_title || "첫 영작에서 찾은 연습할 곳") + '</h2><div class="focus">' +
+        R.focus.map(function (it) {
+          return '<div class="fx"><div class="fx-top"><b>' + esc(it[0]) + "</b><span>" + esc(it[1]) + '</span></div><div class="pair"><span class="was">' + rich(it[2]) + '</span><span class="is">' + rich(it[3], "u") + "</span></div></div>";
+        }).join("") + "</div></section>" : "") +
+      (R.note ? '<section class="card" data-item="recs-note" data-name="추천 기준"><span class="eyebrow">추천 기준</span><p class="lead" style="margin-top:4px">' + esc(R.note) + "</p></section>" : "") + "</div>";
+
+    h += "</main>" +
+      '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
+    return h + levelSheet(d, nm);
+  }
+
   window.renderReport = function (id, d) {
+    if (d.template === "sheet") return renderSheet(id, d);
     var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생";
     var hl = d.highlight || {}, w = d.write || {}, pr = d.practice || {}, rw = d.rewrite || {}, fo = d.focus || { items: [] };
     var h = '<div class="app"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>GV 라이팅 리포트</span>' +
@@ -158,22 +255,6 @@
       "</div></section></div>" + (d.items ? itemsPanel(d.items) : "") + "</main>" +
       '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
 
-    /* 레벨 팝업 */
-    var ladder = [8, 7, 6, 5, 4, 3, 2, 1].map(function (n) {
-      var L = LEVELS[n], cur = n === d.level;
-      return '<li class="' + (cur ? "cur" : "up") + '"' + (cur ? ' aria-current="step"' : "") + '><span class="lv">LV ' + n + '</span><span class="sch">' + esc(L.short) + (cur ? "<em>지금</em>" : "") + '</span><span class="cefr">' + esc(L.cefr) + "</span></li>";
-    }).join("");
-    var nx = LEVELS[d.level + 1];
-    h += '<div class="sheet-bg" id="lvBg" hidden></div><div class="sheet" id="lvSheet" role="dialog" aria-modal="true" aria-labelledby="lvTitle" hidden><div class="sheet-in">' +
-      '<div class="sheet-head"><b id="lvTitle">지금 배우는 수준</b><button type="button" id="lvClose" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>' +
-      '<div class="sheet-body" data-item="level"><p class="sh-title">LV ' + d.level + "은<br>" + esc(lv.title) + "예요</p>" +
-      '<p class="lead">레벨마다 배우는 문장의 수준을 정리했어요. ' + esc(nm) + "의 실력을 매긴 게 아니라, 지금 배우고 있는 내용이 어느 정도인지 보여 드리는 거예요.</p>" +
-      '<ol class="ladder" aria-label="GV 라이팅 레벨별 수준">' + ladder + "</ol>" +
-      '<div class="lv-detail"><div><span>LV ' + d.level + ' 대표 문장</span><p class="ex">' + esc(lv.rep) + "</p></div>" +
-      "<div><span>LV " + d.level + "에서 익히는 문법</span><p>" + esc(lv.grammar) + "</p></div>" +
-      "<div><span>학교 영어와 비교하면</span><p>" + esc(lv.school) + " 학년(" + esc(lv.grade) + ")은 참고로만 봐 주세요. 레벨이 학년과 딱 맞아떨어지지는 않거든요.</p></div>" +
-      (nx ? "<div><span>LV " + (d.level + 1) + "에서 새로 배우는 것</span><p>" + esc(nx.title) + "로 넘어가요.</p></div>" : "") +
-      "</div></div></div></div>";
-    return h;
+    return h + levelSheet(d, nm);
   };
 })();
