@@ -48,6 +48,30 @@
       ((hasHl || hasFix) ? '<div class="legend">' + (hasHl ? '<span><i class="k1"></i>영어로 쓰지 못한 부분</span>' : "") + (hasFix ? '<span><i class="k2"></i>다듬을 부분</span>' : "") + "</div>" : "") + "</section>";
   }
 
+  /* 항목별로 보기: 기획 시트(평가 항목)의 틀 그대로. 값이 없는 항목은 펼쳐 보기 안에 모은다 */
+  var GRADE = { "높음": "hi", "보통": "mid", "낮음": "lo", "성장": "hi", "유지": "mid", "하락": "lo" };
+  function itemsPanel(it) {
+    var g = (it.groups || []).map(function (gr) {
+      var res = gr.result ? '<span class="grade ' + (GRADE[gr.result] || "wait") + '">' + esc(gr.result) + "</span>" : '<span class="grade wait">판정 전</span>';
+      var rows = (gr.rows || []).map(function (r) {
+        return '<div class="irow"><div class="irow-k"><b>' + esc(r[0]) + "</b><small>" + esc(r[1]) + '</small></div><div class="irow-v"><b>' + rich(r[2]) + "</b>" +
+          (r[4] ? '<span class="ibadge">기준이 달라요</span>' : "") + "</div><p class=\"irow-basis\">" + esc(r[3]) + "</p></div>";
+      }).join("");
+      var miss = (gr.missing || []).length ? '<details class="basis"><summary>아직 못 채운 항목 ' + gr.missing.length + '개<svg width="14" height="14" aria-hidden="true"><use href="#chev"/></svg></summary><div class="basis-body">' +
+        gr.missing.map(function (m) { return '<div class="imiss"><b>' + esc(m[0]) + "</b><span>" + esc(m[1]) + "</span></div>"; }).join("") + "</div></details>" : "";
+      return '<section class="card" data-item="' + esc(gr.key) + '"><div class="ihead"><div><span class="eyebrow">' + esc(gr.eyebrow) + "</span><h2>" + esc(gr.title) + "</h2></div>" + res + "</div>" +
+        (gr.note ? '<p class="lead">' + esc(gr.note) + "</p>" : "") + (rows ? '<div class="irows">' + rows + "</div>" : "") + miss + "</section>";
+    }).join("");
+    var ty = it.type || {};
+    return '<div class="panel" role="tabpanel" id="p-items" aria-labelledby="t-items" tabindex="0" hidden>' +
+      '<section class="card" data-item="items-intro"><span class="eyebrow">항목별로 보기</span><h2>' + rich(it.title || "평가 항목마다\n하나씩 볼게요") + '</h2><p class="lead">' + esc(it.lead) + "</p></section>" + g +
+      '<section class="card" data-item="items-type"><div class="ihead"><div><span class="eyebrow">성취도 × 참여도</span><h2>학습 유형</h2></div>' +
+      (ty.result ? '<span class="grade hi">' + esc(ty.result) + "</span>" : '<span class="grade wait">판정 전</span>') + "</div>" +
+      '<div class="quad" aria-hidden="true"><span>잠재력형</span><span>우수 지속형</span><span>학습 지원형</span><span>성실 노력형</span></div>' +
+      '<p class="lead">' + esc(ty.note) + "</p></section>" +
+      (it.recs_note ? '<section class="card" data-item="items-recs"><span class="eyebrow">추천학습 기준</span><p class="lead" style="margin-top:4px">' + esc(it.recs_note) + "</p></section>" : "") + "</div>";
+  }
+
   window.renderReport = function (id, d) {
     var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생";
     var hl = d.highlight || {}, w = d.write || {}, pr = d.practice || {}, rw = d.rewrite || {}, fo = d.focus || { items: [] };
@@ -57,7 +81,10 @@
       '<button type="button" role="tab" id="t-summary" aria-controls="p-summary" aria-selected="true">요약</button>' +
       '<button type="button" role="tab" id="t-writing" aria-controls="p-writing" aria-selected="false" tabindex="-1">글 비교</button>' +
       '<button type="button" role="tab" id="t-skills" aria-controls="p-skills" aria-selected="false" tabindex="-1">활동 기록</button>' +
-      '<button type="button" role="tab" id="t-next" aria-controls="p-next" aria-selected="false" tabindex="-1">다음 학습</button></div></nav><main class="pad">';
+      '<button type="button" role="tab" id="t-next" aria-controls="p-next" aria-selected="false" tabindex="-1">다음 학습</button>' +
+      (d.items ? '<button type="button" role="tab" id="t-items" aria-controls="p-items" aria-selected="false" tabindex="-1">항목별</button>' : "") +
+      '</div></nav><main class="pad">';
+    if (d.items) h = h.replace('<div class="tabs" role="tablist">', '<div class="tabs five" role="tablist">');
 
     /* 요약 */
     h += '<div class="panel" role="tabpanel" id="p-summary" aria-labelledby="t-summary" tabindex="0">' +
@@ -127,7 +154,7 @@
        ["레벨이 오르면 잠깐 주춤할 수 있어요", "문장이 길고 어려워지면서 처음엔 틀리는 곳이 늘 수 있어요. 새 레벨에 익숙해지는 동안 생기는 일이니 너무 걱정하지 않으셔도 돼요."],
        ["힌트를 쓰는 건 괜찮아요", "힌트도 어려운 표현을 배우는 과정이에요. 다음에 비슷한 문장을 쓸 때 힌트 없이 써 내는지를 함께 지켜봐 주세요."]]
         .map(function (g, i) { return '<div class="gi"><span class="n">' + (i + 1) + "</span><div><b>" + g[0] + "</b><span>" + g[1] + "</span></div></div>"; }).join("") +
-      "</div></section></div></main>" +
+      "</div></section></div>" + (d.items ? itemsPanel(d.items) : "") + "</main>" +
       '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
 
     /* 레벨 팝업 */

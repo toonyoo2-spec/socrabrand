@@ -193,9 +193,9 @@
   }
 
   /* 리포트 안의 동작. 리포트를 바꿔도 한 번만 걸리도록 문서에 위임한다 */
-  var TABS = ["summary", "writing", "skills", "next"];
+  var TABS = ["summary", "writing", "skills", "next", "items"];
   function showTab(name, scroll) {
-    if (TABS.indexOf(name) < 0) name = "summary";
+    if (TABS.indexOf(name) < 0 || !$("t-" + name)) name = "summary";
     TABS.forEach(function (t) {
       var b = $("t-" + t), p = $("p-" + t); if (!b || !p) return;
       var on = t === name; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; p.hidden = !on;
@@ -242,8 +242,9 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { lvHide(); closeSide("fbPanel"); closeSide("listPanel"); return; }
     if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && e.target.closest && e.target.closest("#report [role=tab]")) {
-      var cur = TABS.indexOf(document.querySelector("#report [role=tab][aria-selected=true]").id.slice(2));
-      var nx = TABS[(cur + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length];
+      var have = TABS.filter(function (t) { return $("t-" + t); });
+      var cur = have.indexOf(document.querySelector("#report [role=tab][aria-selected=true]").id.slice(2));
+      var nx = have[(cur + (e.key === "ArrowRight" ? 1 : have.length - 1)) % have.length];
       showTab(nx, true); $("t-" + nx).focus();
     }
   });
@@ -271,8 +272,9 @@
   var NAMES = { "": "리포트 전체", "cover": "표지", "lia-message": "리아 선생님 한마디", "highlight": "가장 크게 달라진 점",
     "note-then": "처음 쓴 노트", "note-now": "지금 쓴 노트", "before-after": "무엇이 달라졌나요", "ind-write": "첫 영작",
     "ind-blocks": "문장 연습", "ind-fix": "다시 쓰기", "ind-talk": "에코 대화", "focus": "이번 달에 집중할 것", "recs": "함께 하면 좋은 학습",
-    "praise-card": "칭찬 카드", "parent-guide": "리포트 보는 법", "level": "레벨 설명 팝업", "tabs": "탭 구성" };
-  var TABNAME = { "p-summary": "요약", "p-writing": "글 비교", "p-skills": "활동 기록", "p-next": "다음 학습" };
+    "praise-card": "칭찬 카드", "parent-guide": "리포트 보는 법", "level": "레벨 설명 팝업", "tabs": "탭 구성",
+    "items-intro": "항목별로 보기 안내", "items-ach": "학습 성취도", "items-eng": "학습 참여도", "items-growth": "성장 추세", "items-type": "학생 유형", "items-recs": "추천학습 기준" };
+  var TABNAME = { "p-summary": "요약", "p-writing": "글 비교", "p-skills": "활동 기록", "p-next": "다음 학습", "p-items": "항목별" };
   var sections = [], filterSec = null, fb = { docs: [], loading: false, again: false, pending: null, timer: 0 };
   var groups = $("fbGroups"), sel = $("fbSection"), fbText = $("fbText"), fbSend = $("fbSend");
   function buildSections() {
