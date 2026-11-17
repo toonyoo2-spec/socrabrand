@@ -1,10 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AccessError, createSnapshotClient, validateSnapshot, jobsForDay, safeResultURL, mountAutomationOps } from '../automation-ops.mjs';
+import { AccessError, createSnapshotClient, validateSnapshot, jobsForDay, safeResultURL, snapshotHealth, mountAutomationOps } from '../automation-ops.mjs';
 
 const item = (id, active = true, days = [0], order = 600) => ({ id, name: id, active, days, order, engine: 'Codex', time: '10:00', schedule: '월 10:00', result: '작업 결과', output: '고정 채팅', verification: '확인 범위', action: '내가 할 일' });
 const row = () => ({ checked_at: '2026-11-17T05:01:00Z', payload: { items: [item('first'), item('early', true, [0], 500), item('paused', false)], flows: [{ id: 'flow', name: '흐름', steps: [{ title: '내가 승인', text: '확인 후 진행' }, { job: 'first', text: '실행' }] }], hosts: [{ name: '실행기', state: '확인된 상태' }] } });
 const response = (value, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => value });
+
+test('stale and failed sync are never labelled current', () => {
+  const data = {sync:{attempted_at:'2026-11-17T05:00:00Z',sources:[{engine:'Claude',status:'ok'}]}};
+  assert.match(snapshotHealth(data, Date.parse('2026-11-17T05:05:00Z')), /5분/);
+  assert.match(snapshotHealth(data, Date.parse('2026-11-17T05:16:00Z')), /동기화 지연/);
+  data.sync.sources[0].status='error';
+  assert.match(snapshotHealth(data, Date.parse('2026-11-17T05:05:00Z')), /Claude 조회 실패/);
+  assert.match(snapshotHealth({}), /수동 검수/);
+});
 
 test('no token makes no network request', async () => {
   const client = createSnapshotClient({ getToken: () => null, fetchImpl: () => { assert.fail('network called'); } });
@@ -65,9 +74,10 @@ const domModule = process.env.OPS_DOM_MODULE;
 test('DOM navigation, nonowner hiding and logout clearing', { skip: !domModule }, async () => {
   const { parseHTML } = await import(domModule);
   const { document } = parseHTML('<html><body><header><div class="stamp"></div></header><nav class="toolbar"><div class="tabs"><button data-map="all" aria-selected="true">기존 지도</button></div><div class="controls"></div></nav><p id="caption"></p><main id="viewport"></main><footer></footer></body></html>');
-  const win = new EventTarget(); let token = 'test', allowed = true;
+  const win = new EventTarget(); let token = 'test', allowed = true, refresh, currentRow = row();
+  win.setInterval = (fn, ms) => { assert.equal(ms,60000); refresh=fn; };
   win.localStorage = { getItem: () => token };
-  win.fetch = async url => response(url.includes('/rpc/') ? allowed : [row()]);
+  win.fetch = async url => response(url.includes('/rpc/') ? allowed : [currentRow]);
   const flush = () => new Promise(resolve => setImmediate(resolve));
   const clickText = text => { const b = [...document.querySelectorAll('button')].find(b => b.textContent === text); assert.ok(b, text); b.click(); };
   mountAutomationOps(document, win); await flush();
@@ -80,6 +90,16 @@ test('DOM navigation, nonowner hiding and logout clearing', { skip: !domModule }
   document.querySelector('.ops-job').click(); assert.match(document.querySelector('.ops-detail').textContent, /first/);
   clickText('기존 지도'); assert.equal(document.querySelector('#ops-panel').hidden, true); assert.equal(document.querySelector('#viewport').hidden, false);
   clickText('운영 현황'); await flush(); assert.equal(document.querySelector('#ops-panel').hidden, false);
+  clickText('전체 목록');
+  currentRow.checked_at = '2026-11-17T05:06:00Z';
+  currentRow.payload.items[0].active = false;
+  currentRow.payload.items[0].schedule = '목 11:30';
+  currentRow.payload.items.push({...item('new schedule'),schedule:'금 09:00'});
+  refresh(); await flush(); assert.equal(document.querySelector('#ops-panel').hidden, false);
+  assert.equal(document.querySelectorAll('.ops-job').length, 4);
+  assert.match(document.querySelector('#ops-panel').textContent, /목 11:30/);
+  assert.match(document.querySelector('#ops-panel').textContent, /new schedule/);
+  assert.match(document.querySelector('.ops-job[data-job="first"]').textContent, /중지/);
   token = null; const changed = new Event('storage'); changed.key = 'socra_admin_token'; win.dispatchEvent(changed);
   assert.equal(document.querySelector('#ops-tab').hidden, true); assert.equal(document.querySelector('#ops-panel').textContent, '');
   token = 'nonowner'; allowed = false; win.dispatchEvent(changed); await flush();
