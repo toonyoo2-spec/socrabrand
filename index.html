@@ -436,6 +436,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                         <div id="lxSubmenu" class="lx-submenu" hidden>
                             <a href="#lecture/notes" data-lx-tool="notes">RC 강의노트</a>
                             <a href="#lecture/editing" data-lx-tool="editing">RC 편집스크립트</a>
+                            <a href="#lecture/math" data-lx-tool="math" hidden>수학자동화</a>
                         </div>
                     </div>
             </div>
@@ -467,7 +468,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <iframe id="automationFrame" class="automation-frame" title="채팅별 자동화 연결 지도" data-src="automation.html?v=20261023-chat-map-4"></iframe>
         </main>
         <main id="lectureContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="lectureFrame" allow="clipboard-write" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261016-onebook-1" data-src="lecture-workspace.html?embed=1&amp;v=20261016-onebook-1"></iframe>
+            <iframe id="lectureFrame" allow="clipboard-write" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261118-math-1" data-src="lecture-workspace.html?embed=1&amp;v=20261118-math-1"></iframe>
         </main>
         <!-- Reference Page (참고자료) -->
         <main id="referenceContainer" class="grid-layout-align" style="display: none;">
@@ -1127,7 +1128,10 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             document.getElementById('gvReportTab').style.display = canSeeTab('gv-report') ? 'inline-block' : 'none';
             document.getElementById('tutorialTab').style.display = canSeeTab('tutorial') ? 'inline-block' : 'none';
             const lxMenuGroup = document.querySelector('.lx-menu-group');
-            if (lxMenuGroup) lxMenuGroup.style.display = canSeeTab('lecture') ? '' : 'none';
+            if (lxMenuGroup) lxMenuGroup.style.display = canSeeTab('lecture') || canSeeTab('lecture/math') ? '' : 'none';
+            document.querySelectorAll('[data-lx-tool]').forEach(link => {
+                link.hidden = !canSeeTab('lecture/' + link.dataset.lxTool);
+            });
             if (isAdmin) {
                 if (currentMainTab === 'archive') addProjBtn.style.display = 'block';
                 if (libraryHeaderAdmin && currentMainTab === 'library') libraryHeaderAdmin.style.display = 'flex';
@@ -1144,6 +1148,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if(tabName === 'creative-six' || tabName === 'agency') return creativeOwner === true;
             // 편집 권한(KWAN) 계정은 나머지 탭을 모두 본다
             if (userRole === 'editor') return true;
+            if (tabName === 'lecture/math') return visibleTabs.includes(tabName);
             // 아카이브·자료실·LX가 없는 팀 계정(CX·RA 등)은 visible_tabs에 적힌 탭만 본다 (예: ['gv-report','reference','tutorial'])
             if (!visibleTabs.some(t => ['archive', 'library', 'lecture'].includes(t))) {
                 return visibleTabs.includes(tabName);
@@ -1166,6 +1171,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (visibleTabs.includes('archive')) return 'archive';
             if (visibleTabs.includes('library')) return 'library';
             if (visibleTabs.includes('lecture')) return 'lecture';
+            if (visibleTabs.includes('lecture/math')) return 'lecture/math';
             return 'reference';
         }
         function switchMainTab(tabName) {
@@ -1177,14 +1183,14 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 tabName = 'lecture/notes';
                 history.replaceState(null, '', '#lecture/notes');
             }
-            const lxTool = /^lecture\/(notes|editing)$/.test(tabName) ? tabName.split('/')[1] : null;
-            if (lxTool) tabName = 'lecture';
-            if (referenceViewerOpen) {
-                forceCloseReferenceView();
-            }
             if (!canSeeTab(tabName)) {
                 tabName = defaultTab();
                 history.replaceState(null, '', '#' + tabName);
+            }
+            const lxTool = /^lecture\/(notes|editing|math)$/.test(tabName) ? tabName.split('/')[1] : null;
+            if (lxTool) tabName = 'lecture';
+            if (referenceViewerOpen) {
+                forceCloseReferenceView();
             }
             if(tabName!=='kwan-studio')disposeKwanStudio();
             currentMainTab = tabName;
@@ -1293,7 +1299,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         }
         function activateLxTool(tool) {
             const frame = document.getElementById('lectureFrame');
-            if (!['notes', 'editing'].includes(tool)) tool = frame.dataset.tool || 'notes';
+            if (!['notes', 'editing', 'math'].includes(tool)) tool = frame.dataset.tool || 'notes';
             frame.dataset.tool = tool;
             markLxTool(tool);
             if (!frame.dataset.lxBound) {
@@ -1303,7 +1309,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (!frame.getAttribute('src')) {
                 const url = new URL(frame.dataset.src, location.href);
                 url.searchParams.set('tool', tool);
-                url.searchParams.set('v', '20261016-onebook-1');
+                url.searchParams.set('v', '20261118-math-1');
                 frame.src = url.href;
             } else frame.contentWindow.postMessage({type:'socra:activate-tool',tool}, location.origin);
         }
@@ -1312,7 +1318,11 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             const active = currentMainTab === 'lecture';
             const open = document.getElementById('lectureTab').getAttribute('aria-expanded') === 'true';
             setLxMenu(active ? !open : true);
-            if (!active) { history.pushState(null, '', '#lecture'); switchMainTab('lecture'); }
+            if (!active) {
+                const target = canSeeTab('lecture') ? 'lecture' : 'lecture/math';
+                history.pushState(null, '', '#' + target);
+                switchMainTab(target);
+            }
         });
         document.querySelectorAll('[data-lx-tool]').forEach(link => link.addEventListener('click', e => {
             e.preventDefault();
@@ -1322,7 +1332,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
         }));
         window.addEventListener('message', e => {
             const frame = document.getElementById('lectureFrame');
-            if (e.origin !== location.origin || e.source !== frame.contentWindow || !['socra:tool-changed','socra:request-tool'].includes(e.data?.type) || !['notes','editing'].includes(e.data.tool)) return;
+            if (e.origin !== location.origin || e.source !== frame.contentWindow || !['socra:tool-changed','socra:request-tool'].includes(e.data?.type) || !['notes','editing','math'].includes(e.data.tool)) return;
             if (e.data.type === 'socra:request-tool') {
                 if (location.hash !== '#lecture/' + e.data.tool) history.pushState(null, '', '#lecture/' + e.data.tool);
                 switchMainTab('lecture/' + e.data.tool);
@@ -1346,7 +1356,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 return;
             }
 
-            if (/^lecture\/(notes|editing)$/.test(hash) || ['archive', 'library', 'automation', 'pptauto', 'lecture/pptauto', 'lecture', 'reference', 'creative-six', 'skills', 'kwan-studio'].includes(hash)) {
+            if (/^lecture\/(notes|editing|math)$/.test(hash) || ['archive', 'library', 'automation', 'pptauto', 'lecture/pptauto', 'lecture', 'reference', 'creative-six', 'skills', 'kwan-studio'].includes(hash)) {
                 switchMainTab(hash);
             }
         }

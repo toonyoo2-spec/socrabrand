@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://eoljasmgogdcvnytaoax.supabase.co; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>수학자동화 · Socra LX팀</title>
+  <link rel="stylesheet" href="math.css?v=3">
+  <script type="module" src="math.mjs?v=3"></script>
+</head>
+<body>
+  <main>
+    <header class="heading">
+      <h1>수학자동화</h1>
+      <a id="home" href="../#lecture/math" target="_top">LX팀 홈</a>
+    </header>
+    <section id="message" class="card" aria-live="polite">
+      <p id="status">수학자동화 접속을 확인하는 중입니다.</p>
+      <a id="login" class="button" href="../#lecture/math" target="_top" hidden>사이트 로그인</a>
+      <button id="retry" type="button" hidden>다시 시도</button>
+      <noscript>수학자동화를 사용하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>
+    </section>
+    <section id="workspace" hidden>
+      <div class="card">
+        <div class="fields">
+          <label id="course-field">강사 <select id="course"></select></label>
+          <label id="lesson-field">회차 · 라이브 날짜 <select id="lesson"></select></label>
+        </div>
+        <p id="topic" class="topic"></p>
+        <p id="load-status" aria-live="polite"></p>
+        <div id="actions" class="buttons" hidden>
+          <a id="curriculum" class="button" target="_blank" rel="noopener noreferrer" hidden>이 회차 커리큘럼</a>
+          <a id="review" class="button" target="_blank" rel="noopener noreferrer" hidden>1강 검수</a>
+          <a id="presentation" class="button" target="_blank" rel="noopener noreferrer" hidden>발표자료 열기</a>
+          <span id="no-deck" class="muted" hidden>등록된 발표자료 없음</span>
+        </div>
+        <p id="google-help" class="muted" hidden>운영자용 Google 링크입니다. 선생님은 사이트에서 문항을 고르고 제출할 수 있습니다.</p>
+      </div>
+      <div id="lesson-tools" hidden>
+        <section id="catalog" class="card" aria-labelledby="catalog-heading" hidden>
+          <h2 id="catalog-heading">수업 문항 선정</h2>
+          <div class="fields filters">
+            <label>교재 <select id="book"></select></label>
+            <label>단원 <select id="unit"></select></label>
+            <label>교재 코너 <select id="section"></select></label>
+          </div>
+          <p id="question-count" class="muted" aria-live="polite"></p>
+          <div class="pick-layout">
+            <div id="question-slots" class="slot-grid"></div>
+            <aside class="source-preview" aria-labelledby="preview-title">
+              <h3 id="preview-title">교재 원본</h3>
+              <p id="preview-status" class="muted" aria-live="polite">왼쪽에서 문항을 고르면 여기에 표시됩니다.</p>
+              <div id="preview-scroll" tabindex="0" aria-label="교재 원본 스크롤"><img id="preview-image" alt="" hidden></div>
+            </aside>
+          </div>
+          <details id="asset-admin" hidden>
+            <summary>운영자 · 교재 미리보기 등록</summary>
+            <label>원본 PDF에서 추출한 쪽 이미지
+              <input id="preview-files" type="file" multiple accept="image/webp,.webp">
+            </label>
+            <button type="button" id="preview-upload">비공개로 등록</button>
+            <p id="upload-status" class="muted" aria-live="polite"></p>
+          </details>
+        </section>
+        <section class="card" aria-labelledby="quiz-heading">
+          <h2 id="quiz-heading">퀴즈앤</h2>
+          <div id="teacher-section" class="quiz teacher" hidden>
+            <h3>선생님 직접 출제</h3>
+            <label>문항 <select id="quiz-slot"></select></label>
+            <div class="quiz-fields">
+              <label>문제 유형 <select id="quiz-kind">
+                <option value="short">단답형</option>
+                <option value="ox">O/X</option>
+                <option value="choice">객관식</option>
+              </select></label>
+              <label>정답 <input id="quiz-answer" maxlength="600" autocomplete="off"></label>
+            </div>
+            <div class="symbols" id="symbols" aria-label="수학 기호"></div>
+            <label>문제 <textarea id="quiz-prompt" rows="3" maxlength="2000"></textarea></label>
+            <label id="choices-field" hidden>보기 · 한 줄에 하나씩 <textarea id="quiz-choices" rows="3" maxlength="1500"></textarea></label>
+            <div class="preview" id="quiz-preview" aria-label="문제 미리보기" hidden></div>
+            <div class="buttons">
+              <button type="button" id="quiz-save">퀴즈 문항 저장</button>
+              <span id="quiz-status" class="muted" aria-live="polite"></span>
+            </div>
+          </div>
+          <div id="appendix-section" class="quiz appendix" hidden>
+            <h3>교사부록 문항</h3>
+            <p>3문항 · 2분 / 2분 / 3분</p>
+            <span class="muted">부록 자료 준비 중</span>
+          </div>
+        </section>
+        <section class="card submit" aria-labelledby="submit-heading">
+          <div><h2 id="submit-heading">회차 제출</h2><p id="submit-status" class="muted" aria-live="polite"></p></div>
+          <button type="button" class="button primary" id="submit">회차 제출</button>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
