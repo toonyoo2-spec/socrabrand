@@ -34,7 +34,7 @@ function frame(deck, label, source, style) {
   slide.addShape(deck.ShapeType.roundRect, { x: .45, y: 1.45, w: 7.15, h: .45, rectRadius: .1,
     fill: { color: fill }, line: { color: line, width: .8 } });
   slide.addText(label + '  ·  ' + source, {
-    x: .59, y: 1.48, w: 6.85, h: .38, margin: 0, color: 'FFFFFF', bold: true, fontFace: FONT, fontSize: 14, fit: 'shrink',
+    x: .59, y: 1.48, w: 6.85, h: .38, margin: 0, color: 'FFFFFF', bold: true, fontFace: 'Pretendard', fontSize: 14, fit: 'shrink',
   });
   return slide;
 }

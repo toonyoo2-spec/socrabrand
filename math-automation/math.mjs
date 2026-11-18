@@ -1,4 +1,4 @@
-import { buildPresentation, downloadPresentation } from './presentation.mjs';
+import { buildPresentation, downloadPresentation } from './presentation.mjs?v=2';
 import { prepareGoogleDrive, connectStaffDrive, saveToStaffDrive } from './google-drive.mjs';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
