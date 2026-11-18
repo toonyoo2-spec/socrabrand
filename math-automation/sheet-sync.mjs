@@ -1,20 +1,23 @@
-import { connectStaffGoogle } from './google-drive.mjs?v=6';
+import { connectStaffGoogle } from './google-drive.mjs?v=7';
 
 const sheetsScope = 'https://www.googleapis.com/auth/spreadsheets';
 const targets = {
   'concept-foundations-han': {
     tab: '[개념원리_커리큘럼]',
+    quizModes: ['teacher','appendix'],
     base: 'IJKLMNOP', teacher: 'QRSTU', appendix: 'VWX', end: 'X',
     checks: { I: '문제 1', P: '문제 8', Q: '문제 1 (30초)', U: '문제 5 (2분)', V: '문제 1 (2분)', X: '문제 3 (3분)' },
   },
   'rpm-application-han': {
     tab: '[RPM_커리큘럼]',
+    quizModes: ['rpm_final','rpm_pro'],
     base: 'IJKLMNOPQRS', rpm_final: 'TUV', rpm_pro: 'WX', end: 'X',
     checks: { I: '문제 1', S: '문제 11', T: '빈출 문제 1 (2분)', U: '빈출 문제 2 (2분)',
       V: '고난도 문제 3 (3분)', W: '문제 1 (2분)', X: '문제 2 (3분)' },
   },
   'oh-pending': {
     tab: '[RPM_커리큘럼]',
+    quizModes: ['practice'],
     base: 'IJKLMNOPQRS', practice: 'TU', end: 'U',
     checks: { I: '문제 1', S: '문제 11', T: '빈출 문제 1 (2분)', U: '고난도 문제 2 (3분)' },
   },
@@ -55,13 +58,17 @@ function questionLabel(item) {
 }
 
 export function buildSheetWrites(target, lesson, submission) {
-  const quizColumns = target[lesson.quiz_mode];
-  if (!quizColumns) throw Error('이 회차의 퀴즈 칸을 찾을 수 없습니다.');
-  const quizWrites = lesson.quiz_mode === 'teacher'
-    ? cellEntries(quizColumns, submission.quizzes ?? [], formatQuiz)
-    : cellEntries(quizColumns, submission.stage_questions ?? [], item => item.quiz_override
+  const quizWrites = target.quizModes.flatMap(mode => {
+    const columns = target[mode];
+    const items = mode === 'teacher' ? submission.quizzes ?? []
+      : (submission.stage_questions ?? []).filter(item => (item.stage_mode ?? lesson.quiz_mode) === mode);
+    if (items.length !== columns.length || new Set(items.map(item => item.slot)).size !== columns.length) {
+      throw Error('퀴즈 문항을 모두 채운 뒤 회차를 다시 제출해 주세요.');
+    }
+    return cellEntries(columns, items, mode === 'teacher' ? formatQuiz : item => item.quiz_override
       ? questionLabel(item) + '\n' + formatQuiz({ kind: 'choice', ...item.quiz_override })
       : questionLabel(item));
+  });
   return [
     ...cellEntries(target.base, submission.selections, questionLabel),
     ...quizWrites,

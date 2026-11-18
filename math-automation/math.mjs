@@ -1,6 +1,6 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=6';
-import { buildPresentation } from './presentation.mjs?v=7';
-import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=6';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=7';
+import { buildPresentation } from './presentation.mjs?v=8';
+import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=7';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
 const $ = id => document.getElementById(id);
@@ -23,6 +23,7 @@ const quizModes = {
   rpm_pro: { stage: 'quiz-two', number: '②', source: 'RPM Pro', title: '퀴즈앤 ② · RPM Pro' },
   practice: { stage: 'quiz-practice', source: '개념원리', title: '실전 스테이지' },
 };
+const resourceSelections = 'math_stage_group_selections';
 const tracks = { concept: '개념 · 개념원리', application: '응용 · RPM' };
 const resourceStages = {
   appendix: { kind: 'appendix', slots: ['부록 1번 (2분)', '부록 2번 (2분)', '부록 3번 (3분)'], copy: '교사부록 문항 3개를 선택해 주세요.' },
@@ -58,7 +59,9 @@ async function request(path, options = {}) {
   if (token !== state.token) throw new ApiError(401, '로그인 상태가 바뀌었습니다.');
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    const allowed = ['필수 수업 문항을 모두 선택해 주세요.', '교사부록 또는 실전 스테이지 문항을 모두 선택해 주세요.', '이 회차에 맞는 문항을 선택해 주세요.', '퀴즈앤 직접 출제 문항 5개를 먼저 저장해 주세요.'];
+    const allowed = ['필수 수업 문항을 모두 선택해 주세요.', '퀴즈앤 또는 문제 출제 문항을 모두 선택해 주세요.',
+      '이 회차에 맞는 문항을 선택해 주세요.', '퀴즈앤 직접 출제 문항 5개를 먼저 저장해 주세요.',
+      '퀴즈앤 5지선다 문항을 4지선다로 수정해 주세요.'];
     const constraint = (data.message ?? '').includes('math_quiz_exactly_four_choices');
     const message = allowed.includes(data.message) ? data.message
       : constraint ? '보기 4개와 1~4번 정답을 확인해 주세요.'
@@ -142,6 +145,18 @@ function currentLesson() {
   return state.lessons.find(lesson => lesson.lesson === Number($('lesson').value));
 }
 
+function lessonModes(lesson = currentLesson(), course = currentCourse()) {
+  return course?.quiz_modes ?? (lesson ? [lesson.quiz_mode] : []);
+}
+
+function activeQuizMode() {
+  return lessonModes().find(mode => quizModes[mode].stage === state.stage);
+}
+
+function savedResourceMode(item, lesson = currentLesson()) {
+  return item.stage_mode ?? lesson.quiz_mode;
+}
+
 function rememberView() {
   state.view = {
     course: currentCourse()?.id,
@@ -153,16 +168,25 @@ function rememberView() {
   catch { /* The current page still works with browser storage disabled. */ }
 }
 
-function showStage(stage) {
+function showStage(stage, restore = false) {
   // Saved views from releases before the split used the "quiz" key.
-  if (stage === 'quiz' || quizStages.includes(stage)) stage = quizModes[currentLesson()?.quiz_mode]?.stage;
+  if (stage === 'quiz') stage = quizModes[currentLesson()?.quiz_mode]?.stage;
+  if (quizStages.includes(stage) && !lessonModes().some(mode => quizModes[mode].stage === stage)) {
+    stage = quizModes[lessonModes()[0]]?.stage;
+  }
+  if (!restore && (stage === state.stage || !confirmQuizChange())) return;
+  if (!restore && state.quizDirty) renderQuiz();
+  closeStageChoice();
   state.stage = Object.hasOwn(stages, stage) ? stage : 'catalog';
+  const mode = activeQuizMode();
+  if (mode) renderQuizStage(mode);
   for (const button of document.querySelectorAll('[data-stage]')) {
     const selected = button.dataset.stage === state.stage;
     button.setAttribute('aria-pressed', String(selected));
   }
   for (const panel of stagePanels) $(panel).hidden = panel !== stages[state.stage];
   rememberView();
+  renderSubmission();
   if (state.stage === 'progress') void loadProgress();
 }
 
@@ -185,7 +209,7 @@ async function loadProgress() {
       progressRows('math_lessons', filter, 'course_id,lesson,live_date,topic,quiz_mode'),
       progressRows('math_selections', filter, 'course_id,lesson,slot'),
       progressRows('math_teacher_quizzes', filter, 'course_id,lesson,slot'),
-      progressRows('math_stage_selections', filter, 'course_id,lesson,slot'),
+      progressRows(resourceSelections, filter, 'course_id,lesson,slot,stage_mode'),
       progressRows('math_submissions', filter, 'course_id,lesson,sync_status,submitted_at'),
     ]);
     if (version !== state.courseVersion || state.stage !== 'progress') return;
@@ -216,7 +240,6 @@ async function loadProgress() {
         for (const lesson of courseLessons) {
           const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
           const submitted = submissions.filter(matches).sort((a, b) => b.submitted_at.localeCompare(a.submitted_at))[0];
-          const authored = lesson.quiz_mode === 'teacher';
           const row = body.insertRow();
           const button = document.createElement('button');
           button.type = 'button';
@@ -225,10 +248,11 @@ async function loadProgress() {
           button.addEventListener('click', () => openProgressLesson(course, lesson.lesson));
           row.insertCell().append(button);
           row.insertCell().textContent = picks.filter(matches).length + ' / ' + course.lesson_slots;
-          const completed = (authored ? quizzes : extras).filter(matches).length;
-          const total = authored ? quizSeconds.length : resourceStages[lesson.quiz_mode]?.slots.length ?? 0;
-          const number = quizModes[lesson.quiz_mode]?.number;
-          row.insertCell().textContent = [number, completed + ' / ' + total].filter(Boolean).join(' ');
+          row.insertCell().textContent = lessonModes(lesson, course).map(mode => {
+            const completed = mode === 'teacher' ? quizzes.filter(matches).length
+              : extras.filter(item => matches(item) && savedResourceMode(item, lesson) === mode).length;
+            return [quizModes[mode].number, completed + ' / ' + quizCount(mode)].filter(Boolean).join(' ');
+          }).join(' · ');
           row.insertCell().textContent = submitted?.sync_status === 'synced' ? '시트 반영' : submitted ? '제출됨' : '미제출';
         }
         group.append(progress);
@@ -255,19 +279,13 @@ function openProgressLesson(course, lesson) {
 
 function updateStageProgress() {
   $('pick-progress').textContent = state.picks.size + ' / ' + lessonSlots();
-  const activeMode = currentLesson()?.quiz_mode;
-  const activeStage = quizModes[activeMode]?.stage;
-  const completed = activeMode === 'teacher' ? state.quizzes.size : state.stagePicks.size;
-  const total = activeMode === 'teacher' ? quizSeconds.length : stageSlots();
   for (const stage of quizStages) {
-    const lesson = state.lessons.find(item => quizModes[item.quiz_mode]?.stage === stage);
-    const mode = quizModes[lesson?.quiz_mode];
+    const mode = lessonModes().find(mode => quizModes[mode].stage === stage);
     const button = document.querySelector('[data-stage="' + stage + '"]');
     button.hidden = !mode;
-    const available = activeStage === stage;
-    button.disabled = state.busy || !available;
-    $(stage + '-progress').textContent = !mode ? '' : mode.source + ' · ' +
-      (available ? completed + ' / ' + total : '이 회차 미사용');
+    button.disabled = state.busy;
+    const completed = mode === 'teacher' ? state.quizzes.size : state.stagePicks.get(mode)?.size ?? 0;
+    $(stage + '-progress').textContent = mode ? quizModes[mode].source + ' · ' + completed + ' / ' + quizCount(mode) : '';
   }
   $('delivery-progress').textContent = state.submitted ? (state.edited ? '수정 중' : '제출됨') : '미제출';
 }
@@ -309,7 +327,7 @@ async function loadSite() {
   showStatus('수학자동화 접속을 확인하는 중입니다.');
   try {
     const [courses, profiles, memberships] = await Promise.all([
-      table('math_courses', { select: 'id,instructor,review_url,lesson_slots,required_lesson_slots,track,preview_course_id', order: 'instructor' }),
+      table('math_courses', { select: 'id,instructor,review_url,lesson_slots,required_lesson_slots,track,preview_course_id,quiz_modes', order: 'instructor' }),
       table('profiles', { select: 'role', limit: 1 }),
       table('math_course_members', { select: 'course_id,team_role' }),
     ]);
@@ -388,19 +406,25 @@ async function loadLesson() {
   $('load-status').textContent = '이 회차의 작성 내용을 불러오는 중입니다.';
   try {
     const filter = context();
+    const modes = lessonModes();
+    const resourceModes = modes.filter(mode => mode !== 'teacher');
     const [picks, quizzes, submissions, stagePicks, materials] = await Promise.all([
       table('math_selections', { ...filter, select: 'slot,question_id' }),
-      lesson.quiz_mode === 'teacher' ? table('math_teacher_quizzes', { ...filter, select: 'slot,kind,prompt,answer,choices' }) : [],
+      modes.includes('teacher') ? table('math_teacher_quizzes', { ...filter, select: 'slot,kind,prompt,answer,choices' }) : [],
       table('math_submissions', { ...filter, select: 'id,submitted_at,sync_status,selections,quizzes,stage_questions', order: 'submitted_at.desc', limit: 1 }),
-      lesson.quiz_mode !== 'teacher' ? table('math_stage_selections', { ...filter, select: 'slot,question_id,quiz_override' }) : [],
+      resourceModes.length ? table(resourceSelections, { ...filter, select: 'stage_mode,slot,question_id,quiz_override' }) : [],
       state.staff ? table('math_course_materials', { course_id: filter.course_id, select: 'label,url', order: 'label' }) : [],
     ]);
     if (version !== state.lessonVersion) return;
     state.picks = new Map(picks.map(value => [value.slot, value.question_id]));
     state.quizzes = new Map(quizzes.map(value => [value.slot, value]));
     state.submitted = submissions[0] ?? null;
-    state.stagePicks = new Map(stagePicks.map(value => [value.slot, value.question_id]));
-    state.stageEdits = new Map(stagePicks.filter(value => value.quiz_override).map(value => [value.slot, value.quiz_override]));
+    state.stagePicks = new Map(resourceModes.map(mode => [mode, new Map()]));
+    state.stageEdits = new Map(resourceModes.map(mode => [mode, new Map()]));
+    for (const item of stagePicks) {
+      state.stagePicks.get(item.stage_mode)?.set(item.slot, item.question_id);
+      if (item.quiz_override) state.stageEdits.get(item.stage_mode)?.set(item.slot, item.quiz_override);
+    }
     closeStageChoice();
     const savedStage = state.submitted?.stage_questions ?? [];
     renderMaterialLinks(materials);
@@ -415,8 +439,9 @@ async function loadLesson() {
     const savedQuizzes = state.submitted?.quizzes ?? [];
     state.edited = savedStage.length !== stagePicks.length ||
       savedStage.some(pick => {
-        const draft = state.stageEdits.get(pick.slot);
-        return state.stagePicks.get(pick.slot) !== pick.question_id ||
+        const mode = savedResourceMode(pick, lesson);
+        const draft = state.stageEdits.get(mode)?.get(pick.slot);
+        return state.stagePicks.get(mode)?.get(pick.slot) !== pick.question_id ||
           ['prompt', 'choices', 'answer'].some(key => pick.quiz_override?.[key] !== draft?.[key]);
       }) ||
       savedPicks.length !== picks.length ||
@@ -433,12 +458,6 @@ async function loadLesson() {
     $('catalog-empty').hidden = Boolean(books.length);
     $('catalog-fields').hidden = !books.length;
     $('catalog-picks').hidden = !books.length;
-    const teacherQuiz = lesson.quiz_mode === 'teacher';
-    const resource = resourceStages[lesson.quiz_mode];
-    $('teacher-section').hidden = !teacherQuiz;
-    $('resource-stage').hidden = teacherQuiz;
-    $('quiz-heading').textContent = stageTitle(lesson.quiz_mode);
-    $('stage-copy').textContent = resource?.copy ?? '';
     links('curriculum', state.staff && lesson.curriculum_url, 'spreadsheets');
     links('review', state.staff && lesson.lesson === 1 && currentCourse().review_url, 'spreadsheets');
     links('presentation', state.staff && lesson.presentation_url, 'presentation');
@@ -448,18 +467,15 @@ async function loadLesson() {
     $('staff-links').hidden = !state.staff;
     options($('book'), values(books, 'book'), currentCourse().lesson_slots === 11 ? 'RPM' : undefined);
     setUnit(lesson.unit, lesson.section);
-    options($('stage-book'), values(stageCatalog(), 'book'));
-    setStageUnit(lesson.unit);
     const restored = state.view.course === currentCourse().id && state.view.lesson === lesson.lesson;
     renderQuizSlots(restored ? state.view.quizSlot : 1);
     renderQuiz();
     $('quiz-save').hidden = !state.composer;
     for (const id of [...formulaInputs, 'quiz-kind', 'quiz-choice-answer']) $(id).disabled = !state.composer;
     $('symbol-panel').hidden = !state.composer;
-    showStage(restored ? state.view.stage : 'catalog');
-    renderSubmission();
+    showStage(restored ? state.view.stage : 'catalog', true);
     renderExport();
-    } catch (error) {
+  } catch (error) {
     if (version === state.lessonVersion) failure(error);
   }
 }
@@ -492,12 +508,23 @@ function requiredLessonSlots() {
   return currentCourse()?.required_lesson_slots ?? 5;
 }
 
-function stageSlots() {
-  return resourceStages[currentLesson()?.quiz_mode]?.slots.length ?? 0;
+function quizCount(mode) {
+  return mode === 'teacher' ? quizSeconds.length : resourceStages[mode]?.slots.length ?? 0;
 }
 
 function stageTitle(mode) {
   return quizModes[mode]?.title ?? '퀴즈앤';
+}
+
+function renderQuizStage(mode) {
+  $('teacher-section').hidden = mode !== 'teacher';
+  $('resource-stage').hidden = mode === 'teacher';
+  $('quiz-heading').textContent = stageTitle(mode);
+  if (mode === 'teacher') return;
+  $('stage-copy').textContent = resourceStages[mode].copy;
+  $('stage-status').textContent = '';
+  options($('stage-book'), values(stageCatalog(), 'book'));
+  setStageUnit(currentLesson().unit);
 }
 
 function lessonCatalog() {
@@ -505,7 +532,7 @@ function lessonCatalog() {
 }
 
 function stageCatalog() {
-  const kind = resourceStages[currentLesson()?.quiz_mode]?.kind;
+  const kind = resourceStages[activeQuizMode()]?.kind;
   return kind ? state.catalog.filter(q => (q.use_kind ?? 'lesson') === kind) : [];
 }
 
@@ -574,14 +601,15 @@ function selectedStageQuestions() {
 }
 
 function renderStagePicks() {
-  const labels = slot => resourceStages[currentLesson()?.quiz_mode].slots[slot - 1];
-  const controls = pickControls(stageSlots(), state.stagePicks, selectedStageQuestions(), labels,
-    (slot, value, select) => savePick(slot, value, select, true));
+  const mode = activeQuizMode();
+  const labels = slot => resourceStages[mode].slots[slot - 1];
+  const controls = pickControls(quizCount(mode), state.stagePicks.get(mode), selectedStageQuestions(), labels,
+    (slot, value, select) => savePick(slot, value, select, mode));
   $('stage-picks').replaceChildren(...controls.map((control, index) => {
     const slot = index + 1;
     const question = selectedStagePick(slot);
     if (!state.composer || !question || !usesQuizAndResources()) return control;
-    const edited = state.stageEdits.has(slot);
+    const edited = state.stageEdits.get(mode).has(slot);
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.required = String(question.five_choice && !edited);
@@ -597,12 +625,12 @@ function renderStagePicks() {
 
 const stageChoiceIds = ['stage-choice-1', 'stage-choice-2', 'stage-choice-3', 'stage-choice-4'];
 
-function usesQuizAndResources() {
-  return ['appendix', 'rpm_final', 'rpm_pro'].includes(currentLesson()?.quiz_mode);
+function usesQuizAndResources(mode = activeQuizMode()) {
+  return ['appendix', 'rpm_final', 'rpm_pro'].includes(mode);
 }
 
-function selectedStagePick(slot) {
-  return state.catalog.find(question => question.question_id === state.stagePicks.get(slot));
+function selectedStagePick(slot, mode = activeQuizMode()) {
+  return state.catalog.find(question => question.question_id === state.stagePicks.get(mode)?.get(slot));
 }
 
 function closeStageChoice() {
@@ -616,7 +644,7 @@ function openStageChoice(slot, question) {
   if (state.stageEditSlot === slot) return;
   state.stageEditSlot = slot;
   state.stageDirty = false;
-  const saved = state.stageEdits.get(slot);
+  const saved = state.stageEdits.get(activeQuizMode()).get(slot);
   $('stage-choice-title').textContent = question.book + ' ' + question.label + ' · 4지선다';
   $('stage-choice-prompt').value = saved?.prompt ?? '';
   $('stage-choice-answer').value = saved?.answer ?? '';
@@ -629,7 +657,8 @@ function openStageChoice(slot, question) {
 async function saveStageChoice(event) {
   event.preventDefault();
   const slot = state.stageEditSlot;
-  if (!slot || !state.composer || !usesQuizAndResources()) return;
+  const mode = activeQuizMode();
+  if (!slot || !state.composer || !usesQuizAndResources(mode)) return;
   const prompt = $('stage-choice-prompt').value.trim();
   const choices = stageChoiceIds.map(id => $(id).value.trim());
   const answer = $('stage-choice-answer').value;
@@ -638,12 +667,13 @@ async function saveStageChoice(event) {
     return;
   }
   await withSaving(async () => {
-    const filter = { ...context(), slot: 'eq.' + slot, question_id: 'eq.' + state.stagePicks.get(slot), select: 'quiz_override' };
-    const [saved] = await table('math_stage_selections', filter, 'PATCH', {
+    const filter = { ...context(), stage_mode: 'eq.' + mode, slot: 'eq.' + slot,
+      question_id: 'eq.' + state.stagePicks.get(mode).get(slot), select: 'quiz_override' };
+    const [saved] = await table(resourceSelections, filter, 'PATCH', {
       quiz_override: { prompt, choices: choices.join('\n'), answer },
     });
     if (!saved?.quiz_override) throw Error('편집한 문항을 저장하지 못했습니다.');
-    state.stageEdits.set(slot, saved.quiz_override);
+    state.stageEdits.get(mode).set(slot, saved.quiz_override);
     state.edited = true;
     closeStageChoice();
     renderStagePicks();
@@ -677,26 +707,29 @@ async function withSaving(work, statusId) {
   }
 }
 
-async function savePick(slot, value, select, stage = false) {
-  const picks = stage ? state.stagePicks : state.picks;
-  const name = stage ? 'math_stage_selections' : 'math_selections';
-  const status = stage ? 'stage-status' : 'load-status';
+async function savePick(slot, value, select, mode) {
+  const picks = mode ? state.stagePicks.get(mode) : state.picks;
+  const name = mode ? resourceSelections : 'math_selections';
+  const status = mode ? 'stage-status' : 'load-status';
   const previous = picks.get(slot);
   const question = state.catalog.find(item => item.question_id === Number(value));
   if (!question && !previous) return;
-  if (stage && state.stageEditSlot === slot && !confirmQuizChange()) {
+  if (mode && state.stageEditSlot === slot && !confirmQuizChange()) {
     select.value = previous ?? '';
     return;
   }
   $(status).textContent = '';
   await withSaving(async () => {
     const filter = { ...context(), slot: 'eq.' + slot, select: 'slot,question_id' };
+    if (mode) filter.stage_mode = 'eq.' + mode;
+    if (previous) filter.question_id = 'eq.' + previous;
     const result = !question
       ? await table(name, filter, 'DELETE')
       : previous
         ? await table(name, filter, 'PATCH', { question_id: question.question_id })
         : await table(name, { select: 'slot,question_id' }, 'POST', {
           course_id: currentCourse().id, lesson: currentLesson().lesson, slot, question_id: question.question_id,
+          ...(mode ? { stage_mode: mode } : {}),
         });
     if (!result.length) throw new ApiError(403, '이 문항을 변경할 권한이 없거나 이미 변경됐습니다.');
     if (question) {
@@ -705,8 +738,8 @@ async function savePick(slot, value, select, stage = false) {
       picks.delete(slot);
     }
     state.edited = true;
-    if (stage) {
-      if (question?.question_id !== previous) state.stageEdits.delete(slot);
+    if (mode) {
+      if (question?.question_id !== previous) state.stageEdits.get(mode).delete(slot);
       if (state.stageEditSlot === slot) closeStageChoice();
       renderStagePicks();
     } else renderPicks();
@@ -865,17 +898,20 @@ async function saveQuiz(event) {
 function renderSubmission() {
   updateStageProgress();
   const basic = Array.from({ length: requiredLessonSlots() }, (_, i) => i + 1).every(slot => state.picks.has(slot));
-  const extras = currentLesson()?.quiz_mode === 'teacher' ? state.quizzes.size === 5 : state.stagePicks.size === stageSlots();
-  const conversions = usesQuizAndResources() && [...state.stagePicks.keys()].some(slot =>
-    selectedStagePick(slot)?.five_choice && !state.stageEdits.has(slot));
-  const ready = basic && extras && !state.quizDirty && !state.stageDirty && !conversions;
+  const modes = lessonModes();
+  const missing = modes.find(mode =>
+    (mode === 'teacher' ? state.quizzes.size : state.stagePicks.get(mode)?.size ?? 0) !== quizCount(mode));
+  const conversions = modes.find(mode => usesQuizAndResources(mode) &&
+    [...(state.stagePicks.get(mode)?.keys() ?? [])].some(slot =>
+      selectedStagePick(slot, mode)?.five_choice && !state.stageEdits.get(mode).has(slot)));
+  const ready = basic && !missing && !state.quizDirty && !state.stageDirty && !conversions;
   $('submit').disabled = state.busy || !ready || Boolean(state.submitted && !state.edited);
   $('submit').textContent = state.submitted ? '수정본 제출' : '회차 제출';
   if (!ready) {
     $('submit-status').textContent = !basic ? '기본 문항 ' + requiredLessonSlots() + '개를 먼저 골라 주세요.'
       : state.quizDirty || state.stageDirty ? '입력한 퀴즈를 저장해 주세요.'
-        : conversions ? '5지선다로 표시된 퀴즈를 4지선다로 편집해 주세요.'
-        : stageTitle(currentLesson()?.quiz_mode) + ' 문항을 모두 채워 주세요.';
+        : conversions ? stageTitle(conversions) + '의 5지선다 문항을 4지선다로 편집해 주세요.'
+        : stageTitle(missing) + ' 문항을 모두 채워 주세요.';
   } else if (state.submitted && !state.edited) {
     const submitted = new Date(state.submitted.submitted_at).toLocaleString('ko-KR');
     $('submit-status').textContent = '제출 완료 · ' + submitted + (state.submitted.sync_status === 'synced' ? ' · Google 반영 완료' : ' · Google 연결 대기');
@@ -930,9 +966,11 @@ async function loadExportReceipt(version) {
 
 function exportBlocker() {
   if (!state.submitted) return '회차를 제출하면 시트 반영과 프레젠테이션 저장을 할 수 있습니다.';
-  if ((state.submitted.stage_questions ?? []).length !== stageSlots()) {
-    return stageTitle(currentLesson().quiz_mode) + ' 문항을 선택하고 다시 제출해 주세요.';
-  }
+  const missing = lessonModes().find(mode => (
+    mode === 'teacher' ? state.submitted.quizzes?.length ?? 0
+      : (state.submitted.stage_questions ?? []).filter(item => savedResourceMode(item) === mode).length
+  ) !== quizCount(mode));
+  if (missing) return stageTitle(missing) + ' 문항을 채우고 다시 제출해 주세요.';
   return '';
 }
 
@@ -1065,14 +1103,16 @@ async function preparePresentation() {
       return { ...question, slot: pick.slot, quiz_override: pick.quiz_override };
     };
     const slotList = submission.selections.map(withAsset);
-    const stageList = (submission.stage_questions ?? []).map(withAsset);
+    const stageList = (submission.stage_questions ?? []).map(pick => {
+      const mode = savedResourceMode(pick);
+      return { ...withAsset(pick), stageLabel: stageTitle(mode), quizOne: quizModes[mode].number === '①' };
+    });
     const title = course.instructor + ' · ' + tracks[course.track] + ' · ' + currentLesson().lesson +
       '강 · ' + currentLesson().topic.replace(/^\([^)]*\)\s*/, '') + ' · 빔용';
     $('drive-status').textContent = '문항을 한 장씩 발표자료에 넣는 중입니다.';
     const blob = await buildPresentation({
       title, picks: slotList, quizzes: submission.quizzes, appendix: stageList,
-      stageLabel: stageTitle(currentLesson().quiz_mode),
-      quizLabel: stageTitle(currentLesson().quiz_mode),
+      quizLabel: stageTitle('teacher'),
     }, async question => {
       const path = question.projection_asset
         ? '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.projection_asset

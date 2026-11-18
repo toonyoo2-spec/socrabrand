@@ -199,7 +199,8 @@ export async function buildPresentation({
     placeQuiz(slide, quiz);
   }
   for (const question of appendix) {
-    const slide = await frame(deck, stageLabel, question.book ? question.book + ' ' + question.label : question.label, 'appendix');
+    const slide = await frame(deck, question.stageLabel ?? stageLabel,
+      question.book ? question.book + ' ' + question.label : question.label, question.quizOne ? 'teacher' : 'appendix');
     if (question.quiz_override) placeQuiz(slide, { kind: 'choice', ...question.quiz_override });
     else placeProblem(slide, await projectionProblem(question, loadImage));
   }
