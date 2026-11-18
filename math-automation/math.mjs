@@ -1,6 +1,6 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=5';
-import { buildPresentation } from './presentation.mjs?v=6';
-import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=5';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=6';
+import { buildPresentation } from './presentation.mjs?v=7';
+import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=6';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
 const $ = id => document.getElementById(id);
@@ -10,13 +10,25 @@ const dateLabel = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'num
 const quizSeconds = [30, 30, 60, 60, 120];
 const choiceInputs = ['quiz-choice-1', 'quiz-choice-2', 'quiz-choice-3', 'quiz-choice-4'];
 const formulaInputs = ['quiz-prompt', 'quiz-answer', ...choiceInputs];
-const stages = { catalog: 'catalog', quiz: 'quiz-panel', delivery: 'delivery-panel', progress: 'progress-panel' };
+const stages = {
+  catalog: 'catalog', 'quiz-one': 'quiz-panel', 'quiz-two': 'quiz-panel',
+  'quiz-practice': 'quiz-panel', delivery: 'delivery-panel', progress: 'progress-panel',
+};
+const stagePanels = new Set(Object.values(stages));
+const quizStages = ['quiz-one', 'quiz-two', 'quiz-practice'];
+const quizModes = {
+  teacher: { stage: 'quiz-one', number: '①', source: '직접 제작', title: '퀴즈앤 ① · 직접 제작' },
+  appendix: { stage: 'quiz-two', number: '②', source: '교사부록', title: '퀴즈앤 ② · 교사부록' },
+  rpm_final: { stage: 'quiz-one', number: '①', source: 'RPM', title: '퀴즈앤 ① · RPM' },
+  rpm_pro: { stage: 'quiz-two', number: '②', source: 'RPM Pro', title: '퀴즈앤 ② · RPM Pro' },
+  practice: { stage: 'quiz-practice', source: '개념원리', title: '실전 스테이지' },
+};
 const tracks = { concept: '개념 · 개념원리', application: '응용 · RPM' };
 const resourceStages = {
-  appendix: { title: '퀴즈앤 · 교사부록', label: '교사부록', kind: 'appendix', slots: ['부록 1번 (2분)', '부록 2번 (2분)', '부록 3번 (3분)'], copy: '교사부록 문항 3개를 선택해 주세요.' },
-  practice: { title: '실전 스테이지', label: '실전 스테이지', kind: 'practice', slots: ['빈출 문제 (2분)', '고난도 문제 (3분)'], copy: '개념원리 · 빈출 1문항, 고난도 1문항' },
-  rpm_final: { title: '수학 왕중왕전', label: '퀴즈앤', kind: 'lesson', slots: ['빈출 문제 1 (2분)', '빈출 문제 2 (2분)', '고난도 문제 3 (3분)'], copy: 'RPM · 빈출 2문항, 고난도 1문항' },
-  rpm_pro: { title: '수학 왕중왕전 · RPM Pro', label: '퀴즈앤', kind: 'rpm_pro', slots: ['문제 1 (2분)', '문제 2 (3분)'], copy: 'RPM Pro 문항 2개를 선택해 주세요.' },
+  appendix: { kind: 'appendix', slots: ['부록 1번 (2분)', '부록 2번 (2분)', '부록 3번 (3분)'], copy: '교사부록 문항 3개를 선택해 주세요.' },
+  practice: { kind: 'practice', slots: ['빈출 문제 (2분)', '고난도 문제 (3분)'], copy: '개념원리 · 빈출 1문항, 고난도 1문항' },
+  rpm_final: { kind: 'lesson', slots: ['빈출 문제 1 (2분)', '빈출 문제 2 (2분)', '고난도 문제 3 (3분)'], copy: 'RPM · 빈출 2문항, 고난도 1문항' },
+  rpm_pro: { kind: 'rpm_pro', slots: ['문제 1 (2분)', '문제 2 (3분)'], copy: 'RPM Pro 문항 2개를 선택해 주세요.' },
 };
 const state = {
   token: null, staff: false, editor: false, composer: false, memberships: [], courses: [], lessons: [], catalog: [], picks: new Map(), stagePicks: new Map(), quizzes: new Map(),
@@ -142,12 +154,14 @@ function rememberView() {
 }
 
 function showStage(stage) {
+  // Saved views from releases before the split used the "quiz" key.
+  if (stage === 'quiz' || quizStages.includes(stage)) stage = quizModes[currentLesson()?.quiz_mode]?.stage;
   state.stage = Object.hasOwn(stages, stage) ? stage : 'catalog';
   for (const button of document.querySelectorAll('[data-stage]')) {
     const selected = button.dataset.stage === state.stage;
     button.setAttribute('aria-pressed', String(selected));
-    $(stages[button.dataset.stage]).hidden = !selected;
   }
+  for (const panel of stagePanels) $(panel).hidden = panel !== stages[state.stage];
   rememberView();
   if (state.stage === 'progress') void loadProgress();
 }
@@ -211,8 +225,10 @@ async function loadProgress() {
           button.addEventListener('click', () => openProgressLesson(course, lesson.lesson));
           row.insertCell().append(button);
           row.insertCell().textContent = picks.filter(matches).length + ' / ' + course.lesson_slots;
-          row.insertCell().textContent = (authored ? quizzes : extras).filter(matches).length + ' / ' +
-            (authored ? quizSeconds.length : resourceStages[lesson.quiz_mode]?.slots.length ?? 0);
+          const completed = (authored ? quizzes : extras).filter(matches).length;
+          const total = authored ? quizSeconds.length : resourceStages[lesson.quiz_mode]?.slots.length ?? 0;
+          const number = quizModes[lesson.quiz_mode]?.number;
+          row.insertCell().textContent = [number, completed + ' / ' + total].filter(Boolean).join(' ');
           row.insertCell().textContent = submitted?.sync_status === 'synced' ? '시트 반영' : submitted ? '제출됨' : '미제출';
         }
         group.append(progress);
@@ -239,8 +255,20 @@ function openProgressLesson(course, lesson) {
 
 function updateStageProgress() {
   $('pick-progress').textContent = state.picks.size + ' / ' + lessonSlots();
-  $('quiz-progress').textContent = currentLesson()?.quiz_mode === 'teacher'
-    ? state.quizzes.size + ' / 5' : state.stagePicks.size + ' / ' + stageSlots();
+  const activeMode = currentLesson()?.quiz_mode;
+  const activeStage = quizModes[activeMode]?.stage;
+  const completed = activeMode === 'teacher' ? state.quizzes.size : state.stagePicks.size;
+  const total = activeMode === 'teacher' ? quizSeconds.length : stageSlots();
+  for (const stage of quizStages) {
+    const lesson = state.lessons.find(item => quizModes[item.quiz_mode]?.stage === stage);
+    const mode = quizModes[lesson?.quiz_mode];
+    const button = document.querySelector('[data-stage="' + stage + '"]');
+    button.hidden = !mode;
+    const available = activeStage === stage;
+    button.disabled = state.busy || !available;
+    $(stage + '-progress').textContent = !mode ? '' : mode.source + ' · ' +
+      (available ? completed + ' / ' + total : '이 회차 미사용');
+  }
   $('delivery-progress').textContent = state.submitted ? (state.edited ? '수정 중' : '제출됨') : '미제출';
 }
 
@@ -409,7 +437,6 @@ async function loadLesson() {
     const resource = resourceStages[lesson.quiz_mode];
     $('teacher-section').hidden = !teacherQuiz;
     $('resource-stage').hidden = teacherQuiz;
-    $('quiz-stage-label').textContent = resource?.label ?? '퀴즈앤';
     $('quiz-heading').textContent = stageTitle(lesson.quiz_mode);
     $('stage-copy').textContent = resource?.copy ?? '';
     links('curriculum', state.staff && lesson.curriculum_url, 'spreadsheets');
@@ -470,7 +497,7 @@ function stageSlots() {
 }
 
 function stageTitle(mode) {
-  return resourceStages[mode]?.title ?? '퀴즈앤 · 직접 출제';
+  return quizModes[mode]?.title ?? '퀴즈앤';
 }
 
 function lessonCatalog() {
@@ -1045,6 +1072,7 @@ async function preparePresentation() {
     const blob = await buildPresentation({
       title, picks: slotList, quizzes: submission.quizzes, appendix: stageList,
       stageLabel: stageTitle(currentLesson().quiz_mode),
+      quizLabel: stageTitle(currentLesson().quiz_mode),
     }, async question => {
       const path = question.projection_asset
         ? '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.projection_asset

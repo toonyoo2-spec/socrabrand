@@ -1,4 +1,4 @@
-import { connectStaffGoogle } from './google-drive.mjs?v=5';
+import { connectStaffGoogle } from './google-drive.mjs?v=6';
 
 const sheetsScope = 'https://www.googleapis.com/auth/spreadsheets';
 const targets = {
@@ -55,12 +55,16 @@ function questionLabel(item) {
 }
 
 export function buildSheetWrites(target, lesson, submission) {
+  const quizColumns = target[lesson.quiz_mode];
+  if (!quizColumns) throw Error('이 회차의 퀴즈 칸을 찾을 수 없습니다.');
+  const quizWrites = lesson.quiz_mode === 'teacher'
+    ? cellEntries(quizColumns, submission.quizzes ?? [], formatQuiz)
+    : cellEntries(quizColumns, submission.stage_questions ?? [], item => item.quiz_override
+      ? questionLabel(item) + '\n' + formatQuiz({ kind: 'choice', ...item.quiz_override })
+      : questionLabel(item));
   return [
     ...cellEntries(target.base, submission.selections, questionLabel),
-    ...cellEntries(target.teacher, submission.quizzes ?? [], formatQuiz),
-    ...cellEntries(target[lesson.quiz_mode], submission.stage_questions ?? [], item => item.quiz_override
-      ? questionLabel(item) + '\n' + formatQuiz({ kind: 'choice', ...item.quiz_override })
-      : questionLabel(item)),
+    ...quizWrites,
   ];
 }
 

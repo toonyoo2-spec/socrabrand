@@ -176,7 +176,9 @@ function placeQuiz(slide, quiz) {
   slide.addNotes('정답 ' + quiz.answer);
 }
 
-export async function buildPresentation({ title, picks, quizzes, appendix, stageLabel = '퀴즈앤 · 교사부록' }, loadImage) {
+export async function buildPresentation({
+  title, picks, quizzes, appendix, stageLabel = '퀴즈앤 ② · 교사부록', quizLabel = '퀴즈앤 ① · 직접 제작',
+}, loadImage) {
   const Pptx = await loadPptx();
   const deck = new Pptx();
   deck.defineLayout({ name:'PROJECTION', width:20, height:11.25 });
@@ -193,7 +195,7 @@ export async function buildPresentation({ title, picks, quizzes, appendix, stage
     slide.addNotes('수업 문항 ' + question.slot + '번 · ' + question.book + ' ' + question.label);
   }
   for (const quiz of quizzes) {
-    const slide = await frame(deck, '퀴즈앤 · 직접 출제', '문항 ' + quiz.slot, 'teacher');
+    const slide = await frame(deck, quizLabel, '문항 ' + quiz.slot, 'teacher');
     placeQuiz(slide, quiz);
   }
   for (const question of appendix) {
