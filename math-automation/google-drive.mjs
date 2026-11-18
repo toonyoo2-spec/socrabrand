@@ -1,7 +1,9 @@
-const scope = 'https://www.googleapis.com/auth/drive.file';
+const scope = 'https://www.googleapis.com/auth/drive';
 const pptxMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const slidesMime = 'application/vnd.google-apps.presentation';
-const projectionLayout = 'badge-projection';
+const folderMime = 'application/vnd.google-apps.folder';
+const projectionLayout = 'badge-projection-2';
+const driveApi = 'https://www.googleapis.com/drive/v3/';
 let ready;
 
 export function prepareGoogleDrive() {
@@ -61,6 +63,44 @@ export function connectStaffDrive() {
   return connectStaffGoogle(scope);
 }
 
+async function drivePages(connection, resource, params, key) {
+  const items = [];
+  const query = new URLSearchParams(params);
+  for (;;) {
+    const response = await fetch(driveApi + resource + '?' + query, { headers:connection.headers, cache:'no-store' });
+    const page = await checkGoogleResponse(response, 'Google Drive 폴더를 불러오지 못했습니다.');
+    items.push(...(page[key] ?? []));
+    if (!page.nextPageToken) return items;
+    query.set('pageToken', page.nextPageToken);
+  }
+}
+
+export async function listSharedDrives(connection) {
+  const drives = await drivePages(connection, 'drives', {
+    pageSize:'100', fields:'nextPageToken,drives(id,name,capabilities(canAddChildren))',
+  }, 'drives');
+  return drives.map(drive => ({ ...drive, driveId:drive.id, canAddChildren:drive.capabilities?.canAddChildren !== false }));
+}
+
+function fileId(id) {
+  if (!/^[A-Za-z0-9_-]+$/.test(id ?? '')) throw Error('선택한 Google Drive 폴더를 확인해 주세요.');
+  return id;
+}
+
+function folderQuery(folder) {
+  return folder.driveId
+    ? { supportsAllDrives:'true', includeItemsFromAllDrives:'true', corpora:'drive', driveId:fileId(folder.driveId) }
+    : { supportsAllDrives:'true', corpora:'user' };
+}
+
+export async function listDriveFolders(connection, folder) {
+  const files = await drivePages(connection, 'files', {
+    ...folderQuery(folder), q:"trashed = false and '" + fileId(folder.id) + "' in parents and mimeType = '" + folderMime + "'",
+    orderBy:'name_natural', pageSize:'100', fields:'nextPageToken,files(id,name,driveId,capabilities(canAddChildren))',
+  }, 'files');
+  return files.map(file => ({ ...file, canAddChildren:file.capabilities?.canAddChildren === true }));
+}
+
 function slidesEditUrl(file) {
   if (file.mimeType !== slidesMime || !/^[A-Za-z0-9_-]+$/.test(file.id ?? '')) {
     throw Error('Google 프레젠테이션으로 저장됐는지 확인하지 못했습니다.');
@@ -68,22 +108,24 @@ function slidesEditUrl(file) {
   return 'https://docs.google.com/presentation/d/' + file.id + '/edit';
 }
 
-export async function saveSlidesToStaffDrive(connection, blob, name, submission) {
-  const url = 'https://www.googleapis.com/drive/v3/files';
+export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder) {
+  const parent = fileId(folder.id);
+  if (!folder.canAddChildren) throw Error('이 폴더에는 파일을 저장할 수 없습니다.');
   const lookup = new URLSearchParams({
-    q: "trashed = false and 'root' in parents and mimeType = '" + slidesMime +
-      "' and appProperties has { key='socraMathSubmission' and value='" + submission + "' }" +
+    ...folderQuery(folder),
+    q: "trashed = false and '" + parent + "' in parents and mimeType = '" + slidesMime +
+      "' and appProperties has { key='socraMathSubmission' and value='" + fileId(submission) + "' }" +
       " and appProperties has { key='socraMathLayout' and value='" + projectionLayout + "' }",
     fields: 'files(id,mimeType)', pageSize: '10',
   });
-  const { files } = await fetch(url + '?' + lookup, { headers: connection.headers, cache: 'no-store' })
+  const { files } = await fetch(driveApi + 'files?' + lookup, { headers: connection.headers, cache: 'no-store' })
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
   if (files.length) return slidesEditUrl(files[0]);
-  const start = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,mimeType', {
+  const start = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id,mimeType', {
     method: 'POST',
     headers: { ...connection.headers, 'Content-Type': 'application/json',
       'X-Upload-Content-Type': pptxMime, 'X-Upload-Content-Length': String(blob.size) },
-    body: JSON.stringify({ name, mimeType: slidesMime,
+    body: JSON.stringify({ name, mimeType: slidesMime, parents:[parent],
       appProperties: { socraMathSubmission: submission, socraMathLayout: projectionLayout } }),
   });
   if (!start.ok) throw Error('Google Drive에서 저장을 시작하지 못했습니다.');

@@ -1,6 +1,6 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=4';
-import { buildPresentation } from './presentation.mjs?v=5';
-import { prepareGoogleDrive, connectStaffDrive, saveSlidesToStaffDrive } from './google-drive.mjs?v=4';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=5';
+import { buildPresentation } from './presentation.mjs?v=6';
+import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=5';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
 const $ = id => document.getElementById(id);
@@ -23,6 +23,10 @@ const state = {
   submitted: null, courseVersion: 0, lessonVersion: 0, pagePreviews: new Map(), busy: false,
 };
 let formulaTarget = $('quiz-prompt');
+const driveHome = { id:'root', name:'내 드라이브', canAddChildren:true };
+let driveConnection;
+let drivePath = [];
+let driveRequest = 0;
 
 class ApiError extends Error {
   constructor(status, message) {
@@ -77,7 +81,7 @@ function failure(error, id = 'load-status') {
     showStatus('사이트에 다시 로그인해 주세요.', { login: true });
     return;
   }
-  const message = error instanceof ApiError || ['export-status', 'sheet-status'].includes(id)
+  const message = error instanceof ApiError || ['export-status', 'sheet-status', 'drive-status'].includes(id)
     ? error.message : '연결을 확인하고 다시 시도해 주세요.';
   if (id === 'quiz-status') quizFeedback(message, 'error');
   else $(id).textContent = message;
@@ -250,7 +254,7 @@ async function loadCatalog(courseId) {
   for (let offset = 0; ; offset += limit) {
     const next = await table('math_question_index', {
       course_id: 'eq.' + courseId,
-      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,use_kind,five_choice',
+      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,use_kind,five_choice,projection_asset',
       order: 'book,page,question_number,question_id', limit, offset,
     });
     rows.push(...next);
@@ -259,6 +263,7 @@ async function loadCatalog(courseId) {
 }
 
 async function loadSite() {
+  if ($('drive-dialog').open) $('drive-dialog').close();
   state.courseVersion += 1;
   state.lessonVersion += 1;
   state.courses = [];
@@ -373,7 +378,7 @@ async function loadLesson() {
     renderMaterialLinks(materials);
     $('submission-panel').hidden = !state.composer;
     $('staff-panel').hidden = !state.staff;
-    resetSheetForm();
+    resetSheetResult();
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
     state.exportReceipt = null;
@@ -864,7 +869,7 @@ async function submit() {
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
     $('export-status').textContent = '';
-    resetSheetForm();
+    resetSheetResult();
   }, 'load-status');
 }
 
@@ -908,18 +913,123 @@ function renderExport() {
   if (!state.staff) return;
   const blocker = exportBlocker();
   for (const id of ['ppt-drive', 'sheet-sync']) $(id).disabled = state.busy || Boolean(blocker);
+  $('sheet-sync').disabled ||= !currentLesson()?.curriculum_url;
   if (blocker) $('export-status').textContent = blocker;
   else if (!$('export-status').textContent || $('export-status').dataset.lesson !== $('lesson').value) {
-    $('export-status').textContent = '프레젠테이션은 연결한 @socra.ai 계정의 내 드라이브에 저장됩니다.';
+    $('export-status').textContent = '회사 Google 계정에서 저장할 폴더를 선택할 수 있습니다.';
   }
   $('export-status').dataset.lesson = $('lesson').value;
 }
 
-async function preparePresentation() {
+function openDriveDialog() {
   if (!state.staff || state.busy || exportBlocker()) return;
-  $('export-status').textContent = '회사 Google 계정을 확인하는 중입니다.';
-  await withSaving(async () => {
+  $('drive-browser').hidden = true;
+  $('drive-connect').hidden = false;
+  $('drive-connect').disabled = false;
+  $('drive-save').disabled = true;
+  $('drive-account').textContent = '';
+  $('drive-status').textContent = '회사 Google 계정을 연결해 주세요.';
+  $('drive-dialog').showModal();
+}
+
+async function connectDriveDialog() {
+  const requestId = ++driveRequest;
+  $('drive-connect').disabled = true;
+  $('drive-status').textContent = '회사 Google 계정을 확인하는 중입니다.';
+  try {
     const connection = await connectStaffDrive();
+    if (requestId !== driveRequest || !$('drive-dialog').open) return;
+    driveConnection = connection;
+    $('drive-connect').hidden = true;
+    $('drive-browser').hidden = false;
+    $('drive-account').textContent = connection.email;
+    await browseDrive([driveHome], false);
+  } catch (error) {
+    if (requestId === driveRequest && $('drive-dialog').open) failure(error, 'drive-status');
+  } finally {
+    $('drive-connect').disabled = false;
+  }
+}
+
+function renderDrivePath(path, shared) {
+  const nav = $('drive-path');
+  nav.replaceChildren();
+  if (shared) {
+    const root = document.createElement(path.length ? 'button' : 'span');
+    root.textContent = '공유 드라이브';
+    if (path.length) {
+      root.type = 'button';
+      root.addEventListener('click', () => browseDrive([], true));
+    }
+    nav.append(root);
+  }
+  path.forEach((folder, index) => {
+    if (index || shared) {
+      const divider = document.createElement('span');
+      divider.textContent = '›';
+      divider.setAttribute('aria-hidden', 'true');
+      nav.append(divider);
+    }
+    const current = index === path.length - 1;
+    const crumb = document.createElement(current ? 'span' : 'button');
+    crumb.textContent = folder.name;
+    if (current) crumb.setAttribute('aria-current', 'location');
+    else {
+      crumb.type = 'button';
+      crumb.addEventListener('click', () => browseDrive(path.slice(0, index + 1), shared));
+    }
+    nav.append(crumb);
+  });
+}
+
+async function browseDrive(path, shared) {
+  if (state.busy || !driveConnection) return;
+  const requestId = ++driveRequest;
+  const folder = path.at(-1);
+  const list = $('drive-folders');
+  drivePath = path;
+  $('drive-my-root').setAttribute('aria-pressed', String(!shared));
+  $('drive-shared-root').setAttribute('aria-pressed', String(shared));
+  renderDrivePath(path, shared);
+  list.replaceChildren();
+  $('drive-save').disabled = true;
+  $('drive-status').textContent = '폴더를 불러오는 중입니다.';
+  try {
+    const folders = folder ? await listDriveFolders(driveConnection, folder) : await listSharedDrives(driveConnection);
+    if (requestId !== driveRequest || !$('drive-dialog').open) return;
+    for (const child of folders) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      const name = document.createElement('span');
+      const arrow = document.createElement('span');
+      button.type = 'button';
+      name.textContent = child.name;
+      arrow.textContent = '›';
+      arrow.setAttribute('aria-hidden', 'true');
+      button.append(name, arrow);
+      button.addEventListener('click', () => browseDrive([...path, child], shared));
+      item.append(button);
+      list.append(item);
+    }
+    $('drive-save').disabled = !folder?.canAddChildren;
+    $('drive-status').textContent = folder?.canAddChildren
+      ? (folders.length ? '' : '하위 폴더가 없습니다. 현재 폴더에 저장할 수 있습니다.')
+      : folder ? '이 폴더에는 저장 권한이 없습니다.' : (folders.length ? '공유 드라이브를 선택하세요.' : '접근 가능한 공유 드라이브가 없습니다.');
+  } catch (error) {
+    if (requestId === driveRequest && $('drive-dialog').open) failure(error, 'drive-status');
+  }
+}
+
+async function preparePresentation() {
+  if (!state.staff || state.busy || exportBlocker() || !driveConnection) return;
+  const folder = drivePath.at(-1);
+  if (!folder?.canAddChildren || $('drive-save').disabled) return;
+  const connection = driveConnection;
+  const folderName = drivePath.map(item => item.name).join(' › ');
+  const active = [...$('drive-dialog').querySelectorAll('button:not(:disabled)')];
+  active.forEach(button => { button.disabled = true; });
+  let stored = false;
+  await withSaving(async () => {
     const course = currentCourse();
     const submission = state.submitted;
     const withAsset = pick => {
@@ -931,17 +1041,17 @@ async function preparePresentation() {
     const stageList = (submission.stage_questions ?? []).map(withAsset);
     const title = course.instructor + ' · ' + tracks[course.track] + ' · ' + currentLesson().lesson +
       '강 · ' + currentLesson().topic.replace(/^\([^)]*\)\s*/, '') + ' · 빔용';
-    $('export-status').textContent = '문항을 한 장씩 발표자료에 넣는 중입니다.';
+    $('drive-status').textContent = '문항을 한 장씩 발표자료에 넣는 중입니다.';
     const blob = await buildPresentation({
       title, picks: slotList, quizzes: submission.quizzes, appendix: stageList,
       stageLabel: stageTitle(currentLesson().quiz_mode),
     }, async question => {
-      const path = question.image_key
-        ? '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.image_key
+      const path = question.projection_asset
+        ? '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.projection_asset
         : previewPath(course.preview_course_id ?? course.id, question.preview_book, question.page);
       return (await request(path)).blob();
     });
-    const driveUrl = resultLink(await saveSlidesToStaffDrive(connection, blob, title, submission.id));
+    const driveUrl = resultLink(await saveSlidesToStaffDrive(connection, blob, title, submission.id, folder));
     const [prior] = await table('math_staff_exports', receiptFilter());
     if (!prior) {
       await table('math_staff_exports', { select: 'drive_url' }, 'POST', {
@@ -951,34 +1061,26 @@ async function preparePresentation() {
       await table('math_staff_exports', receiptFilter(), 'PATCH', { drive_url: driveUrl });
     }
     state.exportReceipt = driveUrl;
-    $('export-status').textContent = connection.email + ' 내 드라이브에 저장했습니다.';
-  }, 'export-status');
+    $('export-status').textContent = folderName + '에 저장했습니다.';
+    stored = true;
+  }, 'drive-status');
+  active.forEach(button => { button.disabled = false; });
+  if (stored) $('drive-dialog').close();
 }
 
-function resetSheetForm() {
-  $('sheet-form').reset();
-  $('sheet-form').hidden = true;
-  $('sheet-sync').setAttribute('aria-expanded', 'false');
+function resetSheetResult() {
   $('sheet-status').textContent = '';
   $('sheet-result').hidden = true;
   $('sheet-result').removeAttribute('href');
 }
 
-function toggleSheetForm() {
-  const form = $('sheet-form');
-  form.hidden = !form.hidden;
-  $('sheet-sync').setAttribute('aria-expanded', String(!form.hidden));
-  if (!form.hidden) $('sheet-url').focus();
-}
-
-async function reflectSheet(event) {
-  event.preventDefault();
+async function reflectSheet() {
   if (!state.staff || state.busy || exportBlocker()) return;
   $('sheet-result').hidden = true;
   $('sheet-result').removeAttribute('href');
   await withSaving(async () => {
-    const destination = sheetDestination(currentCourse(), $('sheet-url').value);
     const lesson = currentLesson();
+    const destination = sheetDestination(currentCourse(), lesson.curriculum_url);
     const submission = state.submitted;
     $('sheet-status').textContent = 'Google 계정 권한과 커리큘럼 양식을 확인하고 있습니다.';
     const result = await syncSubmissionToSheet(destination, lesson, submission);
@@ -1162,9 +1264,19 @@ $('stage-choice-close').addEventListener('click', () => {
   if (confirmQuizChange()) { closeStageChoice(); renderSubmission(); }
 });
 $('submit').addEventListener('click', submit);
-$('sheet-sync').addEventListener('click', toggleSheetForm);
-$('sheet-form').addEventListener('submit', reflectSheet);
-$('ppt-drive').addEventListener('click', preparePresentation);
+$('sheet-sync').addEventListener('click', reflectSheet);
+$('ppt-drive').addEventListener('click', openDriveDialog);
+$('drive-connect').addEventListener('click', connectDriveDialog);
+$('drive-my-root').addEventListener('click', () => browseDrive([driveHome], false));
+$('drive-shared-root').addEventListener('click', () => browseDrive([], true));
+$('drive-save').addEventListener('click', preparePresentation);
+$('drive-close').addEventListener('click', () => $('drive-dialog').close());
+$('drive-dialog').addEventListener('cancel', event => { if (state.busy) event.preventDefault(); });
+$('drive-dialog').addEventListener('close', () => {
+  driveRequest += 1;
+  driveConnection = null;
+  drivePath = [];
+});
 $('retry').addEventListener('click', loadSite);
 protectUnsaved($('course'), () => {
   const courses = state.courses.filter(course => course.instructor === $('course').value);

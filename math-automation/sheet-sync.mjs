@@ -1,4 +1,4 @@
-import { connectStaffGoogle } from './google-drive.mjs?v=4';
+import { connectStaffGoogle } from './google-drive.mjs?v=5';
 
 const sheetsScope = 'https://www.googleapis.com/auth/spreadsheets';
 const targets = {
@@ -27,11 +27,11 @@ export function sheetDestination(course, input) {
   try { url = new URL(input.trim()); } catch { /* Show the same message as for unsupported links. */ }
   const id = url?.pathname.match(/^\/spreadsheets\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]+)(?:\/(?:edit|view))?\/?$/)?.[1];
   if (!id || url.origin !== 'https://docs.google.com' || url.username || url.password) {
-    throw Error('Google 스프레드시트의 주소창 링크를 붙여넣어 주세요.');
+    throw Error('이 과정에 연결된 Google 스프레드시트 주소를 확인해 주세요.');
   }
   const gids = [...url.searchParams.getAll('gid'), ...new URLSearchParams(url.hash.slice(1)).getAll('gid')];
   if (gids.some(gid => !/^\d{1,10}$/.test(gid) || Number(gid) > 2147483647 || Number(gid) !== Number(gids[0]))) {
-    throw Error('커리큘럼 탭이 열린 상태에서 링크를 다시 복사해 주세요.');
+    throw Error('이 과정에 연결된 커리큘럼 탭 주소를 확인해 주세요.');
   }
   return { ...target, id, gid: gids.length ? Number(gids[0]) : null };
 }
@@ -78,7 +78,7 @@ export async function syncSubmissionToSheet(target, lesson, submission) {
   const tab = meta.sheets?.map(sheet => sheet.properties).find(properties =>
     !properties.hidden && properties.sheetType === 'GRID' &&
     (target.gid === null ? properties.title === target.tab : properties.sheetId === target.gid));
-  if (!tab) throw Error('커리큘럼 탭을 찾지 못했습니다. 해당 탭을 열고 주소를 다시 복사해 주세요.');
+  if (!tab) throw Error('이 과정에 연결된 커리큘럼 탭을 찾지 못했습니다.');
 
   const name = "'" + tab.title.replaceAll("'", "''") + "'!";
   const ranges = new URLSearchParams({valueRenderOption:'UNFORMATTED_VALUE',dateTimeRenderOption:'SERIAL_NUMBER'});
@@ -88,7 +88,7 @@ export async function syncSubmissionToSheet(target, lesson, submission) {
   const columnIndex = (letter) => letter.charCodeAt(0) - 65;
   const headersRow = valueRanges?.[0]?.values?.[0] ?? [];
   if (Object.entries(target.checks).some(([letter, title]) => headersRow[columnIndex(letter)] !== title)) {
-    throw Error('이 탭의 문항 열이 커리큘럼 양식과 다릅니다. 올바른 탭의 URL을 입력해 주세요.');
+    throw Error('연결된 시트의 문항 열이 커리큘럼 양식과 다릅니다.');
   }
   const matchingRows = (valueRanges?.[1]?.values ?? []).flatMap(([label], index) =>
     String(label ?? '').trim() === lesson.lesson + '강' ? [index + 6] : []);
