@@ -1,3 +1,5 @@
+import { buildPresentation, downloadPresentation } from './presentation.mjs';
+import { prepareGoogleDrive, connectStaffDrive, saveToStaffDrive } from './google-drive.mjs';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
 const $ = id => document.getElementById(id);
@@ -6,7 +8,7 @@ const dateLabel = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'num
 const quizSeconds = [30, 30, 60, 60, 120];
 const formulaInputs = ['quiz-prompt', 'quiz-answer', 'quiz-choices'];
 const state = {
-  token: null, staff: false, courses: [], lessons: [], catalog: [], picks: new Map(), quizzes: new Map(),
+  token: null, staff: false, editor: false, composer: false, memberships: [], courses: [], lessons: [], catalog: [], picks: new Map(), quizzes: new Map(),
   submitted: null, courseVersion: 0, lessonVersion: 0, previewVersion: 0, previewUrl: '', busy: false,
 };
 let formulaTarget = $('quiz-prompt');
@@ -60,7 +62,8 @@ function failure(error, id = 'load-status') {
     showStatus('사이트에 다시 로그인해 주세요.', { login: true });
     return;
   }
-  $(id).textContent = error instanceof ApiError ? error.message : '연결을 확인하고 다시 시도해 주세요.';
+  $(id).textContent = error instanceof ApiError || id === 'export-status'
+    ? error.message : '연결을 확인하고 다시 시도해 주세요.';
 }
 
 function showStatus(message, { login = false, retry = false } = {}) {
@@ -106,7 +109,7 @@ async function loadCatalog(courseId) {
   for (let offset = 0; ; offset += limit) {
     const next = await table('math_question_index', {
       course_id: 'eq.' + courseId,
-      select: 'question_id,book,unit,section,page,label,preview_top,preview_book',
+      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop',
       order: 'book,page,question_number,question_id', limit, offset,
     });
     rows.push(...next);
@@ -128,9 +131,10 @@ async function loadSite() {
   }
   showStatus('수학자동화 접속을 확인하는 중입니다.');
   try {
-    const [courses, profiles] = await Promise.all([
+    const [courses, profiles, memberships] = await Promise.all([
       table('math_courses', { select: 'id,instructor,review_url', order: 'instructor' }),
       table('profiles', { select: 'role', limit: 1 }),
+      table('math_course_members', { select: 'course_id,team_role' }),
     ]);
     if (token !== state.token) return;
     if (!courses.length) {
@@ -138,8 +142,10 @@ async function loadSite() {
       return;
     }
     state.courses = courses;
-    state.staff = profiles[0]?.role === 'editor';
-    options($('course'), courses.map(item => [item.id, item.instructor]), courses[0].id);
+    state.editor = profiles[0]?.role === 'editor';
+    state.memberships = memberships;
+    const active = courses.find(course => course.review_url) ?? courses[0];
+    options($('course'), courses.map(item => [item.id, item.instructor]), active.id);
     $('message').hidden = true;
     $('workspace').hidden = false;
     await loadCourse();
@@ -152,9 +158,14 @@ async function loadSite() {
 
 async function loadCourse() {
   const course = currentCourse();
+  const role = state.memberships.find(member => member.course_id === course.id)?.team_role;
+  state.staff = state.editor || role === 'staff';
+  state.composer = state.editor || role === 'teacher';
+  if (state.staff) void prepareGoogleDrive().catch(() => {});
   const version = ++state.courseVersion;
   ++state.lessonVersion;
   $('lesson-tools').hidden = true;
+  $('staff-panel').hidden = true;
   $('actions').hidden = true;
   $('google-help').hidden = true;
   $('topic').textContent = '';
@@ -191,6 +202,7 @@ async function loadLesson() {
   const lesson = currentLesson();
   const version = ++state.lessonVersion;
   $('lesson-tools').hidden = true;
+  $('staff-panel').hidden = true;
   $('actions').hidden = true;
   $('google-help').hidden = true;
   clearPreview();
@@ -198,15 +210,22 @@ async function loadLesson() {
   $('load-status').textContent = '이 회차의 작성 내용을 불러오는 중입니다.';
   try {
     const filter = context();
-    const [picks, quizzes, submissions] = await Promise.all([
+    const [picks, quizzes, submissions, appendix] = await Promise.all([
       table('math_selections', { ...filter, select: 'slot,question_id' }),
       lesson.quiz_mode === 'teacher' ? table('math_teacher_quizzes', { ...filter, select: 'slot,kind,prompt,answer,choices' }) : [],
       table('math_submissions', { ...filter, select: 'id,submitted_at,sync_status,selections,quizzes', order: 'submitted_at.desc', limit: 1 }),
+      lesson.quiz_mode === 'appendix' ? table('math_appendix_items', { ...filter, select: 'slot,label,image_key', order: 'slot' }) : [],
     ]);
     if (version !== state.lessonVersion) return;
     state.picks = new Map(picks.map(value => [value.slot, value.question_id]));
     state.quizzes = new Map(quizzes.map(value => [value.slot, value]));
     state.submitted = submissions[0] ?? null;
+    state.appendix = appendix;
+    $('appendix-note').textContent = appendix.length ? appendix.map(item => item.label).join(' · ') : '부록 자료 준비 중';
+    $('submission-panel').hidden = !state.composer;
+    $('staff-panel').hidden = !state.staff;
+    $('ppt-result').hidden = true;
+    $('ppt-result').removeAttribute('href');
     const savedPicks = state.submitted?.selections ?? [];
     const savedQuizzes = state.submitted?.quizzes ?? [];
     state.edited = savedPicks.length !== picks.length ||
@@ -216,10 +235,11 @@ async function loadLesson() {
         return !draft || ['kind', 'prompt', 'answer', 'choices'].some(key => saved[key] !== draft[key]);
       });
     state.quizDirty = false;
+    $('export-status').textContent = '';
     $('load-status').textContent = '';
     $('lesson-tools').hidden = false;
     $('catalog').hidden = !state.catalog.length;
-    $('asset-admin').hidden = !state.staff;
+    $('asset-admin').hidden = !state.editor;
     $('teacher-section').hidden = lesson.quiz_mode !== 'teacher';
     $('appendix-section').hidden = lesson.quiz_mode !== 'appendix';
     links('curriculum', state.staff && lesson.curriculum_url, 'spreadsheets');
@@ -232,7 +252,11 @@ async function loadLesson() {
     setUnit(lesson.unit, lesson.section);
     renderQuizSlots(1);
     renderQuiz();
+    $('quiz-save').hidden = !state.composer;
+    for (const id of [...formulaInputs, 'quiz-kind']) $(id).disabled = !state.composer;
+    $('symbols').hidden = !state.composer;
     renderSubmission();
+    renderExport();
     const first = state.catalog.find(question => question.question_id === state.picks.get(1));
     if (first) void showPreview(first);
   } catch (error) {
@@ -266,11 +290,20 @@ function renderPicks() {
     const picks = [['', '문항 선택'], ...current.map(question => [question.question_id, question.label])];
     if (selected && !current.includes(selected)) picks.splice(1, 0, [selected.question_id, selected.label + ' · 저장됨']);
     options(select, picks, selected?.question_id);
+    select.disabled = !state.composer;
     select.addEventListener('change', () => savePick(slot, select.value, select));
     select.addEventListener('focus', () => {
       if (selected && !state.busy) void showPreview(selected);
     });
     label.append(select);
+    if (!state.composer && selected) {
+      const preview = document.createElement('button');
+      preview.type = 'button';
+      preview.className = 'slot-preview';
+      preview.textContent = '교재 원본 보기';
+      preview.addEventListener('click', () => showPreview(selected));
+      label.append(preview);
+    }
     slots.push(label);
   }
   $('question-slots').replaceChildren(...slots);
@@ -290,7 +323,10 @@ async function withSaving(work, statusId) {
   } finally {
     state.busy = false;
     active.forEach(control => { if (control.isConnected) control.disabled = false; });
-    if (version === state.lessonVersion) renderSubmission();
+    if (version === state.lessonVersion) {
+      renderSubmission();
+      renderExport();
+    }
   }
 }
 
@@ -418,7 +454,65 @@ async function submit() {
     if (!rows[0]) throw new ApiError(403, '이 회차를 제출할 권한이 없습니다.');
     state.submitted = rows[0];
     state.edited = false;
+    $('export-status').textContent = '';
   }, 'load-status');
+}
+
+function exportBlocker() {
+  if (!state.submitted) return '제출된 회차를 선택하면 빔용 PPT를 만들 수 있습니다.';
+  if (currentLesson().quiz_mode === 'appendix' && state.appendix.length !== 3) {
+    return '교사부록 문항 3개가 등록되면 빔용 PPT를 만들 수 있습니다.';
+  }
+  return '';
+}
+
+function renderExport() {
+  if (!state.staff) return;
+  const blocker = exportBlocker();
+  for (const id of ['ppt-download', 'ppt-drive']) $(id).disabled = state.busy || Boolean(blocker);
+  if (blocker) $('export-status').textContent = blocker;
+  else if (!$('export-status').textContent || $('export-status').dataset.lesson !== $('lesson').value) {
+    $('export-status').textContent = '최근 제출본으로 생성합니다. 이미지 잘림과 글자 크기를 발표 전에 확인해 주세요.';
+  }
+  $('export-status').dataset.lesson = $('lesson').value;
+}
+
+async function preparePresentation(saveInDrive) {
+  if (!state.staff || state.busy || exportBlocker()) return;
+  $('export-status').textContent = saveInDrive ? '회사 Google 계정을 확인하는 중입니다.' : '발표자료를 준비하는 중입니다.';
+  await withSaving(async () => {
+    const connection = saveInDrive ? await connectStaffDrive() : null;
+    const course = currentCourse();
+    const submission = state.submitted;
+    const slotList = submission.selections.map(pick => {
+      const question = state.catalog.find(item => item.question_id === pick.question_id);
+      if (!question) throw Error('제출된 문항을 교재 목록에서 찾을 수 없습니다.');
+      return { ...question, slot: pick.slot };
+    });
+    const title = '수학 ' + currentLesson().lesson + '강 · ' + currentLesson().topic.replace(/^\([^)]*\)\s*/, '') + ' · 빔용';
+    const filename = title + '.pptx';
+    $('export-status').textContent = '문항을 한 장씩 발표자료에 넣는 중입니다.';
+    const blob = await buildPresentation({
+      title, picks: slotList, quizzes: submission.quizzes, appendix: state.appendix,
+    }, async question => {
+      const path = question.image_key
+        ? '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.image_key
+        : previewPath(course.id, question.preview_book, question.page);
+      return (await request(path)).blob();
+    });
+    if (saveInDrive) {
+      const url = new URL(await saveToStaffDrive(connection, blob, filename, submission.id));
+      const isDriveFile = url.origin === 'https://drive.google.com' && url.pathname.startsWith('/file/d/');
+      const isPresentation = url.origin === 'https://docs.google.com' && url.pathname.startsWith('/presentation/d/');
+      if (!isDriveFile && !isPresentation) throw Error('저장한 PPT의 Google 링크를 확인하지 못했습니다.');
+      $('ppt-result').href = url.href;
+      $('ppt-result').hidden = false;
+      $('export-status').textContent = connection.email + ' 내 드라이브에 저장했습니다.';
+    } else {
+      downloadPresentation(blob, filename);
+      $('export-status').textContent = 'PPT를 생성했습니다.';
+    }
+  }, 'export-status');
 }
 
 function clearPreview() {
@@ -457,7 +551,9 @@ async function showPreview(question) {
     const img = $('preview-image');
     img.onload = () => {
       if (version !== state.previewVersion) return;
-      $('preview-scroll').scrollTop = Math.max(0, (question.preview_top ?? 0) * img.height - 24);
+      const scroller = $('preview-scroll');
+      scroller.scrollTop = Math.max(0, (question.preview_top ?? 0) * img.height - 24);
+      scroller.scrollLeft = Math.max(0, ((question.slide_crop?.[0] ?? 0) - .08) * img.width);
     };
     img.alt = question.label + ' · 교재 원본';
     img.hidden = false;
@@ -469,7 +565,7 @@ async function showPreview(question) {
 }
 
 async function uploadPreviews() {
-  if (!state.staff) return;
+  if (!state.editor) return;
   const files = [...$('preview-files').files];
   const byPage = new Map(state.catalog.filter(question => question.book === $('book').value && question.preview_book)
     .map(question => [question.page, question.preview_book]));
@@ -555,6 +651,8 @@ $('unit').addEventListener('change', () => setSection(currentLesson().section));
 $('section').addEventListener('change', renderPicks);
 $('quiz-save').addEventListener('click', saveQuiz);
 $('submit').addEventListener('click', submit);
+$('ppt-download').addEventListener('click', () => preparePresentation(false));
+$('ppt-drive').addEventListener('click', () => preparePresentation(true));
 $('retry').addEventListener('click', loadSite);
 $('preview-upload').addEventListener('click', uploadPreviews);
 protectUnsaved($('course'), loadCourse);

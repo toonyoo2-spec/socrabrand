@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://eoljasmgogdcvnytaoax.supabase.co; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=3">
-  <script type="module" src="math.mjs?v=3"></script>
+  <link rel="stylesheet" href="math.css?v=4">
+  <script type="module" src="math.mjs?v=4"></script>
 </head>
 <body>
   <main>
@@ -89,12 +89,21 @@
           <div id="appendix-section" class="quiz appendix" hidden>
             <h3>교사부록 문항</h3>
             <p>3문항 · 2분 / 2분 / 3분</p>
-            <span class="muted">부록 자료 준비 중</span>
+            <p id="appendix-note" class="muted">부록 자료 준비 중</p>
           </div>
         </section>
-        <section class="card submit" aria-labelledby="submit-heading">
+        <section id="submission-panel" class="card submit" aria-labelledby="submit-heading">
           <div><h2 id="submit-heading">회차 제출</h2><p id="submit-status" class="muted" aria-live="polite"></p></div>
           <button type="button" class="button primary" id="submit">회차 제출</button>
+        </section>
+        <section id="staff-panel" class="card" aria-labelledby="export-heading" hidden>
+          <h2 id="export-heading">빔용 PPT 만들기</h2>
+          <p id="export-status" class="muted" aria-live="polite"></p>
+          <div class="buttons">
+            <button class="button" id="ppt-download" type="button">PPT 다운로드</button>
+            <button class="button primary" id="ppt-drive" type="button">회사 Google Drive에 저장</button>
+            <a id="ppt-result" class="button" target="_blank" rel="noopener noreferrer" hidden>저장한 PPT 열기</a>
+          </div>
         </section>
       </div>
     </section>
