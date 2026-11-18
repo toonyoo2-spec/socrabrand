@@ -1,6 +1,6 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=2';
 import { buildPresentation } from './presentation.mjs?v=4';
-import { prepareGoogleDrive, connectStaffDrive, saveToStaffDrive } from './google-drive.mjs?v=2';
+import { prepareGoogleDrive, connectStaffDrive, saveSlidesToStaffDrive } from './google-drive.mjs?v=3';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
 const $ = id => document.getElementById(id);
@@ -268,6 +268,7 @@ async function loadLesson() {
     renderMaterialLinks(materials);
     $('submission-panel').hidden = !state.composer;
     $('staff-panel').hidden = !state.staff;
+    resetSheetForm();
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
     state.exportReceipt = null;
@@ -678,17 +679,16 @@ async function submit() {
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
     $('export-status').textContent = '';
+    resetSheetForm();
   }, 'load-status');
 }
 
 function resultLink(value) {
   const url = new URL(value);
-  const isDriveFile = url.origin === 'https://drive.google.com' && url.pathname.startsWith('/file/d/');
-  const isPresentation = url.origin === 'https://docs.google.com' && url.pathname.startsWith('/presentation/d/');
-  if (!isDriveFile && !isPresentation) throw Error('저장한 PPT의 Google 링크를 확인하지 못했습니다.');
-  $('ppt-result').href = url.href;
+  if (url.origin !== 'https://docs.google.com' || !/^\/presentation\/d\/[A-Za-z0-9_-]+\/edit\/?$/.test(url.pathname)) return null;
+  $('ppt-result').href = url.origin + url.pathname;
   $('ppt-result').hidden = false;
-  return url.href;
+  return $('ppt-result').href;
 }
 
 function receiptFilter() {
@@ -712,7 +712,7 @@ async function loadExportReceipt(version) {
 }
 
 function exportBlocker() {
-  if (!state.submitted) return '회차를 제출하면 시트 반영과 PPT 저장을 할 수 있습니다.';
+  if (!state.submitted) return '회차를 제출하면 시트 반영과 프레젠테이션 저장을 할 수 있습니다.';
   if ((state.submitted.stage_questions ?? []).length !== stageSlots()) {
     return stageTitle(currentLesson().quiz_mode) + ' 문항을 선택하고 다시 제출해 주세요.';
   }
@@ -723,10 +723,9 @@ function renderExport() {
   if (!state.staff) return;
   const blocker = exportBlocker();
   for (const id of ['ppt-drive', 'sheet-sync']) $(id).disabled = state.busy || Boolean(blocker);
-  $('sheet-sync').disabled ||= !sheetDestination(currentCourse(), currentLesson());
   if (blocker) $('export-status').textContent = blocker;
   else if (!$('export-status').textContent || $('export-status').dataset.lesson !== $('lesson').value) {
-    $('export-status').textContent = 'PPT는 연결한 @socra.ai 계정의 내 드라이브에 저장됩니다.';
+    $('export-status').textContent = '프레젠테이션은 연결한 @socra.ai 계정의 내 드라이브에 저장됩니다.';
   }
   $('export-status').dataset.lesson = $('lesson').value;
 }
@@ -746,7 +745,6 @@ async function preparePresentation() {
     const slotList = submission.selections.map(withAsset);
     const stageList = (submission.stage_questions ?? []).map(withAsset);
     const title = '수학 ' + currentLesson().lesson + '강 · ' + currentLesson().topic.replace(/^\([^)]*\)\s*/, '') + ' · 빔용';
-    const filename = title + '.pptx';
     $('export-status').textContent = '문항을 한 장씩 발표자료에 넣는 중입니다.';
     const blob = await buildPresentation({
       title, picks: slotList, quizzes: submission.quizzes, appendix: stageList,
@@ -757,7 +755,7 @@ async function preparePresentation() {
         : previewPath(course.id, question.preview_book, question.page);
       return (await request(path)).blob();
     });
-    const driveUrl = resultLink(await saveToStaffDrive(connection, blob, filename, submission.id));
+    const driveUrl = resultLink(await saveSlidesToStaffDrive(connection, blob, title, submission.id));
     const [prior] = await table('math_staff_exports', receiptFilter());
     if (!prior) {
       await table('math_staff_exports', { select: 'drive_url' }, 'POST', {
@@ -771,24 +769,45 @@ async function preparePresentation() {
   }, 'export-status');
 }
 
-async function reflectSheet() {
+function resetSheetForm() {
+  $('sheet-form').reset();
+  $('sheet-form').hidden = true;
+  $('sheet-sync').setAttribute('aria-expanded', 'false');
+  $('sheet-status').textContent = '';
+  $('sheet-result').hidden = true;
+  $('sheet-result').removeAttribute('href');
+}
+
+function toggleSheetForm() {
+  const form = $('sheet-form');
+  form.hidden = !form.hidden;
+  $('sheet-sync').setAttribute('aria-expanded', String(!form.hidden));
+  if (!form.hidden) $('sheet-url').focus();
+}
+
+async function reflectSheet(event) {
+  event.preventDefault();
   if (!state.staff || state.busy || exportBlocker()) return;
-  const destination = sheetDestination(currentCourse(), currentLesson());
-  if (!destination) return;
-  $('sheet-status').textContent = 'Google 계정 권한과 시트 위치를 확인하고 있습니다.';
+  $('sheet-result').hidden = true;
+  $('sheet-result').removeAttribute('href');
   await withSaving(async () => {
+    const destination = sheetDestination(currentCourse(), $('sheet-url').value);
+    const lesson = currentLesson();
     const submission = state.submitted;
-    const result = await syncSubmissionToSheet(destination, currentLesson(), submission);
+    $('sheet-status').textContent = 'Google 계정 권한과 커리큘럼 양식을 확인하고 있습니다.';
+    const result = await syncSubmissionToSheet(destination, lesson, submission);
     if (!result) {
       $('sheet-status').textContent = 'Google 시트 반영을 취소했습니다.';
       return;
     }
+    $('sheet-result').href = result.url;
+    $('sheet-result').hidden = false;
     const status = await table('math_submissions', {
       id: 'eq.' + submission.id, select: 'id,sync_status',
     }, 'PATCH', { sync_status: 'synced' });
     if (status[0]?.sync_status === 'synced') submission.sync_status = 'synced';
     $('sheet-status').textContent = result.written
-      ? 'Google 시트 ' + destination.row + '행에 ' + result.written + '칸을 반영했습니다.'
+      ? 'Google 시트 ' + result.row + '행에 ' + result.written + '칸을 반영했습니다.'
       : '이미 같은 내용이 반영되어 있습니다.';
   }, 'sheet-status');
 }
@@ -947,7 +966,8 @@ $('stage-section').addEventListener('change', () => {
 });
 $('teacher-section').addEventListener('submit', saveQuiz);
 $('submit').addEventListener('click', submit);
-$('sheet-sync').addEventListener('click', reflectSheet);
+$('sheet-sync').addEventListener('click', toggleSheetForm);
+$('sheet-form').addEventListener('submit', reflectSheet);
 $('ppt-drive').addEventListener('click', preparePresentation);
 $('retry').addEventListener('click', loadSite);
 protectUnsaved($('course'), loadCourse);

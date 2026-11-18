@@ -1,5 +1,6 @@
 const scope = 'https://www.googleapis.com/auth/drive.file';
 const pptxMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+const slidesMime = 'application/vnd.google-apps.presentation';
 let ready;
 
 export function prepareGoogleDrive() {
@@ -59,28 +60,38 @@ export function connectStaffDrive() {
   return connectStaffGoogle(scope);
 }
 
-export async function saveToStaffDrive(connection, blob, name, submission) {
+function slidesEditUrl(file) {
+  if (file.mimeType !== slidesMime || !/^[A-Za-z0-9_-]+$/.test(file.id ?? '')) {
+    throw Error('Google 프레젠테이션으로 저장됐는지 확인하지 못했습니다.');
+  }
+  return 'https://docs.google.com/presentation/d/' + file.id + '/edit';
+}
+
+export async function saveSlidesToStaffDrive(connection, blob, name, submission) {
   const url = 'https://www.googleapis.com/drive/v3/files';
   const lookup = new URLSearchParams({
-    q: "trashed = false and 'root' in parents and appProperties has { key='socraMathSubmission' and value='" + submission + "' }",
-    fields: 'files(id,webViewLink)', pageSize: '10',
+    q: "trashed = false and 'root' in parents and mimeType = '" + slidesMime +
+      "' and appProperties has { key='socraMathSubmission' and value='" + submission + "' }",
+    fields: 'files(id,mimeType)', pageSize: '10',
   });
   const { files } = await fetch(url + '?' + lookup, { headers: connection.headers, cache: 'no-store' })
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
-  if (files.length) return files[0].webViewLink || 'https://drive.google.com/file/d/' + files[0].id + '/view';
-  const start = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,webViewLink', {
+  if (files.length) return slidesEditUrl(files[0]);
+  const start = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,mimeType', {
     method: 'POST',
     headers: { ...connection.headers, 'Content-Type': 'application/json',
       'X-Upload-Content-Type': pptxMime, 'X-Upload-Content-Length': String(blob.size) },
-    body: JSON.stringify({ name, mimeType: pptxMime, appProperties: { socraMathSubmission: submission } }),
+    body: JSON.stringify({ name, mimeType: slidesMime, appProperties: { socraMathSubmission: submission } }),
   });
   if (!start.ok) throw Error('Google Drive에서 저장을 시작하지 못했습니다.');
-  const location = new URL(start.headers.get('location'));
+  const session = start.headers.get('location');
+  if (!session) throw Error('Google Drive 저장 주소를 받지 못했습니다.');
+  const location = new URL(session);
   if (location.origin !== 'https://www.googleapis.com' || !location.pathname.startsWith('/upload/drive/')) {
     throw Error('Google Drive 저장 주소가 올바르지 않습니다.');
   }
   const uploaded = await fetch(location.href, {
     method: 'PUT', headers: { ...connection.headers, 'Content-Type': pptxMime }, body: blob,
-  }).then(response => checkGoogleResponse(response, 'PPT를 내 Google Drive에 저장하지 못했습니다.'));
-  return uploaded.webViewLink || 'https://drive.google.com/file/d/' + uploaded.id + '/view';
+  }).then(response => checkGoogleResponse(response, '내 Google Drive에 프레젠테이션을 저장하지 못했습니다.'));
+  return slidesEditUrl(uploaded);
 }

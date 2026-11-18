@@ -138,6 +138,10 @@ button:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
 }
 
 #sheet-status:not(:empty), #stage-status:not(:empty) { margin-top: 10px; }
+#sheet-form { margin-top: 14px; }
+.sheet-link-field { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+.sheet-link-field input { flex: 1 1 240px; min-width: 0; }
+#sheet-result { margin-top: 8px; }
 .material-links { padding-left: 22px; line-height: 1.8; margin-bottom: 0; }
 .material-links:empty { display: none; }
 

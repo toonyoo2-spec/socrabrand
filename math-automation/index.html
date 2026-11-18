@@ -7,8 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=7">
-  <script type="module" src="math.mjs?v=11"></script>
+  <link rel="stylesheet" href="math.css?v=8">
+  <script type="module" src="math.mjs?v=12"></script>
 </head>
 <body>
   <main>
@@ -135,11 +135,19 @@
           <h2 id="export-heading">제출본 반영</h2>
           <p id="export-status" class="muted" aria-live="polite"></p>
           <div class="buttons">
-            <button class="button" id="sheet-sync" type="button">커리큘럼 시트에 문항 반영</button>
-            <button class="button primary" id="ppt-drive" type="button">내 Google Drive에 PPT 저장</button>
-            <a id="ppt-result" class="button" target="_blank" rel="noopener noreferrer" hidden>저장한 PPT 열기</a>
+            <button class="button" id="sheet-sync" type="button" aria-expanded="false" aria-controls="sheet-form">커리큘럼 시트에 문항 반영</button>
+            <button class="button primary" id="ppt-drive" type="button">내 Drive에 Google 프레젠테이션 저장</button>
+            <a id="ppt-result" class="button" target="_blank" rel="noopener noreferrer" hidden>저장한 프레젠테이션 열기</a>
           </div>
+          <form id="sheet-form" hidden>
+            <label for="sheet-url">반영할 Google 스프레드시트 URL</label>
+            <div class="sheet-link-field">
+              <input id="sheet-url" type="url" required maxlength="2048" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off" spellcheck="false">
+              <button class="button primary" type="submit">이 시트에 반영</button>
+            </div>
+          </form>
           <p id="sheet-status" class="muted" role="status"></p>
+          <a id="sheet-result" class="button" target="_blank" rel="noopener noreferrer" hidden>반영한 시트 열기</a>
         </section>
           <details id="staff-links" class="card" hidden>
             <summary>Google 자료 링크</summary>
