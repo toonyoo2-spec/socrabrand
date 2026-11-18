@@ -228,6 +228,8 @@ async function loadLesson() {
     $('staff-panel').hidden = !state.staff;
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
+    state.exportReceipt = null;
+    if (state.staff && state.submitted) void loadExportReceipt(version);
     const savedPicks = state.submitted?.selections ?? [];
     const savedQuizzes = state.submitted?.quizzes ?? [];
     state.edited = savedPicks.length !== picks.length ||
@@ -456,8 +458,41 @@ async function submit() {
     if (!rows[0]) throw new ApiError(403, '이 회차를 제출할 권한이 없습니다.');
     state.submitted = rows[0];
     state.edited = false;
+    state.exportReceipt = null;
+    $('ppt-result').hidden = true;
+    $('ppt-result').removeAttribute('href');
     $('export-status').textContent = '';
   }, 'load-status');
+}
+
+function resultLink(value) {
+  const url = new URL(value);
+  const isDriveFile = url.origin === 'https://drive.google.com' && url.pathname.startsWith('/file/d/');
+  const isPresentation = url.origin === 'https://docs.google.com' && url.pathname.startsWith('/presentation/d/');
+  if (!isDriveFile && !isPresentation) throw Error('저장한 PPT의 Google 링크를 확인하지 못했습니다.');
+  $('ppt-result').href = url.href;
+  $('ppt-result').hidden = false;
+  return url.href;
+}
+
+function receiptFilter() {
+  return {
+    course_id: 'eq.' + currentCourse().id,
+    submission_id: 'eq.' + state.submitted.id,
+    select: 'drive_url',
+  };
+}
+
+async function loadExportReceipt(version) {
+  const submitted = state.submitted.id;
+  try {
+    const [receipt] = await table('math_staff_exports', receiptFilter());
+    if (version === state.lessonVersion && submitted === state.submitted?.id && receipt) {
+      state.exportReceipt = resultLink(receipt.drive_url);
+    }
+  } catch {
+    // PPT creation remains available when the saved link cannot be retrieved.
+  }
 }
 
 function exportBlocker() {
@@ -503,12 +538,16 @@ async function preparePresentation(saveInDrive) {
       return (await request(path)).blob();
     });
     if (saveInDrive) {
-      const url = new URL(await saveToStaffDrive(connection, blob, filename, submission.id));
-      const isDriveFile = url.origin === 'https://drive.google.com' && url.pathname.startsWith('/file/d/');
-      const isPresentation = url.origin === 'https://docs.google.com' && url.pathname.startsWith('/presentation/d/');
-      if (!isDriveFile && !isPresentation) throw Error('저장한 PPT의 Google 링크를 확인하지 못했습니다.');
-      $('ppt-result').href = url.href;
-      $('ppt-result').hidden = false;
+      const driveUrl = resultLink(await saveToStaffDrive(connection, blob, filename, submission.id));
+      const [prior] = await table('math_staff_exports', receiptFilter());
+      if (!prior) {
+        await table('math_staff_exports', { select: 'drive_url' }, 'POST', {
+          course_id: course.id, submission_id: submission.id, drive_url: driveUrl,
+        });
+      } else if (prior.drive_url !== driveUrl) {
+        await table('math_staff_exports', receiptFilter(), 'PATCH', { drive_url: driveUrl });
+      }
+      state.exportReceipt = driveUrl;
       $('export-status').textContent = connection.email + ' 내 드라이브에 저장했습니다.';
     } else {
       downloadPresentation(blob, filename);
