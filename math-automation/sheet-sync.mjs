@@ -1,4 +1,4 @@
-import { connectStaffGoogle } from './google-drive.mjs?v=7';
+import { connectStaffGoogle } from './google-drive.mjs?v=8';
 
 const sheetsScope = 'https://www.googleapis.com/auth/spreadsheets';
 const targets = {

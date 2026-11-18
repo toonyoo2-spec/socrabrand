@@ -1,6 +1,6 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=7';
-import { buildPresentation } from './presentation.mjs?v=8';
-import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=7';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=8';
+import { buildPresentation } from './presentation.mjs?v=9';
+import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=8';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
@@ -332,7 +332,7 @@ async function loadCatalog(courseId) {
   for (let offset = 0; ; offset += limit) {
     const next = await table('math_question_index', {
       course_id: 'eq.' + courseId,
-      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,use_kind,five_choice,projection_asset',
+      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,slide_prompt_crop,use_kind,five_choice,projection_asset',
       order: 'book,page,question_number,question_id', limit, offset,
     });
     rows.push(...next);

@@ -2,7 +2,7 @@ const scope = 'https://www.googleapis.com/auth/drive';
 const pptxMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const slidesMime = 'application/vnd.google-apps.presentation';
 const folderMime = 'application/vnd.google-apps.folder';
-const projectionLayout = 'badge-projection-4';
+const projectionLayout = 'badge-projection-5';
 const driveApi = 'https://www.googleapis.com/drive/v3/';
 let ready;
 
