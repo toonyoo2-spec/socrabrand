@@ -1,4 +1,4 @@
-import { connectStaffGoogle } from './google-drive.mjs?v=3';
+import { connectStaffGoogle } from './google-drive.mjs?v=4';
 
 const sheetsScope = 'https://www.googleapis.com/auth/spreadsheets';
 const targets = {
@@ -6,6 +6,12 @@ const targets = {
     tab: '[개념원리_커리큘럼]',
     base: 'IJKLMNOP', teacher: 'QRSTU', appendix: 'VWX', end: 'X',
     checks: { I: '문제 1', P: '문제 8', Q: '문제 1 (30초)', U: '문제 5 (2분)', V: '문제 1 (2분)', X: '문제 3 (3분)' },
+  },
+  'rpm-application-han': {
+    tab: '[RPM_커리큘럼]',
+    base: 'IJKLMNOPQRS', rpm_final: 'TUV', rpm_pro: 'WX', end: 'X',
+    checks: { I: '문제 1', S: '문제 11', T: '빈출 문제 1 (2분)', U: '빈출 문제 2 (2분)',
+      V: '고난도 문제 3 (3분)', W: '문제 1 (2분)', X: '문제 2 (3분)' },
   },
   'oh-pending': {
     tab: '[RPM_커리큘럼]',
@@ -52,7 +58,9 @@ export function buildSheetWrites(target, lesson, submission) {
   return [
     ...cellEntries(target.base, submission.selections, questionLabel),
     ...cellEntries(target.teacher, submission.quizzes ?? [], formatQuiz),
-    ...cellEntries(target[lesson.quiz_mode], submission.stage_questions ?? [], questionLabel),
+    ...cellEntries(target[lesson.quiz_mode], submission.stage_questions ?? [], item => item.quiz_override
+      ? questionLabel(item) + '\n' + formatQuiz({ kind: 'choice', ...item.quiz_override })
+      : questionLabel(item)),
   ];
 }
 
@@ -73,9 +81,9 @@ export async function syncSubmissionToSheet(target, lesson, submission) {
   if (!tab) throw Error('커리큘럼 탭을 찾지 못했습니다. 해당 탭을 열고 주소를 다시 복사해 주세요.');
 
   const name = "'" + tab.title.replaceAll("'", "''") + "'!";
-  const ranges = new URLSearchParams({valueRenderOption:'FORMATTED_VALUE'});
+  const ranges = new URLSearchParams({valueRenderOption:'UNFORMATTED_VALUE',dateTimeRenderOption:'SERIAL_NUMBER'});
   ranges.append('ranges', name + 'A4:' + target.end + '4');
-  ranges.append('ranges', name + 'C6:C');
+  ranges.append('ranges', name + 'C6:D');
   const { valueRanges } = await fetchSheet('/values:batchGet?' + ranges);
   const columnIndex = (letter) => letter.charCodeAt(0) - 65;
   const headersRow = valueRanges?.[0]?.values?.[0] ?? [];
@@ -87,6 +95,9 @@ export async function syncSubmissionToSheet(target, lesson, submission) {
   if (matchingRows.length !== 1) throw Error(lesson.lesson + '강 행을 하나로 확인할 수 없습니다. 시트의 C열 회차를 확인해 주세요.');
 
   const [row] = matchingRows;
+  const sessionDate = valueRanges[1].values[row - 6][1];
+  const expectedDate = Date.parse(lesson.live_date + 'T00:00:00Z') / 86400000 + 25569;
+  if (sessionDate !== expectedDate) throw Error('선택한 강의의 날짜와 시트 D열 날짜가 다릅니다. 강사와 과정을 확인해 주세요.');
   const fullRow = await fetchSheet('/values/' + encodeURIComponent(name + 'A' + row + ':' + target.end + row)
     + '?valueRenderOption=FORMULA');
   const current = fullRow.values?.[0] ?? [];

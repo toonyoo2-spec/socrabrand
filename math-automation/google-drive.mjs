@@ -1,6 +1,7 @@
 const scope = 'https://www.googleapis.com/auth/drive.file';
 const pptxMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const slidesMime = 'application/vnd.google-apps.presentation';
+const projectionLayout = 'badge-projection';
 let ready;
 
 export function prepareGoogleDrive() {
@@ -71,7 +72,8 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission)
   const url = 'https://www.googleapis.com/drive/v3/files';
   const lookup = new URLSearchParams({
     q: "trashed = false and 'root' in parents and mimeType = '" + slidesMime +
-      "' and appProperties has { key='socraMathSubmission' and value='" + submission + "' }",
+      "' and appProperties has { key='socraMathSubmission' and value='" + submission + "' }" +
+      " and appProperties has { key='socraMathLayout' and value='" + projectionLayout + "' }",
     fields: 'files(id,mimeType)', pageSize: '10',
   });
   const { files } = await fetch(url + '?' + lookup, { headers: connection.headers, cache: 'no-store' })
@@ -81,7 +83,8 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission)
     method: 'POST',
     headers: { ...connection.headers, 'Content-Type': 'application/json',
       'X-Upload-Content-Type': pptxMime, 'X-Upload-Content-Length': String(blob.size) },
-    body: JSON.stringify({ name, mimeType: slidesMime, appProperties: { socraMathSubmission: submission } }),
+    body: JSON.stringify({ name, mimeType: slidesMime,
+      appProperties: { socraMathSubmission: submission, socraMathLayout: projectionLayout } }),
   });
   if (!start.ok) throw Error('Google Drive에서 저장을 시작하지 못했습니다.');
   const session = start.headers.get('location');

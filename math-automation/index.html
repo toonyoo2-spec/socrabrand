@@ -7,8 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=8">
-  <script type="module" src="math.mjs?v=13"></script>
+  <link rel="stylesheet" href="math.css?v=9">
+  <script type="module" src="math.mjs?v=14"></script>
 </head>
 <body>
   <main>
@@ -31,8 +31,15 @@
     </section>
     <section id="workspace" hidden>
       <div class="card">
-        <div class="fields">
+        <div class="fields course-controls">
           <label id="course-field">강사 <select id="course"></select></label>
+          <div class="track-field">
+            <span id="track-label">과정</span>
+            <div class="track-buttons" role="group" aria-labelledby="track-label">
+              <button type="button" data-track="concept" aria-pressed="false">개념</button>
+              <button type="button" data-track="application" aria-pressed="false">응용</button>
+            </div>
+          </div>
           <label id="lesson-field">회차 · 라이브 날짜 <select id="lesson"></select></label>
         </div>
         <p id="topic" class="topic"></p>
@@ -43,7 +50,13 @@
           <button type="button" data-stage="catalog" aria-pressed="true" aria-controls="catalog"><span>수업 문항</span><small id="pick-progress"></small></button>
           <button type="button" data-stage="quiz" aria-pressed="false" aria-controls="quiz-panel"><span id="quiz-stage-label">퀴즈앤</span><small id="quiz-progress"></small></button>
           <button type="button" data-stage="delivery" aria-pressed="false" aria-controls="delivery-panel"><span>제출·발표자료</span><small id="delivery-progress"></small></button>
+          <button type="button" data-stage="progress" aria-pressed="false" aria-controls="progress-panel"><span>작업현황</span></button>
         </nav>
+        <section id="progress-panel" class="card" aria-labelledby="progress-heading" hidden>
+          <h2 id="progress-heading">작업현황</h2>
+          <p id="progress-status" class="muted" role="status"></p>
+          <div id="progress-tracks" class="progress-tracks"></div>
+        </section>
         <section id="catalog" class="card" aria-labelledby="catalog-heading" hidden>
           <div class="panel-heading"><h2 id="catalog-heading">수업 문항 선정</h2><p id="question-count" class="muted" aria-live="polite"></p></div>
           <p id="catalog-empty" class="muted" hidden>교재 문항을 등록하고 있습니다.</p>
@@ -116,6 +129,26 @@
                   <label>문제 구분 <select id="stage-section"></select></label>
                 </div>
                 <div id="stage-picks" class="slot-grid"></div>
+                <form id="stage-choice-form" class="stage-choice-form" hidden>
+                  <h3 id="stage-choice-title">4지선다 편집</h3>
+                  <p class="muted">교재 원본을 보며 문제와 보기 4개를 입력하세요. 원래 정답을 남긴 뒤 새 정답 번호를 선택하세요.</p>
+                  <label>문제 <textarea id="stage-choice-prompt" rows="2" required maxlength="2000"></textarea></label>
+                  <fieldset class="stage-choice-options">
+                    <legend>보기 4개</legend>
+                    <label>보기 1 <input id="stage-choice-1" required maxlength="300"></label>
+                    <label>보기 2 <input id="stage-choice-2" required maxlength="300"></label>
+                    <label>보기 3 <input id="stage-choice-3" required maxlength="300"></label>
+                    <label>보기 4 <input id="stage-choice-4" required maxlength="300"></label>
+                  </fieldset>
+                  <label>정답 보기 <select id="stage-choice-answer" required>
+                    <option value="">정답 선택</option><option value="1">1번</option><option value="2">2번</option>
+                    <option value="3">3번</option><option value="4">4번</option>
+                  </select></label>
+                  <div class="buttons">
+                    <button type="submit" class="button primary">4지선다 저장</button>
+                    <button type="button" id="stage-choice-close">닫기</button>
+                  </div>
+                </form>
                 <p id="stage-status" class="muted" role="status"></p>
               </div>
               <aside class="source-preview" aria-labelledby="stage-preview-title">

@@ -1,6 +1,6 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=3';
-import { buildPresentation } from './presentation.mjs?v=4';
-import { prepareGoogleDrive, connectStaffDrive, saveSlidesToStaffDrive } from './google-drive.mjs?v=3';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=4';
+import { buildPresentation } from './presentation.mjs?v=5';
+import { prepareGoogleDrive, connectStaffDrive, saveSlidesToStaffDrive } from './google-drive.mjs?v=4';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
 const $ = id => document.getElementById(id);
@@ -10,7 +10,14 @@ const dateLabel = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'num
 const quizSeconds = [30, 30, 60, 60, 120];
 const choiceInputs = ['quiz-choice-1', 'quiz-choice-2', 'quiz-choice-3', 'quiz-choice-4'];
 const formulaInputs = ['quiz-prompt', 'quiz-answer', ...choiceInputs];
-const stages = { catalog: 'catalog', quiz: 'quiz-panel', delivery: 'delivery-panel' };
+const stages = { catalog: 'catalog', quiz: 'quiz-panel', delivery: 'delivery-panel', progress: 'progress-panel' };
+const tracks = { concept: '개념 · 개념원리', application: '응용 · RPM' };
+const resourceStages = {
+  appendix: { title: '퀴즈앤 · 교사부록', label: '교사부록', kind: 'appendix', slots: ['부록 1번 (2분)', '부록 2번 (2분)', '부록 3번 (3분)'], copy: '교사부록 문항 3개를 선택해 주세요.' },
+  practice: { title: '실전 스테이지', label: '실전 스테이지', kind: 'practice', slots: ['빈출 문제 (2분)', '고난도 문제 (3분)'], copy: '개념원리 · 빈출 1문항, 고난도 1문항' },
+  rpm_final: { title: '수학 왕중왕전', label: '퀴즈앤', kind: 'lesson', slots: ['빈출 문제 1 (2분)', '빈출 문제 2 (2분)', '고난도 문제 3 (3분)'], copy: 'RPM · 빈출 2문항, 고난도 1문항' },
+  rpm_pro: { title: '수학 왕중왕전 · RPM Pro', label: '퀴즈앤', kind: 'rpm_pro', slots: ['문제 1 (2분)', '문제 2 (3분)'], copy: 'RPM Pro 문항 2개를 선택해 주세요.' },
+};
 const state = {
   token: null, staff: false, editor: false, composer: false, memberships: [], courses: [], lessons: [], catalog: [], picks: new Map(), stagePicks: new Map(), quizzes: new Map(),
   submitted: null, courseVersion: 0, lessonVersion: 0, pagePreviews: new Map(), busy: false,
@@ -102,7 +109,17 @@ function links(id, value, resource) {
 }
 
 function currentCourse() {
-  return state.courses.find(course => course.id === $('course').value);
+  return state.courses.find(course => course.id === state.courseId);
+}
+
+function selectCourse(course) {
+  state.courseId = course.id;
+  $('course').value = course.instructor;
+  for (const button of document.querySelectorAll('[data-track]')) {
+    const available = state.courses.some(item => item.instructor === course.instructor && item.track === button.dataset.track);
+    button.disabled = !available;
+    button.setAttribute('aria-pressed', String(button.dataset.track === course.track));
+  }
 }
 
 function currentLesson() {
@@ -128,6 +145,92 @@ function showStage(stage) {
     $(stages[button.dataset.stage]).hidden = !selected;
   }
   rememberView();
+  if (state.stage === 'progress') void loadProgress();
+}
+
+function progressRows(name, filter, select) {
+  return table(name, { course_id: filter, select });
+}
+
+async function loadProgress() {
+  const version = state.courseVersion;
+  const instructor = currentCourse()?.instructor;
+  const courses = state.courses.filter(course => course.instructor === instructor);
+  const filter = 'in.(' + courses.map(course => course.id).join(',') + ')';
+  const status = $('progress-status');
+  const grid = $('progress-tracks');
+  $('progress-heading').textContent = instructor + ' · 작업현황';
+  status.textContent = '회차별 작업현황을 불러오는 중입니다.';
+  grid.replaceChildren();
+  try {
+    const [lessons, picks, quizzes, extras, submissions] = await Promise.all([
+      progressRows('math_lessons', filter, 'course_id,lesson,live_date,topic,quiz_mode'),
+      progressRows('math_selections', filter, 'course_id,lesson,slot'),
+      progressRows('math_teacher_quizzes', filter, 'course_id,lesson,slot'),
+      progressRows('math_stage_selections', filter, 'course_id,lesson,slot'),
+      progressRows('math_submissions', filter, 'course_id,lesson,sync_status,submitted_at'),
+    ]);
+    if (version !== state.courseVersion || state.stage !== 'progress') return;
+    for (const [track, label] of Object.entries(tracks)) {
+      const course = courses.find(item => item.track === track);
+      const group = document.createElement('section');
+      group.className = 'progress-track';
+      const title = document.createElement('h3');
+      title.textContent = label;
+      group.append(title);
+      if (!course) {
+        const pending = document.createElement('p');
+        pending.className = 'muted';
+        pending.textContent = '커리큘럼 확정 대기';
+        group.append(pending);
+      } else {
+        const progress = document.createElement('table');
+        progress.setAttribute('aria-label', label + ' 회차별 작업현황');
+        const head = progress.createTHead().insertRow();
+        for (const text of ['회차', '수업 문항', '퀴즈', '제출']) {
+          const header = document.createElement('th');
+          header.scope = 'col';
+          header.textContent = text;
+          head.append(header);
+        }
+        const body = progress.createTBody();
+        const courseLessons = lessons.filter(lesson => lesson.course_id === course.id).sort((a, b) => a.lesson - b.lesson);
+        for (const lesson of courseLessons) {
+          const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
+          const submitted = submissions.filter(matches).sort((a, b) => b.submitted_at.localeCompare(a.submitted_at))[0];
+          const authored = lesson.quiz_mode === 'teacher';
+          const row = body.insertRow();
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = lesson.lesson + '강';
+          button.title = dateLabel.format(new Date(lesson.live_date + 'T00:00:00Z')) + ' · ' + lesson.topic;
+          button.addEventListener('click', () => openProgressLesson(course, lesson.lesson));
+          row.insertCell().append(button);
+          row.insertCell().textContent = picks.filter(matches).length + ' / ' + course.lesson_slots;
+          row.insertCell().textContent = (authored ? quizzes : extras).filter(matches).length + ' / ' +
+            (authored ? quizSeconds.length : resourceStages[lesson.quiz_mode]?.slots.length ?? 0);
+          row.insertCell().textContent = submitted?.sync_status === 'synced' ? '시트 반영' : submitted ? '제출됨' : '미제출';
+        }
+        group.append(progress);
+      }
+      grid.append(group);
+    }
+    status.textContent = '';
+  } catch (error) {
+    if (version === state.courseVersion) failure(error, 'progress-status');
+  }
+}
+
+function openProgressLesson(course, lesson) {
+  if (state.busy || !confirmQuizChange()) return;
+  state.view = { course: course.id, lesson, stage: 'catalog' };
+  if (course.id !== state.courseId) {
+    selectCourse(course);
+    void loadCourse();
+    return;
+  }
+  $('lesson').value = lesson;
+  void loadLesson();
 }
 
 function updateStageProgress() {
@@ -147,7 +250,7 @@ async function loadCatalog(courseId) {
   for (let offset = 0; ; offset += limit) {
     const next = await table('math_question_index', {
       course_id: 'eq.' + courseId,
-      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,use_kind',
+      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,use_kind,five_choice',
       order: 'book,page,question_number,question_id', limit, offset,
     });
     rows.push(...next);
@@ -173,7 +276,7 @@ async function loadSite() {
   showStatus('수학자동화 접속을 확인하는 중입니다.');
   try {
     const [courses, profiles, memberships] = await Promise.all([
-      table('math_courses', { select: 'id,instructor,review_url,lesson_slots,required_lesson_slots', order: 'instructor' }),
+      table('math_courses', { select: 'id,instructor,review_url,lesson_slots,required_lesson_slots,track,preview_course_id', order: 'instructor' }),
       table('profiles', { select: 'role', limit: 1 }),
       table('math_course_members', { select: 'course_id,team_role' }),
     ]);
@@ -186,7 +289,8 @@ async function loadSite() {
     state.editor = profiles[0]?.role === 'editor';
     state.memberships = memberships;
     const active = courses.find(course => course.review_url) ?? courses[0];
-    options($('course'), courses.map(item => [item.id, item.instructor]), state.view.course ?? active.id);
+    options($('course'), values(courses, 'instructor'));
+    selectCourse(courses.find(course => course.id === state.view.course) ?? active);
     $('message').hidden = true;
     $('workspace').hidden = false;
     await loadCourse();
@@ -255,7 +359,7 @@ async function loadLesson() {
       table('math_selections', { ...filter, select: 'slot,question_id' }),
       lesson.quiz_mode === 'teacher' ? table('math_teacher_quizzes', { ...filter, select: 'slot,kind,prompt,answer,choices' }) : [],
       table('math_submissions', { ...filter, select: 'id,submitted_at,sync_status,selections,quizzes,stage_questions', order: 'submitted_at.desc', limit: 1 }),
-      lesson.quiz_mode !== 'teacher' ? table('math_stage_selections', { ...filter, select: 'slot,question_id' }) : [],
+      lesson.quiz_mode !== 'teacher' ? table('math_stage_selections', { ...filter, select: 'slot,question_id,quiz_override' }) : [],
       state.staff ? table('math_course_materials', { course_id: filter.course_id, select: 'label,url', order: 'label' }) : [],
     ]);
     if (version !== state.lessonVersion) return;
@@ -263,7 +367,8 @@ async function loadLesson() {
     state.quizzes = new Map(quizzes.map(value => [value.slot, value]));
     state.submitted = submissions[0] ?? null;
     state.stagePicks = new Map(stagePicks.map(value => [value.slot, value.question_id]));
-    $('sheet-status').textContent = '';
+    state.stageEdits = new Map(stagePicks.filter(value => value.quiz_override).map(value => [value.slot, value.quiz_override]));
+    closeStageChoice();
     const savedStage = state.submitted?.stage_questions ?? [];
     renderMaterialLinks(materials);
     $('submission-panel').hidden = !state.composer;
@@ -276,7 +381,11 @@ async function loadLesson() {
     const savedPicks = state.submitted?.selections ?? [];
     const savedQuizzes = state.submitted?.quizzes ?? [];
     state.edited = savedStage.length !== stagePicks.length ||
-      savedStage.some(pick => state.stagePicks.get(pick.slot) !== pick.question_id) ||
+      savedStage.some(pick => {
+        const draft = state.stageEdits.get(pick.slot);
+        return state.stagePicks.get(pick.slot) !== pick.question_id ||
+          ['prompt', 'choices', 'answer'].some(key => pick.quiz_override?.[key] !== draft?.[key]);
+      }) ||
       savedPicks.length !== picks.length ||
       savedPicks.some(pick => state.picks.get(pick.slot) !== pick.question_id) ||
       savedQuizzes.length !== quizzes.length || savedQuizzes.some(saved => {
@@ -292,14 +401,12 @@ async function loadLesson() {
     $('catalog-fields').hidden = !books.length;
     $('catalog-picks').hidden = !books.length;
     const teacherQuiz = lesson.quiz_mode === 'teacher';
+    const resource = resourceStages[lesson.quiz_mode];
     $('teacher-section').hidden = !teacherQuiz;
     $('resource-stage').hidden = teacherQuiz;
-    $('quiz-stage-label').textContent = lesson.quiz_mode === 'practice' ? '실전 스테이지'
-      : lesson.quiz_mode === 'appendix' ? '교사부록' : '퀴즈앤';
+    $('quiz-stage-label').textContent = resource?.label ?? '퀴즈앤';
     $('quiz-heading').textContent = stageTitle(lesson.quiz_mode);
-    $('stage-copy').textContent = lesson.quiz_mode === 'practice'
-      ? '개념원리 · 빈출 1문항, 고난도 1문항'
-      : '이번 회차에 사용할 교사부록 문항 3개를 선택해 주세요.';
+    $('stage-copy').textContent = resource?.copy ?? '';
     links('curriculum', state.staff && lesson.curriculum_url, 'spreadsheets');
     links('review', state.staff && lesson.lesson === 1 && currentCourse().review_url, 'spreadsheets');
     links('presentation', state.staff && lesson.presentation_url, 'presentation');
@@ -354,14 +461,11 @@ function requiredLessonSlots() {
 }
 
 function stageSlots() {
-  const mode = currentLesson()?.quiz_mode;
-  return mode === 'practice' ? 2 : mode === 'appendix' ? 3 : 0;
+  return resourceStages[currentLesson()?.quiz_mode]?.slots.length ?? 0;
 }
 
 function stageTitle(mode) {
-  if (mode === 'practice') return '실전 스테이지';
-  if (mode === 'appendix') return '퀴즈앤 · 교사부록';
-  return '퀴즈앤 · 직접 출제';
+  return resourceStages[mode]?.title ?? '퀴즈앤 · 직접 출제';
 }
 
 function lessonCatalog() {
@@ -369,7 +473,8 @@ function lessonCatalog() {
 }
 
 function stageCatalog() {
-  return state.catalog.filter(q => q.use_kind === currentLesson()?.quiz_mode);
+  const kind = resourceStages[currentLesson()?.quiz_mode]?.kind;
+  return kind ? state.catalog.filter(q => (q.use_kind ?? 'lesson') === kind) : [];
 }
 
 function setUnit(unit, section) {
@@ -437,11 +542,81 @@ function selectedStageQuestions() {
 }
 
 function renderStagePicks() {
-  const labels = currentLesson()?.quiz_mode === 'practice'
-    ? slot => slot === 1 ? '빈출 문제 (2분)' : '고난도 문제 (3분)'
-    : slot => '부록 ' + slot + '번 (' + (slot === 3 ? 3 : 2) + '분)';
-  $('stage-picks').replaceChildren(...pickControls(stageSlots(), state.stagePicks, selectedStageQuestions(), labels,
-    (slot, value, select) => savePick(slot, value, select, true)));
+  const labels = slot => resourceStages[currentLesson()?.quiz_mode].slots[slot - 1];
+  const controls = pickControls(stageSlots(), state.stagePicks, selectedStageQuestions(), labels,
+    (slot, value, select) => savePick(slot, value, select, true));
+  $('stage-picks').replaceChildren(...controls.map((control, index) => {
+    const slot = index + 1;
+    const question = selectedStagePick(slot);
+    if (!state.composer || !question || !usesQuizAndResources()) return control;
+    const edited = state.stageEdits.has(slot);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.required = String(question.five_choice && !edited);
+    button.textContent = edited ? '4지선다 저장됨 · 편집'
+      : question.five_choice ? '5지선다 → 4지선다 편집' : '4지선다로 편집';
+    button.addEventListener('click', () => openStageChoice(slot, question));
+    const container = document.createElement('div');
+    container.className = 'stage-pick';
+    container.append(control, button);
+    return container;
+  }));
+}
+
+const stageChoiceIds = ['stage-choice-1', 'stage-choice-2', 'stage-choice-3', 'stage-choice-4'];
+
+function usesQuizAndResources() {
+  return ['appendix', 'rpm_final', 'rpm_pro'].includes(currentLesson()?.quiz_mode);
+}
+
+function selectedStagePick(slot) {
+  return state.catalog.find(question => question.question_id === state.stagePicks.get(slot));
+}
+
+function closeStageChoice() {
+  $('stage-choice-form').hidden = true;
+  state.stageEditSlot = null;
+  state.stageDirty = false;
+}
+
+function openStageChoice(slot, question) {
+  if (state.busy || (state.stageEditSlot !== slot && !confirmQuizChange())) return;
+  if (state.stageEditSlot === slot) return;
+  state.stageEditSlot = slot;
+  state.stageDirty = false;
+  const saved = state.stageEdits.get(slot);
+  $('stage-choice-title').textContent = question.book + ' ' + question.label + ' · 4지선다';
+  $('stage-choice-prompt').value = saved?.prompt ?? '';
+  $('stage-choice-answer').value = saved?.answer ?? '';
+  const choices = saved?.choices.split('\n') ?? [];
+  stageChoiceIds.forEach((id, i) => { $(id).value = choices[i] ?? ''; });
+  $('stage-choice-form').hidden = false;
+  $('stage-choice-prompt').focus();
+}
+
+async function saveStageChoice(event) {
+  event.preventDefault();
+  const slot = state.stageEditSlot;
+  if (!slot || !state.composer || !usesQuizAndResources()) return;
+  const prompt = $('stage-choice-prompt').value.trim();
+  const choices = stageChoiceIds.map(id => $(id).value.trim());
+  const answer = $('stage-choice-answer').value;
+  if (!prompt || choices.some(choice => !choice) || !/^[1-4]$/.test(answer)) {
+    $('stage-status').textContent = '문제와 보기 4개, 정답을 모두 입력해 주세요.';
+    return;
+  }
+  await withSaving(async () => {
+    const filter = { ...context(), slot: 'eq.' + slot, question_id: 'eq.' + state.stagePicks.get(slot), select: 'quiz_override' };
+    const [saved] = await table('math_stage_selections', filter, 'PATCH', {
+      quiz_override: { prompt, choices: choices.join('\n'), answer },
+    });
+    if (!saved?.quiz_override) throw Error('편집한 문항을 저장하지 못했습니다.');
+    state.stageEdits.set(slot, saved.quiz_override);
+    state.edited = true;
+    closeStageChoice();
+    renderStagePicks();
+    $('stage-status').textContent = slot + '번 퀴즈앤 문항을 4지선다로 저장했습니다.';
+  }, 'stage-status');
 }
 
 function renderStagePreview() {
@@ -477,6 +652,10 @@ async function savePick(slot, value, select, stage = false) {
   const previous = picks.get(slot);
   const question = state.catalog.find(item => item.question_id === Number(value));
   if (!question && !previous) return;
+  if (stage && state.stageEditSlot === slot && !confirmQuizChange()) {
+    select.value = previous ?? '';
+    return;
+  }
   $(status).textContent = '';
   await withSaving(async () => {
     const filter = { ...context(), slot: 'eq.' + slot, select: 'slot,question_id' };
@@ -494,8 +673,11 @@ async function savePick(slot, value, select, stage = false) {
       picks.delete(slot);
     }
     state.edited = true;
-    if (stage) renderStagePicks();
-    else renderPicks();
+    if (stage) {
+      if (question?.question_id !== previous) state.stageEdits.delete(slot);
+      if (state.stageEditSlot === slot) closeStageChoice();
+      renderStagePicks();
+    } else renderPicks();
   }, status);
   if (select.isConnected) select.value = picks.get(slot) ?? '';
 }
@@ -652,12 +834,15 @@ function renderSubmission() {
   updateStageProgress();
   const basic = Array.from({ length: requiredLessonSlots() }, (_, i) => i + 1).every(slot => state.picks.has(slot));
   const extras = currentLesson()?.quiz_mode === 'teacher' ? state.quizzes.size === 5 : state.stagePicks.size === stageSlots();
-  const ready = basic && extras && !state.quizDirty;
+  const conversions = usesQuizAndResources() && [...state.stagePicks.keys()].some(slot =>
+    selectedStagePick(slot)?.five_choice && !state.stageEdits.has(slot));
+  const ready = basic && extras && !state.quizDirty && !state.stageDirty && !conversions;
   $('submit').disabled = state.busy || !ready || Boolean(state.submitted && !state.edited);
   $('submit').textContent = state.submitted ? '수정본 제출' : '회차 제출';
   if (!ready) {
     $('submit-status').textContent = !basic ? '기본 문항 ' + requiredLessonSlots() + '개를 먼저 골라 주세요.'
-      : state.quizDirty ? '입력한 퀴즈를 저장해 주세요.'
+      : state.quizDirty || state.stageDirty ? '입력한 퀴즈를 저장해 주세요.'
+        : conversions ? '5지선다로 표시된 퀴즈를 4지선다로 편집해 주세요.'
         : stageTitle(currentLesson()?.quiz_mode) + ' 문항을 모두 채워 주세요.';
   } else if (state.submitted && !state.edited) {
     const submitted = new Date(state.submitted.submitted_at).toLocaleString('ko-KR');
@@ -740,11 +925,12 @@ async function preparePresentation() {
     const withAsset = pick => {
       const question = state.catalog.find(item => item.question_id === pick.question_id);
       if (!question) throw Error('제출된 문항을 교재 목록에서 찾을 수 없습니다.');
-      return { ...question, slot: pick.slot };
+      return { ...question, slot: pick.slot, quiz_override: pick.quiz_override };
     };
     const slotList = submission.selections.map(withAsset);
     const stageList = (submission.stage_questions ?? []).map(withAsset);
-    const title = '수학 ' + currentLesson().lesson + '강 · ' + currentLesson().topic.replace(/^\([^)]*\)\s*/, '') + ' · 빔용';
+    const title = course.instructor + ' · ' + tracks[course.track] + ' · ' + currentLesson().lesson +
+      '강 · ' + currentLesson().topic.replace(/^\([^)]*\)\s*/, '') + ' · 빔용';
     $('export-status').textContent = '문항을 한 장씩 발표자료에 넣는 중입니다.';
     const blob = await buildPresentation({
       title, picks: slotList, quizzes: submission.quizzes, appendix: stageList,
@@ -752,7 +938,7 @@ async function preparePresentation() {
     }, async question => {
       const path = question.image_key
         ? '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.image_key
-        : previewPath(course.id, question.preview_book, question.page);
+        : previewPath(course.preview_course_id ?? course.id, question.preview_book, question.page);
       return (await request(path)).blob();
     });
     const driveUrl = resultLink(await saveSlidesToStaffDrive(connection, blob, title, submission.id));
@@ -833,7 +1019,8 @@ function renderCatalogPreview() {
 function renderPageStack(prefix, bookName, title, questions) {
   const byPage = new Map(questions.filter(q => q.preview_book).map(q => [q.page, q.preview_book]));
   const pages = [...byPage].sort(([a], [b]) => a - b);
-  const course = currentCourse()?.id;
+  const activeCourse = currentCourse();
+  const course = activeCourse?.preview_course_id ?? activeCourse?.id;
   const key = JSON.stringify([course,bookName,title,pages]);
   if (state.pagePreviews.get(prefix)?.key === key) return;
   resetPageStack(prefix);
@@ -919,11 +1106,15 @@ for (const [label, value, aria, cursor, selectionLength] of [
   $('symbols').append(button);
 }
 
+function confirmQuizChange() {
+  return !(state.quizDirty || state.stageDirty) || window.confirm('저장하지 않은 퀴즈가 있습니다. 이동할까요?');
+}
+
 function protectUnsaved(select, callback) {
   let prior = select.value;
   select.addEventListener('focus', () => { prior = select.value; });
   select.addEventListener('change', () => {
-    if (state.quizDirty && !window.confirm('저장하지 않은 퀴즈가 있습니다. 이동할까요?')) {
+    if (!confirmQuizChange()) {
       select.value = prior;
       return;
     }
@@ -965,12 +1156,34 @@ $('stage-section').addEventListener('change', () => {
   renderStagePreview();
 });
 $('teacher-section').addEventListener('submit', saveQuiz);
+$('stage-choice-form').addEventListener('submit', saveStageChoice);
+$('stage-choice-form').addEventListener('input', () => { state.stageDirty = true; renderSubmission(); });
+$('stage-choice-close').addEventListener('click', () => {
+  if (confirmQuizChange()) { closeStageChoice(); renderSubmission(); }
+});
 $('submit').addEventListener('click', submit);
 $('sheet-sync').addEventListener('click', toggleSheetForm);
 $('sheet-form').addEventListener('submit', reflectSheet);
 $('ppt-drive').addEventListener('click', preparePresentation);
 $('retry').addEventListener('click', loadSite);
-protectUnsaved($('course'), loadCourse);
+protectUnsaved($('course'), () => {
+  const courses = state.courses.filter(course => course.instructor === $('course').value);
+  const course = courses.find(item => item.track === currentCourse()?.track) ?? courses[0];
+  selectCourse(course);
+  void loadCourse();
+});
+for (const button of document.querySelectorAll('[data-track]')) {
+  button.addEventListener('click', () => {
+    const current = currentCourse();
+    const course = state.courses.find(item => item.instructor === current.instructor && item.track === button.dataset.track);
+    if (course && course.id !== current.id) {
+      if (!confirmQuizChange()) return;
+      state.view = { course: course.id, lesson: currentLesson()?.lesson, stage: state.stage };
+      selectCourse(course);
+      void loadCourse();
+    }
+  });
+}
 protectUnsaved($('lesson'), loadLesson);
 window.addEventListener('storage', event => {
   if (event.key && event.key !== tokenKey && event.key !== accountKey) return;

@@ -2,6 +2,27 @@ const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.prese
 const DARK = '111111';
 const FONT = 'Noto Sans KR';
 let library;
+const badges = {
+  concept: { fill:'162014', line:'3E6134', divider:'527550', width:2.074, height:.479 },
+  key: { fill:'132022', line:'386269', divider:'4E747B', width:1.826, height:.479 },
+  exam: { fill:'141C28', line:'37587A', divider:'53769A', width:2.198, height:.38 },
+  closing: { fill:'231B33', line:'60527E', divider:'8874A8', width:2.074, height:.42 },
+};
+const badgeImages = new Map();
+
+function loadBadge(kind) {
+  if (!badgeImages.has(kind)) {
+    const pending = fetch(new URL('./projection-badges/' + kind + '.png', import.meta.url)).then(async response => {
+      if (!response.ok) throw Error('교재 코너 배지를 불러오지 못했습니다.');
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      let binary = '';
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return 'data:image/png;base64,' + btoa(binary);
+    }).catch(error => { badgeImages.delete(kind); throw error; });
+    badgeImages.set(kind, pending);
+  }
+  return badgeImages.get(kind);
+}
 
 function loadPptx() {
   if (window.PptxGenJS) return Promise.resolve(window.PptxGenJS);
@@ -26,15 +47,33 @@ function equationRuns(value) {
   return runs;
 }
 
-function frame(deck, label, source, style) {
+async function frame(deck, label, source, style, book) {
   const slide = deck.addSlide();
   slide.background = { color: DARK };
-  const fill = { lesson: '16251B', teacher: '352A13', appendix: '193222' }[style];
-  const line = { lesson: '46634C', teacher: '88692F', appendix: '467852' }[style];
-  slide.addShape(deck.ShapeType.roundRect, { x: .45, y: 1.45, w: 7.15, h: .45, rectRadius: .1,
-    fill: { color: fill }, line: { color: line, width: .8 } });
-  slide.addText(label + '  ·  ' + source, {
-    x: .59, y: 1.48, w: 6.85, h: .38, margin: 0, color: 'FFFFFF', bold: true, fontFace: 'Pretendard', fontSize: 14, fit: 'shrink',
+  const kind = book === '개념원리' && (
+    label === '개념원리 확인하기' ? 'concept' :
+    label.startsWith('핵심문제') ? 'key' :
+    label.includes('시험에 나온다') ? 'exam' :
+    label === '중단원 마무리하기' ? 'closing' : null
+  );
+  const theme = kind ? badges[kind] : style === 'teacher'
+    ? { fill:'352A13', line:'88692F', divider:'B39754' }
+    : { fill:'231B33', line:'60527E', divider:'8874A8' };
+  const titleWidth = Math.max(2.08, source.length * .127);
+  slide.addShape(deck.ShapeType.roundRect, { x:.625, y:2.531, w:2.753 + titleWidth, h:.635, radius:.09,
+    fill:{ color:theme.fill }, line:{ color:theme.line, width:1.2 } });
+  if (kind) {
+    slide.addImage({ data:await loadBadge(kind), x:.729, y:2.849 - theme.height / 2, w:theme.width, h:theme.height });
+  } else {
+    slide.addText(label, {
+      x:.779, y:2.585, w:2.24, h:.50, margin:0, color:'E4DDF2', bold:true, fontFace:FONT, fontSize:16, fit:'shrink',
+    });
+  }
+  slide.addShape(deck.ShapeType.rect, { x:3.115, y:2.74, w:.0167, h:.229,
+    fill:{ color:theme.divider }, line:{ color:theme.divider, transparency:100 } });
+  slide.addText(source, {
+    x:3.281, y:2.635, w:titleWidth, h:.396, margin:0, color:'FFFFFF', bold:true,
+    fontFace:'Pretendard', fontSize:19, fit:'shrink',
   });
   return slide;
 }
@@ -89,43 +128,48 @@ async function paintProblem(blob, crop) {
 }
 
 function placeProblem(slide, image) {
-  const link = Math.min(7.15 / image.w, 3.4 / image.h);
-  slide.addImage({ data: image.data, x: .47, y: 2.04, w: image.w * link, h: image.h * link });
+  const scale = Math.min(.014, 10.31 / image.w, 6.5 / image.h);
+  slide.addImage({ data:image.data, x:.625, y:3.542, w:image.w * scale, h:image.h * scale });
+}
+
+function placeQuiz(slide, quiz) {
+  const options = quiz.kind === 'choice' ? quiz.choices.split('\n') : [];
+  if (quiz.kind === 'choice' && (options.length !== 4 || options.some(choice => !choice.trim()) || !/^[1-4]$/.test(quiz.answer))) {
+    throw Error('객관식 문항의 보기 4개와 정답을 확인해 주세요.');
+  }
+  const choices = options.length ? '\n\n' + options.map((choice, index) => (index + 1) + '. ' + choice).join('\n')
+    : quiz.kind === 'ox' ? '\n\nO   /   X' : '';
+  slide.addText(equationRuns(quiz.prompt + choices), {
+    x: .625, y: 3.542, w: 10.31, h: 6.5, color: 'FFFFFF', margin: 0, valign: 'top', fontFace: FONT,
+    fontSize: 26, fit: 'shrink', breakLine: false,
+  });
+  slide.addNotes('정답 ' + quiz.answer);
 }
 
 export async function buildPresentation({ title, picks, quizzes, appendix, stageLabel = '퀴즈앤 · 교사부록' }, loadImage) {
   const Pptx = await loadPptx();
   const deck = new Pptx();
-  deck.layout = 'LAYOUT_WIDE';
+  deck.defineLayout({ name:'PROJECTION', width:20, height:11.25 });
+  deck.layout = 'PROJECTION';
   deck.title = title;
   deck.author = 'Socra LX팀';
   deck.lang = 'ko-KR';
 
   for (const question of picks) {
     if (!question.slide_crop) throw Error(question.label + ' 이미지 영역을 확인해 주세요.');
-    const slide = frame(deck, question.section, question.book + ' ' + question.label, 'lesson');
+    const slide = await frame(deck, question.section, question.book + ' ' + question.label.replace('p 확인 ', 'p '), 'lesson', question.book);
     const image = await paintProblem(await loadImage(question), question.slide_crop);
     placeProblem(slide, image);
     slide.addNotes('수업 문항 ' + question.slot + '번 · ' + question.book + ' ' + question.label);
   }
   for (const quiz of quizzes) {
-    const slide = frame(deck, '퀴즈앤 · 직접 출제', '문항 ' + quiz.slot, 'teacher');
-    const options = quiz.kind === 'choice' ? quiz.choices.split('\n') : [];
-    if (quiz.kind === 'choice' && (options.length !== 4 || options.some(choice => !choice.trim()) || !/^[1-4]$/.test(quiz.answer))) {
-      throw Error('객관식 문항의 보기 4개와 정답을 확인해 주세요.');
-    }
-    const choices = options.length ? '\n\n' + options.map((choice, index) => (index + 1) + '. ' + choice).join('\n')
-      : quiz.kind === 'ox' ? '\n\nO   /   X' : '';
-    slide.addText(equationRuns(quiz.prompt + choices), {
-      x: .47, y: 2.04, w: 7.15, h: 3.36, color: 'FFFFFF', margin: 0, valign: 'top', fontFace: FONT,
-      fontSize: 26, fit: 'shrink', breakLine: false,
-    });
-    slide.addNotes('퀴즈앤 직접 출제 · 정답 ' + quiz.answer);
+    const slide = await frame(deck, '퀴즈앤 · 직접 출제', '문항 ' + quiz.slot, 'teacher');
+    placeQuiz(slide, quiz);
   }
   for (const question of appendix) {
-    const slide = frame(deck, stageLabel, question.book ? question.book + ' ' + question.label : question.label, 'appendix');
-    const image = await paintProblem(await loadImage(question), question.slide_crop);
-    placeProblem(slide, image);
+    const slide = await frame(deck, stageLabel, question.book ? question.book + ' ' + question.label : question.label, 'appendix');
+    if (question.quiz_override) placeQuiz(slide, { kind: 'choice', ...question.quiz_override });
+    else placeProblem(slide, await paintProblem(await loadImage(question), question.slide_crop));
   }
   return new Blob([await deck.write({ outputType: 'arraybuffer', compression: true })], { type: MIME });
 }
