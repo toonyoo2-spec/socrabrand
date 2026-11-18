@@ -2,6 +2,7 @@ import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=7';
 import { buildPresentation } from './presentation.mjs?v=8';
 import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=7';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
+import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=1';
 
 const $ = id => document.getElementById(id);
 const tokenKey = 'socra_admin_token';
@@ -35,7 +36,6 @@ const state = {
   token: null, staff: false, editor: false, composer: false, memberships: [], courses: [], lessons: [], catalog: [], picks: new Map(), stagePicks: new Map(), quizzes: new Map(),
   submitted: null, courseVersion: 0, lessonVersion: 0, pagePreviews: new Map(), resourceViews: new Map(), busy: false,
 };
-let formulaTarget = $('quiz-prompt');
 const driveHome = { id:'root', name:'내 드라이브', canAddChildren:true };
 let driveConnection;
 let drivePath = [];
@@ -694,6 +694,7 @@ function openStageChoice(slot, question) {
   const choices = saved?.choices.split('\n') ?? [];
   stageChoiceIds.forEach((id, i) => { $(id).value = choices[i] ?? ''; });
   $('stage-choice-form').hidden = false;
+  stageSymbols.reset();
   $('stage-choice-prompt').focus();
 }
 
@@ -705,6 +706,12 @@ async function saveStageChoice(event) {
   const prompt = $('stage-choice-prompt').value.trim();
   const choices = stageChoiceIds.map(id => $(id).value.trim());
   const answer = $('stage-choice-answer').value;
+  const incomplete = ['stage-choice-prompt', ...stageChoiceIds].find(id => hasIncompleteMath($(id).value));
+  if (incomplete) {
+    $('stage-status').textContent = '분수와 지수의 빈칸을 채워 주세요.';
+    $(incomplete).focus();
+    return;
+  }
   if (!prompt || choices.some(choice => !choice) || !/^[1-4]$/.test(answer)) {
     $('stage-status').textContent = '문제와 보기 4개, 정답을 모두 입력해 주세요.';
     return;
@@ -828,7 +835,6 @@ function quizFeedback(message, status = '') {
 }
 
 function renderQuiz() {
-  formulaTarget = $('quiz-prompt');
   const quiz = state.quizzes.get(state.quizSlot);
   $('quiz-clear').hidden = !quiz || !state.composer;
   const choices = quiz?.choices?.split(/\r?\n/) ?? [];
@@ -843,6 +849,7 @@ function renderQuiz() {
   quizFeedback(quiz ? '저장된 문항입니다.' : '', quiz ? 'success' : '');
   state.quizDirty = false;
   updateQuizPreview();
+  teacherSymbols.reset();
 }
 
 function mathText(value) {
@@ -861,7 +868,7 @@ function mathText(value) {
       fraction.setAttribute('aria-label', match[3] + '분의 ' + match[2]);
       for (const value of match.slice(2, 4)) {
         const term = document.createElement('span');
-        term.textContent = value;
+        term.append(mathText(value));
         fraction.append(term);
       }
       fragment.append(fraction);
@@ -891,6 +898,7 @@ function updateQuizPreview() {
     li.append(choice ? mathText(choice) : '—');
     return li;
   }));
+  teacherSymbols.update();
 }
 
 async function saveQuiz(event) {
@@ -902,6 +910,13 @@ async function saveQuiz(event) {
   let answer = $(kind === 'choice' ? 'quiz-choice-answer' : 'quiz-answer').value.trim();
   const choices = kind === 'choice' ? choiceInputs.map(id => $(id).value.trim()) : [];
   if (kind === 'ox') answer = answer.toUpperCase();
+  const incomplete = ['quiz-prompt', ...(kind === 'choice' ? choiceInputs : ['quiz-answer'])]
+    .find(id => hasIncompleteMath($(id).value));
+  if (incomplete) {
+    quizFeedback('분수와 지수의 빈칸을 채워 주세요.', 'error');
+    $(incomplete).focus();
+    return;
+  }
   if (!prompt) {
     quizFeedback('문제 내용을 입력해 주세요.', 'error');
     $('quiz-prompt').focus();
@@ -1353,36 +1368,6 @@ function previewPath(course, book, page) {
   return '/storage/v1/object/authenticated/math-teaching-materials/' + assetKey(course, book, page);
 }
 
-function insertSymbol(fallback, value, cursor, selectionLength = 0) {
-  const input = formulaTarget.closest('form') === fallback.closest('form') && !formulaTarget.closest('[hidden]')
-    ? formulaTarget : fallback;
-  const start = input.selectionStart ?? input.value.length;
-  const end = input.selectionEnd ?? start;
-  input.focus();
-  input.setRangeText(value, start, end, 'end');
-  if (cursor !== undefined) input.setSelectionRange(start + cursor, start + cursor + selectionLength);
-  input.dispatchEvent(new Event('input', {bubbles:true}));
-}
-
-for (const [label, value, aria, cursor, selectionLength] of [
-  ['제곱 ²', '²', '제곱'], ['세제곱 ³', '³', '세제곱'], ['지수 입력', '^{}', '지수 입력', 2],
-  ['분수', '(분자)⁄(분모)', '분수', 1, 2], ['절댓값', '|값|', '절댓값', 1, 1],
-  ['제곱근 √', '√', '제곱근'], ['순환점', '\u0307', '순환소수 점'],
-  ['×', '×', '곱하기'], ['÷', '÷', '나누기'], ['−', '−', '빼기'], ['±', '±', '플러스 마이너스'],
-  ['≠', '≠', '같지 않음'], ['≤', '≤', '작거나 같음'], ['≥', '≥', '크거나 같음'],
-  ['∠', '∠', '각'], ['°', '°', '도'], ['∥', '∥', '평행'], ['⊥', '⊥', '수직'], ['π', 'π', '파이'],
-]) {
-  for (const [toolbarId, inputId] of [['symbols','quiz-prompt'], ['stage-symbols','stage-choice-prompt']]) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = label;
-    button.title = aria;
-    button.setAttribute('aria-label', aria);
-    button.addEventListener('click', () => insertSymbol($(inputId), value, cursor, selectionLength));
-    $(toolbarId).append(button);
-  }
-}
-
 function confirmQuizChange() {
   return !(state.quizDirty || state.stageDirty) || window.confirm('저장하지 않은 퀴즈가 있습니다. 이동할까요?');
 }
@@ -1400,17 +1385,15 @@ function protectUnsaved(select, callback) {
   });
 }
 
+const teacherSymbols = mountMathSymbols($('symbol-panel'), formulaInputs.map($));
+const stageSymbols = mountMathSymbols($('stage-symbols'), ['stage-choice-prompt', ...stageChoiceIds].map($));
 for (const id of formulaInputs) {
-  $(id).addEventListener('focus', () => { formulaTarget = $(id); });
   $(id).addEventListener('input', () => {
     state.quizDirty = true;
     quizFeedback('저장되지 않은 변경 사항');
     updateQuizPreview();
     renderSubmission();
   });
-}
-for (const id of ['stage-choice-prompt', ...stageChoiceIds]) {
-  $(id).addEventListener('focus', () => { formulaTarget = $(id); });
 }
 for (const id of ['quiz-kind', 'quiz-choice-answer']) {
   $(id).addEventListener('change', () => {

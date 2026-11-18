@@ -173,10 +173,23 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .quiz-fields { max-width: 245px; margin-bottom: 14px; }
 .quiz-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(245px, .8fr); gap: 18px; align-items: start; }
 .quiz-editor { display: grid; gap: 12px; min-width: 0; }
-#symbol-panel h3 { margin: 0 0 3px; }
-#symbol-panel p { margin: 0; }
 .symbols { display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0; }
-.symbols button { min-width: 38px; min-height: 36px; justify-content: center; padding: 4px 7px; font-size: .86rem; }
+.math-keypad { min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); padding: 9px 10px; }
+.math-keypad-heading, .math-keypad-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; }
+.math-keypad-heading { justify-content: space-between; }
+.math-keypad-heading h3 { margin: 0; font-size: .89rem; }
+.math-symbol-target { color: var(--muted); font-size: .76rem; font-weight: 650; }
+.symbols .math-key { min-width: 38px; min-height: 36px; justify-content: center; gap: 4px; padding: 4px 7px; }
+.math-key-mark { font-size: 1rem; line-height: 1; }
+.math-key-name { font-size: .76rem; white-space: nowrap; }
+.math-symbol-hint { margin: 0; font-size: .81rem; }
+.math-symbol-hint:empty { display: none; }
+.math-next-field { min-height: 31px; padding: 3px 7px; font-size: .8rem; }
+.math-more-symbols { margin-top: 5px; }
+.math-more-symbols summary { cursor: pointer; width: fit-content; color: var(--green); padding-block: 4px; font-size: .81rem; font-weight: 680; }
+.math-extra-group { margin-block: 7px 0; }
+.math-extra-group h4 { margin: 0 0 4px; color: var(--muted); font-size: .77rem; }
+.math-extra-group .symbols { margin: 0; }
 .fraction { display: inline-grid; vertical-align: middle; text-align: center; line-height: 1.12; margin: 1px 2px; }
 .fraction > span { padding: 0 3px; }
 .fraction > :first-child { border-bottom: 1px solid currentColor; }
@@ -201,7 +214,7 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .stage-choice-form { margin-top: 12px; padding: 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); }
 .stage-choice-form > label { margin: 8px 0; }
 .stage-choice-form .buttons { margin-top: 8px; }
-.stage-choice-form .symbols button { min-width: 34px; padding-inline: 5px; }
+.stage-choice-form .math-keypad { margin-bottom: 10px; }
 
 #submission-checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(177px, 100%), 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
 #submission-checklist button { display: grid; gap: 3px; min-height: 62px; width: 100%; text-align: left; background: var(--soft); font-size: .89rem; }
@@ -290,7 +303,8 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 }
 @media (pointer: coarse) {
   input, textarea, select, button, .button, .help-menu summary,
-  #progress-button, .track-buttons button, .slot-grid select, .symbols button, .mobile-jump,
+  #progress-button, .track-buttons button, .slot-grid select, .symbols .math-key, .mobile-jump,
+  .math-next-field, .math-more-symbols summary,
   .stage-pick button, .progress-track td button, .drive-path button { min-height: 44px; }
   .symbols button { min-width: 44px; }
 }
