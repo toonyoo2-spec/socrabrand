@@ -114,7 +114,7 @@ function rememberView() {
     course: currentCourse()?.id,
     lesson: currentLesson()?.lesson,
     stage: state.stage,
-    quizSlot: Number($('quiz-slot').value),
+    quizSlot: state.quizSlot,
   };
   try { sessionStorage.setItem('math-view:' + state.account, JSON.stringify(state.view)); }
   catch { /* The current page still works with browser storage disabled. */ }
@@ -486,11 +486,32 @@ async function savePick(slot, value, select, stage = false) {
 }
 
 function renderQuizSlots(slot) {
-  options($('quiz-slot'), quizSeconds.map((seconds, idx) => {
-    const number = idx + 1;
+  state.quizSlot = Number.isInteger(slot) && slot >= 1 && slot <= quizSeconds.length ? slot : 1;
+  $('quiz-slots').replaceChildren(...quizSeconds.map((seconds, index) => {
+    const number = index + 1;
     const duration = seconds < 60 ? seconds + '초' : seconds / 60 + '분';
-    return [number, '문항 ' + number + ' · ' + duration + (state.quizzes.has(number) ? ' · 저장됨' : '')];
-  }), slot);
+    const saved = state.quizzes.has(number);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.slot = number;
+    button.setAttribute('aria-pressed', String(number === state.quizSlot));
+    const label = document.createElement('span');
+    label.textContent = '문항 ' + number + ' · ' + duration;
+    const status = document.createElement('small');
+    status.textContent = saved ? '완료' : '미저장';
+    status.classList.toggle('saved', saved);
+    button.append(label, status);
+    button.addEventListener('click', () => {
+      if (number === state.quizSlot) return;
+      if (state.quizDirty && !window.confirm('저장하지 않은 퀴즈가 있습니다. 이동할까요?')) return;
+      renderQuizSlots(number);
+      renderQuiz();
+      rememberView();
+      renderSubmission();
+      $('quiz-slots').querySelector('[aria-pressed="true"]').focus();
+    });
+    return button;
+  }));
 }
 
 function quizFeedback(message, status = '') {
@@ -501,7 +522,7 @@ function quizFeedback(message, status = '') {
 
 function renderQuiz() {
   formulaTarget = $('quiz-prompt');
-  const quiz = state.quizzes.get(Number($('quiz-slot').value));
+  const quiz = state.quizzes.get(state.quizSlot);
   const choices = quiz?.choices?.split(/\r?\n/) ?? [];
   $('quiz-kind').value = quiz?.kind ?? 'short';
   $('quiz-answer').value = quiz?.kind === 'choice' ? '' : quiz?.answer ?? '';
@@ -555,7 +576,7 @@ function updateQuizPreview() {
 async function saveQuiz(event) {
   event.preventDefault();
   if (state.busy || !state.composer) return;
-  const slot = Number($('quiz-slot').value);
+  const slot = state.quizSlot;
   const kind = $('quiz-kind').value;
   const prompt = $('quiz-prompt').value.trim();
   let answer = $(kind === 'choice' ? 'quiz-choice-answer' : 'quiz-answer').value.trim();
@@ -976,11 +997,6 @@ $('retry').addEventListener('click', loadSite);
 $('preview-upload').addEventListener('click', uploadPreviews);
 protectUnsaved($('course'), loadCourse);
 protectUnsaved($('lesson'), loadLesson);
-protectUnsaved($('quiz-slot'), () => {
-  renderQuiz();
-  rememberView();
-  renderSubmission();
-});
 window.addEventListener('storage', event => {
   if (event.key && event.key !== tokenKey && event.key !== accountKey) return;
   const token = localStorage.getItem(tokenKey);

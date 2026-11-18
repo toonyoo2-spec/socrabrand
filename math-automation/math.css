@@ -146,3 +146,14 @@ button:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
 #question-slots { grid-template-columns: minmax(0, 1fr); }
 #question-slots label { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 7px; }
 #question-slots select { min-width: 0; }
+
+.quiz-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin: 0 0 16px; }
+.quiz-slots button { flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; text-align: left; }
+.quiz-slots button[aria-pressed="true"] { background: #eef6f0; border-color: #538570; }
+.quiz-slots small { color: var(--muted); font-size: .75rem; font-weight: 600; }
+.quiz-slots small.saved { color: #a02b2b; font-weight: 720; }
+.quiz-fields { grid-template-columns: minmax(0, 270px); }
+@media (max-width: 550px) {
+  .quiz-slots { gap: 4px; }
+  .quiz-slots button { padding: 5px 4px; font-size: .76rem; }
+}

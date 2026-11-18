@@ -7,8 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=5">
-  <script type="module" src="math.mjs?v=8"></script>
+  <link rel="stylesheet" href="math.css?v=6">
+  <script type="module" src="math.mjs?v=9"></script>
 </head>
 <body>
   <main>
@@ -66,8 +66,8 @@
         <section id="quiz-panel" class="card" aria-labelledby="quiz-heading" hidden>
           <div class="panel-heading"><h2 id="quiz-heading">퀴즈앤</h2></div>
           <form id="teacher-section" class="quiz teacher" novalidate hidden>
+            <div id="quiz-slots" class="quiz-slots" role="group" aria-label="퀴즈 문항"></div>
             <div class="quiz-fields">
-              <label>문항 <select id="quiz-slot"></select></label>
               <label>문제 유형 <select id="quiz-kind">
                 <option value="short">단답형</option>
                 <option value="ox">O/X</option>
