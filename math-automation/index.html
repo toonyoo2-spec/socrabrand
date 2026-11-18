@@ -7,8 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=12">
-  <script type="module" src="math.mjs?v=18"></script>
+  <link rel="stylesheet" href="math.css?v=13">
+  <script type="module" src="math.mjs?v=19"></script>
 </head>
 <body>
   <main>
@@ -21,6 +21,7 @@
           <ol>
             <li>회차를 고르고 수업 문항을 배치하세요.</li>
             <li>퀴즈앤 탭마다 문항을 작성하거나 교재에서 고르세요.</li>
+            <li>저장한 퀴즈는 해당 자리의 ‘문항 비우기’로 지울 수 있습니다.</li>
             <li>제출·발표자료에서 완료 상태를 확인하고 회차를 제출하세요.</li>
           </ol>
         </details>
@@ -127,7 +128,10 @@
             </div>
             <div class="save-row">
               <p id="quiz-status" class="muted" role="status"></p>
-              <button type="submit" class="button primary" id="quiz-save">퀴즈 문항 저장</button>
+              <div class="quiz-save-actions">
+                <button type="button" class="button" id="quiz-clear" hidden>문항 비우기</button>
+                <button type="submit" class="button primary" id="quiz-save">퀴즈 문항 저장</button>
+              </div>
             </div>
           </form>
           <div id="resource-stage" hidden>

@@ -190,7 +190,9 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 #quiz-preview-choices li { margin-bottom: 4px; overflow-wrap: anywhere; }
 .save-row, .delivery-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--border); margin-top: 15px; padding-top: 13px; }
 .save-row p, .delivery-footer p { margin: 0; }
-.save-row button, .delivery-footer button { flex: none; margin-left: auto; }
+.delivery-footer button { flex: none; margin-left: auto; }
+.quiz-save-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }
+#quiz-clear { color: var(--danger); }
 #quiz-status[data-state="error"] { color: var(--danger); font-weight: 650; }
 #quiz-status[data-state="success"] { color: #146846; font-weight: 650; }
 .stage-pick { display: grid; gap: 4px; min-width: 0; }

@@ -597,7 +597,7 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
     const select = document.createElement('select');
     const selected = state.catalog.find(question => question.question_id === selectedIds.get(slot));
     label.dataset.filled = String(Boolean(selected));
-    const choices = [['', '문항 선택'], ...questions.map(question => [question.question_id, question.label])];
+    const choices = [['', selected ? '문항 비우기' : '문항 선택'], ...questions.map(question => [question.question_id, question.label])];
     if (selected && !questions.includes(selected)) choices.splice(1, 0, [selected.question_id, selected.label + ' · 저장됨']);
     options(select, choices, selected?.question_id);
     select.disabled = !state.composer;
@@ -830,6 +830,7 @@ function quizFeedback(message, status = '') {
 function renderQuiz() {
   formulaTarget = $('quiz-prompt');
   const quiz = state.quizzes.get(state.quizSlot);
+  $('quiz-clear').hidden = !quiz || !state.composer;
   const choices = quiz?.choices?.split(/\r?\n/) ?? [];
   $('quiz-kind').value = quiz?.kind ?? 'short';
   $('quiz-answer').value = quiz?.kind === 'choice' ? '' : quiz?.answer ?? '';
@@ -938,6 +939,28 @@ async function saveQuiz(event) {
     rememberView();
     quizFeedback(slot + '번 문항을 저장했습니다.', 'success');
   }, 'quiz-status');
+}
+
+async function clearQuiz() {
+  const slot = state.quizSlot;
+  if (state.busy || !state.composer || !state.quizzes.has(slot)) return;
+  if (!window.confirm(slot + '번 퀴즈 문항을 비울까요?')) return;
+  let cleared = false;
+  quizFeedback('비우는 중…');
+  await withSaving(async () => {
+    const filter = { ...context(), slot: 'eq.' + slot, select: 'slot' };
+    const [removed] = await table('math_teacher_quizzes', filter, 'DELETE');
+    if (!removed && (await table('math_teacher_quizzes', filter)).length) {
+      throw new ApiError(403, '이 퀴즈 문항을 비울 권한이 없습니다.');
+    }
+    state.quizzes.delete(slot);
+    state.edited = true;
+    renderQuizSlots(slot);
+    renderQuiz();
+    quizFeedback(slot + '번 문항을 비웠습니다.', 'success');
+    cleared = true;
+  }, 'quiz-status');
+  if (cleared) $('quiz-prompt').focus();
 }
 
 function renderSubmissionChecklist(items) {
@@ -1413,6 +1436,7 @@ $('stage-section').addEventListener('change', () => {
   renderStagePreview();
 });
 $('teacher-section').addEventListener('submit', saveQuiz);
+$('quiz-clear').addEventListener('click', clearQuiz);
 $('stage-choice-form').addEventListener('submit', saveStageChoice);
 $('stage-choice-form').addEventListener('input', () => { state.stageDirty = true; renderSubmission(); });
 $('stage-choice-close').addEventListener('click', () => {
