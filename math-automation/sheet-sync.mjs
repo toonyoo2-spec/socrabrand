@@ -1,4 +1,4 @@
-import { connectStaffGoogle } from './google-drive.mjs?v=8';
+import { connectStaffGoogle } from './google-drive.mjs?v=9';
 
 const sheetsScope = 'https://www.googleapis.com/auth/spreadsheets';
 const targets = {
@@ -75,10 +75,18 @@ export function buildSheetWrites(target, lesson, submission) {
   ];
 }
 
-export async function syncSubmissionToSheet(target, lesson, submission) {
+export function connectSheet() {
+  return connectStaffGoogle(sheetsScope);
+}
+
+export async function syncSubmissionToSheet(target, lesson, submission, connection, previousPicks = [], beforeWrite = async () => {}) {
   const entries = buildSheetWrites(target, lesson, submission);
+  const active = new Set(submission.selections.map(item => item.slot));
+  for (const item of previousPicks) {
+    if (!active.has(item.slot) && target.base[item.slot - 1]) entries.push([target.base[item.slot - 1], '']);
+  }
   if (!entries.length) throw Error('반영할 제출 문항이 없습니다.');
-  const { headers } = await connectStaffGoogle(sheetsScope);
+  const { headers } = connection ?? await connectSheet();
   const base = 'https://sheets.googleapis.com/v4/spreadsheets/' + target.id;
   const fetchSheet = async (suffix, message = '회사 Google 계정으로 시트를 열 수 없습니다. 링크와 접근 권한을 확인해 주세요.') => {
     const reply = await fetch(base + suffix, { headers, cache:'no-store' });
@@ -121,6 +129,7 @@ export async function syncSubmissionToSheet(target, lesson, submission) {
     '칸(' + occupied.map(([col]) => col).join(', ') + ')을 이번 제출본으로 바꿀까요?')) return null;
   if (changed.length) {
     const data = changed.map(([col,text]) => ({ range: name + col + row, values:[[text]] }));
+    await beforeWrite();
     const response = await fetch(base + '/values:batchUpdate', {
       method:'POST', headers: { ...headers, 'Content-Type':'application/json' },
       body: JSON.stringify({ valueInputOption:'RAW', data }),

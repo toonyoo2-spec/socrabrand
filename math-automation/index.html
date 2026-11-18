@@ -7,8 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=15">
-  <script type="module" src="math.mjs?v=23"></script>
+  <link rel="stylesheet" href="math.css?v=16">
+  <script type="module" src="math.mjs?v=24"></script>
 </head>
 <body>
   <main>
@@ -60,6 +60,11 @@
         <section id="progress-panel" class="card" aria-labelledby="progress-heading" hidden>
           <h2 id="progress-heading">작업현황</h2>
           <p id="progress-status" class="muted" role="status"></p>
+          <section id="transfer-board" hidden aria-labelledby="transfer-title">
+            <div class="panel-heading"><h3 id="transfer-title">오늘 넘길 회차</h3><time id="transfer-day"></time></div>
+            <div id="transfer-today" class="transfer-today"></div>
+            <p id="transfer-feedback" role="status" aria-live="polite"></p>
+          </section>
           <div id="progress-tracks" class="progress-tracks"></div>
         </section>
         <section id="catalog" class="card" aria-labelledby="catalog-heading" hidden>
@@ -67,6 +72,7 @@
           <p id="catalog-empty" class="muted" hidden>교재 문항을 등록하고 있습니다.</p>
           <div id="catalog-picks" class="pick-layout">
             <div class="pick-controls">
+              <p id="selection-role" class="muted"></p>
               <div id="catalog-fields" class="pick-filters">
                 <label>교재 <select id="book"></select></label>
                 <label>단원 <select id="unit"></select></label>
@@ -191,19 +197,8 @@
           <section id="staff-panel" class="card" aria-labelledby="export-heading" hidden>
             <h2 id="export-heading">제출본 반영</h2>
             <p id="export-status" class="muted" aria-live="polite"></p>
-            <div class="delivery-actions">
-              <div class="delivery-action">
-                <h3>커리큘럼 시트</h3>
-                <button class="button" id="sheet-sync" type="button">커리큘럼 시트에 문항 반영</button>
-                <p id="sheet-status" class="muted inline-status" role="status"></p>
-                <a id="sheet-result" class="result-link" target="_blank" rel="noopener noreferrer" hidden>반영한 시트 열기</a>
-              </div>
-              <div class="delivery-action">
-                <h3>빔용 프레젠테이션</h3>
-                <button class="button primary" id="ppt-drive" type="button" aria-haspopup="dialog" aria-controls="drive-dialog">Google Drive에 프레젠테이션 저장</button>
-                <a id="ppt-result" class="result-link" target="_blank" rel="noopener noreferrer" hidden>저장한 프레젠테이션 열기</a>
-              </div>
-            </div>
+            <button class="button primary" id="google-transfer" type="button" aria-haspopup="dialog">Google에 반영</button>
+            <a id="ppt-result" class="result-link" target="_blank" rel="noopener noreferrer" hidden>저장한 프레젠테이션 열기</a>
           </section>
           <details id="staff-links" class="card" hidden>
             <summary>Google 자료 링크</summary>
@@ -220,25 +215,20 @@
       </div>
     </section>
   </main>
-  <dialog id="drive-dialog" aria-labelledby="drive-heading">
-    <div class="panel-heading">
-      <h2 id="drive-heading">Google Drive 저장 위치</h2>
-      <p id="drive-account" class="muted"></p>
-    </div>
-    <button id="drive-connect" type="button" class="button">회사 Google 계정 연결</button>
-    <div id="drive-browser" hidden>
-      <div class="drive-roots" role="group" aria-label="Drive 위치">
-        <button id="drive-my-root" type="button" aria-pressed="true">내 드라이브</button>
-        <button id="drive-shared-root" type="button" aria-pressed="false">공유 드라이브</button>
-      </div>
-      <nav id="drive-path" class="drive-path" aria-label="현재 폴더 경로"></nav>
-      <ul id="drive-folders" class="drive-folders" aria-label="하위 폴더"></ul>
-    </div>
-    <p id="drive-status" class="muted" role="status"></p>
-    <div class="drive-footer">
-      <button id="drive-close" type="button" class="button">닫기</button>
-      <button id="drive-save" type="button" class="button primary" disabled>이 폴더에 저장</button>
-    </div>
+  <dialog id="transfer-dialog" aria-labelledby="transfer-preview-title">
+    <header class="panel-heading"><h2 id="transfer-preview-title">Google에 반영</h2><button id="transfer-cancel" type="button">닫기</button></header>
+    <p id="transfer-course" class="muted"></p>
+    <fieldset id="transfer-urls"><legend>반영할 위치</legend>
+      <label for="destination-sheet">Google 시트 URL</label>
+      <div class="url-line"><input id="destination-sheet" type="url" spellcheck="false"><button type="button" data-copy="sheet" aria-label="Google 시트 주소 복사">복사</button></div>
+      <label for="destination-slides">슬라이드 저장 폴더 URL</label>
+      <div class="url-line"><input id="destination-slides" type="url" spellcheck="false" placeholder="Google Drive 폴더 주소"><button type="button" data-copy="slides" aria-label="저장 폴더 주소 복사">복사</button></div>
+      <div class="default-actions"><small>주소 수정은 이번 반영에 적용됩니다.</small><button type="button" id="save-destinations">팀 기본값으로 저장</button></div>
+    </fieldset>
+    <p id="transfer-config-status" role="status"></p>
+    <h3>오늘 넘길 회차</h3><div id="transfer-preview"></div>
+    <p id="transfer-counts"></p><div id="transfer-check-status" role="status"></div>
+    <div class="drive-footer"><button id="transfer-run" type="button" class="button primary" disabled>선택한 항목 반영</button></div>
   </dialog>
 </body>
 </html>

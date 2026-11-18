@@ -41,7 +41,7 @@ export async function connectStaffGoogle(requiredScope) {
       include_granted_scopes: false,
       hd: 'socra.ai',
       callback: result => {
-        if (!result.access_token || !String(result.scope).split(' ').includes(requiredScope)) {
+        if (!result.access_token || !requiredScope.split(' ').every(item => String(result.scope).split(' ').includes(item))) {
           reject(Error('이 작업에 필요한 Google 권한을 확인해 주세요.'));
           return;
         }
@@ -101,6 +101,26 @@ export async function listDriveFolders(connection, folder) {
   return files.map(file => ({ ...file, canAddChildren:file.capabilities?.canAddChildren === true }));
 }
 
+export function folderDestination(input) {
+  let url;
+  try { url = new URL(input.trim()); } catch { /* Invalid folder link. */ }
+  const id = url?.pathname.match(/^\/drive\/(?:u\/\d+\/)?folders\/([A-Za-z0-9_-]+)\/?$/)?.[1];
+  const key = url?.searchParams.get('resourcekey') || '';
+  if (!id || url.origin !== 'https://drive.google.com' || url.username || url.password || (key && !/^[A-Za-z0-9_-]+$/.test(key))) {
+    throw Error('슬라이드를 저장할 Google Drive 폴더 주소를 입력해 주세요.');
+  }
+  return { id, key, url:'https://drive.google.com/drive/folders/' + id + (key ? '?resourcekey=' + key : '') };
+}
+
+export async function openDestinationFolder(connection, destination) {
+  const headers = { ...connection.headers };
+  if (destination.key) headers['X-Goog-Drive-Resource-Keys'] = destination.id + '/' + destination.key;
+  const folder = await fetch(driveApi + 'files/' + destination.id + '?supportsAllDrives=true&fields=id,mimeType,driveId,trashed,capabilities(canAddChildren)', { headers, cache:'no-store' })
+    .then(r => checkGoogleResponse(r, '연결한 Google 계정으로 저장 폴더를 열 수 없습니다.'));
+  if (folder.trashed || folder.mimeType !== folderMime || !folder.capabilities?.canAddChildren) throw Error('연결한 Google 계정에 이 폴더의 저장 권한이 없습니다.');
+  return { ...folder, resourceKey:destination.key, canAddChildren:true };
+}
+
 function slidesEditUrl(file) {
   if (file.mimeType !== slidesMime || !/^[A-Za-z0-9_-]+$/.test(file.id ?? '')) {
     throw Error('Google 프레젠테이션으로 저장됐는지 확인하지 못했습니다.');
@@ -108,8 +128,10 @@ function slidesEditUrl(file) {
   return 'https://docs.google.com/presentation/d/' + file.id + '/edit';
 }
 
-export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder) {
+export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder, beforeWrite = async () => {}) {
   const parent = fileId(folder.id);
+  const headers={...connection.headers};
+  if (folder.resourceKey) headers['X-Goog-Drive-Resource-Keys']=parent+'/'+folder.resourceKey;
   if (!folder.canAddChildren) throw Error('이 폴더에는 파일을 저장할 수 없습니다.');
   const lookup = new URLSearchParams({
     ...folderQuery(folder),
@@ -118,12 +140,14 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
       " and appProperties has { key='socraMathLayout' and value='" + projectionLayout + "' }",
     fields: 'files(id,mimeType)', pageSize: '10',
   });
-  const { files } = await fetch(driveApi + 'files?' + lookup, { headers: connection.headers, cache: 'no-store' })
+  const { files } = await fetch(driveApi + 'files?' + lookup, { headers, cache: 'no-store' })
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
   if (files.length) return slidesEditUrl(files[0]);
+  if (typeof blob === 'function') blob = await blob();
+  await beforeWrite();
   const start = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id,mimeType', {
     method: 'POST',
-    headers: { ...connection.headers, 'Content-Type': 'application/json',
+    headers: { ...headers, 'Content-Type': 'application/json',
       'X-Upload-Content-Type': pptxMime, 'X-Upload-Content-Length': String(blob.size) },
     body: JSON.stringify({ name, mimeType: slidesMime, parents:[parent],
       appProperties: { socraMathSubmission: submission, socraMathLayout: projectionLayout } }),
@@ -135,8 +159,9 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   if (location.origin !== 'https://www.googleapis.com' || !location.pathname.startsWith('/upload/drive/')) {
     throw Error('Google Drive 저장 주소가 올바르지 않습니다.');
   }
+  await beforeWrite();
   const uploaded = await fetch(location.href, {
-    method: 'PUT', headers: { ...connection.headers, 'Content-Type': pptxMime }, body: blob,
+    method: 'PUT', headers: { ...headers, 'Content-Type': pptxMime }, body: blob,
   }).then(response => checkGoogleResponse(response, '내 Google Drive에 프레젠테이션을 저장하지 못했습니다.'));
   return slidesEditUrl(uploaded);
 }

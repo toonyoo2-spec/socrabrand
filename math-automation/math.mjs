@@ -1,8 +1,10 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=8';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=9';
 import { buildPresentation } from './presentation.mjs?v=9';
-import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=8';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=9';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
+
+import { workDay, transferStatus, element, lessonList, channels, transferCell } from './transfer-board.mjs?v=1';
 
 const $ = id => document.getElementById(id);
 const tokenKey = 'socra_admin_token';
@@ -36,10 +38,8 @@ const state = {
   token: null, staff: false, editor: false, composer: false, memberships: [], courses: [], lessons: [], catalog: [], picks: new Map(), stagePicks: new Map(), quizzes: new Map(),
   submitted: null, courseVersion: 0, lessonVersion: 0, pagePreviews: new Map(), resourceViews: new Map(), busy: false,
 };
-const driveHome = { id:'root', name:'내 드라이브', canAddChildren:true };
-let driveConnection;
-let drivePath = [];
-let driveRequest = 0;
+let transferContext;
+let progressGeneration = 0;
 
 class ApiError extends Error {
   constructor(status, message) {
@@ -85,6 +85,13 @@ function table(name, params = {}, method = 'GET', body) {
 function options(select, entries, value) {
   select.replaceChildren(...entries.map(([id, label]) => new Option(label, id)));
   if (entries.some(([id]) => String(id) === String(value))) select.value = value;
+  if (select.closest('.pick-filters')) {
+    let fixed=select.parentElement.querySelector('.filter-value');
+    if (!fixed) {fixed=element('span',undefined,'filter-value');select.after(fixed);}
+    select.hidden=entries.length===1;
+    fixed.hidden=!select.hidden;
+    fixed.textContent=select.hidden ? select.options[0].text : '';
+  }
 }
 
 function values(rows, key) {
@@ -205,6 +212,7 @@ function progressRows(name, filter, select) {
 }
 
 async function loadProgress() {
+  const generation = ++progressGeneration;
   const version = state.courseVersion;
   const instructor = currentCourse()?.instructor;
   const courses = state.courses.filter(course => course.instructor === instructor);
@@ -212,17 +220,22 @@ async function loadProgress() {
   const status = $('progress-status');
   const grid = $('progress-tracks');
   $('progress-heading').textContent = instructor + ' · 작업현황';
+  $('transfer-board').hidden = true;
+  grid.classList.toggle('staff-tracks',state.staff);
   status.textContent = '회차별 작업현황을 불러오는 중입니다.';
   grid.replaceChildren();
   try {
-    const [lessons, picks, quizzes, extras, submissions] = await Promise.all([
+    const [lessons, picks, quizzes, extras, submissions, receipts, plans] = await Promise.all([
       progressRows('math_lessons', filter, 'course_id,lesson,live_date,topic,quiz_mode'),
       progressRows('math_selections', filter, 'course_id,lesson,slot'),
       progressRows('math_teacher_quizzes', filter, 'course_id,lesson,slot'),
       progressRows(resourceSelections, filter, 'course_id,lesson,slot,stage_mode'),
-      progressRows('math_submissions', filter, 'course_id,lesson,sync_status,submitted_at'),
+      progressRows('math_transfer_versions', filter, 'course_id,lesson,id,sync_status,submitted_at'),
+      state.staff ? progressRows('math_transfer_state', filter, 'course_id,lesson,channel,completed_id,claim_until') : [],
+      state.staff ? table('math_transfer_plans', { course_id:filter, work_day:'eq.'+workDay(), select:'course_id,lesson,channel,allow_repeat_id' }) : [],
     ]);
-    if (version !== state.courseVersion || state.stage !== 'progress') return;
+    if (generation !== progressGeneration || version !== state.courseVersion || state.stage !== 'progress') return;
+    const staffRows = [];
     for (const [track, label] of Object.entries(tracks)) {
       const course = courses.find(item => item.track === track);
       const group = document.createElement('section');
@@ -246,11 +259,16 @@ async function loadProgress() {
         summary.className = 'muted';
         summary.textContent = '제출 ' + new Set(courseSubmissions.map(item => item.lesson)).size + ' / ' + courseLessons.length;
         heading.append(summary);
+        const staff = staffCourse(course);
+        if (staff) {
+          const launch = element('button','Google에 반영'); launch.type='button';
+          launch.addEventListener('click', () => openTransfers(course)); heading.append(launch);
+        }
         const progress = document.createElement('table');
         progress.setAttribute('aria-label', label + ' 회차별 작업현황');
         const head = progress.createTHead().insertRow();
         const quizHeaders = courseModes.map(mode => quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제');
-        for (const text of ['회차', '수업 문항', ...quizHeaders, '상태']) {
+        for (const text of ['회차', '수업 문항', ...quizHeaders, '선생님', ...(staff ? ['Google 시트','슬라이드'] : [])]) {
           const header = document.createElement('th');
           header.scope = 'col';
           header.textContent = text;
@@ -285,15 +303,28 @@ async function loadProgress() {
           const status = row.insertCell();
           status.className = 'progress-status';
           status.dataset.state = submitted ? 'done' : 'pending';
-          status.textContent = submitted?.sync_status === 'synced' ? '시트 반영' : submitted ? '제출됨' : '미제출';
+          status.textContent = submitted ? '제출됨' : [picks,quizzes,extras].some(data => data.some(matches)) ? '작성 중' : '미작성';
+          if (staff) {
+            const item = transferRow(course, lesson, submitted, receipts, plans);
+            staffRows.push(item);
+            for (const channel of Object.keys(channels)) row.append(transferCell(item,channel,updatePlan));
+          }
         }
         group.append(progress);
       }
       grid.append(group);
     }
+    if (staffRows.length) {
+      $('transfer-board').hidden = false; $('transfer-day').textContent=workDay();
+      $('transfer-today').replaceChildren(...Object.entries(channels).map(([key,name]) => {
+        const pending = staffRows.filter(row => row.plans[key] && transferStatus(row,key).available);
+        const part=element('section'); part.append(element('h4',name+' · '+pending.length+'회차'),element('p',lessonList(pending) || '예정 없음'));
+        return part;
+      }));
+    }
     status.textContent = '';
   } catch (error) {
-    if (version === state.courseVersion) failure(error, 'progress-status');
+    if (generation === progressGeneration && version === state.courseVersion) failure(error, 'progress-status');
   }
 }
 
@@ -341,7 +372,7 @@ async function loadCatalog(courseId) {
 }
 
 async function loadSite() {
-  if ($('drive-dialog').open) $('drive-dialog').close();
+  if ($('transfer-dialog').open) $('transfer-dialog').close();
   state.courseVersion += 1;
   state.lessonVersion += 1;
   state.courses = [];
@@ -464,7 +495,7 @@ async function loadLesson() {
     renderMaterialLinks(materials);
     $('submission-panel').hidden = !state.composer;
     $('staff-panel').hidden = !state.staff;
-    resetSheetResult();
+
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
     state.exportReceipt = null;
@@ -602,7 +633,9 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
     options(select, choices, selected?.question_id);
     select.disabled = !state.composer;
     select.addEventListener('change', () => save(slot, select.value, select));
-    label.append(select);
+    if (!state.composer) {
+      const saved=element('span', selected?.label || '미선정','review-pick');label.append(saved);
+    } else label.append(select);
     slots.push(label);
   }
   return slots;
@@ -615,7 +648,16 @@ function renderPicks() {
   const labels = slot => (slot <= requiredLessonSlots() ? '기본 ' : '예비 ') + slot + '번';
   const controls = pickControls(lessonSlots(), state.picks, current, labels, savePick);
   controls.slice(requiredLessonSlots()).forEach(control => control.classList.add('reserve'));
-  $('question-slots').replaceChildren(...controls);
+  const required=requiredLessonSlots();
+  const picked=[...state.picks.keys()].filter(slot=>slot<=required).length;
+  const group=(name,done,total,items)=>{
+    const section=element('section',undefined,'slot-group');
+    section.append(element('h4',name+' · '+done+' / '+total),...items);
+    return section;
+  };
+  $('selection-role').textContent=state.composer ? '' : '직원 검수 화면입니다. 선생님이 저장한 문항을 확인할 수 있습니다.';
+  $('question-slots').replaceChildren(group('기본',picked,required,controls.slice(0,required)));
+  if (controls.length>required) $('question-slots').append(group('예비',state.picks.size-picked,controls.length-required,controls.slice(required)));
 }
 
 function stageQuestionsForBook() {
@@ -1051,7 +1093,7 @@ async function submit() {
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
     $('export-status').textContent = '';
-    resetSheetResult();
+
   }, 'submit-feedback');
 }
 
@@ -1083,209 +1125,211 @@ async function loadExportReceipt(version) {
   }
 }
 
-function exportBlocker() {
-  if (!state.submitted) return '회차를 제출하면 시트 반영과 프레젠테이션 저장을 할 수 있습니다.';
-  const missing = lessonModes().find(mode => (
-    mode === 'teacher' ? state.submitted.quizzes?.length ?? 0
-      : (state.submitted.stage_questions ?? []).filter(item => savedResourceMode(item) === mode).length
-  ) !== quizCount(mode));
-  if (missing) return stageTitle(missing) + ' 문항을 채우고 다시 제출해 주세요.';
-  return '';
+function staffCourse(course) {
+  return state.editor || state.memberships.some(m => m.course_id===course.id && m.team_role==='staff');
+}
+
+function transferRow(course, lesson, submission, receipts, plans) {
+  const pick = values => Object.fromEntries(values.filter(v => v.course_id===course.id && v.lesson===lesson.lesson).map(v => [v.channel,v]));
+  return { course, lesson, submission, receipts:pick(receipts), plans:pick(plans) };
 }
 
 function renderExport() {
-  if (!state.staff) return;
-  const blocker = exportBlocker();
-  for (const id of ['ppt-drive', 'sheet-sync']) $(id).disabled = state.busy || Boolean(blocker);
-  $('sheet-sync').disabled ||= !currentLesson()?.curriculum_url;
-  if (blocker) $('export-status').textContent = blocker;
-  else if (!$('export-status').textContent || $('export-status').dataset.lesson !== $('lesson').value) {
-    $('export-status').textContent = '회사 Google 계정에서 저장할 폴더를 선택할 수 있습니다.';
-  }
-  $('export-status').dataset.lesson = $('lesson').value;
+  $('google-transfer').disabled = state.busy || !state.staff;
+  $('export-status').textContent = '오늘 반영할 회차와 저장 위치를 선택하세요.';
 }
 
-function openDriveDialog() {
-  if (!state.staff || state.busy || exportBlocker()) return;
-  $('drive-browser').hidden = true;
-  $('drive-connect').hidden = false;
-  $('drive-connect').disabled = false;
-  $('drive-save').disabled = true;
-  $('drive-account').textContent = '';
-  $('drive-status').textContent = '회사 Google 계정을 연결해 주세요.';
-  $('drive-dialog').showModal();
+function rpc(name,body) { return table('rpc/'+name,{},'POST',body); }
+
+async function transferData(course) {
+  const filter = {course_id:'eq.'+course.id};
+  const [lessons, submissions, receipts, plans, settings] = await Promise.all([
+    table('math_lessons',{...filter,select:'course_id,lesson,topic,live_date,curriculum_url,quiz_mode',order:'lesson'}),
+    table('math_transfer_versions',{...filter,select:'lesson,id'}),
+    table('math_transfer_state',{...filter,select:'course_id,lesson,channel,completed_id,claim_until,destination'}),
+    table('math_transfer_plans',{...filter,work_day:'eq.'+workDay(),select:'course_id,lesson,channel,allow_repeat_id'}),
+    table('math_transfer_settings',{...filter,select:'sheet_url,folder_url,revision'})
+  ]);
+  return {rows:lessons.map(l => transferRow(course,l,submissions.find(s=>s.lesson===l.lesson),receipts,plans)),settings:settings[0]};
 }
 
-async function connectDriveDialog() {
-  const requestId = ++driveRequest;
-  $('drive-connect').disabled = true;
-  $('drive-status').textContent = '회사 Google 계정을 확인하는 중입니다.';
+async function openTransfers(course) {
+  if (!staffCourse(course) || state.busy || transferContext) return;
+  const ctx=transferContext={course,day:workDay(),loading:true,rows:[]};
+  $('transfer-course').textContent=course.instructor+' · '+tracks[course.track];
+  $('transfer-preview').replaceChildren(); $('transfer-counts').textContent='';
+  $('transfer-config-status').textContent=''; $('transfer-check-status').textContent='불러오는 중…';
+  $('transfer-urls').disabled=true; $('transfer-run').disabled=true;
+  $('destination-sheet').value=''; $('destination-slides').value='';
+  $('transfer-dialog').showModal();
   try {
-    const connection = await connectStaffDrive();
-    if (requestId !== driveRequest || !$('drive-dialog').open) return;
-    driveConnection = connection;
-    $('drive-connect').hidden = true;
-    $('drive-browser').hidden = false;
-    $('drive-account').textContent = connection.email;
-    await browseDrive([driveHome], false);
-  } catch (error) {
-    if (requestId === driveRequest && $('drive-dialog').open) failure(error, 'drive-status');
+    const data=await transferData(course);
+    if (ctx!==transferContext) return;
+    if (!data.settings) throw Error('이 과정의 기본 경로가 아직 등록되지 않았습니다.');
+    Object.assign(ctx,data,{loading:false});
+    $('destination-sheet').value=ctx.settings.sheet_url;
+    $('destination-slides').value=ctx.settings.folder_url;
+    $('transfer-check-status').textContent=''; $('transfer-urls').disabled=false;
+    renderTransfers();
+  } catch(error) { if (ctx===transferContext) $('transfer-check-status').textContent=error.message; }
+}
+
+function selectedTransfers(rows) {
+  return rows.flatMap(row=>Object.keys(channels).filter(key=>row.plans[key] && transferStatus(row,key).available).map(channel=>({row,channel})));
+}
+
+function renderTransfers() {
+  const ctx=transferContext;
+  if (!ctx || ctx.loading) return;
+  const grid=element('table'); grid.setAttribute('aria-label','회차별 반영 선택');
+  const head=grid.createTHead().insertRow();
+  for (const label of ['회차','Google 시트','슬라이드']) head.append(element('th',label));
+  const body=grid.createTBody();
+  for (const row of ctx.rows) {
+    const tr=body.insertRow();
+    const title=element('th',row.lesson.lesson+'강'); title.scope='row'; title.title=row.lesson.topic; tr.append(title);
+    for (const channel of Object.keys(channels)) tr.append(transferCell(row,channel,updatePlan));
+  }
+  $('transfer-preview').replaceChildren(grid);
+  const chosen=selectedTransfers(ctx.rows);
+  $('transfer-counts').textContent=Object.entries(channels).map(([ch,label])=> {
+    const rows=chosen.filter(x=>x.channel===ch).map(x=>x.row.lesson.lesson+'강');
+    return label+' '+rows.length+'개'+(rows.length?' ('+rows.join('·')+')':'');
+  }).join(' / ');
+  $('transfer-run').disabled=Boolean(ctx.busy || !chosen.length);
+  for (const button of document.querySelectorAll('[data-copy]')) button.disabled=!$('destination-'+button.dataset.copy).value.trim();
+}
+
+const actionMessages={busy:'다른 직원이 반영 중입니다.',revised:'새 제출본이 있습니다. 목록을 확인해 주세요.',done:'이미 완료되어 잠겨 있습니다.',removed:'오늘 목록에서 제외됐습니다.',day:'날짜가 바뀌었습니다. 팝업을 다시 열어 주세요.'};
+
+async function updatePlan(row,channel,action,cell) {
+  const ctx=transferContext;
+  if (state.busy || ctx?.busy) return;
+  if (action==='repeat' && !window.confirm(row.lesson.lesson+'강 '+channels[channel]+'의 최신 제출본을 오늘 다시 반영할까요?')) return;
+  const notice=ctx?$('transfer-config-status'):$('transfer-feedback');
+  const controls=[...cell.querySelectorAll('button,input')]; controls.forEach(c=>c.disabled=true);
+  if (ctx) {ctx.pending=(ctx.pending||0)+1; $('transfer-run').disabled=true;}
+  try {
+    const result=await rpc('math_plan_transfer',{p_course:row.course.id,p_lesson:row.lesson.lesson,p_channel:channel,p_submission:row.submission?.id??null,p_action:action,p_day:ctx?.day??workDay()});
+    if (result!=='ok') throw Error(actionMessages[result] || '선택을 저장하지 못했습니다.');
+    notice.textContent=row.lesson.lesson+'강 '+channels[channel]+(action==='remove'?' 선택을 해제했습니다.':'을 오늘 목록에 담았습니다.');
+  } catch(error) {notice.textContent=error.message;}
+  finally {
+    if (ctx && ctx===transferContext) {
+      try { const data=await transferData(ctx.course); if (ctx===transferContext) {ctx.rows=data.rows;renderTransfers();} }
+      catch(error) {notice.textContent=error.message;ctx.loading=true;$('transfer-run').disabled=true;}
+      ctx.pending--; if (ctx.pending) $('transfer-run').disabled=true;
+    } else if (!ctx && state.stage==='progress') void loadProgress();
+  }
+}
+
+function sheetURL(course,raw) {
+  const t=sheetDestination(course,raw);
+  return 'https://docs.google.com/spreadsheets/d/'+t.id+'/edit'+(t.gid===null?'':'?gid='+t.gid+'#gid='+t.gid);
+}
+
+async function saveDestinations() {
+  const ctx=transferContext;
+  if (!ctx || ctx.busy || ctx.loading) return;
+  const status=$('transfer-config-status');
+  try {
+    const sheet=sheetURL(ctx.course,$('destination-sheet').value);
+    const folder=$('destination-slides').value.trim();
+    const url=folder ? folderDestination(folder).url : '';
+    if (sheet===ctx.settings.sheet_url && url===ctx.settings.folder_url) {status.textContent='이미 같은 팀 기본값입니다.';return;}
+    if (!window.confirm(ctx.course.instructor+' '+tracks[ctx.course.track]+'의 팀 기본 주소를 변경할까요? 두 직원에게 적용됩니다.')) return;
+    $('save-destinations').disabled=true;
+    const updated=await table('math_transfer_settings',{course_id:'eq.'+ctx.course.id,revision:'eq.'+ctx.settings.revision,select:'sheet_url,folder_url,revision'},'PATCH',{sheet_url:sheet,folder_url:url,revision:ctx.settings.revision+1});
+    if (ctx!==transferContext) return;
+    if (!updated.length) throw Error('다른 직원이 기본값을 변경했습니다. 팝업을 다시 열어 확인해 주세요.');
+    ctx.settings=updated[0]; $('destination-sheet').value=sheet; $('destination-slides').value=url;
+    status.textContent='이 과정의 팀 기본값으로 저장했습니다.';
+  } catch(error) {status.textContent=error.message;}
+  finally { $('save-destinations').disabled=false; }
+}
+
+async function slideBlob(row, submission) {
+  const {course,lesson}=row;
+  const picks=[...submission.selections,...submission.stage_questions];
+  const ids=[...new Set(picks.map(p=>p.question_id))];
+  const items=await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset'});
+  const withAsset=pick=>{
+    const item=items.find(x=>x.question_id===pick.question_id);
+    if (!item) throw Error('선택한 교재 문항을 찾을 수 없습니다.');
+    return {...item,slot:pick.slot,quiz_override:pick.quiz_override};
+  };
+  return buildPresentation({title:deckTitle(row),picks:submission.selections.map(withAsset),quizzes:submission.quizzes,
+    appendix:submission.stage_questions.map(p=>{const mode=savedResourceMode(p,lesson);return {...withAsset(p),stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};}),
+    quizLabel:stageTitle('teacher')},async q=>(await request(q.projection_asset
+      ? '/storage/v1/object/authenticated/math-teaching-materials/'+encodeURIComponent(course.id)+'/'+q.projection_asset
+      : previewPath(course.preview_course_id??course.id,q.preview_book,q.page))).blob());
+}
+function deckTitle({course,lesson}) {
+  return course.instructor+' · '+tracks[course.track]+' · '+lesson.lesson+'강 · '+lesson.topic.replace(/^\([^)]*\)\s*/,'')+' · 빔용';
+}
+async function transferOne(task,connection,sheet,folder,folderUrl) {
+  const {row,channel}=task, sid=row.submission.id, claim=crypto.randomUUID();
+  const args={p_course:row.course.id,p_lesson:row.lesson.lesson,p_channel:channel,p_submission:sid,p_claim:claim};
+  const check=async()=>{const result=await rpc('math_claim_transfer',{...args,p_planned:true});if(result!=='ready') throw Error(actionMessages[result] || '반영 권한을 확인해 주세요.');};
+  await check();
+  try {
+    const [submission]=await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+sid,select:'id,selections,quizzes,stage_questions'});
+    if (!submission) throw Error('제출본을 찾을 수 없습니다.');
+    let url,destination;
+    if (channel==='sheet') {
+      const prev=row.receipts.sheet;
+      // Before team overrides, the site always wrote to the lesson's configured curriculum URL.
+      const lastTarget=prev?.destination || (prev?.completed_id && sheetURL(row.course,row.lesson.curriculum_url));
+      const prior=prev?.completed_id && lastTarget===sheet ? await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+prev.completed_id,select:'selections'}) : [];
+      const cells=await syncSubmissionToSheet(sheetDestination(row.course,sheet),row.lesson,submission,connection,prior[0]?.selections,check);
+      if (!cells) throw Error('기존 셀 변경을 취소했습니다.');
+      url=cells.url;destination=sheet;
+    } else {
+      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check);
+      destination=folderUrl;
+    }
+    if (!await rpc('math_finish_transfer',{...args,p_url:url,p_destination:destination})) throw Error('Google 결과의 완료 기록을 확인해 주세요.');
+    return url;
   } finally {
-    $('drive-connect').disabled = false;
+    await table('math_transfer_state',{course_id:'eq.'+row.course.id,lesson:'eq.'+row.lesson.lesson,channel:'eq.'+channel,claim:'eq.'+claim,select:'lesson'},'PATCH',{claim:null,claim_until:null});
   }
 }
 
-function renderDrivePath(path, shared) {
-  const nav = $('drive-path');
-  nav.replaceChildren();
-  if (shared) {
-    const root = document.createElement(path.length ? 'button' : 'span');
-    root.textContent = '공유 드라이브';
-    if (path.length) {
-      root.type = 'button';
-      root.addEventListener('click', () => browseDrive([], true));
-    }
-    nav.append(root);
-  }
-  path.forEach((folder, index) => {
-    if (index || shared) {
-      const divider = document.createElement('span');
-      divider.textContent = '›';
-      divider.setAttribute('aria-hidden', 'true');
-      nav.append(divider);
-    }
-    const current = index === path.length - 1;
-    const crumb = document.createElement(current ? 'span' : 'button');
-    crumb.textContent = folder.name;
-    if (current) crumb.setAttribute('aria-current', 'location');
-    else {
-      crumb.type = 'button';
-      crumb.addEventListener('click', () => browseDrive(path.slice(0, index + 1), shared));
-    }
-    nav.append(crumb);
-  });
-}
-
-async function browseDrive(path, shared) {
-  if (state.busy || !driveConnection) return;
-  const requestId = ++driveRequest;
-  const folder = path.at(-1);
-  const list = $('drive-folders');
-  drivePath = path;
-  $('drive-my-root').setAttribute('aria-pressed', String(!shared));
-  $('drive-shared-root').setAttribute('aria-pressed', String(shared));
-  renderDrivePath(path, shared);
-  list.replaceChildren();
-  $('drive-save').disabled = true;
-  $('drive-status').textContent = '폴더를 불러오는 중입니다.';
+async function runTransfers() {
+  const ctx=transferContext;
+  if (!ctx || ctx.busy || ctx.pending || ctx.loading) return;
+  const tasks=selectedTransfers(ctx.rows);
+  if (!tasks.length) return;
+  const status=$('transfer-check-status');status.replaceChildren();
+  ctx.busy=true; $('transfer-run').disabled=true; $('transfer-cancel').disabled=true; $('transfer-urls').disabled=true;
+  $('transfer-preview').inert=true;
   try {
-    const folders = folder ? await listDriveFolders(driveConnection, folder) : await listSharedDrives(driveConnection);
-    if (requestId !== driveRequest || !$('drive-dialog').open) return;
-    for (const child of folders) {
-      const item = document.createElement('li');
-      const button = document.createElement('button');
-      const name = document.createElement('span');
-      const arrow = document.createElement('span');
-      button.type = 'button';
-      name.textContent = child.name;
-      arrow.textContent = '›';
-      arrow.setAttribute('aria-hidden', 'true');
-      button.append(name, arrow);
-      button.addEventListener('click', () => browseDrive([...path, child], shared));
-      item.append(button);
-      list.append(item);
+    if (ctx.day!==workDay()) throw Error(actionMessages.day);
+    const has=key=>tasks.some(t=>t.channel===key);
+    const sheet=has('sheet') ? sheetURL(ctx.course,$('destination-sheet').value) : '';
+    const dest=has('slides') ? folderDestination($('destination-slides').value) : null;
+    const scopes=[...(sheet?['https://www.googleapis.com/auth/spreadsheets']:[]),...(dest?['https://www.googleapis.com/auth/drive']:[])];
+    const connection=await connectStaffGoogle(scopes.join(' '));
+    let folder,folderError;
+    if (dest) try {folder=await openDestinationFolder(connection,dest);} catch(error) {folderError=error.message;}
+    for (const task of tasks) {
+      const item=element('p',task.row.lesson.lesson+'강 '+channels[task.channel]+' · ');status.append(item);
+      try {
+        if (task.channel==='slides' && folderError) throw Error(folderError);
+        const url=await transferOne(task,connection,sheet,folder,dest?.url);
+        const link=element('a','완료 · 열기');link.href=url;link.target='_blank';link.rel='noopener noreferrer';item.append(link);
+        if (task.channel==='slides' && task.row.course.id===state.courseId && task.row.lesson.lesson===currentLesson()?.lesson) resultLink(url);
+      } catch(error) {item.append(error.message);}
     }
-    $('drive-save').disabled = !folder?.canAddChildren;
-    $('drive-status').textContent = folder?.canAddChildren
-      ? (folders.length ? '' : '하위 폴더가 없습니다. 현재 폴더에 저장할 수 있습니다.')
-      : folder ? '이 폴더에는 저장 권한이 없습니다.' : (folders.length ? '공유 드라이브를 선택하세요.' : '접근 가능한 공유 드라이브가 없습니다.');
-  } catch (error) {
-    if (requestId === driveRequest && $('drive-dialog').open) failure(error, 'drive-status');
+  } catch(error) {status.append(element('p',error.message));}
+  finally {
+    try {ctx.rows=(await transferData(ctx.course)).rows;}
+    catch(error) {ctx.loading=true;status.append(element('p','목록을 다시 열어 반영 결과를 확인해 주세요.'));}
+    ctx.busy=false; $('transfer-urls').disabled=false; $('transfer-preview').inert=false; $('transfer-cancel').disabled=false;
+    renderTransfers();
   }
 }
 
-async function preparePresentation() {
-  if (!state.staff || state.busy || exportBlocker() || !driveConnection) return;
-  const folder = drivePath.at(-1);
-  if (!folder?.canAddChildren || $('drive-save').disabled) return;
-  const connection = driveConnection;
-  const folderName = drivePath.map(item => item.name).join(' › ');
-  const active = [...$('drive-dialog').querySelectorAll('button:not(:disabled)')];
-  active.forEach(button => { button.disabled = true; });
-  let stored = false;
-  await withSaving(async () => {
-    const course = currentCourse();
-    const submission = state.submitted;
-    const withAsset = pick => {
-      const question = state.catalog.find(item => item.question_id === pick.question_id);
-      if (!question) throw Error('제출된 문항을 교재 목록에서 찾을 수 없습니다.');
-      return { ...question, slot: pick.slot, quiz_override: pick.quiz_override };
-    };
-    const slotList = submission.selections.map(withAsset);
-    const stageList = (submission.stage_questions ?? []).map(pick => {
-      const mode = savedResourceMode(pick);
-      return { ...withAsset(pick), stageLabel: stageTitle(mode), quizOne: quizModes[mode].number === '①' };
-    });
-    const title = course.instructor + ' · ' + tracks[course.track] + ' · ' + currentLesson().lesson +
-      '강 · ' + currentLesson().topic.replace(/^\([^)]*\)\s*/, '') + ' · 빔용';
-    $('drive-status').textContent = '문항을 한 장씩 발표자료에 넣는 중입니다.';
-    const blob = await buildPresentation({
-      title, picks: slotList, quizzes: submission.quizzes, appendix: stageList,
-      quizLabel: stageTitle('teacher'),
-    }, async question => {
-      const path = question.projection_asset
-        ? '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.projection_asset
-        : previewPath(course.preview_course_id ?? course.id, question.preview_book, question.page);
-      return (await request(path)).blob();
-    });
-    const driveUrl = resultLink(await saveSlidesToStaffDrive(connection, blob, title, submission.id, folder));
-    const [prior] = await table('math_staff_exports', receiptFilter());
-    if (!prior) {
-      await table('math_staff_exports', { select: 'drive_url' }, 'POST', {
-        course_id: course.id, submission_id: submission.id, drive_url: driveUrl,
-      });
-    } else if (prior.drive_url !== driveUrl) {
-      await table('math_staff_exports', receiptFilter(), 'PATCH', { drive_url: driveUrl });
-    }
-    state.exportReceipt = driveUrl;
-    $('export-status').textContent = folderName + '에 저장했습니다.';
-    stored = true;
-  }, 'drive-status');
-  active.forEach(button => { button.disabled = false; });
-  if (stored) $('drive-dialog').close();
-}
-
-function resetSheetResult() {
-  $('sheet-status').textContent = '';
-  $('sheet-result').hidden = true;
-  $('sheet-result').removeAttribute('href');
-}
-
-async function reflectSheet() {
-  if (!state.staff || state.busy || exportBlocker()) return;
-  $('sheet-result').hidden = true;
-  $('sheet-result').removeAttribute('href');
-  await withSaving(async () => {
-    const lesson = currentLesson();
-    const destination = sheetDestination(currentCourse(), lesson.curriculum_url);
-    const submission = state.submitted;
-    $('sheet-status').textContent = 'Google 계정 권한과 커리큘럼 양식을 확인하고 있습니다.';
-    const result = await syncSubmissionToSheet(destination, lesson, submission);
-    if (!result) {
-      $('sheet-status').textContent = 'Google 시트 반영을 취소했습니다.';
-      return;
-    }
-    $('sheet-result').href = result.url;
-    $('sheet-result').hidden = false;
-    const status = await table('math_submissions', {
-      id: 'eq.' + submission.id, select: 'id,sync_status',
-    }, 'PATCH', { sync_status: 'synced' });
-    if (status[0]?.sync_status === 'synced') submission.sync_status = 'synced';
-    $('sheet-status').textContent = result.written
-      ? 'Google 시트 ' + result.row + '행에 ' + result.written + '칸을 반영했습니다.'
-      : '이미 같은 내용이 반영되어 있습니다.';
-  }, 'sheet-status');
-}
 
 function resetPageStack(prefix) {
   const previous = state.pagePreviews.get(prefix);
@@ -1426,18 +1470,17 @@ $('stage-choice-close').addEventListener('click', () => {
   if (confirmQuizChange()) { closeStageChoice(); renderSubmission(); }
 });
 $('submit').addEventListener('click', submit);
-$('sheet-sync').addEventListener('click', reflectSheet);
-$('ppt-drive').addEventListener('click', openDriveDialog);
-$('drive-connect').addEventListener('click', connectDriveDialog);
-$('drive-my-root').addEventListener('click', () => browseDrive([driveHome], false));
-$('drive-shared-root').addEventListener('click', () => browseDrive([], true));
-$('drive-save').addEventListener('click', preparePresentation);
-$('drive-close').addEventListener('click', () => $('drive-dialog').close());
-$('drive-dialog').addEventListener('cancel', event => { if (state.busy) event.preventDefault(); });
-$('drive-dialog').addEventListener('close', () => {
-  driveRequest += 1;
-  driveConnection = null;
-  drivePath = [];
+$('google-transfer').addEventListener('click', () => openTransfers(currentCourse()));
+$('transfer-cancel').addEventListener('click', () => $('transfer-dialog').close());
+$('transfer-dialog').addEventListener('cancel', event => { if (transferContext?.busy) event.preventDefault(); });
+$('transfer-dialog').addEventListener('close', () => { transferContext=null; if (state.stage==='progress') void loadProgress(); });
+$('transfer-run').addEventListener('click', runTransfers);
+$('save-destinations').addEventListener('click', saveDestinations);
+for (const input of $('transfer-urls').querySelectorAll('input')) input.addEventListener('input', () => { const button=document.querySelector('[data-copy="'+(input.id==='destination-sheet'?'sheet':'slides')+'"]'); button.disabled=!input.value.trim(); });
+for (const button of document.querySelectorAll('[data-copy]')) button.addEventListener('click', async () => {
+  const field=$('destination-'+button.dataset.copy);
+  try { await navigator.clipboard.writeText(field.value); $('transfer-config-status').textContent='주소를 복사했습니다.'; }
+  catch { field.focus(); field.select(); $('transfer-config-status').textContent='주소를 선택했습니다. 복사 단축키를 눌러 주세요.'; }
 });
 $('retry').addEventListener('click', loadSite);
 protectUnsaved($('course'), () => {
