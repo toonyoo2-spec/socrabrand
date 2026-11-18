@@ -33,7 +33,7 @@ const resourceStages = {
 };
 const state = {
   token: null, staff: false, editor: false, composer: false, memberships: [], courses: [], lessons: [], catalog: [], picks: new Map(), stagePicks: new Map(), quizzes: new Map(),
-  submitted: null, courseVersion: 0, lessonVersion: 0, pagePreviews: new Map(), busy: false,
+  submitted: null, courseVersion: 0, lessonVersion: 0, pagePreviews: new Map(), resourceViews: new Map(), busy: false,
 };
 let formulaTarget = $('quiz-prompt');
 const driveHome = { id:'root', name:'내 드라이브', canAddChildren:true };
@@ -103,6 +103,7 @@ function failure(error, id = 'load-status') {
 }
 
 function showStatus(message, { login = false, retry = false } = {}) {
+  $('progress-button').hidden = true;
   $('workspace').hidden = true;
   $('message').hidden = false;
   $('status').textContent = message;
@@ -174,20 +175,29 @@ function showStage(stage, restore = false) {
   if (quizStages.includes(stage) && !lessonModes().some(mode => quizModes[mode].stage === stage)) {
     stage = quizModes[lessonModes()[0]]?.stage;
   }
-  if (!restore && (stage === state.stage || !confirmQuizChange())) return;
+  if (!restore && (state.busy || stage === state.stage || !confirmQuizChange())) return false;
+  const previous = activeQuizMode();
+  if (!restore && resourceStages[previous]) {
+    state.resourceViews.set(previous, {
+      book: $('stage-book').value, unit: $('stage-unit').value, section: $('stage-section').value,
+      scroll: $('stage-preview-scroll').scrollTop,
+    });
+  }
   if (!restore && state.quizDirty) renderQuiz();
   closeStageChoice();
   state.stage = Object.hasOwn(stages, stage) ? stage : 'catalog';
-  const mode = activeQuizMode();
-  if (mode) renderQuizStage(mode);
   for (const button of document.querySelectorAll('[data-stage]')) {
     const selected = button.dataset.stage === state.stage;
     button.setAttribute('aria-pressed', String(selected));
   }
   for (const panel of stagePanels) $(panel).hidden = panel !== stages[state.stage];
+  const mode = activeQuizMode();
+  if (mode) renderQuizStage(mode);
+  if (!restore && window.scrollY > $('lesson-tools').offsetTop) window.scrollTo(0, $('lesson-tools').offsetTop);
   rememberView();
   renderSubmission();
   if (state.stage === 'progress') void loadProgress();
+  return true;
 }
 
 function progressRows(name, filter, select) {
@@ -219,41 +229,63 @@ async function loadProgress() {
       group.className = 'progress-track';
       const title = document.createElement('h3');
       title.textContent = label;
-      group.append(title);
+      const heading = document.createElement('div');
+      heading.className = 'progress-track-head';
+      heading.append(title);
+      group.append(heading);
       if (!course) {
         const pending = document.createElement('p');
         pending.className = 'muted';
         pending.textContent = '커리큘럼 확정 대기';
-        group.append(pending);
+        heading.append(pending);
       } else {
+        const courseLessons = lessons.filter(lesson => lesson.course_id === course.id).sort((a, b) => a.lesson - b.lesson);
+        const courseModes = [...new Set(courseLessons.flatMap(lesson => lessonModes(lesson, course)))];
+        const courseSubmissions = submissions.filter(item => item.course_id === course.id);
+        const summary = document.createElement('p');
+        summary.className = 'muted';
+        summary.textContent = '제출 ' + new Set(courseSubmissions.map(item => item.lesson)).size + ' / ' + courseLessons.length;
+        heading.append(summary);
         const progress = document.createElement('table');
         progress.setAttribute('aria-label', label + ' 회차별 작업현황');
         const head = progress.createTHead().insertRow();
-        for (const text of ['회차', '수업 문항', '퀴즈', '제출']) {
+        const quizHeaders = courseModes.map(mode => quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제');
+        for (const text of ['회차', '수업 문항', ...quizHeaders, '상태']) {
           const header = document.createElement('th');
           header.scope = 'col';
           header.textContent = text;
           head.append(header);
         }
         const body = progress.createTBody();
-        const courseLessons = lessons.filter(lesson => lesson.course_id === course.id).sort((a, b) => a.lesson - b.lesson);
         for (const lesson of courseLessons) {
           const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
-          const submitted = submissions.filter(matches).sort((a, b) => b.submitted_at.localeCompare(a.submitted_at))[0];
+          const submitted = courseSubmissions.filter(matches).sort((a, b) => b.submitted_at.localeCompare(a.submitted_at))[0];
           const row = body.insertRow();
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = lesson.lesson + '강';
-          button.title = dateLabel.format(new Date(lesson.live_date + 'T00:00:00Z')) + ' · ' + lesson.topic;
+          button.title = lesson.topic;
           button.addEventListener('click', () => openProgressLesson(course, lesson.lesson));
-          row.insertCell().append(button);
+          const date = document.createElement('time');
+          date.className = 'date';
+          date.dateTime = lesson.live_date;
+          date.textContent = dateLabel.format(new Date(lesson.live_date + 'T00:00:00Z'));
+          row.insertCell().append(button, date);
           row.insertCell().textContent = picks.filter(matches).length + ' / ' + course.lesson_slots;
-          row.insertCell().textContent = lessonModes(lesson, course).map(mode => {
+          for (const mode of courseModes) {
+            const progress = row.insertCell();
+            if (!lessonModes(lesson, course).includes(mode)) {
+              progress.textContent = '—';
+              continue;
+            }
             const completed = mode === 'teacher' ? quizzes.filter(matches).length
               : extras.filter(item => matches(item) && savedResourceMode(item, lesson) === mode).length;
-            return [quizModes[mode].number, completed + ' / ' + quizCount(mode)].filter(Boolean).join(' ');
-          }).join(' · ');
-          row.insertCell().textContent = submitted?.sync_status === 'synced' ? '시트 반영' : submitted ? '제출됨' : '미제출';
+            progress.textContent = completed + ' / ' + quizCount(mode);
+          }
+          const status = row.insertCell();
+          status.className = 'progress-status';
+          status.dataset.state = submitted ? 'done' : 'pending';
+          status.textContent = submitted?.sync_status === 'synced' ? '시트 반영' : submitted ? '제출됨' : '미제출';
         }
         group.append(progress);
       }
@@ -366,6 +398,7 @@ async function loadCourse() {
   $('google-help').hidden = true;
   $('topic').textContent = '';
   $('lesson').disabled = true;
+  $('progress-button').disabled = true;
   $('load-status').textContent = '회차와 교재를 불러오는 중입니다.';
   state.lessons = [];
   state.catalog = [];
@@ -421,6 +454,7 @@ async function loadLesson() {
     state.submitted = submissions[0] ?? null;
     state.stagePicks = new Map(resourceModes.map(mode => [mode, new Map()]));
     state.stageEdits = new Map(resourceModes.map(mode => [mode, new Map()]));
+    state.resourceViews = new Map();
     for (const item of stagePicks) {
       state.stagePicks.get(item.stage_mode)?.set(item.slot, item.question_id);
       if (item.quiz_override) state.stageEdits.get(item.stage_mode)?.set(item.slot, item.quiz_override);
@@ -452,8 +486,12 @@ async function loadLesson() {
       });
     state.quizDirty = false;
     $('export-status').textContent = '';
+    $('selection-status').textContent = '';
+    $('submit-feedback').textContent = '';
     $('load-status').textContent = '';
     $('lesson-tools').hidden = false;
+    $('progress-button').hidden = false;
+    $('progress-button').disabled = false;
     const books = lessonCatalog();
     $('catalog-empty').hidden = Boolean(books.length);
     $('catalog-fields').hidden = !books.length;
@@ -521,10 +559,12 @@ function renderQuizStage(mode) {
   $('resource-stage').hidden = mode === 'teacher';
   $('quiz-heading').textContent = stageTitle(mode);
   if (mode === 'teacher') return;
+  const previous = state.resourceViews.get(mode);
   $('stage-copy').textContent = resourceStages[mode].copy;
   $('stage-status').textContent = '';
-  options($('stage-book'), values(stageCatalog(), 'book'));
-  setStageUnit(currentLesson().unit);
+  options($('stage-book'), values(stageCatalog(), 'book'), previous?.book);
+  setStageUnit(previous?.unit ?? currentLesson().unit, previous?.section);
+  if (previous) $('stage-preview-scroll').scrollTop = previous.scroll;
 }
 
 function lessonCatalog() {
@@ -556,6 +596,7 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
     label.textContent = slotLabel(slot);
     const select = document.createElement('select');
     const selected = state.catalog.find(question => question.question_id === selectedIds.get(slot));
+    label.dataset.filled = String(Boolean(selected));
     const choices = [['', '문항 선택'], ...questions.map(question => [question.question_id, question.label])];
     if (selected && !questions.includes(selected)) choices.splice(1, 0, [selected.question_id, selected.label + ' · 저장됨']);
     options(select, choices, selected?.question_id);
@@ -572,26 +613,28 @@ function renderPicks() {
     question.unit === $('unit').value && question.section === $('section').value);
   $('question-count').textContent = state.picks.size + ' / ' + lessonSlots() + '개 선정';
   const labels = slot => (slot <= requiredLessonSlots() ? '기본 ' : '예비 ') + slot + '번';
-  $('question-slots').replaceChildren(...pickControls(lessonSlots(), state.picks, current, labels, savePick));
+  const controls = pickControls(lessonSlots(), state.picks, current, labels, savePick);
+  controls.slice(requiredLessonSlots()).forEach(control => control.classList.add('reserve'));
+  $('question-slots').replaceChildren(...controls);
 }
 
 function stageQuestionsForBook() {
   return stageCatalog().filter(q => q.book === $('stage-book').value);
 }
 
-function setStageUnit(preferred) {
+function setStageUnit(preferred, section) {
   const available = values(stageQuestionsForBook(), 'unit');
   options($('stage-unit'), available, preferred);
-  setStageSection();
+  setStageSection(section);
 }
 
 function selectedStageUnitQuestions() {
   return stageQuestionsForBook().filter(q => q.unit === $('stage-unit').value);
 }
 
-function setStageSection() {
+function setStageSection(preferred) {
   const sections = values(selectedStageUnitQuestions(), 'section');
-  options($('stage-section'), sections, $('stage-section').value);
+  options($('stage-section'), sections, preferred ?? $('stage-section').value);
   renderStagePicks();
   renderStagePreview();
 }
@@ -710,7 +753,7 @@ async function withSaving(work, statusId) {
 async function savePick(slot, value, select, mode) {
   const picks = mode ? state.stagePicks.get(mode) : state.picks;
   const name = mode ? resourceSelections : 'math_selections';
-  const status = mode ? 'stage-status' : 'load-status';
+  const status = mode ? 'stage-status' : 'selection-status';
   const previous = picks.get(slot);
   const question = state.catalog.find(item => item.question_id === Number(value));
   if (!question && !previous) return;
@@ -743,6 +786,8 @@ async function savePick(slot, value, select, mode) {
       if (state.stageEditSlot === slot) closeStageChoice();
       renderStagePicks();
     } else renderPicks();
+    $(status).textContent = question ? slot + '번 자리에 ' + question.label + '을 저장했습니다.'
+      : slot + '번 문항을 비웠습니다.';
   }, status);
   if (select.isConnected) select.value = picks.get(slot) ?? '';
 }
@@ -895,23 +940,57 @@ async function saveQuiz(event) {
   }, 'quiz-status');
 }
 
+function renderSubmissionChecklist(items) {
+  if (!state.composer) return;
+  $('submission-checklist').replaceChildren(...items.map(({ stage, title, count, total, detail, ready }) => {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    const label = document.createElement('span');
+    const status = document.createElement('small');
+    button.type = 'button';
+    button.dataset.ready = String(ready);
+    button.disabled = state.busy;
+    label.textContent = title;
+    status.textContent = count + ' / ' + total + ' · ' + detail;
+    button.append(label, status);
+    button.addEventListener('click', () => {
+      if (showStage(stage)) document.querySelector('[data-stage="' + stage + '"]').focus({preventScroll:true});
+    });
+    li.append(button);
+    return li;
+  }));
+}
+
 function renderSubmission() {
   updateStageProgress();
-  const basic = Array.from({ length: requiredLessonSlots() }, (_, i) => i + 1).every(slot => state.picks.has(slot));
-  const modes = lessonModes();
-  const missing = modes.find(mode =>
-    (mode === 'teacher' ? state.quizzes.size : state.stagePicks.get(mode)?.size ?? 0) !== quizCount(mode));
-  const conversions = modes.find(mode => usesQuizAndResources(mode) &&
-    [...(state.stagePicks.get(mode)?.keys() ?? [])].some(slot =>
-      selectedStagePick(slot, mode)?.five_choice && !state.stageEdits.get(mode).has(slot)));
-  const ready = basic && !missing && !state.quizDirty && !state.stageDirty && !conversions;
+  const totalBasics = requiredLessonSlots();
+  const selectedBasics = [...state.picks.keys()].filter(slot => slot <= totalBasics).length;
+  const basic = selectedBasics === totalBasics;
+  const groups = lessonModes().map(mode => {
+    const picks = state.stagePicks.get(mode);
+    const count = mode === 'teacher' ? state.quizzes.size : picks?.size ?? 0;
+    const total = quizCount(mode);
+    const conversion = usesQuizAndResources(mode) && [...(picks?.keys() ?? [])].some(slot =>
+      selectedStagePick(slot, mode)?.five_choice && !state.stageEdits.get(mode).has(slot));
+    const unsaved = mode === 'teacher' ? state.quizDirty : mode === activeQuizMode() && state.stageDirty;
+    const ready = count === total && !conversion && !unsaved;
+    const detail = unsaved ? '저장 필요' : conversion ? '4지선다 편집 필요' : ready ? '완료' : '작성 필요';
+    return { stage:quizModes[mode].stage, title:stageTitle(mode), count, total, conversion, unsaved, ready, detail };
+  });
+  const missing = groups.find(group => !group.ready);
+  const ready = basic && !missing;
+  renderSubmissionChecklist([
+    { stage:'catalog', title:'기본 수업 문항', count:selectedBasics, total:totalBasics,
+      detail:basic ? '완료' : '선정 필요', ready:basic },
+    ...groups,
+  ]);
   $('submit').disabled = state.busy || !ready || Boolean(state.submitted && !state.edited);
   $('submit').textContent = state.submitted ? '수정본 제출' : '회차 제출';
   if (!ready) {
     $('submit-status').textContent = !basic ? '기본 문항 ' + requiredLessonSlots() + '개를 먼저 골라 주세요.'
-      : state.quizDirty || state.stageDirty ? '입력한 퀴즈를 저장해 주세요.'
-        : conversions ? stageTitle(conversions) + '의 5지선다 문항을 4지선다로 편집해 주세요.'
-        : stageTitle(missing) + ' 문항을 모두 채워 주세요.';
+      : missing.unsaved ? '입력한 퀴즈를 저장해 주세요.'
+        : missing.conversion ? missing.title + '의 5지선다 문항을 4지선다로 편집해 주세요.'
+        : missing.title + ' 문항을 모두 채워 주세요.';
   } else if (state.submitted && !state.edited) {
     const submitted = new Date(state.submitted.submitted_at).toLocaleString('ko-KR');
     $('submit-status').textContent = '제출 완료 · ' + submitted + (state.submitted.sync_status === 'synced' ? ' · Google 반영 완료' : ' · Google 연결 대기');
@@ -921,6 +1000,8 @@ function renderSubmission() {
 }
 
 async function submit() {
+  if ($('submit').disabled) return;
+  $('submit-feedback').textContent = '';
   await withSaving(async () => {
     const rows = await table('math_submissions', { select: 'id,submitted_at,sync_status,selections,quizzes,stage_questions' }, 'POST', {
       course_id: currentCourse().id, lesson: currentLesson().lesson,
@@ -933,7 +1014,7 @@ async function submit() {
     $('ppt-result').removeAttribute('href');
     $('export-status').textContent = '';
     resetSheetResult();
-  }, 'load-status');
+  }, 'submit-feedback');
 }
 
 function resultLink(value) {
@@ -1249,14 +1330,15 @@ function previewPath(course, book, page) {
   return '/storage/v1/object/authenticated/math-teaching-materials/' + assetKey(course, book, page);
 }
 
-function insertSymbol(value, cursor, selectionLength = 0) {
-  const input = formulaTarget.closest('[hidden]') ? $('quiz-prompt') : formulaTarget;
+function insertSymbol(fallback, value, cursor, selectionLength = 0) {
+  const input = formulaTarget.closest('form') === fallback.closest('form') && !formulaTarget.closest('[hidden]')
+    ? formulaTarget : fallback;
   const start = input.selectionStart ?? input.value.length;
   const end = input.selectionEnd ?? start;
   input.focus();
   input.setRangeText(value, start, end, 'end');
   if (cursor !== undefined) input.setSelectionRange(start + cursor, start + cursor + selectionLength);
-  input.dispatchEvent(new Event('input'));
+  input.dispatchEvent(new Event('input', {bubbles:true}));
 }
 
 for (const [label, value, aria, cursor, selectionLength] of [
@@ -1267,13 +1349,15 @@ for (const [label, value, aria, cursor, selectionLength] of [
   ['≠', '≠', '같지 않음'], ['≤', '≤', '작거나 같음'], ['≥', '≥', '크거나 같음'],
   ['∠', '∠', '각'], ['°', '°', '도'], ['∥', '∥', '평행'], ['⊥', '⊥', '수직'], ['π', 'π', '파이'],
 ]) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = label;
-  button.title = aria;
-  button.setAttribute('aria-label', aria);
-  button.addEventListener('click', () => insertSymbol(value, cursor, selectionLength));
-  $('symbols').append(button);
+  for (const [toolbarId, inputId] of [['symbols','quiz-prompt'], ['stage-symbols','stage-choice-prompt']]) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.title = aria;
+    button.setAttribute('aria-label', aria);
+    button.addEventListener('click', () => insertSymbol($(inputId), value, cursor, selectionLength));
+    $(toolbarId).append(button);
+  }
 }
 
 function confirmQuizChange() {
@@ -1302,6 +1386,9 @@ for (const id of formulaInputs) {
     renderSubmission();
   });
 }
+for (const id of ['stage-choice-prompt', ...stageChoiceIds]) {
+  $(id).addEventListener('focus', () => { formulaTarget = $(id); });
+}
 for (const id of ['quiz-kind', 'quiz-choice-answer']) {
   $(id).addEventListener('change', () => {
     state.quizDirty = true;
@@ -1320,7 +1407,7 @@ $('section').addEventListener('change', () => {
   renderCatalogPreview();
 });
 $('stage-book').addEventListener('change', () => setStageUnit(currentLesson().unit));
-$('stage-unit').addEventListener('change', setStageSection);
+$('stage-unit').addEventListener('change', () => setStageSection());
 $('stage-section').addEventListener('change', () => {
   renderStagePicks();
   renderStagePreview();
