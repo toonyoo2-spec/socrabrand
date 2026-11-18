@@ -93,7 +93,7 @@ function placeProblem(slide, image) {
   slide.addImage({ data: image.data, x: .47, y: 2.04, w: image.w * link, h: image.h * link });
 }
 
-export async function buildPresentation({ title, picks, quizzes, appendix }, loadImage) {
+export async function buildPresentation({ title, picks, quizzes, appendix, stageLabel = '퀴즈앤 · 교사부록' }, loadImage) {
   const Pptx = await loadPptx();
   const deck = new Pptx();
   deck.layout = 'LAYOUT_WIDE';
@@ -110,8 +110,12 @@ export async function buildPresentation({ title, picks, quizzes, appendix }, loa
   }
   for (const quiz of quizzes) {
     const slide = frame(deck, '퀴즈앤 · 직접 출제', '문항 ' + quiz.slot, 'teacher');
-    const choices = quiz.kind === 'choice' ? '\n\n' + quiz.choices.split('\n')
-      .map((choice, index) => (index + 1) + '. ' + choice).join('\n') : quiz.kind === 'ox' ? '\n\nO   /   X' : '';
+    const options = quiz.kind === 'choice' ? quiz.choices.split('\n') : [];
+    if (quiz.kind === 'choice' && (options.length !== 4 || options.some(choice => !choice.trim()) || !/^[1-4]$/.test(quiz.answer))) {
+      throw Error('객관식 문항의 보기 4개와 정답을 확인해 주세요.');
+    }
+    const choices = options.length ? '\n\n' + options.map((choice, index) => (index + 1) + '. ' + choice).join('\n')
+      : quiz.kind === 'ox' ? '\n\nO   /   X' : '';
     slide.addText(equationRuns(quiz.prompt + choices), {
       x: .47, y: 2.04, w: 7.15, h: 3.36, color: 'FFFFFF', margin: 0, valign: 'top', fontFace: FONT,
       fontSize: 26, fit: 'shrink', breakLine: false,
@@ -119,8 +123,8 @@ export async function buildPresentation({ title, picks, quizzes, appendix }, loa
     slide.addNotes('퀴즈앤 직접 출제 · 정답 ' + quiz.answer);
   }
   for (const question of appendix) {
-    const slide = frame(deck, '퀴즈앤 · 교사부록', question.label, 'appendix');
-    const image = await paintProblem(await loadImage(question));
+    const slide = frame(deck, stageLabel, question.book ? question.book + ' ' + question.label : question.label, 'appendix');
+    const image = await paintProblem(await loadImage(question), question.slide_crop);
     placeProblem(slide, image);
   }
   return new Blob([await deck.write({ outputType: 'arraybuffer', compression: true })], { type: MIME });

@@ -28,17 +28,17 @@ function checkGoogleResponse(response, message) {
   return response.json();
 }
 
-export async function connectStaffDrive() {
+export async function connectStaffGoogle(requiredScope) {
   const clientId = await prepareGoogleDrive();
   const token = await new Promise((resolve, reject) => {
     window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'openid email ' + scope,
+      scope: 'openid email ' + requiredScope,
       include_granted_scopes: false,
       hd: 'socra.ai',
       callback: result => {
-        if (!result.access_token || !String(result.scope).split(' ').includes(scope)) {
-          reject(Error('Google Drive 파일 저장 권한을 확인해 주세요.'));
+        if (!result.access_token || !String(result.scope).split(' ').includes(requiredScope)) {
+          reject(Error('이 작업에 필요한 Google 권한을 확인해 주세요.'));
           return;
         }
         resolve(result.access_token);
@@ -53,6 +53,10 @@ export async function connectStaffDrive() {
     throw Error('회사 Google 계정(@socra.ai)으로 연결해 주세요.');
   }
   return { headers, email: profile.email };
+}
+
+export function connectStaffDrive() {
+  return connectStaffGoogle(scope);
 }
 
 export async function saveToStaffDrive(connection, blob, name, submission) {

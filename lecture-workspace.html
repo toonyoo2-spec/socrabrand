@@ -57,16 +57,17 @@
     <nav class="tool-links" role="tablist" aria-label="강의 제작 도구">
       <button id="tab-notes" role="tab" aria-selected="true" aria-controls="panel-notes" data-tool="notes">RC 강의노트</button>
       <button id="tab-editing" role="tab" aria-selected="false" aria-controls="panel-editing" tabindex="-1" data-tool="editing">RC 편집스크립트</button>
-      <button id="tab-math" role="tab" aria-selected="false" aria-controls="panel-math" tabindex="-1" data-tool="math">수학자동화</button>
+      <button id="tab-math" hidden role="tab" aria-selected="false" aria-controls="panel-math" tabindex="-1" data-tool="math">수학자동화</button>
     </nav>
   </header>
   <main>
     <section id="panel-notes" role="tabpanel" aria-labelledby="tab-notes"><iframe id="frame-notes" title="RC 강의노트 작업" src="lesson-notes.html?embed=1&amp;v=20261016-consistency-1" data-src="lesson-notes.html?embed=1&amp;v=20261016-consistency-1"></iframe></section>
     <section id="panel-editing" role="tabpanel" aria-labelledby="tab-editing" hidden><iframe id="frame-editing" allow="clipboard-write" title="RC 편집스크립트 작업" src="editing-script.html?embed=1&amp;v=20261016-onebook-1" data-src="editing-script.html?embed=1&amp;v=20261016-onebook-1"></iframe></section>
-    <section id="panel-math" role="tabpanel" aria-labelledby="tab-math" hidden><iframe id="frame-math" title="수학자동화" data-src="math-automation/?v=20261118-3" referrerpolicy="no-referrer"></iframe></section>
+    <section id="panel-math" role="tabpanel" aria-labelledby="tab-math" hidden><iframe id="frame-math" title="수학자동화" data-src="math-automation/?v=20261118-4" referrerpolicy="no-referrer"></iframe></section>
   </main>
   <script>
     const tabs = [...document.querySelectorAll('[data-tool]')];
+    const visibleTabs = tabs.filter(tab => !tab.hidden);
     const toolTitles = { notes: 'RC 강의노트', editing: 'RC 편집스크립트', math: '수학자동화' };
     function activate(tool, write = true) {
       if (!Object.hasOwn(toolTitles, tool)) tool = 'notes';
@@ -93,14 +94,14 @@
     tabs.forEach(tab => {
       tab.onclick = () => selectTool(tab.dataset.tool);
       tab.onkeydown = e => {
-        let index = tabs.indexOf(tab);
-        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') index = (index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        let index = visibleTabs.indexOf(tab);
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') index = (index + (e.key === 'ArrowRight' ? 1 : -1) + visibleTabs.length) % visibleTabs.length;
         else if (e.key === 'Home') index = 0;
-        else if (e.key === 'End') index = tabs.length - 1;
+        else if (e.key === 'End') index = visibleTabs.length - 1;
         else return;
         e.preventDefault();
-        tabs[index].focus();
-        selectTool(tabs[index].dataset.tool);
+        visibleTabs[index].focus();
+        selectTool(visibleTabs[index].dataset.tool);
       };
     });
     window.addEventListener('message', e => {

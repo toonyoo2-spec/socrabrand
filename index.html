@@ -468,7 +468,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             <iframe id="automationFrame" class="automation-frame" title="채팅별 자동화 연결 지도" data-src="automation.html?v=20261023-chat-map-4"></iframe>
         </main>
         <main id="lectureContainer" class="grid-layout-align" style="display: none;">
-            <iframe id="lectureFrame" allow="clipboard-write" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261118-math-3" data-src="lecture-workspace.html?embed=1&amp;v=20261118-math-3"></iframe>
+            <iframe id="lectureFrame" allow="clipboard-write" class="automation-frame" title="LX팀" src="lecture-workspace.html?embed=1&amp;v=20261118-math-4" data-src="lecture-workspace.html?embed=1&amp;v=20261118-math-4"></iframe>
         </main>
         <!-- Reference Page (참고자료) -->
         <main id="referenceContainer" class="grid-layout-align" style="display: none;">
@@ -936,6 +936,18 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             }, 5 * 60 * 1000); // 5분마다 만료 임박 여부 확인
         }
         let currentMainTab = 'archive';
+        let mathAvailable = false;
+        async function refreshMathAccess() {
+            mathAvailable = false;
+            if (!adminToken) return;
+            try {
+                const res = await fetch(SUPABASE_URL + '/rest/v1/math_courses?select=id&limit=1', {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + adminToken },
+                    cache: 'no-store',
+                });
+                if (res.ok) mathAvailable = (await res.json()).length > 0;
+            } catch { /* Keep math hidden when course access cannot be verified. */ }
+        }
         // 탭 권한이 바뀌어도 다시 로그인하지 않게, 앱을 열 때마다 profiles의 role·visible_tabs를 새로 읽는다
         // (예전에 로그인해 role이 저장되지 않은 KWAN 계정도 다시 로그인 없이 편집 권한을 되찾는다)
         async function refreshVisibleTabs() {
@@ -971,7 +983,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
                 // 로그인 상태
                 loginScreen.style.display = 'none';
                 appContainer.style.display = 'block';
-                await refreshVisibleTabs();
+                await Promise.all([refreshVisibleTabs(), refreshMathAccess()]);
                 await refreshCreativeOwner();
                 applyAdminMode();
                 setupQuickLinksScroll();
@@ -1147,8 +1159,8 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if(tabName === 'skills') return creativeOwner === true;
             if(tabName === 'creative-six' || tabName === 'agency') return creativeOwner === true;
             // 편집 권한(KWAN) 계정은 나머지 탭을 모두 본다
+            if (tabName === 'lecture/math') return mathAvailable;
             if (userRole === 'editor') return true;
-            if (tabName === 'lecture/math') return visibleTabs.includes(tabName);
             // 아카이브·자료실·LX가 없는 팀 계정(CX·RA 등)은 visible_tabs에 적힌 탭만 본다 (예: ['gv-report','reference','tutorial'])
             if (!visibleTabs.some(t => ['archive', 'library', 'lecture'].includes(t))) {
                 return visibleTabs.includes(tabName);
@@ -1171,7 +1183,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (visibleTabs.includes('archive')) return 'archive';
             if (visibleTabs.includes('library')) return 'library';
             if (visibleTabs.includes('lecture')) return 'lecture';
-            if (visibleTabs.includes('lecture/math')) return 'lecture/math';
+            if (mathAvailable) return 'lecture/math';
             return 'reference';
         }
         function switchMainTab(tabName) {
@@ -1309,7 +1321,7 @@ footer { font-family: var(--font-mono); font-size: 0.7rem !important; letter-spa
             if (!frame.getAttribute('src')) {
                 const url = new URL(frame.dataset.src, location.href);
                 url.searchParams.set('tool', tool);
-                url.searchParams.set('v', '20261118-math-3');
+                url.searchParams.set('v', '20261118-math-4');
                 frame.src = url.href;
             } else frame.contentWindow.postMessage({type:'socra:activate-tool',tool}, location.origin);
         }

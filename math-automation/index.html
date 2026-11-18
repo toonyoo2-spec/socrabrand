@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=4">
-  <script type="module" src="math.mjs?v=7"></script>
+  <link rel="stylesheet" href="math.css?v=5">
+  <script type="module" src="math.mjs?v=8"></script>
 </head>
 <body>
   <main>
@@ -30,33 +30,32 @@
         </div>
         <p id="topic" class="topic"></p>
         <p id="load-status" aria-live="polite"></p>
-        <div id="actions" class="buttons" hidden>
-          <a id="curriculum" class="button" target="_blank" rel="noopener noreferrer" hidden>이 회차 커리큘럼</a>
-          <a id="review" class="button" target="_blank" rel="noopener noreferrer" hidden>1강 검수</a>
-          <a id="presentation" class="button" target="_blank" rel="noopener noreferrer" hidden>발표자료 열기</a>
-          <span id="no-deck" class="muted" hidden>등록된 발표자료 없음</span>
-        </div>
-        <p id="google-help" class="muted" hidden>운영자용 Google 링크입니다. 선생님은 사이트에서 문항을 고르고 제출할 수 있습니다.</p>
       </div>
       <div id="lesson-tools" hidden>
+        <nav class="stage-nav" aria-label="회차 작업 단계">
+          <button type="button" data-stage="catalog" aria-pressed="true" aria-controls="catalog"><span>수업 문항</span><small id="pick-progress"></small></button>
+          <button type="button" data-stage="quiz" aria-pressed="false" aria-controls="quiz-panel"><span id="quiz-stage-label">퀴즈앤</span><small id="quiz-progress"></small></button>
+          <button type="button" data-stage="delivery" aria-pressed="false" aria-controls="delivery-panel"><span>제출·발표자료</span><small id="delivery-progress"></small></button>
+        </nav>
         <section id="catalog" class="card" aria-labelledby="catalog-heading" hidden>
-          <h2 id="catalog-heading">수업 문항 선정</h2>
-          <div class="fields filters">
+          <div class="panel-heading"><h2 id="catalog-heading">수업 문항 선정</h2><p id="question-count" class="muted" aria-live="polite"></p></div>
+          <p id="catalog-empty" class="muted" hidden>교재 문항을 등록하고 있습니다.</p>
+          <div id="catalog-fields" class="fields filters">
             <label>교재 <select id="book"></select></label>
             <label>단원 <select id="unit"></select></label>
             <label>교재 코너 <select id="section"></select></label>
           </div>
-          <p id="question-count" class="muted" aria-live="polite"></p>
-          <div class="pick-layout">
+          <div id="catalog-picks" class="pick-layout">
             <div id="question-slots" class="slot-grid"></div>
             <aside class="source-preview" aria-labelledby="preview-title">
               <h3 id="preview-title">교재 원본</h3>
-              <p id="preview-status" class="muted" aria-live="polite">왼쪽에서 문항을 고르면 여기에 표시됩니다.</p>
-              <div id="preview-scroll" tabindex="0" aria-label="교재 원본 스크롤"><img id="preview-image" alt="" hidden></div>
+              <p id="preview-status" class="muted" aria-live="polite">선택한 교재 코너의 페이지를 표시합니다.</p>
+              <div id="preview-scroll" class="source-scroll catalog-scroll" tabindex="0" aria-label="교재 코너 페이지 목록"></div>
             </aside>
           </div>
           <details id="asset-admin" hidden>
             <summary>운영자 · 교재 미리보기 등록</summary>
+            <label>등록할 교재 <select id="preview-book"></select></label>
             <label>원본 PDF에서 추출한 쪽 이미지
               <input id="preview-files" type="file" multiple accept="image/webp,.webp">
             </label>
@@ -64,47 +63,94 @@
             <p id="upload-status" class="muted" aria-live="polite"></p>
           </details>
         </section>
-        <section class="card" aria-labelledby="quiz-heading">
-          <h2 id="quiz-heading">퀴즈앤</h2>
-          <div id="teacher-section" class="quiz teacher" hidden>
-            <h3>선생님 직접 출제</h3>
-            <label>문항 <select id="quiz-slot"></select></label>
+        <section id="quiz-panel" class="card" aria-labelledby="quiz-heading" hidden>
+          <div class="panel-heading"><h2 id="quiz-heading">퀴즈앤</h2></div>
+          <form id="teacher-section" class="quiz teacher" novalidate hidden>
             <div class="quiz-fields">
+              <label>문항 <select id="quiz-slot"></select></label>
               <label>문제 유형 <select id="quiz-kind">
                 <option value="short">단답형</option>
                 <option value="ox">O/X</option>
-                <option value="choice">객관식</option>
+                <option value="choice">객관식 · 4지선다</option>
               </select></label>
-              <label>정답 <input id="quiz-answer" maxlength="600" autocomplete="off"></label>
             </div>
-            <div class="symbols" id="symbols" aria-label="수학 기호"></div>
-            <label>문제 <textarea id="quiz-prompt" rows="3" maxlength="2000"></textarea></label>
-            <label id="choices-field" hidden>보기 · 한 줄에 하나씩 <textarea id="quiz-choices" rows="3" maxlength="1500"></textarea></label>
-            <div class="preview" id="quiz-preview" aria-label="문제 미리보기" hidden></div>
-            <div class="buttons">
-              <button type="button" id="quiz-save">퀴즈 문항 저장</button>
-              <span id="quiz-status" class="muted" aria-live="polite"></span>
+            <div class="quiz-layout">
+              <div class="quiz-editor">
+                <label>문제 <textarea id="quiz-prompt" rows="3" maxlength="2000"></textarea></label>
+                <details id="symbol-panel">
+                  <summary>수학 기호 입력</summary>
+                  <div class="symbols" id="symbols" aria-label="수학 기호"></div>
+                </details>
+                <fieldset id="choices-field" class="choice-fields" hidden>
+                  <legend>보기 4개</legend>
+                  <label><span>보기 1</span><input id="quiz-choice-1" type="text" maxlength="1497" autocomplete="off"></label>
+                  <label><span>보기 2</span><input id="quiz-choice-2" type="text" maxlength="1497" autocomplete="off"></label>
+                  <label><span>보기 3</span><input id="quiz-choice-3" type="text" maxlength="1497" autocomplete="off"></label>
+                  <label><span>보기 4</span><input id="quiz-choice-4" type="text" maxlength="1497" autocomplete="off"></label>
+                </fieldset>
+                <label id="quiz-answer-field">정답 <input id="quiz-answer" maxlength="600" autocomplete="off"></label>
+                <label id="quiz-choice-answer-field" hidden>정답 보기 <select id="quiz-choice-answer">
+                  <option value="">정답 선택</option><option value="1">1번</option><option value="2">2번</option>
+                  <option value="3">3번</option><option value="4">4번</option>
+                </select></label>
+                <p id="legacy-choices" class="muted" hidden></p>
+              </div>
+              <aside class="quiz-review" aria-labelledby="quiz-review-heading">
+                <h3 id="quiz-review-heading">미리보기</h3>
+                <p id="quiz-preview-empty" class="muted">문제를 입력하면 여기에 표시됩니다.</p>
+                <div class="preview" id="quiz-preview" hidden></div>
+                <ol id="quiz-preview-choices" hidden></ol>
+              </aside>
             </div>
-          </div>
-          <div id="appendix-section" class="quiz appendix" hidden>
-            <h3>교사부록 문항</h3>
-            <p>3문항 · 2분 / 2분 / 3분</p>
-            <p id="appendix-note" class="muted">부록 자료 준비 중</p>
+            <div class="save-row">
+              <p id="quiz-status" class="muted" role="status"></p>
+              <button type="submit" class="button primary" id="quiz-save">퀴즈 문항 저장</button>
+            </div>
+          </form>
+          <div id="resource-stage" hidden>
+            <p id="stage-copy" class="muted"></p>
+            <div id="stage-material" class="pick-layout">
+              <div>
+                <label>단원 <select id="stage-unit"></select></label>
+                <div id="stage-picks" class="slot-grid"></div>
+                <p id="stage-status" class="muted" role="status"></p>
+              </div>
+              <aside class="source-preview" aria-labelledby="stage-preview-title">
+                <h3 id="stage-preview-title">교재 원본</h3>
+                <p id="stage-preview-status" class="muted" aria-live="polite"></p>
+                <div id="stage-preview-scroll" class="source-scroll" tabindex="0" aria-label="교재 원본 스크롤"><img id="stage-preview-image" class="source-image" alt="" hidden></div>
+              </aside>
+            </div>
           </div>
         </section>
+        <div id="delivery-panel" hidden>
         <section id="submission-panel" class="card submit" aria-labelledby="submit-heading">
           <div><h2 id="submit-heading">회차 제출</h2><p id="submit-status" class="muted" aria-live="polite"></p></div>
           <button type="button" class="button primary" id="submit">회차 제출</button>
         </section>
         <section id="staff-panel" class="card" aria-labelledby="export-heading" hidden>
-          <h2 id="export-heading">빔용 PPT 만들기</h2>
+          <h2 id="export-heading">제출본 반영</h2>
           <p id="export-status" class="muted" aria-live="polite"></p>
           <div class="buttons">
+            <button class="button primary" id="sheet-sync" type="button">Google 시트에 반영</button>
             <button class="button" id="ppt-download" type="button">PPT 다운로드</button>
-            <button class="button primary" id="ppt-drive" type="button">회사 Google Drive에 저장</button>
+            <button class="button" id="ppt-drive" type="button">회사 Google Drive에 저장</button>
             <a id="ppt-result" class="button" target="_blank" rel="noopener noreferrer" hidden>저장한 PPT 열기</a>
           </div>
+          <p id="sheet-status" class="muted" role="status"></p>
         </section>
+          <details id="staff-links" class="card" hidden>
+            <summary>Google 자료 링크</summary>
+        <div id="actions" class="buttons" hidden>
+          <a id="curriculum" class="button" target="_blank" rel="noopener noreferrer" hidden>이 회차 커리큘럼</a>
+          <a id="review" class="button" target="_blank" rel="noopener noreferrer" hidden>1강 검수</a>
+          <a id="presentation" class="button" target="_blank" rel="noopener noreferrer" hidden>발표자료 열기</a>
+          <span id="no-deck" class="muted" hidden>등록된 발표자료 없음</span>
+        </div>
+        <ul id="material-links" class="material-links"></ul>
+        <p id="google-help" class="muted" hidden>회사 계정 권한으로 열립니다.</p>
+          </details>
+        </div>
       </div>
     </section>
   </main>
