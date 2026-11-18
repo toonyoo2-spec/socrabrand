@@ -4,6 +4,7 @@ import { supabaseUrl, publishableKey } from './public-config.mjs';
 
 const $ = id => document.getElementById(id);
 const tokenKey = 'socra_admin_token';
+const accountKey = 'socra_user_id';
 const dateLabel = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', timeZone: 'UTC' });
 const quizSeconds = [30, 30, 60, 60, 120];
 const formulaInputs = ['quiz-prompt', 'quiz-answer', 'quiz-choices'];
@@ -124,6 +125,7 @@ async function loadSite() {
   state.lessons = [];
   state.catalog = [];
   state.token = localStorage.getItem(tokenKey);
+  state.account = localStorage.getItem(accountKey);
   const token = state.token;
   if (!token) {
     showStatus('수학자동화는 권한이 있는 사이트 계정으로 사용할 수 있습니다.', { login: true });
@@ -659,8 +661,10 @@ protectUnsaved($('course'), loadCourse);
 protectUnsaved($('lesson'), loadLesson);
 protectUnsaved($('quiz-slot'), renderQuiz);
 window.addEventListener('storage', event => {
-  if (!event.key || event.key === tokenKey) {
-    if (localStorage.getItem(tokenKey) !== state.token) void loadSite();
-  }
+  if (event.key && event.key !== tokenKey && event.key !== accountKey) return;
+  const token = localStorage.getItem(tokenKey);
+  const account = localStorage.getItem(accountKey);
+  if (token && state.token && account === state.account) state.token = token;
+  else if (token !== state.token || account !== state.account) void loadSite();
 });
 void loadSite();
