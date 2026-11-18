@@ -2,7 +2,7 @@ import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=7';
 import { buildPresentation } from './presentation.mjs?v=8';
 import { prepareGoogleDrive, connectStaffDrive, listDriveFolders, listSharedDrives, saveSlidesToStaffDrive } from './google-drive.mjs?v=7';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
-import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=1';
+import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=2';
 
 const $ = id => document.getElementById(id);
 const tokenKey = 'socra_admin_token';

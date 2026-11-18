@@ -70,6 +70,7 @@ function element(tag, className, text) {
 export function mountMathSymbols(root, fields) {
   const [defaultField] = fields;
   let lastInput = defaultField;
+  let hintMode;
   const activeInput = () => lastInput.disabled || lastInput.closest('[hidden]') ? defaultField : lastInput;
   const title = element('h3', null, '수학 기호 입력');
   title.id = root.id + '-heading';
@@ -88,11 +89,19 @@ export function mountMathSymbols(root, fields) {
   const details = element('details', 'math-more-symbols');
   details.append(element('summary', null, '기호 더 보기'));
 
+  function setHint(message = '', mode) {
+    hint.textContent = message;
+    hintMode = mode;
+  }
+
   function update() {
     const input = activeInput();
     const label = input.labels?.[0]?.textContent.trim() || '문제';
     target.textContent = '입력 위치 · ' + label;
-    next.hidden = fractionDestination(input, false) === null;
+    const pendingFraction = fractionDestination(input, false) !== null;
+    next.hidden = !pendingFraction;
+    if ((hintMode === 'fraction' && !pendingFraction)
+      || (hintMode === 'power' && !/\^\{\s*\}/.test(input.value))) setHint();
   }
 
   function moveToDenominator(activeOnly) {
@@ -101,7 +110,7 @@ export function mountMathSymbols(root, fields) {
     if (start === null) return false;
     input.focus();
     input.setSelectionRange(start, start + 2);
-    hint.textContent = '분모를 입력하세요.';
+    setHint('분모를 입력하세요.', 'fraction');
     return true;
   }
 
@@ -119,13 +128,13 @@ export function mountMathSymbols(root, fields) {
         const end = input.selectionEnd ?? start;
         const { text, start: offset, length = 0 } = format?.(input.value.slice(start, end)) ?? { text:mark };
         if (input.maxLength >= 0 && input.value.length - (end - start) + text.length > input.maxLength) {
-          hint.textContent = '입력할 수 있는 길이를 넘겼습니다.';
+          setHint('입력할 수 있는 길이를 넘겼습니다.');
           return;
         }
         input.focus();
         input.setRangeText(text, start, end, 'end');
         if (offset !== undefined) input.setSelectionRange(start + offset, start + offset + length);
-        hint.textContent = message ?? '';
+        setHint(message, format === fraction ? 'fraction' : format === power ? 'power' : undefined);
         input.dispatchEvent(new Event('input', { bubbles:true }));
       });
       group.append(button);
@@ -146,7 +155,7 @@ export function mountMathSymbols(root, fields) {
   next.addEventListener('click', () => moveToDenominator(false));
   for (const input of fields) {
     input.addEventListener('focus', () => {
-      if (input !== lastInput) hint.textContent = '';
+      if (input !== lastInput) setHint();
       lastInput = input;
       update();
     });
@@ -159,7 +168,7 @@ export function mountMathSymbols(root, fields) {
   root.append(heading, primary, feedback, details);
   function reset() {
     lastInput = defaultField;
-    hint.textContent = '';
+    setHint();
     details.open = false;
     update();
   }
