@@ -12,6 +12,10 @@
 body { margin: 0; }
 main { max-width: 1050px; margin: auto; padding: 30px 24px 64px; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.help-menu { position: relative; flex: none; color: var(--green); }
+.help-menu summary { cursor: pointer; font-size: .9rem; font-weight: 650; }
+.help-menu ol { position: absolute; z-index: 2; right: 0; width: min(280px, 85vw); margin: 10px 0 0; padding: 13px 14px 13px 32px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 5px 16px #153a2e12; font-size: .88rem; line-height: 1.6; }
+.help-menu li + li { margin-top: 5px; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { font-size: clamp(1.65rem, 4vw, 2.25rem); letter-spacing: -.04em; margin-bottom: 0; }
 h2 { font-size: 1.22rem; margin-bottom: 14px; }
@@ -78,9 +82,6 @@ button:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
 .source-preview h3 { margin-bottom: 5px; }
 .source-scroll { max-height: 440px; overflow-y: auto; overflow-x: hidden; border-radius: 5px; }
 .source-image { display: block; width: 100%; height: auto; }
-#asset-admin { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 11px; }
-#asset-admin summary { cursor: pointer; font-size: .88rem; color: var(--muted); }
-#asset-admin label, #preview-upload, #upload-status { margin-top: 8px; }
 @media (max-width: 700px) {
   .pick-layout { grid-template-columns: minmax(0,1fr); gap: 8px; }
   .source-scroll { max-height: 260px; }
@@ -99,9 +100,13 @@ button:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
 .quiz-fields { margin: 0 0 16px; }
 .quiz-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(250px, .75fr); gap: 18px; align-items: start; }
 .quiz-editor { display: grid; gap: 12px; min-width: 0; }
-.quiz-editor details { color: var(--muted); font-size: .87rem; }
-.quiz-editor summary, #staff-links summary { cursor: pointer; font-weight: 650; }
+#staff-links summary { cursor: pointer; font-weight: 650; }
+#symbol-panel h3 { font-size: .9rem; margin-bottom: 3px; }
+#symbol-panel p { font-size: .8rem; margin: 0; }
 #symbol-panel .symbols { margin: 8px 0 0; }
+.fraction { display: inline-grid; vertical-align: middle; text-align: center; line-height: 1.12; margin: 1px 2px; }
+.fraction > span { padding: 0 3px; }
+.fraction > :first-child { border-bottom: 1px solid currentColor; }
 .choice-fields { min-width: 0; padding: 0; border: 0; }
 #choices-field { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; }
 .choice-fields legend { margin-bottom: 7px; padding: 0; font-size: .9rem; font-weight: 680; }

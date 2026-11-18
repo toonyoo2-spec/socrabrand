@@ -7,14 +7,21 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=6">
-  <script type="module" src="math.mjs?v=9"></script>
+  <link rel="stylesheet" href="math.css?v=7">
+  <script type="module" src="math.mjs?v=11"></script>
 </head>
 <body>
   <main>
     <header class="heading">
       <h1>수학자동화</h1>
-      <a id="home" href="../#lecture/math" target="_top">LX팀 홈</a>
+      <details class="help-menu">
+        <summary>사용 방법</summary>
+        <ol>
+          <li>회차를 고르고 수업 문항을 배치하세요.</li>
+          <li>퀴즈앤 문항을 저장하거나 교재에서 문제를 고르세요.</li>
+          <li>제출·발표자료에서 회차를 제출하세요.</li>
+        </ol>
+      </details>
     </header>
     <section id="message" class="card" aria-live="polite">
       <p id="status">수학자동화 접속을 확인하는 중입니다.</p>
@@ -53,15 +60,6 @@
               <div id="preview-scroll" class="source-scroll catalog-scroll" tabindex="0" aria-label="교재 코너 페이지 목록"></div>
             </aside>
           </div>
-          <details id="asset-admin" hidden>
-            <summary>운영자 · 교재 미리보기 등록</summary>
-            <label>등록할 교재 <select id="preview-book"></select></label>
-            <label>원본 PDF에서 추출한 쪽 이미지
-              <input id="preview-files" type="file" multiple accept="image/webp,.webp">
-            </label>
-            <button type="button" id="preview-upload">비공개로 등록</button>
-            <p id="upload-status" class="muted" aria-live="polite"></p>
-          </details>
         </section>
         <section id="quiz-panel" class="card" aria-labelledby="quiz-heading" hidden>
           <div class="panel-heading"><h2 id="quiz-heading">퀴즈앤</h2></div>
@@ -77,10 +75,11 @@
             <div class="quiz-layout">
               <div class="quiz-editor">
                 <label>문제 <textarea id="quiz-prompt" rows="3" maxlength="2000"></textarea></label>
-                <details id="symbol-panel">
-                  <summary>수학 기호 입력</summary>
-                  <div class="symbols" id="symbols" aria-label="수학 기호"></div>
-                </details>
+                <section id="symbol-panel" aria-labelledby="symbol-heading">
+                  <h3 id="symbol-heading">수학 기호 입력</h3>
+                  <p class="muted">문제나 보기에 먼저 입력한 뒤 기호를 누르세요. 예를 들어 x 뒤에 ²를 넣으면 x²가 됩니다.</p>
+                  <div class="symbols" id="symbols" role="group" aria-label="수학 기호"></div>
+                </section>
                 <fieldset id="choices-field" class="choice-fields" hidden>
                   <legend>보기 4개</legend>
                   <label><span>보기 1</span><input id="quiz-choice-1" type="text" maxlength="1497" autocomplete="off"></label>
@@ -111,7 +110,11 @@
             <p id="stage-copy" class="muted"></p>
             <div id="stage-material" class="pick-layout">
               <div>
-                <label>단원 <select id="stage-unit"></select></label>
+                <div class="fields">
+                  <label>교재 <select id="stage-book"></select></label>
+                  <label>단원 <select id="stage-unit"></select></label>
+                  <label>문제 구분 <select id="stage-section"></select></label>
+                </div>
                 <div id="stage-picks" class="slot-grid"></div>
                 <p id="stage-status" class="muted" role="status"></p>
               </div>
@@ -132,9 +135,8 @@
           <h2 id="export-heading">제출본 반영</h2>
           <p id="export-status" class="muted" aria-live="polite"></p>
           <div class="buttons">
-            <button class="button primary" id="sheet-sync" type="button">Google 시트에 반영</button>
-            <button class="button" id="ppt-download" type="button">PPT 다운로드</button>
-            <button class="button" id="ppt-drive" type="button">회사 Google Drive에 저장</button>
+            <button class="button" id="sheet-sync" type="button">커리큘럼 시트에 문항 반영</button>
+            <button class="button primary" id="ppt-drive" type="button">내 Google Drive에 PPT 저장</button>
             <a id="ppt-result" class="button" target="_blank" rel="noopener noreferrer" hidden>저장한 PPT 열기</a>
           </div>
           <p id="sheet-status" class="muted" role="status"></p>

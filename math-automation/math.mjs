@@ -1,5 +1,5 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs';
-import { buildPresentation, downloadPresentation } from './presentation.mjs?v=3';
+import { buildPresentation } from './presentation.mjs?v=4';
 import { prepareGoogleDrive, connectStaffDrive, saveToStaffDrive } from './google-drive.mjs?v=2';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 
@@ -13,7 +13,7 @@ const formulaInputs = ['quiz-prompt', 'quiz-answer', ...choiceInputs];
 const stages = { catalog: 'catalog', quiz: 'quiz-panel', delivery: 'delivery-panel' };
 const state = {
   token: null, staff: false, editor: false, composer: false, memberships: [], courses: [], lessons: [], catalog: [], picks: new Map(), stagePicks: new Map(), quizzes: new Map(),
-  submitted: null, courseVersion: 0, lessonVersion: 0, previewVersion: 0, previewUrl: '', catalogPreviewUrls: [], busy: false,
+  submitted: null, courseVersion: 0, lessonVersion: 0, pagePreviews: new Map(), busy: false,
 };
 let formulaTarget = $('quiz-prompt');
 
@@ -290,11 +290,11 @@ async function loadLesson() {
     $('catalog-empty').hidden = Boolean(books.length);
     $('catalog-fields').hidden = !books.length;
     $('catalog-picks').hidden = !books.length;
-    $('asset-admin').hidden = !state.editor;
     const teacherQuiz = lesson.quiz_mode === 'teacher';
     $('teacher-section').hidden = !teacherQuiz;
     $('resource-stage').hidden = teacherQuiz;
-    $('quiz-stage-label').textContent = lesson.quiz_mode === 'practice' ? '실전 스테이지' : '퀴즈앤';
+    $('quiz-stage-label').textContent = lesson.quiz_mode === 'practice' ? '실전 스테이지'
+      : lesson.quiz_mode === 'appendix' ? '교사부록' : '퀴즈앤';
     $('quiz-heading').textContent = stageTitle(lesson.quiz_mode);
     $('stage-copy').textContent = lesson.quiz_mode === 'practice'
       ? '개념원리 · 빈출 1문항, 고난도 1문항'
@@ -307,11 +307,9 @@ async function loadLesson() {
     $('google-help').hidden = !state.staff;
     $('staff-links').hidden = !state.staff;
     options($('book'), values(books, 'book'), currentCourse().lesson_slots === 11 ? 'RPM' : undefined);
-    const uploadBooks = new Map(state.catalog.filter(q => q.preview_book).map(q => [q.preview_book, q.book]));
-    options($('preview-book'), [...uploadBooks], books.find(q => q.book === $('book').value)?.preview_book);
     setUnit(lesson.unit, lesson.section);
-    options($('stage-unit'), [['', '전체 단원'], ...values(stageCatalog(), 'unit')], lesson.unit);
-    renderStagePicks();
+    options($('stage-book'), values(stageCatalog(), 'book'));
+    setStageUnit(lesson.unit);
     const restored = state.view.course === currentCourse().id && state.view.lesson === lesson.lesson;
     renderQuizSlots(restored ? state.view.quizSlot : 1);
     renderQuiz();
@@ -329,6 +327,7 @@ async function loadLesson() {
 function renderMaterialLinks(materials) {
   const links = [];
   for (const item of materials) {
+    if (item.label.includes('해설')) continue;
     try {
       const url = new URL(item.url);
       if (url.origin !== 'https://drive.google.com' || !url.pathname.startsWith('/file/d/')) continue;
@@ -385,7 +384,7 @@ function setSection(section) {
   renderCatalogPreview();
 }
 
-function pickControls(total, selectedIds, questions, slotLabel, save, stage = false) {
+function pickControls(total, selectedIds, questions, slotLabel, save) {
   const slots = [];
   for (let slot = 1; slot <= total; slot += 1) {
     const label = document.createElement('label');
@@ -397,18 +396,7 @@ function pickControls(total, selectedIds, questions, slotLabel, save, stage = fa
     options(select, choices, selected?.question_id);
     select.disabled = !state.composer;
     select.addEventListener('change', () => save(slot, select.value, select));
-    select.addEventListener('focus', () => {
-      if (stage && selected && !state.busy) void showPreview(selected);
-    });
     label.append(select);
-    if (stage && !state.composer && selected) {
-      const preview = document.createElement('button');
-      preview.type = 'button';
-      preview.className = 'slot-preview';
-      preview.textContent = '교재 원본 보기';
-      preview.addEventListener('click', () => showPreview(selected));
-      label.append(preview);
-    }
     slots.push(label);
   }
   return slots;
@@ -422,14 +410,42 @@ function renderPicks() {
   $('question-slots').replaceChildren(...pickControls(lessonSlots(), state.picks, current, labels, savePick));
 }
 
+function stageQuestionsForBook() {
+  return stageCatalog().filter(q => q.book === $('stage-book').value);
+}
+
+function setStageUnit(preferred) {
+  const available = values(stageQuestionsForBook(), 'unit');
+  options($('stage-unit'), available, preferred);
+  setStageSection();
+}
+
+function selectedStageUnitQuestions() {
+  return stageQuestionsForBook().filter(q => q.unit === $('stage-unit').value);
+}
+
+function setStageSection() {
+  const sections = values(selectedStageUnitQuestions(), 'section');
+  options($('stage-section'), sections, $('stage-section').value);
+  renderStagePicks();
+  renderStagePreview();
+}
+
+function selectedStageQuestions() {
+  return selectedStageUnitQuestions().filter(q => q.section === $('stage-section').value);
+}
+
 function renderStagePicks() {
-  const unit = $('stage-unit').value;
-  const current = stageCatalog().filter(q => !unit || q.unit === unit);
   const labels = currentLesson()?.quiz_mode === 'practice'
     ? slot => slot === 1 ? '빈출 문제 (2분)' : '고난도 문제 (3분)'
     : slot => '부록 ' + slot + '번 (' + (slot === 3 ? 3 : 2) + '분)';
-  $('stage-picks').replaceChildren(...pickControls(stageSlots(), state.stagePicks, current, labels,
-    (slot, value, select) => savePick(slot, value, select, true), true));
+  $('stage-picks').replaceChildren(...pickControls(stageSlots(), state.stagePicks, selectedStageQuestions(), labels,
+    (slot, value, select) => savePick(slot, value, select, true)));
+}
+
+function renderStagePreview() {
+  const title = [$('stage-unit').value, $('stage-section').value].filter(Boolean).join(' · ');
+  renderPageStack('stage-preview', $('stage-book').value, title, selectedStageQuestions());
 }
 
 async function withSaving(work, statusId) {
@@ -473,10 +489,8 @@ async function savePick(slot, value, select, stage = false) {
     if (!result.length) throw new ApiError(403, '이 문항을 변경할 권한이 없거나 이미 변경됐습니다.');
     if (question) {
       picks.set(slot, question.question_id);
-      if (stage) void showPreview(question);
     } else {
       picks.delete(slot);
-      if (stage) clearStagePreview();
     }
     state.edited = true;
     if (stage) renderStagePicks();
@@ -539,13 +553,25 @@ function renderQuiz() {
 
 function mathText(value) {
   const fragment = document.createDocumentFragment();
-  const matches = value.matchAll(/\^\{([^{}]{1,60})\}/g);
+  const matches = value.matchAll(/\^\{([^{}]{1,60})\}|\(([^()\r\n]+)\)⁄\(([^()\r\n]+)\)/g);
   let from = 0;
   for (const match of matches) {
     fragment.append(document.createTextNode(value.slice(from, match.index)));
-    const power = document.createElement('sup');
-    power.textContent = match[1];
-    fragment.append(power);
+    if (match[1]) {
+      const power = document.createElement('sup');
+      power.textContent = match[1];
+      fragment.append(power);
+    } else {
+      const fraction = document.createElement('span');
+      fraction.className = 'fraction';
+      fraction.setAttribute('aria-label', match[3] + '분의 ' + match[2]);
+      for (const value of match.slice(2, 4)) {
+        const term = document.createElement('span');
+        term.textContent = value;
+        fraction.append(term);
+      }
+      fragment.append(fraction);
+    }
     from = match.index + match[0].length;
   }
   fragment.append(document.createTextNode(value.slice(from)));
@@ -686,7 +712,7 @@ async function loadExportReceipt(version) {
 }
 
 function exportBlocker() {
-  if (!state.submitted) return '제출된 회차를 선택하면 빔용 PPT를 만들 수 있습니다.';
+  if (!state.submitted) return '회차를 제출하면 시트 반영과 PPT 저장을 할 수 있습니다.';
   if ((state.submitted.stage_questions ?? []).length !== stageSlots()) {
     return stageTitle(currentLesson().quiz_mode) + ' 문항을 선택하고 다시 제출해 주세요.';
   }
@@ -696,20 +722,20 @@ function exportBlocker() {
 function renderExport() {
   if (!state.staff) return;
   const blocker = exportBlocker();
-  for (const id of ['ppt-download', 'ppt-drive', 'sheet-sync']) $(id).disabled = state.busy || Boolean(blocker);
+  for (const id of ['ppt-drive', 'sheet-sync']) $(id).disabled = state.busy || Boolean(blocker);
   $('sheet-sync').disabled ||= !sheetDestination(currentCourse(), currentLesson());
   if (blocker) $('export-status').textContent = blocker;
   else if (!$('export-status').textContent || $('export-status').dataset.lesson !== $('lesson').value) {
-    $('export-status').textContent = '최근 제출본으로 생성합니다. 이미지 잘림과 글자 크기를 발표 전에 확인해 주세요.';
+    $('export-status').textContent = 'PPT는 연결한 @socra.ai 계정의 내 드라이브에 저장됩니다.';
   }
   $('export-status').dataset.lesson = $('lesson').value;
 }
 
-async function preparePresentation(saveInDrive) {
+async function preparePresentation() {
   if (!state.staff || state.busy || exportBlocker()) return;
-  $('export-status').textContent = saveInDrive ? '회사 Google 계정을 확인하는 중입니다.' : '발표자료를 준비하는 중입니다.';
+  $('export-status').textContent = '회사 Google 계정을 확인하는 중입니다.';
   await withSaving(async () => {
-    const connection = saveInDrive ? await connectStaffDrive() : null;
+    const connection = await connectStaffDrive();
     const course = currentCourse();
     const submission = state.submitted;
     const withAsset = pick => {
@@ -731,22 +757,17 @@ async function preparePresentation(saveInDrive) {
         : previewPath(course.id, question.preview_book, question.page);
       return (await request(path)).blob();
     });
-    if (saveInDrive) {
-      const driveUrl = resultLink(await saveToStaffDrive(connection, blob, filename, submission.id));
-      const [prior] = await table('math_staff_exports', receiptFilter());
-      if (!prior) {
-        await table('math_staff_exports', { select: 'drive_url' }, 'POST', {
-          course_id: course.id, submission_id: submission.id, drive_url: driveUrl,
-        });
-      } else if (prior.drive_url !== driveUrl) {
-        await table('math_staff_exports', receiptFilter(), 'PATCH', { drive_url: driveUrl });
-      }
-      state.exportReceipt = driveUrl;
-      $('export-status').textContent = connection.email + ' 내 드라이브에 저장했습니다.';
-    } else {
-      downloadPresentation(blob, filename);
-      $('export-status').textContent = 'PPT를 생성했습니다.';
+    const driveUrl = resultLink(await saveToStaffDrive(connection, blob, filename, submission.id));
+    const [prior] = await table('math_staff_exports', receiptFilter());
+    if (!prior) {
+      await table('math_staff_exports', { select: 'drive_url' }, 'POST', {
+        course_id: course.id, submission_id: submission.id, drive_url: driveUrl,
+      });
+    } else if (prior.drive_url !== driveUrl) {
+      await table('math_staff_exports', receiptFilter(), 'PATCH', { drive_url: driveUrl });
     }
+    state.exportReceipt = driveUrl;
+    $('export-status').textContent = connection.email + ' 내 드라이브에 저장했습니다.';
   }, 'export-status');
 }
 
@@ -772,53 +793,44 @@ async function reflectSheet() {
   }, 'sheet-status');
 }
 
-function clearCatalogPreview() {
-  state.catalogPreviewObserver?.disconnect();
-  state.catalogPreviewObserver = null;
-  state.catalogPreviewKey = '';
-  for (const url of state.catalogPreviewUrls) URL.revokeObjectURL(url);
-  state.catalogPreviewUrls = [];
-  $('preview-scroll').replaceChildren();
-}
-
-function clearStagePreview() {
-  state.previewVersion += 1;
-  if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
-  state.previewUrl = '';
-  $('stage-preview-image').removeAttribute('src');
-  $('stage-preview-image').hidden = true;
-  $('stage-preview-title').textContent = '교재 원본';
-  $('stage-preview-status').textContent = '문항을 고르면 여기에 표시됩니다.';
+function resetPageStack(prefix) {
+  const previous = state.pagePreviews.get(prefix);
+  previous?.observer.disconnect();
+  for (const url of previous?.urls ?? []) URL.revokeObjectURL(url);
+  state.pagePreviews.delete(prefix);
+  $(prefix + '-scroll').replaceChildren();
 }
 
 function clearPreview() {
-  clearCatalogPreview();
-  clearStagePreview();
+  for (const prefix of ['preview', 'stage-preview']) resetPageStack(prefix);
 }
 
 function renderCatalogPreview() {
-  const filters = [$('book').value, $('unit').value, $('section').value];
-  const key = JSON.stringify([currentCourse()?.id, ...filters]);
-  if (state.catalogPreviewKey === key) return;
-  clearCatalogPreview();
-  state.catalogPreviewKey = key;
-  const byPage = new Map(lessonCatalog()
-    .filter(q => q.book === filters[0] && q.unit === filters[1] && q.section === filters[2] && q.preview_book)
-    .map(q => [q.page, q.preview_book]));
+  const [book,unit,section] = [$('book').value, $('unit').value, $('section').value];
+  const questions = lessonCatalog().filter(q => q.book === book && q.unit === unit && q.section === section);
+  renderPageStack('preview', book, section, questions);
+}
+
+function renderPageStack(prefix, bookName, title, questions) {
+  const byPage = new Map(questions.filter(q => q.preview_book).map(q => [q.page, q.preview_book]));
   const pages = [...byPage].sort(([a], [b]) => a - b);
-  const scroller = $('preview-scroll');
-  $('preview-title').textContent = filters[2] || '교재 원본';
-  $('preview-status').textContent = pages.length ? filters[0] + ' · ' + pages.length + '쪽' : '이 코너의 등록된 페이지가 없습니다.';
   const course = currentCourse()?.id;
+  const key = JSON.stringify([course,bookName,title,pages]);
+  if (state.pagePreviews.get(prefix)?.key === key) return;
+  resetPageStack(prefix);
+  const scroller = $(prefix + '-scroll');
+  $(prefix + '-title').textContent = title || '교재 원본';
+  $(prefix + '-status').textContent = pages.length ? bookName + ' · ' + pages.length + '쪽' : '등록된 페이지가 없습니다.';
+  const urls = [];
   const observer = new IntersectionObserver(entries => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
       observer.unobserve(entry.target);
       const { page, book } = entry.target.dataset;
-      void loadCatalogPage(entry.target, course, book, page);
+      void loadCatalogPage(entry.target, course, book, page, urls);
     }
   }, { root: scroller, rootMargin: '500px 0px' });
-  state.catalogPreviewObserver = observer;
+  state.pagePreviews.set(prefix, { key, observer, urls });
   for (const [page, book] of pages) {
     const figure = document.createElement('figure');
     figure.className = 'catalog-page';
@@ -836,14 +848,14 @@ function renderCatalogPreview() {
   scroller.scrollTop = 0;
 }
 
-async function loadCatalogPage(figure, course, book, page) {
+async function loadCatalogPage(figure, course, book, page, urls) {
   const placeholder = figure.querySelector('.page-placeholder');
   try {
     const file = await (await request(previewPath(course, book, page))).blob();
     if (!figure.isConnected) return;
     if (file.type !== 'image/webp') throw Error('Wrong image type');
     const url = URL.createObjectURL(file);
-    state.catalogPreviewUrls.push(url);
+    urls.push(url);
     const image = new Image();
     image.alt = page + '쪽 교재 원본';
     image.src = url;
@@ -861,90 +873,30 @@ function previewPath(course, book, page) {
   return '/storage/v1/object/authenticated/math-teaching-materials/' + assetKey(course, book, page);
 }
 
-async function showPreview(question) {
-  clearStagePreview();
-  const version = state.previewVersion;
-  const prefix = 'stage-preview';
-  $(prefix + '-title').textContent = question.label;
-  if (!question.preview_book) {
-    $(prefix + '-status').textContent = '아직 등록된 교재 원본이 없습니다.';
-    return;
-  }
-  $(prefix + '-status').textContent = '교재 원본 불러오는 중';
-  try {
-    const reply = await request(previewPath(currentCourse().id, question.preview_book, question.page));
-    const file = await reply.blob();
-    if (version !== state.previewVersion) return;
-    if (file.type !== 'image/webp') throw Error('Wrong image type');
-    state.previewUrl = URL.createObjectURL(file);
-    const img = $(prefix + '-image');
-    img.onload = () => {
-      if (version !== state.previewVersion) return;
-      const scroller = $(prefix + '-scroll');
-      scroller.scrollTop = Math.max(0, (question.preview_top ?? 0) * img.height - 24);
-    };
-    img.alt = question.label + ' · 교재 원본';
-    img.hidden = false;
-    img.src = state.previewUrl;
-    $(prefix + '-status').textContent = '교재 ' + question.page + '쪽 · 스크롤로 원본 확인';
-  } catch {
-    if (version === state.previewVersion) $(prefix + '-status').textContent = '이 교재 쪽의 미리보기를 열 수 없습니다.';
-  }
-}
-
-async function uploadPreviews() {
-  if (!state.editor) return;
-  const files = [...$('preview-files').files];
-  const byPage = new Map(state.catalog.filter(question => question.preview_book === $('preview-book').value)
-    .map(question => [question.page, question.preview_book]));
-  const entries = files.map(file => [file, Number(file.name.match(/^page-(\d{3})\.webp$/)?.[1])]);
-  if (!entries.length || entries.some(([file, page]) => file.size > 2097152 || !byPage.has(page))) {
-    $('upload-status').textContent = '현재 교재에 있는 page-001.webp 형식의 파일을 골라 주세요.';
-    return;
-  }
-  await withSaving(async () => {
-    const course = currentCourse().id;
-    let uploaded = 0, present = 0, failed = 0;
-    for (let i = 0; i < entries.length; i += 5) {
-      await Promise.all(entries.slice(i, i + 5).map(async ([file, page]) => {
-        const path = '/storage/v1/object/math-teaching-materials/' + assetKey(course, byPage.get(page), page);
-        try {
-          await request(path, { method: 'POST', body: file, headers: { 'Content-Type': 'image/webp', 'cache-control': 'no-store' } });
-          uploaded += 1;
-        } catch (error) {
-          if (error.status === 401) throw error;
-          if (error.status === 409) present += 1;
-          else failed += 1;
-        }
-      }));
-      $('upload-status').textContent = '신규 ' + uploaded + '쪽 · 기등록 ' + present + '쪽 · 실패 ' + failed + '쪽';
-    }
-    $('preview-files').value = '';
-  }, 'upload-status');
-}
-
-function insertSymbol(value, move) {
+function insertSymbol(value, cursor, selectionLength = 0) {
   const input = formulaTarget.closest('[hidden]') ? $('quiz-prompt') : formulaTarget;
   const start = input.selectionStart ?? input.value.length;
   const end = input.selectionEnd ?? start;
   input.focus();
   input.setRangeText(value, start, end, 'end');
-  if (move) input.setSelectionRange(start + move, start + move);
+  if (cursor !== undefined) input.setSelectionRange(start + cursor, start + cursor + selectionLength);
   input.dispatchEvent(new Event('input'));
 }
 
-for (const [label, value, aria, move] of [
-  ['x²', '²', '제곱'], ['x³', '³', '세제곱'], ['xⁿ', '^{}', '지수 입력', 2],
-  ['×', '×', '곱하기'], ['÷', '÷', '나누기'], ['−', '−', '빼기'], ['√', '√', '제곱근'],
+for (const [label, value, aria, cursor, selectionLength] of [
+  ['제곱 ²', '²', '제곱'], ['세제곱 ³', '³', '세제곱'], ['지수 입력', '^{}', '지수 입력', 2],
+  ['분수', '(분자)⁄(분모)', '분수', 1, 2], ['절댓값', '|값|', '절댓값', 1, 1],
+  ['제곱근 √', '√', '제곱근'], ['순환점', '\u0307', '순환소수 점'],
+  ['×', '×', '곱하기'], ['÷', '÷', '나누기'], ['−', '−', '빼기'], ['±', '±', '플러스 마이너스'],
   ['≠', '≠', '같지 않음'], ['≤', '≤', '작거나 같음'], ['≥', '≥', '크거나 같음'],
-  ['π', 'π', '파이'], ['⁄', '⁄', '분수 기호'],
+  ['∠', '∠', '각'], ['°', '°', '도'], ['∥', '∥', '평행'], ['⊥', '⊥', '수직'], ['π', 'π', '파이'],
 ]) {
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = label;
   button.title = aria;
   button.setAttribute('aria-label', aria);
-  button.addEventListener('click', () => insertSymbol(value, move));
+  button.addEventListener('click', () => insertSymbol(value, cursor, selectionLength));
   $('symbols').append(button);
 }
 
@@ -987,14 +939,17 @@ $('section').addEventListener('change', () => {
   renderPicks();
   renderCatalogPreview();
 });
-$('stage-unit').addEventListener('change', renderStagePicks);
+$('stage-book').addEventListener('change', () => setStageUnit(currentLesson().unit));
+$('stage-unit').addEventListener('change', setStageSection);
+$('stage-section').addEventListener('change', () => {
+  renderStagePicks();
+  renderStagePreview();
+});
 $('teacher-section').addEventListener('submit', saveQuiz);
 $('submit').addEventListener('click', submit);
 $('sheet-sync').addEventListener('click', reflectSheet);
-$('ppt-download').addEventListener('click', () => preparePresentation(false));
-$('ppt-drive').addEventListener('click', () => preparePresentation(true));
+$('ppt-drive').addEventListener('click', preparePresentation);
 $('retry').addEventListener('click', loadSite);
-$('preview-upload').addEventListener('click', uploadPreviews);
 protectUnsaved($('course'), loadCourse);
 protectUnsaved($('lesson'), loadLesson);
 window.addEventListener('storage', event => {
