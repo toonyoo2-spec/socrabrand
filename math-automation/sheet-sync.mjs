@@ -9,8 +9,8 @@ const targets = {
   },
   'oh-pending': {
     tab: '[RPM_커리큘럼]',
-    base: 'JKLMNOPQRST', practice: 'UV', end: 'V',
-    checks: { J: '문제 1', T: '문제 11', U: '빈출 문제 1 (2분)', V: '고난도 문제 2 (3분)' },
+    base: 'IJKLMNOPQRS', practice: 'TU', end: 'U',
+    checks: { I: '문제 1', S: '문제 11', T: '빈출 문제 1 (2분)', U: '고난도 문제 2 (3분)' },
   },
 };
 

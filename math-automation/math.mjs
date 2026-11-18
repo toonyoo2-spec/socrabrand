@@ -1,4 +1,4 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=2';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=3';
 import { buildPresentation } from './presentation.mjs?v=4';
 import { prepareGoogleDrive, connectStaffDrive, saveSlidesToStaffDrive } from './google-drive.mjs?v=3';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
