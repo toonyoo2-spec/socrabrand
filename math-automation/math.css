@@ -130,9 +130,9 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 }
 .stage-nav button { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding: 7px 12px; min-width: 0; min-height: 52px; border-color: transparent; background: transparent; text-align: left; font-size: .92rem; line-height: 1.2; }
 .stage-nav button[aria-pressed="true"] { background: var(--surface); border-color: #a8bfb0; box-shadow: 0 1px 2px #153a2e12; }
-.stage-nav button[data-stage="quiz-one"][aria-pressed="true"] { background: #fff6df; border-color: #d8bf7d; }
-.stage-nav button[data-stage="quiz-two"][aria-pressed="true"] { background: #eaf5e9; border-color: #a6c4a8; }
 .stage-nav small { color: var(--muted); font-size: .77rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stage-nav button[data-stage^="quiz-"][aria-pressed="true"] { background: var(--green); border-color: var(--green); color: white; }
+.stage-nav button[data-stage^="quiz-"][aria-pressed="true"] small { color: #e1eee7; }
 .stage-nav small:empty { display: none; }
 .stage-nav button:focus-visible { outline-offset: -2px; }
 
@@ -167,29 +167,21 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 
 .quiz-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0 0 17px; }
 .quiz-slots button { flex-direction: column; align-items: flex-start; justify-content: center; min-height: 53px; gap: 4px; min-width: 0; text-align: left; }
-.quiz-slots button[aria-pressed="true"] { background: #fff6df; border-color: #c8a65b; }
+.quiz-slots button[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: white; }
 .quiz-slots small { color: var(--muted); font-size: .78rem; font-weight: 610; }
 .quiz-slots small.saved { color: var(--danger); font-weight: 720; }
+.quiz-slots button[aria-pressed="true"] small { color: #e1eee7; }
 .quiz-fields { max-width: 245px; margin-bottom: 14px; }
 .quiz-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(245px, .8fr); gap: 18px; align-items: start; }
 .quiz-editor { display: grid; gap: 12px; min-width: 0; }
+#symbol-panel h3 { margin: 0 0 3px; }
+#symbol-panel > p { margin: 0; }
 .symbols { display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0; }
-.math-keypad { min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); padding: 9px 10px; }
-.math-keypad-heading, .math-keypad-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; }
-.math-keypad-heading { justify-content: space-between; }
-.math-keypad-heading h3 { margin: 0; font-size: .89rem; }
-.math-symbol-target { color: var(--muted); font-size: .76rem; font-weight: 650; }
-.symbols .math-key { min-width: 38px; min-height: 36px; justify-content: center; gap: 4px; padding: 4px 7px; }
-.math-key-mark { font-size: 1rem; line-height: 1; }
-.math-key-name { font-size: .76rem; white-space: nowrap; }
-.math-symbol-hint { margin: 0; font-size: .81rem; }
+.symbols button { min-width: 38px; min-height: 36px; justify-content: center; padding: 4px 7px; font-size: .86rem; }
+.math-keypad-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.math-fraction-help, .math-symbol-hint { margin: 0; font-size: .81rem; }
 .math-symbol-hint:empty { display: none; }
 .math-next-field { min-height: 31px; padding: 3px 7px; font-size: .8rem; }
-.math-more-symbols { margin-top: 5px; }
-.math-more-symbols summary { cursor: pointer; width: fit-content; color: var(--green); padding-block: 4px; font-size: .81rem; font-weight: 680; }
-.math-extra-group { margin-block: 7px 0; }
-.math-extra-group h4 { margin: 0 0 4px; color: var(--muted); font-size: .77rem; }
-.math-extra-group .symbols { margin: 0; }
 .fraction { display: inline-grid; vertical-align: middle; text-align: center; line-height: 1.12; margin: 1px 2px; }
 .fraction > span { padding: 0 3px; }
 .fraction > :first-child { border-bottom: 1px solid currentColor; }
@@ -214,7 +206,8 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .stage-choice-form { margin-top: 12px; padding: 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); }
 .stage-choice-form > label { margin: 8px 0; }
 .stage-choice-form .buttons { margin-top: 8px; }
-.stage-choice-form .math-keypad { margin-bottom: 10px; }
+.stage-choice-form .symbols button { min-width: 34px; padding-inline: 5px; }
+#stage-symbols { margin-bottom: 10px; }
 
 #submission-checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(177px, 100%), 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
 #submission-checklist button { display: grid; gap: 3px; min-height: 62px; width: 100%; text-align: left; background: var(--soft); font-size: .89rem; }
@@ -303,8 +296,8 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 }
 @media (pointer: coarse) {
   input, textarea, select, button, .button, .help-menu summary,
-  #progress-button, .track-buttons button, .slot-grid select, .symbols .math-key, .mobile-jump,
-  .math-next-field, .math-more-symbols summary,
+  #progress-button, .track-buttons button, .slot-grid select, .symbols button, .mobile-jump,
+  .math-next-field,
   .stage-pick button, .progress-track td button, .drive-path button { min-height: 44px; }
   .symbols button { min-width: 44px; }
 }
