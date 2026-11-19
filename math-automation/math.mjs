@@ -318,7 +318,7 @@ async function loadProgress() {
         const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
         const submission = submissions.get(course.id + '/' + lesson.lesson);
         const row = transferRow(course, lesson, submission, receipts, plans);
-        row.picks = picks.filter(matches).length;
+        row.lessonProgress = lessonPickProgress(course, picks.filter(matches).map(item => item.slot));
         row.quizCounts = lessonModes(lesson,course).map(mode => ({
           title: quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제',
           count: mode === 'teacher' ? quizzes.filter(matches).length : extras.filter(item => matches(item) && savedResourceMode(item,lesson) === mode).length,
@@ -364,7 +364,7 @@ async function loadProgress() {
         progress.setAttribute('aria-label', label + ' 회차별 작업현황');
         const head = progress.createTHead().insertRow();
         const quizHeaders = courseModes.map(mode => quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제');
-        for (const text of ['회차', '수업 문항', ...quizHeaders, '선생님']) {
+        for (const text of ['회차', '기본 · 예비 문항', ...quizHeaders, '선생님']) {
           const header = document.createElement('th');
           header.scope = 'col';
           header.textContent = text;
@@ -385,7 +385,7 @@ async function loadProgress() {
           date.dateTime = lesson.live_date;
           date.textContent = dateLabel.format(new Date(lesson.live_date + 'T00:00:00Z'));
           row.insertCell().append(button, date);
-          row.insertCell().textContent = picks.filter(matches).length + ' / ' + course.lesson_slots;
+          row.insertCell().textContent = lessonProgressLabel(lessonPickProgress(course, picks.filter(matches).map(item => item.slot)));
           for (const mode of courseModes) {
             const progress = row.insertCell();
             if (!lessonModes(lesson, course).includes(mode)) {
@@ -478,10 +478,10 @@ function renderStaffProgress() {
     }
     const counts = tr.insertCell();
     counts.className = 'progress-counts';
-    counts.append(element('span','수업 '+row.picks+'/'+row.course.lesson_slots));
+    counts.append(element('span',lessonProgressLabel(row.lessonProgress)));
     for (const quiz of row.quizCounts) counts.append(element('span',quiz.title+' '+quiz.count+'/'+quiz.total));
     const status = tr.insertCell();
-    renderTeacherStatus(status, row.submission, row.picks || row.quizCounts.some(q=>q.count));
+    renderTeacherStatus(status, row.submission, row.lessonProgress.basic || row.lessonProgress.reserve || row.quizCounts.some(q=>q.count));
     for (const channel of Object.keys(channels)) {
       const cell = transferCell(row,channel,updatePlan);
       cell.dataset.channel = channels[channel];
@@ -505,7 +505,7 @@ function openProgressLesson(course, lesson) {
 }
 
 function updateStageProgress() {
-  $('pick-progress').textContent = state.picks.size + ' / ' + lessonSlots();
+  $('pick-progress').textContent = lessonProgressLabel(lessonPickProgress());
   for (const stage of quizStages) {
     const mode = lessonModes().find(mode => quizModes[mode].stage === stage);
     const button = document.querySelector('[data-stage="' + stage + '"]');
@@ -743,8 +743,26 @@ function lessonSlots() {
   return currentCourse()?.lesson_slots ?? 8;
 }
 
-function requiredLessonSlots() {
-  return currentCourse()?.required_lesson_slots ?? 5;
+function requiredLessonSlots(course = currentCourse()) {
+  return course?.required_lesson_slots ?? 5;
+}
+
+function lessonPickProgress(course = currentCourse(), slots = state.picks.keys()) {
+  const required = requiredLessonSlots(course);
+  const total = course?.lesson_slots ?? 8;
+  let basic = 0;
+  let reserve = 0;
+  for (const slot of new Set(slots)) {
+    if (!Number.isInteger(slot) || slot < 1 || slot > total) continue;
+    if (slot <= required) basic++;
+    else reserve++;
+  }
+  return {basic, required, reserve, optional:total - required};
+}
+
+function lessonProgressLabel({basic, required, reserve, optional}) {
+  const label = '기본 ' + basic + '/' + required;
+  return optional ? label + ' · 예비 ' + reserve + '/' + optional : label;
 }
 
 function quizCount(mode) {
@@ -994,12 +1012,12 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
 
 function renderPicks() {
   const current = catalogUnitQuestions();
-  $('question-count').textContent = state.picks.size + ' / ' + lessonSlots() + '개 선정';
+  const progress = lessonPickProgress();
+  $('question-count').textContent = lessonProgressLabel(progress);
   const labels = lessonSlotName;
   const controls = pickControls(lessonSlots(), state.picks, current, labels, savePick);
   controls.slice(requiredLessonSlots()).forEach(control => control.classList.add('reserve'));
-  const required=requiredLessonSlots();
-  const picked=[...state.picks.keys()].filter(slot=>slot<=required).length;
+  const {required, basic:picked, reserve, optional} = progress;
   const group=(name,done,total,items)=>{
     const section=element('section',undefined,'slot-group');
     section.append(element('h4',name+' · '+done+' / '+total),...items);
@@ -1007,7 +1025,7 @@ function renderPicks() {
   };
   $('selection-role').textContent=state.composer ? '교재에서 문제를 눌러 자리를 고르거나, 원하는 칸으로 끌어 놓으세요.' : '선생님이 저장한 수업 문항입니다.';
   $('question-slots').replaceChildren(group('기본',picked,required,controls.slice(0,required)));
-  if (controls.length>required) $('question-slots').append(group('예비',state.picks.size-picked,controls.length-required,controls.slice(required)));
+  if (controls.length>required) $('question-slots').append(group('예비 (선택)',reserve,optional,controls.slice(required)));
 }
 
 function stageQuestionsForBook() {
@@ -1358,8 +1376,7 @@ function renderSubmission() {
   $('quiz-excel').hidden = !usesQuizN(currentCourse());
   $('quiz-excel').disabled = !state.submitted;
   updateStageProgress();
-  const totalBasics = requiredLessonSlots();
-  const selectedBasics = [...state.picks.keys()].filter(slot => slot <= totalBasics).length;
+  const {required:totalBasics, basic:selectedBasics, reserve, optional} = lessonPickProgress();
   const basic = selectedBasics === totalBasics;
   const groups = lessonModes().map(mode => {
     const picks = state.stagePicks.get(mode);
@@ -1376,7 +1393,7 @@ function renderSubmission() {
   const ready = basic && !missing;
   renderSubmissionChecklist([
     { stage:'catalog', title:'기본 수업 문항', count:selectedBasics, total:totalBasics,
-      detail:basic ? '완료' : '선정 필요', ready:basic },
+      detail:(basic ? '완료' : '선정 필요') + (optional ? ' · 예비(선택) ' + reserve + '/' + optional : ''), ready:basic },
     ...groups,
   ]);
   $('submit').disabled = state.busy || !ready || Boolean(state.submitted && !state.edited);
