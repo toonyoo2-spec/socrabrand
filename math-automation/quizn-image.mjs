@@ -10,7 +10,7 @@ async function readAsset(path) {
 
 export function loadQuizDesign() {
   assets ??= Promise.all([
-    readAsset('./quizn-background.webp').then(r => r.blob()).then(createImageBitmap.bind(globalThis)),
+    readAsset('./quizn-background.webp?v=2').then(r => r.blob()).then(createImageBitmap.bind(globalThis)),
     readAsset('../gv-report/fonts/pretendard-700.woff2').then(r => r.arrayBuffer()).then(async bytes => {
       const face = new FontFace('QuizN Gothic', bytes, {weight:'700'});
       document.fonts.add(await face.load());
@@ -37,15 +37,15 @@ export function frameQuizImage(background, content, {number, total, lesson, sour
     ctx.font = '700 ' + size + 'px ' + font;
     ctx.fillText(text, x, y, maxWidth);
   }
-  label('퀴즈앤', 56, 58, 28, '#3ed198', 94);
-  label(lesson, 174, 58, 28, '#f1f6f3', 760);
-  label(number, 54, 205, 76, '#3ed198', 108);
-  label('/ ' + String(total).padStart(2,'0'), 60, 238, 23, '#b7c9c1', 100);
-  label(source, 58, 681, 21, '#d0ded8', 850);
+  label('퀴즈앤', 85, 58, 28, '#3ed198', 94);
+  label(lesson, 202, 58, 28, '#f1f6f3', 760);
+  label(number, 82, 205, 76, '#3ed198', 108);
+  label('/ ' + String(total).padStart(2,'0'), 88, 238, 23, '#b7c9c1', 100);
+  label(source, 86, 681, 21, '#d0ded8', 850);
 
   // Reserve the lower right for Echo. Keep the whole source, including fine
   // diagram labels, and cap enlargement for short or narrow questions.
-  const left = 175, width = 914, height = 430;
+  const left = 202, width = 887, height = 430;
   const scale = Math.min(width / content.width, height / content.height, paper ? 0.94 : 0.78);
   const w = content.width * scale, h = content.height * scale;
   const top = 150 + (height - h) * 0.36;

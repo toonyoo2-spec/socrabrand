@@ -1,6 +1,6 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=10';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=14';
+import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=15';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=10';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -213,6 +213,7 @@ function showStage(stage, restore = false) {
     button.setAttribute('aria-pressed', String(selected));
   }
   for (const panel of stagePanels) $(panel).hidden = panel !== stages[state.stage];
+  if (state.stage === 'catalog') positionCatalog();
   const mode = activeQuizMode();
   if (mode) renderQuizStage(mode);
   if (!restore && window.scrollY > $('lesson-tools').offsetTop) window.scrollTo(0, $('lesson-tools').offsetTop);
@@ -761,7 +762,9 @@ function lessonCatalog() {
   return state.catalog.filter(q =>
     (!q.bundle_root_id || q.bundle_root_id === q.question_id) &&
     (q.use_kind ?? 'lesson') === 'lesson' &&
-    (hasClosingSection || !closingSection.test(q.section))
+    (currentCourse()?.track === 'concept'
+      ? closingSection.test(q.section) === hasClosingSection
+      : hasClosingSection || !closingSection.test(q.section))
   );
 }
 
@@ -777,10 +780,16 @@ function setUnit(unit, section) {
 }
 
 function setSection(section) {
-  const rows = lessonCatalog().filter(question => question.book === $('book').value && question.unit === $('unit').value);
-  options($('section'), values(rows, 'section'), section);
+  const rows = catalogUnitQuestions();
   renderPicks();
-  renderCatalogPreview();
+  renderPageStack('preview', $('book').value, $('unit').value, rows, true);
+  const view = state.pagePreviews.get('preview');
+  view.initialType = section;
+  positionCatalog();
+}
+
+function catalogUnitQuestions() {
+  return lessonCatalog().filter(q => q.book === $('book').value && q.unit === $('unit').value);
 }
 
 function pickControls(total, selectedIds, questions, slotLabel, save) {
@@ -794,6 +803,21 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
     const choices = [['', selected ? '문항 비우기' : '문항 선택'], ...questions.map(question => [question.question_id, question.label])];
     if (selected && !questions.includes(selected)) choices.splice(1, 0, [selected.question_id, selected.label + ' · 저장됨']);
     options(select, choices, selected?.question_id);
+    if (save === savePick) {
+      const groups = new Map();
+      const offset = choices.length - questions.length;
+      const entries = Array.from(select.options).slice(offset);
+      questions.forEach((q, index) => {
+        if (!groups.has(q.section)) {
+          const group = document.createElement('optgroup');
+          group.label = q.section;
+          groups.set(q.section, group);
+          select.append(group);
+        }
+        groups.get(q.section).append(entries[index]);
+      });
+      select.value = selected ? String(selected.question_id) : '';
+    }
     const used = new Set([...selectedIds].filter(([usedSlot]) => usedSlot !== slot).map(([,id]) => id));
     for (const item of questions) {
       if (item.bundle_root_id && used.has(item.bundle_root_id)) {
@@ -812,8 +836,7 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
 }
 
 function renderPicks() {
-  const current = lessonCatalog().filter(question => question.book === $('book').value &&
-    question.unit === $('unit').value && question.section === $('section').value);
+  const current = catalogUnitQuestions();
   $('question-count').textContent = state.picks.size + ' / ' + lessonSlots() + '개 선정';
   const labels = slot => (slot <= requiredLessonSlots() ? '기본 ' : '예비 ') + slot + '번';
   const controls = pickControls(lessonSlots(), state.picks, current, labels, savePick);
@@ -1637,15 +1660,43 @@ function clearPreview() {
   for (const prefix of ['preview', 'stage-preview']) resetPageStack(prefix);
 }
 
-function renderCatalogPreview() {
-  const [book,unit,section] = [$('book').value, $('unit').value, $('section').value];
-  const questions = lessonCatalog().filter(q => q.book === book && q.unit === unit && q.section === section);
-  renderPageStack('preview', book, section, questions);
+function positionCatalog() {
+  const view = state.pagePreviews.get('preview');
+  const scroller = $('preview-scroll');
+  if (!view || !scroller.clientHeight) return;
+  if ('initialType' in view) {
+    const target = view.anchors?.find(a => a.name === view.initialType);
+    scroller.scrollTop = target?.figure.offsetTop ?? 0;
+    delete view.initialType;
+  }
+  markCatalogType();
 }
 
-function renderPageStack(prefix, bookName, title, questions) {
-  const byPage = new Map(questions.filter(q => q.preview_book).map(q => [q.page, q.preview_book]));
-  const pages = [...byPage].sort(([a], [b]) => a - b);
+function markCatalogType() {
+  const scroller = $('preview-scroll');
+  const anchors = state.pagePreviews.get('preview')?.anchors;
+  if (!anchors?.length || !scroller.clientHeight) return;
+  const active = anchors.findLast(a => a.figure.offsetTop <= scroller.scrollTop + 2) ?? anchors[0];
+  if (active.button.getAttribute('aria-current') === 'location') return;
+  for (const {button} of anchors) button.removeAttribute('aria-current');
+  active.button.setAttribute('aria-current','location');
+  const bar = $('type-links');
+  if (active.button.offsetLeft < bar.scrollLeft) bar.scrollLeft = active.button.offsetLeft;
+  else if (active.button.offsetLeft + active.button.offsetWidth > bar.scrollLeft + bar.clientWidth) {
+    bar.scrollLeft = active.button.offsetLeft + active.button.offsetWidth - bar.clientWidth;
+  }
+}
+
+function renderPageStack(prefix, bookName, title, questions, grouped = false) {
+  const groups = new Map();
+  for (const q of questions) {
+    const name = grouped ? q.section : '';
+    if (!groups.has(name)) groups.set(name, new Map());
+    groups.get(name).set(q.page,q.preview_book);
+  }
+  const pages = Array.from(groups, ([name, group]) =>
+    [...group].sort(([a],[b]) => a-b).map(([page,book], i) => ({page,book,heading:i === 0 ? name : ''}))
+  ).flat();
   const activeCourse = currentCourse();
   const course = activeCourse?.preview_course_id ?? activeCourse?.id;
   const key = JSON.stringify([course,bookName,title,pages]);
@@ -1663,8 +1714,10 @@ function renderPageStack(prefix, bookName, title, questions) {
       void loadCatalogPage(entry.target, course, book, page, urls);
     }
   }, { root: scroller, rootMargin: '500px 0px' });
-  state.pagePreviews.set(prefix, { key, observer, urls });
-  for (const [page, book] of pages) {
+  const anchors = [];
+  state.pagePreviews.set(prefix, {key,observer,urls,anchors});
+  if (grouped) $('type-links').replaceChildren();
+  for (const {page, book, heading} of pages) {
     const figure = document.createElement('figure');
     figure.className = 'catalog-page';
     figure.dataset.page = page;
@@ -1674,9 +1727,24 @@ function renderPageStack(prefix, bookName, title, questions) {
     const placeholder = document.createElement('p');
     placeholder.className = 'page-placeholder muted';
     placeholder.textContent = '불러오는 중…';
+    if (heading) {
+      const name = element('h4',heading,'type-heading');
+      const button = element('button',heading);
+      button.type = 'button';
+      figure.id = 'catalog-type-' + anchors.length;
+      button.setAttribute('aria-controls',figure.id);
+      button.addEventListener('click', () => {
+        scroller.scrollTop = figure.offsetTop;
+        markCatalogType();
+      });
+      anchors.push({name:heading,button,figure});
+      $('type-links').append(button);
+      figure.append(name);
+    }
     figure.append(caption, placeholder);
     scroller.append(figure);
-    observer.observe(figure);
+    if (book) observer.observe(figure);
+    else placeholder.textContent = '이 쪽의 미리보기를 열 수 없습니다.';
   }
   scroller.scrollTop = 0;
 }
@@ -1745,10 +1813,7 @@ for (const button of document.querySelectorAll('[data-stage]')) {
 }
 $('book').addEventListener('change', () => setUnit(currentLesson().unit, currentLesson().section));
 $('unit').addEventListener('change', () => setSection(currentLesson().section));
-$('section').addEventListener('change', () => {
-  renderPicks();
-  renderCatalogPreview();
-});
+$('preview-scroll').addEventListener('scroll', markCatalogType, {passive:true});
 $('stage-book').addEventListener('change', () => setStageUnit(currentLesson().unit));
 $('stage-unit').addEventListener('change', () => setStageSection());
 $('stage-section').addEventListener('change', () => {
@@ -1839,7 +1904,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=9').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=10').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;

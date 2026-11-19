@@ -1,5 +1,5 @@
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
-import {loadQuizDesign, frameQuizImage, quizFont} from './quizn-image.mjs?v=1';
+import {loadQuizDesign, frameQuizImage, quizFont} from './quizn-image.mjs?v=2';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
 const FONT = 'Noto Sans KR';

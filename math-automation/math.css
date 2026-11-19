@@ -412,3 +412,13 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 @media(pointer:coarse) {
   .course-controls select, .track-buttons button, .stage-nav button, .progress-title select, .progress-filters button, .progress-filters select, .usage-topics button { min-height:44px; }
 }
+
+
+.type-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.type-toolbar strong { flex: none; font-size: .84rem; }
+#type-links { display: flex; flex-wrap: nowrap; gap: 5px; overflow-x: auto; min-width: 0; position: relative; padding: 3px; }
+#type-links button { flex: none; white-space: nowrap; min-height: 34px; padding: 4px 9px; font-size: .83rem; }
+#type-links button[aria-current="location"] { background: var(--green); color: white; border-color: var(--green); }
+#preview-scroll { position: relative; }
+#preview-scroll .type-heading { margin: 0; padding: 8px 10px; font-size: .94rem; color: var(--green); background: var(--selected); }
+#preview-scroll .catalog-page img, #preview-scroll .page-placeholder { box-sizing: border-box; aspect-ratio: 0.75; width: 100%; object-fit: contain; background: white; }

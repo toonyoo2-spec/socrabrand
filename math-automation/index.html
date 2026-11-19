@@ -7,8 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=19">
-  <script type="module" src="math.mjs?v=34"></script>
+  <link rel="stylesheet" href="math.css?v=20">
+  <script type="module" src="math.mjs?v=35"></script>
 </head>
 <body>
   <main>
@@ -58,7 +58,6 @@
               <div id="catalog-fields" class="pick-filters">
                 <label>교재 <select id="book"></select></label>
                 <label>단원 <select id="unit"></select></label>
-                <label>교재 코너 <select id="section"></select></label>
                 <a class="mobile-jump" href="#catalog-reader">교재 보기 ↓</a>
               </div>
               <div id="question-slots" class="slot-grid" tabindex="-1"></div>
@@ -70,7 +69,11 @@
                 <p id="preview-status" class="muted" aria-live="polite"></p>
                 <a class="mobile-jump" href="#question-slots">문항 선택 ↑</a>
               </div>
-              <div id="preview-scroll" class="source-scroll catalog-scroll" tabindex="0" aria-label="교재 코너 페이지 목록"></div>
+              <div class="type-toolbar">
+                <strong id="type-label">문제 유형</strong>
+                <div id="type-links" role="group" aria-labelledby="type-label"></div>
+              </div>
+              <div id="preview-scroll" class="source-scroll catalog-scroll" tabindex="0" aria-label="문제 유형별 교재 페이지"></div>
             </aside>
           </div>
         </section>
