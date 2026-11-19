@@ -84,6 +84,15 @@ function bookSource(question, hasPrintedNumber) {
   return [question.book, hasPrintedNumber && question.page ? question.page + 'p' : question.label].filter(Boolean).join(' ');
 }
 
+function printedCrop(question) {
+  const crop = question.projection_layout?.bounds ?? question.slide_crop;
+  // On RPM p17 the preceding section rule ends just above the printed 0097.
+  if (crop && question.preview_book === 'rpm-student' && question.page === 17 && /0097번$/.test(question.label)) {
+    return [crop[0], Math.max(crop[1], .1045), crop[2], crop[3]];
+  }
+  return crop;
+}
+
 function paintProblem(image, crop, paper = false) {
   if (!Array.isArray(crop) || crop.length !== 4 ||
       !crop.every(value => Number.isFinite(value) && value >= 0 && value <= 1)) {
@@ -274,7 +283,7 @@ async function projectionProblem(question, loadImage) {
         parts=[stem, paintProblem(page,layout.body)];
         canvas=combine(parts,gap);
       } else {
-        const parts=question.bundle_parts ?? [question.slide_prompt_crop, meta?.crop ?? region?.bounds ?? layout.bounds ?? question.slide_crop].filter(Boolean);
+        const parts=question.bundle_parts ?? [question.slide_prompt_crop, meta?.crop ?? region?.bounds ?? printedCrop(question)].filter(Boolean);
         if (!parts.length) throw Error('문항 이미지 범위가 없습니다.');
         canvas=combine(parts.map(r=>paintProblem(page,r)),gap);
       }
@@ -418,7 +427,7 @@ async function paperQuizImage(question, loadPage) {
     if (closing) checkClosingPrint(page,closing);
     const original = convertedPage(page,meta,closing?.erase);
     if (meta?.mode === 'pairs') return pairPanel(original,quiz,layout,true);
-    const regions = question.bundle_parts ?? [question.slide_prompt_crop,meta?.crop ?? closing?.bounds ?? layout.bounds ?? question.slide_crop].filter(Boolean);
+    const regions = question.bundle_parts ?? [question.slide_prompt_crop,meta?.crop ?? closing?.bounds ?? printedCrop(question)].filter(Boolean);
     if (!regions.length) throw Error('문제 영역을 찾지 못했습니다.');
     const panels = regions.map(region => paintProblem(original,region,true));
     if (meta?.mode === 'diagram') {
@@ -473,7 +482,7 @@ export async function quizImageZip(written, questions, loadPage, reviewMissing, 
         paper = false;
         canvas=writtenQuizImage({prompt:q.projection_layout.question},true);
       } else {
-        const bottom=geometry?.cutoffs[q.question_id], bounds=geometry?.bounds?.[q.question_id] ?? quiz.book_quiz.crop ?? q.projection_layout?.bounds ?? q.slide_crop;
+        const bottom=geometry?.cutoffs[q.question_id], bounds=geometry?.bounds?.[q.question_id] ?? quiz.book_quiz.crop ?? printedCrop(q);
         if (!Number.isFinite(bottom) || !bounds || bottom<=bounds[1] || bottom>bounds[3]) {
           throw Error('교재에서 문제와 보기의 경계를 확인해 주세요.');
         }
