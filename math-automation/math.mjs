@@ -1,6 +1,6 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=10';
-import { buildPresentation, bookQuizPreview } from './presentation.mjs?v=11';
-import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=9';
+import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=12';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=10';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
@@ -42,6 +42,7 @@ let transferContext;
 let progressGeneration = 0;
 let staffProgress;
 const lessonWeek = number => Math.ceil(number / 2);
+const usesQuizN = course => course.instructor === '한태인';
 const className = course => tracks[course.track].split(' · ')[0];
 
 class ApiError extends Error {
@@ -451,7 +452,15 @@ function renderStaffProgress() {
     open.title = row.lesson.topic;
     open.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 열기');
     open.addEventListener('click',() => openProgressLesson(row.course,row.lesson.lesson));
-    tr.insertCell().append(open);
+    const courseCell = tr.insertCell();
+    courseCell.append(open);
+    if (usesQuizN(row.course) && row.submission) {
+      const download = element('button','퀴즈 이미지');
+      download.type='button';
+      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 이미지 받기');
+      download.addEventListener('click',()=>downloadQuizImages(row,download,$('transfer-feedback')));
+      courseCell.append(document.createElement('br'),download);
+    }
     const counts = tr.insertCell();
     counts.className = 'progress-counts';
     counts.append(element('span','수업 '+row.picks+'/'+row.course.lesson_slots));
@@ -859,7 +868,7 @@ function renderStagePicks() {
         if (!details.open) return;
         details.removeEventListener('toggle', preview);
         try {
-          const canvas = await bookQuizPreview({ ...question, quiz_override: quiz }, q => loadProjectionImage(course, q));
+          const canvas = await bookQuizPreview({ ...question, quiz_override: quiz }, q => loadProjectionImage(course, q), usesQuizN(course));
           canvas.setAttribute('aria-label', question.label + ' 퀴즈 원문');
           if (quiz.book_quiz.mode === 'pairs') {
             choices.previousElementSibling?.remove(); choices.replaceWith(canvas);
@@ -1148,6 +1157,7 @@ function renderSubmissionChecklist(items) {
 }
 
 function renderSubmission() {
+  $('quiz-png').hidden = !state.submitted || !usesQuizN(currentCourse());
   updateStageProgress();
   const totalBasics = requiredLessonSlots();
   const selectedBasics = [...state.picks.keys()].filter(slot => slot <= totalBasics).length;
@@ -1421,11 +1431,9 @@ async function saveDestinations() {
   finally { if (ctx===transferContext) {ctx.saving=false; $('transfer-urls').disabled=false; $('transfer-cancel').disabled=Boolean(ctx.pending); renderTransferCounts();} }
 }
 
-async function slideBlob(row, submission) {
-  const {course,lesson}=row;
-  const picks=[...submission.selections,...submission.stage_questions];
+async function questionAssets(course, picks) {
   const ids=[...new Set(picks.map(p=>p.question_id))];
-  const items=await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,bundle_root_id,bundle_parts,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset,projection_layout'});
+  const items=ids.length ? await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,bundle_root_id,bundle_parts,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset,projection_layout'}) : [];
   const withAsset=pick=>{
     const item=items.find(x=>x.question_id===pick.question_id);
     if (!item) throw Error('선택한 교재 문항을 찾을 수 없습니다.');
@@ -1437,10 +1445,44 @@ async function slideBlob(row, submission) {
     if (!pages.has(key)) pages.set(key, loadProjectionImage(course, question));
     return pages.get(key);
   };
-  return buildPresentation({title:deckTitle(row),picks:submission.selections.map(withAsset),quizzes:submission.quizzes,
-    appendix:submission.stage_questions.map(p=>{const mode=savedResourceMode(p,lesson);return {...withAsset(p),stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};}),
-    quizLabel:stageTitle('teacher')},loadPage);
+  return {withAsset,loadPage};
 }
+
+function stageImage(pick,lesson,withAsset) {
+  const mode = savedResourceMode(pick,lesson);
+  return {...withAsset(pick),stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};
+}
+
+async function slideBlob(row, submission) {
+  const {course,lesson} = row;
+  const appendix = usesQuizN(course) ? [] : submission.stage_questions;
+  const {withAsset,loadPage} = await questionAssets(course,[...submission.selections,...appendix]);
+  return buildPresentation({title:deckTitle(row),picks:submission.selections.map(withAsset),
+    quizzes:usesQuizN(course) ? [] : submission.quizzes,
+    appendix:appendix.map(p=>stageImage(p,lesson,withAsset)),quizLabel:stageTitle('teacher')},loadPage);
+}
+
+async function downloadQuizImages(row,button,notice) {
+  if (button.disabled || !usesQuizN(row.course)) return;
+  button.disabled = true;
+  notice.textContent = '제출한 퀴즈 문항으로 이미지를 만드는 중입니다.';
+  try {
+    const [saved] = await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+row.submission.id,select:'id,quizzes,stage_questions'});
+    if (!saved) throw Error('제출본을 찾지 못했습니다.');
+    const picks = saved.stage_questions ?? [];
+    const {withAsset,loadPage} = await questionAssets(row.course,picks);
+    const zip = await quizImageZip(saved.quizzes ?? [], picks.map(p=>stageImage(p,row.lesson,withAsset)), loadPage);
+    const url = URL.createObjectURL(zip);
+    const link = element('a');
+    link.href = url;
+    link.download = [row.course.instructor,className(row.course),row.lesson.lesson+'강','퀴즈앤'].join('_')+'.zip';
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    notice.textContent = link.download+' 다운로드를 시작했습니다.';
+  } catch (error) { notice.textContent = '이미지를 받지 못했습니다. '+error.message; }
+  finally { button.disabled = false; }
+}
+
 async function loadProjectionImage(course, question) {
   if (question.projection_asset) {
     const path = '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.projection_asset;
@@ -1472,7 +1514,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       if (!cells) throw Error('기존 셀 변경을 취소했습니다.');
       url=cells.url;destination=sheet;
     } else {
-      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check);
+      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,usesQuizN(row.course) ? 'han-lesson-only-1' : undefined);
       destination=folderUrl;
     }
     if (!await rpc('math_finish_transfer',{...args,p_url:url,p_destination:destination})) throw Error('Google 결과의 완료 기록을 확인해 주세요.');
@@ -1663,6 +1705,7 @@ $('stage-section').addEventListener('change', () => {
 $('teacher-section').addEventListener('submit', saveQuiz);
 $('quiz-clear').addEventListener('click', clearQuiz);
 $('submit').addEventListener('click', submit);
+$('quiz-png').addEventListener('click', () => downloadQuizImages({course:currentCourse(),lesson:currentLesson(),submission:state.submitted},$('quiz-png'),$('submit-feedback')));
 $('progress-week').addEventListener('change', () => {
   staffProgress.week=Number($('progress-week').value);
   $('transfer-feedback').textContent='';
@@ -1743,7 +1786,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=6').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=7').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;

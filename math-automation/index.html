@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
   <link rel="stylesheet" href="math.css?v=19">
-  <script type="module" src="math.mjs?v=30"></script>
+  <script type="module" src="math.mjs?v=31"></script>
 </head>
 <body>
   <main>
@@ -169,6 +169,7 @@
                 <p id="submit-status" class="muted" aria-live="polite"></p>
                 <button type="button" class="button primary" id="submit">회차 제출</button>
               </div>
+              <button type="button" id="quiz-png" hidden>제출한 퀴즈앤 이미지 받기</button>
               <p id="submit-feedback" class="muted inline-status" role="status"></p>
             </section>
             <details id="staff-links" class="card" hidden>

@@ -107,7 +107,7 @@ function bookSource(question, hasPrintedNumber) {
   return [question.book, hasPrintedNumber && question.page ? question.page + 'p' : question.label].filter(Boolean).join(' ');
 }
 
-function paintProblem(image, crop) {
+function paintProblem(image, crop, paper = false) {
   if (!Array.isArray(crop) || crop.length !== 4 ||
       !crop.every(value => Number.isFinite(value) && value >= 0 && value <= 1)) {
     throw Error('문항 이미지 범위를 확인해 주세요.');
@@ -134,19 +134,20 @@ function paintProblem(image, crop) {
       const px = (i / 4) % w, py = Math.floor(i / 4 / w);
       minX = Math.min(px,minX); maxX = Math.max(px,maxX); minY = Math.min(py,minY); maxY = Math.max(py,maxY);
     }
+    if (paper) continue;
     for (let channel = 0; channel < 3; channel++) {
       const coverage = (255 - hi + ink.data[i + channel] - lo) / 255;
       ink.data[i + channel] = 17 + 238 * Math.pow(coverage, .72);
     }
   }
-  context.putImageData(ink, 0, 0);
+  if (!paper) context.putImageData(ink, 0, 0);
   if (maxX < minX || maxY < minY) throw Error('문항 이미지 안에서 내용을 확인하지 못했습니다.');
   const pad = 5;
   const trimmed = document.createElement('canvas');
   trimmed.width = maxX - minX + 1 + 2 * pad;
   trimmed.height = maxY - minY + 1 + 2 * pad;
   const out = trimmed.getContext('2d');
-  out.fillStyle = '#' + DARK;
+  out.fillStyle = paper ? '#fff' : '#' + DARK;
   out.fillRect(0, 0, trimmed.width, trimmed.height);
   out.drawImage(canvas, minX, minY, trimmed.width - 2 * pad, trimmed.height - 2 * pad,
     pad, pad, trimmed.width - 2 * pad, trimmed.height - 2 * pad);
@@ -188,14 +189,14 @@ function convertedPage(original, meta) {
   return page;
 }
 
-function combine(panels, gap, horizontal = false, alignBottom = false) {
+function combine(panels, gap, horizontal = false, alignBottom = false, background = '#' + DARK) {
   if (panels.length === 1) return panels[0];
   const canvas = document.createElement('canvas');
   const widths = panels.map(p => p.width), heights = panels.map(p => p.height);
   const sum = values => values.reduce((a,b) => a+b,0) + gap*(panels.length-1);
   canvas.width = horizontal ? sum(widths) : Math.max(...widths);
   canvas.height = horizontal ? Math.max(...heights) : sum(heights);
-  const ctx = canvas.getContext('2d'); ctx.fillStyle='#'+DARK; ctx.fillRect(0,0,canvas.width,canvas.height);
+  const ctx = canvas.getContext('2d'); ctx.fillStyle=background; ctx.fillRect(0,0,canvas.width,canvas.height);
   let offset = 0;
   for (const panel of panels) {
     const y = horizontal ? (alignBottom ? canvas.height-panel.height : (canvas.height-panel.height)/2) : offset;
@@ -205,15 +206,15 @@ function combine(panels, gap, horizontal = false, alignBottom = false) {
   return canvas;
 }
 
-function textPanel(value, size) {
+function textPanel(value, size, paper = false) {
   const canvas=document.createElement('canvas');
   const ctx=canvas.getContext('2d');
   const font=size+'px "'+FONT+'", sans-serif';
   ctx.font=font;
   canvas.width=Math.ceil(ctx.measureText(value).width)+10;
   canvas.height=Math.ceil(size*1.52);
-  ctx.fillStyle='#'+DARK;ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.font=font;ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.fillText(value,4,canvas.height/2);
+  ctx.fillStyle=paper?'#fff':'#'+DARK;ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.font=font;ctx.fillStyle=paper?'#111':'#fff';ctx.textBaseline='middle';ctx.fillText(value,4,canvas.height/2);
   return canvas;
 }
 
@@ -223,29 +224,32 @@ function pairIndices(quiz) {
   return rows;
 }
 
-function pairPanel(page, quiz, layout) {
+function pairPanel(page, quiz, layout, paper = false) {
+  const label = (value, size) => textPanel(value, size, paper);
+  const join = (parts, gap, horizontal) => combine(parts, gap, horizontal, false, paper ? '#fff' : '#' + DARK);
   const rows=pairIndices(quiz);
   const size=Math.round(page.width*.018), gap=Math.round(size*.38);
   if (layout.question && layout.values?.length===5) {
-    const lines=rows.map((row,i)=>textPanel(CIRCLED[i]+'   '+row.map(j=>layout.values[j]).join(',   '),size));
-    return combine([textPanel(layout.question, size), ...lines],gap);
+    const lines=rows.map((row,i)=>label(CIRCLED[i]+'   '+row.map(j=>layout.values[j]).join(',   '),size));
+    return join([label(layout.question, size), ...lines],gap);
   }
   const {stem,cells,markers}=layout.pairs;
-  const question=paintProblem(page,stem);
+  const question=paintProblem(page,stem,paper);
   const cleaned=document.createElement('canvas');cleaned.width=page.width;cleaned.height=page.height;
   const ctx=cleaned.getContext('2d');ctx.drawImage(page,0,0);ctx.fillStyle='#fff';
   for(const [l,t,r,b] of markers)ctx.fillRect(l*page.width,t*page.height,(r-l)*page.width,(b-t)*page.height);
-  const values=cells.map(cell=>paintProblem(cleaned,cell));
-  const separator=textPanel('·',size);
+  const values=cells.map(cell=>paintProblem(cleaned,cell,paper));
+  const separator=label('·',size);
   const lines=rows.map((row,i)=>{
-    const parts=[textPanel(CIRCLED[i],size)];
-    row.forEach((v,j)=>{if(j)parts.push(separator); if(layout.pairs.graphReferences)parts.push(textPanel('그래프 '+CIRCLED[v],size*.86)); parts.push(values[v]);});
-    return combine(parts,gap,true);
+    const parts=[label(CIRCLED[i],size)];
+    row.forEach((v,j)=>{if(j)parts.push(separator); if(layout.pairs.graphReferences)parts.push(label('그래프 '+CIRCLED[v],size*.86)); parts.push(values[v]);});
+    return join(parts,gap,true);
   });
-  return combine([question,textPanel('해당하는 항목을 묶은 보기를 하나 고르세요.',size*.83),...lines],gap);
+  return join([question,label('해당하는 항목을 묶은 보기를 하나 고르세요.',size*.83),...lines],gap);
 }
 
-export async function bookQuizPreview(question, loadImage) {
+export async function bookQuizPreview(question, loadImage, paper = false) {
+  if (paper) return paperQuizImage(question,loadImage);
   return (await projectionProblem(question, loadImage)).canvas;
 }
 
@@ -337,4 +341,76 @@ export async function buildPresentation({
     else await addQuestionImage(slide, question, loadImage);
   }
   return new Blob([await deck.write({ outputType: 'arraybuffer', compression: true })], { type: MIME });
+}
+
+// QuizN text questions use the same exponent notation as slides. Wrap before
+// drawing so long Korean prompts and narrow superscripts keep their full extent.
+function writtenQuizImage(quiz) {
+  const choices = quiz.kind === 'choice' ? quiz.choices.split('\n').map((v,i)=>CIRCLED[i]+' '+v) : [];
+  const blocks = [quiz.prompt, ...choices].join('\n\n').split('\n');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const lines = [[]];
+  const maxWidth = 1360, margin = 32, lineHeight = 58;
+  let width = 0, longest = 0;
+  for (const [index,block] of blocks.entries()) {
+    if (index) { lines.push([]); width = 0; }
+    for (const run of equationRuns(block)) {
+      const raised = Boolean(run.options?.superscript);
+      const font = (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
+      ctx.font = font;
+      for (const ch of run.text) {
+        const advance = ctx.measureText(ch).width;
+        if (width + advance > maxWidth) { lines.push([]); width = 0; }
+        lines.at(-1).push({ch, x:width, font, raised});
+        width += advance;
+        longest = Math.max(longest,width);
+      }
+    }
+  }
+  canvas.width = Math.ceil(longest) + margin*2;
+  canvas.height = lines.length*lineHeight + margin*2;
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#111';
+  lines.forEach((line,i)=>{for (const glyph of line) {
+    ctx.font=glyph.font;
+    ctx.fillText(glyph.ch, margin+glyph.x, margin+i*lineHeight+(glyph.raised?20:38));
+  }});
+  return canvas;
+}
+
+async function paperQuizImage(question, loadPage) {
+  const quiz = question.quiz_override, meta = quiz?.book_quiz;
+  if (quiz && !meta) return writtenQuizImage({...quiz,kind:'choice'});
+  const page = await createImageBitmap(await loadPage({...question,projection_asset:null}));
+  try {
+    if (page.width < 2200) throw Error('고해상도 교재 원본을 확인해 주세요.');
+    const layout = question.projection_layout ?? {};
+    const original = convertedPage(page,meta);
+    if (meta?.mode === 'pairs') return pairPanel(original,quiz,layout,true);
+    const regions = question.bundle_parts ?? [question.slide_prompt_crop,meta?.crop ?? layout.bounds ?? question.slide_crop].filter(Boolean);
+    if (!regions.length) throw Error('문제 영역을 찾지 못했습니다.');
+    const panels = regions.map(region => paintProblem(original,region,true));
+    if (meta?.mode === 'diagram') {
+      const labels = meta.retained.map((v,i)=>CIRCLED[i]+' 그래프 '+CIRCLED[v-1]);
+      panels.push(textPanel(labels.join('      '), Math.round(page.width*.016),true));
+    }
+    return combine(panels,Math.round(.011*page.width),false,false,'#fff');
+  } finally {page.close();}
+}
+
+export async function quizImageZip(written, questions, loadPage) {
+  if (!written.length && !questions.length) throw Error('제출된 퀴즈 문항이 없습니다.');
+  await loadPptx(); // The local bundle also exposes JSZip.
+  const zip = new window.JSZip();
+  async function add(group,slot,canvas) {
+    const png = await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if (!png) throw Error('문제 이미지를 저장하지 못했습니다.');
+    const name = '퀴즈앤'+group+'-'+String(slot).padStart(2,'0')+'.png';
+    if (zip.file(name)) throw Error('제출본의 문항 번호가 중복됩니다.');
+    zip.file(name,await png.arrayBuffer());
+  }
+  for (const quiz of written) await add('①',quiz.slot,writtenQuizImage(quiz));
+  for (const q of questions) await add(q.quizOne?'①':'②',q.slot,await paperQuizImage(q,loadPage));
+  return zip.generateAsync({type:'blob'});
 }

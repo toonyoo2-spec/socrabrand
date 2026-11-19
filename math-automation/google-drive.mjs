@@ -128,7 +128,7 @@ function slidesEditUrl(file) {
   return 'https://docs.google.com/presentation/d/' + file.id + '/edit';
 }
 
-export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder, beforeWrite = async () => {}) {
+export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder, beforeWrite = async () => {}, layout = projectionLayout) {
   const parent = fileId(folder.id);
   const headers={...connection.headers};
   if (folder.resourceKey) headers['X-Goog-Drive-Resource-Keys']=parent+'/'+folder.resourceKey;
@@ -137,7 +137,7 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
     ...folderQuery(folder),
     q: "trashed = false and '" + parent + "' in parents and mimeType = '" + slidesMime +
       "' and appProperties has { key='socraMathSubmission' and value='" + fileId(submission) + "' }" +
-      " and appProperties has { key='socraMathLayout' and value='" + projectionLayout + "' }",
+      " and appProperties has { key='socraMathLayout' and value='" + layout + "' }",
     fields: 'files(id,mimeType)', pageSize: '10',
   });
   const { files } = await fetch(driveApi + 'files?' + lookup, { headers, cache: 'no-store' })
@@ -150,7 +150,7 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
     headers: { ...headers, 'Content-Type': 'application/json',
       'X-Upload-Content-Type': pptxMime, 'X-Upload-Content-Length': String(blob.size) },
     body: JSON.stringify({ name, mimeType: slidesMime, parents:[parent],
-      appProperties: { socraMathSubmission: submission, socraMathLayout: projectionLayout } }),
+      appProperties: { socraMathSubmission: submission, socraMathLayout: layout } }),
   });
   if (!start.ok) throw Error('Google Drive에서 저장을 시작하지 못했습니다.');
   const session = start.headers.get('location');
