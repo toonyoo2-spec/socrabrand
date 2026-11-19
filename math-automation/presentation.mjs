@@ -1,3 +1,4 @@
+import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
 import {loadQuizDesign, frameQuizImage, quizFont} from './quizn-image.mjs?v=2';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
@@ -12,19 +13,6 @@ const badges = {
   exam: { fill:'141C28', line:'37587A', divider:'53769A', width:2.198, height:.38 },
   closing: { fill:'231B33', line:'60527E', divider:'8874A8', width:2.074, height:.42 },
 };
-const badgeImages = new Map();
-
-function loadBadge(kind) {
-  if (!badgeImages.has(kind)) {
-    const pending = fetch(new URL('./projection-badges/' + kind + '.png', import.meta.url)).then(async response => {
-      if (!response.ok) throw Error('교재 코너 배지를 불러오지 못했습니다.');
-      return createImageBitmap(await response.blob());
-    }).catch(error => { badgeImages.delete(kind); throw error; });
-    badgeImages.set(kind, pending);
-  }
-  return badgeImages.get(kind);
-}
-
 function loadPptx() {
   if (window.PptxGenJS) return Promise.resolve(window.PptxGenJS);
   library ??= new Promise((resolve, reject) => {
@@ -56,7 +44,7 @@ function equationRuns(value) {
   });
 }
 
-// Paint the badge on one baseline. Slides importers may independently wrap text boxes.
+// One native text box keeps the entire heading on a single baseline.
 const HEADER_Y = .62;
 const BODY_TOP = 1.65;
 // The reference deck reserves the right-hand side for live writing.
@@ -74,31 +62,21 @@ async function frame(deck, label, source, style, book) {
   const theme = badges[kind] ?? (style === 'teacher'
     ? { fill:'352A13', line:'88692F', divider:'B39754' }
     : { fill:'231B33', line:'60527E', divider:'8874A8' });
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const dpi = 300, height = .635;
-  const font = size => '700 ' + (size * dpi / 72) + 'px "' + FONT + '", sans-serif';
-  ctx.font = font(16);
-  const sectionWidth = kind ? theme.width : ctx.measureText(label).width / dpi;
-  const divider = .15 + sectionWidth + .18;
-  const titleStart = divider + .17;
-  ctx.font = font(19);
-  const width = Math.min(BODY_WIDTH, titleStart + ctx.measureText(source).width / dpi + .19);
-  canvas.width = Math.ceil(width * dpi); canvas.height = Math.ceil(height * dpi);
-  ctx.scale(dpi,dpi);
-  ctx.fillStyle = '#' + theme.fill; ctx.strokeStyle = '#' + theme.line; ctx.lineWidth = .014;
-  ctx.beginPath(); ctx.roundRect(.009,.009,width-.018,height-.018,.09); ctx.fill(); ctx.stroke();
-  ctx.textBaseline = 'middle'; ctx.fillStyle = '#E4DDF2';
-  const setFont = size => { ctx.font = '700 ' + size / 72 + 'px "' + FONT + '", sans-serif'; };
-  if (kind) {
-    const img = await loadBadge(kind);
-    ctx.drawImage(img,.155,(height-theme.height)/2,theme.width,theme.height);
-  } else {
-    setFont(16); ctx.fillText(label,.15,height/2,sectionWidth+.01);
-  }
-  ctx.fillStyle = '#' + theme.divider; ctx.fillRect(divider,.19,.015,height-.38);
-  setFont(19); ctx.fillStyle = '#fff'; ctx.fillText(source,titleStart,height/2,width-titleStart-.14);
-  slide.addImage({data:canvas.toDataURL('image/png'),x:SLIDE_MARGIN,y:HEADER_Y,w:width,h:height,altText:label+' | '+source});
+  const ctx = document.createElement('canvas').getContext('2d');
+  const measure = (value, size) => {
+    ctx.font = 'bold ' + size * 96 / 72 + 'px "' + FONT + '", sans-serif';
+    return ctx.measureText(value).width / 96;
+  };
+  const height = .635;
+  const width = Math.min(BODY_WIDTH, .58 + 1.12 * (measure(label,16) + measure('   |   '+source,19)));
+  slide.addShape(deck.ShapeType.roundRect, {x:SLIDE_MARGIN,y:HEADER_Y,w:width,h:height,
+    rectRadius:.08,radius:.08,line:{color:theme.line,width:1},fill:{color:theme.fill}});
+  slide.addText([
+    {text:label, options:{fontSize:16,color:kind==='closing'?'D8C4F4':'E4E8ED'}},
+    {text:'   |   ', options:{fontSize:16,color:theme.divider}},
+    {text:source, options:{fontSize:19,color:'FFFFFF'}}
+  ], {x:SLIDE_MARGIN+.12,y:HEADER_Y,w:width-.24,h:height,margin:0,fontFace:FONT,bold:true,
+      valign:'mid',align:'left',wrap:false,fit:'shrink',lang:'ko-KR'});
   return slide;
 }
 
@@ -153,6 +131,26 @@ function paintProblem(image, crop, paper = false) {
   return trimmed;
 }
 
+// Check the actual source pixels at the printed number and optional textbook marker.
+function checkClosingPrint(page, region) {
+  if (Math.abs(page.width / page.height - 609.45 / 807.87) > .012) {
+    throw Error('학생용 교재의 쪽 비율이 달라 문항 위치를 확인해야 합니다.');
+  }
+  const sample = document.createElement('canvas');
+  sample.width = 48; sample.height = 32;
+  const ctx = sample.getContext('2d', {willReadFrequently:true});
+  for (const box of [region.number, region.tag].filter(Boolean)) {
+    const [l,t,r,b] = box;
+    ctx.drawImage(page,l*page.width,t*page.height,(r-l)*page.width,(b-t)*page.height,0,0,48,32);
+    const pixels = ctx.getImageData(0,0,48,32).data;
+    let ink = 0;
+    for (let i=0;i<pixels.length;i+=4) {
+      if (Math.min(pixels[i],pixels[i+1],pixels[i+2])<200) ink++;
+    }
+    if (ink < 16) throw Error('문항 번호나 교재 표식을 원본에서 확인할 수 없습니다.');
+  }
+}
+
 function placeProblem(slide, image) {
   const panels = image.parts ?? [image.canvas];
   const sizes = panels.map(panel => {
@@ -170,8 +168,8 @@ function placeProblem(slide, image) {
   }
 }
 
-function convertedPage(original, meta) {
-  if (!meta?.erase) return original;
+function convertedPage(original, meta, masks = []) {
+  if (!meta?.erase && !masks.length) return original;
   const page = document.createElement('canvas');
   page.width = original.width;
   page.height = original.height;
@@ -179,8 +177,9 @@ function convertedPage(original, meta) {
   ctx.drawImage(original, 0, 0);
   const pixels = ([x0,y0,x1,y1]) => [x0*page.width,y0*page.height,(x1-x0)*page.width,(y1-y0)*page.height];
   ctx.fillStyle = '#fff';
-  ctx.fillRect(...pixels(meta.erase));
-  if (meta.replaceNumber) {
+  for (const mask of masks) ctx.fillRect(...pixels(mask));
+  if (meta?.erase) ctx.fillRect(...pixels(meta.erase));
+  if (meta?.replaceNumber) {
     const [from, to] = meta.replaceNumber.map(pixels);
     ctx.fillRect(...to);
     ctx.drawImage(original, ...from, ...to);
@@ -263,17 +262,19 @@ async function projectionProblem(question, loadImage) {
       canvas.getContext('2d').drawImage(image,0,0);scale=1/125;
     } else {
       if (image.width<2200) throw Error('발표용 원본 해상도가 부족합니다. 교재 쪽을 확인해 주세요.');
-      const page=convertedPage(image,meta);
+      const region=closingRegion(question);
+      if (region) checkClosingPrint(image,region);
+      const page=convertedPage(image,meta,region?.erase);
       const gap=Math.round(.011*image.width);
       if (meta?.mode==='pairs') {
         if (!layout.pairs) throw Error('묶음 보기의 원본 위치를 확인해 주세요.');
         canvas=pairPanel(page,quiz,layout);
-      } else if (layout.stemRows?.length && layout.body && !question.bundle_parts && !question.slide_prompt_crop) {
+      } else if (!region && layout.stemRows?.length && layout.body && !question.bundle_parts && !question.slide_prompt_crop) {
         const stem=combine(layout.stemRows.map(r=>paintProblem(page,r)),0,true,true);
         parts=[stem, paintProblem(page,layout.body)];
         canvas=combine(parts,gap);
       } else {
-        const parts=question.bundle_parts ?? [question.slide_prompt_crop, meta?.crop ?? layout.bounds ?? question.slide_crop].filter(Boolean);
+        const parts=question.bundle_parts ?? [question.slide_prompt_crop, meta?.crop ?? region?.bounds ?? layout.bounds ?? question.slide_crop].filter(Boolean);
         if (!parts.length) throw Error('문항 이미지 범위가 없습니다.');
         canvas=combine(parts.map(r=>paintProblem(page,r)),gap);
       }
@@ -413,9 +414,11 @@ async function paperQuizImage(question, loadPage) {
   try {
     if (page.width < 2200) throw Error('고해상도 교재 원본을 확인해 주세요.');
     const layout = question.projection_layout ?? {};
-    const original = convertedPage(page,meta);
+    const closing = closingRegion(question);
+    if (closing) checkClosingPrint(page,closing);
+    const original = convertedPage(page,meta,closing?.erase);
     if (meta?.mode === 'pairs') return pairPanel(original,quiz,layout,true);
-    const regions = question.bundle_parts ?? [question.slide_prompt_crop,meta?.crop ?? layout.bounds ?? question.slide_crop].filter(Boolean);
+    const regions = question.bundle_parts ?? [question.slide_prompt_crop,meta?.crop ?? closing?.bounds ?? layout.bounds ?? question.slide_crop].filter(Boolean);
     if (!regions.length) throw Error('문제 영역을 찾지 못했습니다.');
     const panels = regions.map(region => paintProblem(original,region,true));
     if (meta?.mode === 'diagram') {
@@ -478,8 +481,15 @@ export async function quizImageZip(written, questions, loadPage, reviewMissing, 
         const page=await createImageBitmap(await loadPage({...q,projection_asset:null}));
         try {
           if (page.width<2200) throw Error('고해상도 교재 원본을 확인해 주세요.');
+          const closing = closingRegion(q);
+          if (closing) checkClosingPrint(page,closing);
+          const original = convertedPage(page,null,closing?.erase);
+          if (closing) {
+            region[0] = closing.bounds[0]; region[1] = closing.bounds[1];
+            region[2] = Math.min(region[2],closing.bounds[2]); region[3] = Math.min(region[3],closing.bounds[3]);
+          }
           const regions=q.bundle_parts ? q.bundle_parts.map(box=>[box[0],box[1],box[2],Math.min(box[3],bottom)]).filter(box=>box[3]>box[1]) : [q.slide_prompt_crop,region].filter(Boolean);
-          canvas=combine(regions.map(box=>paintProblem(page,box,true)),Math.round(.011*page.width),false,false,'#fff');
+          canvas=combine(regions.map(box=>paintProblem(original,box,true)),Math.round(.011*page.width),false,false,'#fff');
         } finally {page.close();}
       }
       const framed = frameQuizImage(design, canvas, {number,total:items.length,lesson,source:label,paper});

@@ -1,6 +1,6 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=11';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=17';
+import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=18';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=11';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -455,13 +455,18 @@ function renderStaffProgress() {
     open.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 열기');
     open.addEventListener('click',() => openProgressLesson(row.course,row.lesson.lesson));
     const courseCell = tr.insertCell();
-    courseCell.append(open);
-    if (usesQuizN(row.course) && row.submission) {
-      const download = element('button','퀴즈앤 ZIP 받기');
+    courseCell.className = 'course-cell';
+    const actions = element('div', undefined, 'course-actions');
+    courseCell.append(actions);
+    actions.append(open);
+    if (usesQuizN(row.course)) {
+      const download = element('button','퀴즈앤','quiz-download');
       download.type='button';
       download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 ZIP 받기');
       download.addEventListener('click',()=>downloadQuizImages(row,download,$('transfer-feedback')));
-      courseCell.append(document.createElement('br'),download);
+      download.disabled = !row.submission;
+      download.title = row.submission ? '엑셀과 문제 이미지 받기' : '선생님이 제출하면 다운로드할 수 있습니다.';
+      actions.append(download);
     }
     const counts = tr.insertCell();
     counts.className = 'progress-counts';
@@ -1188,7 +1193,8 @@ function renderSubmissionChecklist(items) {
 }
 
 function renderSubmission() {
-  $('quiz-png').hidden = !state.submitted || !usesQuizN(currentCourse());
+  $('quiz-png').hidden = !usesQuizN(currentCourse());
+  $('quiz-png').disabled = !state.submitted;
   updateStageProgress();
   const totalBasics = requiredLessonSlots();
   const selectedBasics = [...state.picks.keys()].filter(slot => slot <= totalBasics).length;
@@ -1552,7 +1558,7 @@ function confirmQuizKey(submissionId,q,canvas,number) {
 }
 
 async function downloadQuizImages(row,button,notice) {
-  if (button.disabled || !usesQuizN(row.course)) return;
+  if (button.disabled || !row.submission || !usesQuizN(row.course)) return;
   button.disabled = true;
   notice.textContent = '제출한 퀴즈로 엑셀과 문제 이미지를 만드는 중입니다.';
   try {
@@ -1573,6 +1579,8 @@ async function downloadQuizImages(row,button,notice) {
 }
 
 async function loadProjectionImage(course, question) {
+  const sourceBooks = ['concept-m1','concept-appendix','rpm-student','rpm-pro-student','rpm-appendix'];
+  if (!sourceBooks.includes(question.preview_book)) throw Error('학생용 교재 또는 교사부록의 원본을 확인해 주세요.');
   if (question.projection_asset) {
     const path = '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.projection_asset;
     return (await request(path)).blob();
@@ -1605,7 +1613,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       if (!cells) throw Error('기존 셀 변경을 취소했습니다.');
       url=cells.url;destination=sheet;
     } else {
-      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,usesQuizN(row.course) ? 'han-lesson-intro-1' : 'beam-lesson-intro-1');
+      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,usesQuizN(row.course) ? 'han-lesson-intro-2' : 'beam-lesson-intro-2');
       destination=folderUrl;
     }
     if (!await rpc('math_finish_transfer',{...args,p_url:url,p_destination:destination})) throw Error('Google 결과의 완료 기록을 확인해 주세요.');
