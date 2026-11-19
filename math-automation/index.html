@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
   <link rel="stylesheet" href="math.css?v=22">
-  <script type="module" src="math.mjs?v=43"></script>
+  <script type="module" src="math.mjs?v=44"></script>
 </head>
 <body>
   <main>
@@ -168,6 +168,9 @@
             <section id="submission-panel" class="card" aria-labelledby="submit-heading">
               <h2 id="submit-heading">회차 제출</h2>
               <ul id="submission-checklist" aria-label="제출 전 확인"></ul>
+              <label id="quiz-mode-field" hidden>이번 회차 퀴즈앤
+                <select id="submission-quiz-mode" aria-label="이번 회차에 사용할 퀴즈앤"></select>
+              </label>
               <div class="submit delivery-footer">
                 <p id="submit-status" class="muted" aria-live="polite"></p>
                 <button type="button" class="button primary" id="submit">회차 제출</button>

@@ -63,7 +63,9 @@ function questionLabel(item) {
 }
 
 export function buildSheetWrites(target, lesson, submission) {
-  const quizWrites = target.quizModes.flatMap(mode => {
+  const modes = submission.selected_quiz_mode ? [submission.selected_quiz_mode] : target.quizModes;
+  if (modes.some(mode => !target.quizModes.includes(mode))) throw Error('제출본의 퀴즈 유형과 과정이 다릅니다.');
+  const quizWrites = modes.flatMap(mode => {
     const columns = target[mode];
     const items = mode === 'teacher' ? submission.quizzes ?? []
       : (submission.stage_questions ?? []).filter(item => (item.stage_mode ?? lesson.quiz_mode) === mode);
@@ -98,11 +100,14 @@ async function sheetError(response, email) {
   return Error('Google 시트 오류 ' + response.status + ' · ' + (error?.message || '잠시 후 다시 시도해 주세요.') + account);
 }
 
-export async function syncSubmissionToSheet(target, lesson, submission, connection, previousPicks = [], beforeWrite = async () => {}) {
+export async function syncSubmissionToSheet(target, lesson, submission, connection, previous, beforeWrite = async () => {}) {
   const entries = buildSheetWrites(target, lesson, submission);
-  const active = new Set(submission.selections.map(item => item.slot));
-  for (const item of previousPicks) {
-    if (!active.has(item.slot) && target.base[item.slot - 1]) entries.push([target.base[item.slot - 1], '']);
+  const active = new Set(entries.map(([column]) => column));
+  const previousEntries = Array.isArray(previous)
+    ? cellEntries(target.base, previous, questionLabel)
+    : previous ? buildSheetWrites(target, lesson, previous) : [];
+  for (const [column] of previousEntries) {
+    if (!active.has(column)) entries.push([column, '']);
   }
   if (!entries.length) throw Error('반영할 제출 문항이 없습니다.');
   const { headers, email } = connection ?? await connectSheet();
