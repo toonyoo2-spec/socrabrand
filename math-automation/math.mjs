@@ -666,7 +666,7 @@ function renderPicks() {
     section.append(element('h4',name+' · '+done+' / '+total),...items);
     return section;
   };
-  $('selection-role').textContent=state.composer ? '' : '직원 검수 화면입니다. 선생님이 저장한 문항을 확인할 수 있습니다.';
+  $('selection-role').textContent=state.composer ? '' : '선생님이 저장한 수업 문항입니다.';
   $('question-slots').replaceChildren(group('기본',picked,required,controls.slice(0,required)));
   if (controls.length>required) $('question-slots').append(group('예비',state.picks.size-picked,controls.length-required,controls.slice(required)));
 }
@@ -1495,7 +1495,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=3').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=4').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) await show(initial);
     status.hidden = true;
