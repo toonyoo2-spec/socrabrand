@@ -1509,4 +1509,32 @@ window.addEventListener('storage', event => {
   if (token && state.token && account === state.account) state.token = token;
   else if (token !== state.token || account !== state.account) void loadSite();
 });
+
+const usageDialog = $('usage-dialog');
+let usageView;
+async function openUsageGuide() {
+  if (usageDialog.open) return;
+  usageDialog.showModal();
+  usageDialog.scrollTop = 0;
+  const initial = state.stage?.startsWith('quiz') ? 'submit'
+    : state.staff ? 'choose' : state.stage === 'delivery' ? 'submit' : 'select';
+  const status = $('usage-error');
+  status.textContent = '사용 방법을 불러오는 중입니다.';
+  status.hidden = false;
+  try {
+    usageView ??= import('./usage-guide.mjs?v=1').then(module => module.mountUsageGuide($('usage-content')));
+    const show = await usageView;
+    if (usageDialog.open) await show(initial);
+    status.hidden = true;
+  } catch {
+    usageView = null;
+    $('usage-content').replaceWith($('usage-content').cloneNode(false));
+    status.textContent = '사용 방법을 불러오지 못했습니다. 창을 닫고 다시 열어 주세요.';
+  }
+}
+$('usage-open').addEventListener('click', openUsageGuide);
+$('usage-close').addEventListener('click', () => usageDialog.close());
+usageDialog.addEventListener('close', () => $('usage-open').focus({preventScroll:true}));
+if (location.hash === '#usage') void openUsageGuide();
+
 void loadSite();
