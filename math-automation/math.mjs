@@ -1,5 +1,6 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=10';
-import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=12';
+import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
+import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=13';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=10';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -455,9 +456,9 @@ function renderStaffProgress() {
     const courseCell = tr.insertCell();
     courseCell.append(open);
     if (usesQuizN(row.course) && row.submission) {
-      const download = element('button','퀴즈 이미지');
+      const download = element('button','퀴즈앤 등록 자료');
       download.type='button';
-      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 이미지 받기');
+      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 등록 자료 받기');
       download.addEventListener('click',()=>downloadQuizImages(row,download,$('transfer-feedback')));
       courseCell.append(document.createElement('br'),download);
     }
@@ -1450,7 +1451,7 @@ async function questionAssets(course, picks) {
 
 function stageImage(pick,lesson,withAsset) {
   const mode = savedResourceMode(pick,lesson);
-  return {...withAsset(pick),stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};
+  return {...withAsset(pick),stage_mode:mode,stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};
 }
 
 async function slideBlob(row, submission) {
@@ -1462,16 +1463,61 @@ async function slideBlob(row, submission) {
     appendix:appendix.map(p=>stageImage(p,lesson,withAsset)),quizLabel:stageTitle('teacher')},loadPage);
 }
 
+// Confirm only unkeyed textbook items. A revised submission gets a fresh cache key.
+const confirmedQuizKeys = new Map();
+function confirmQuizKey(submissionId,q,canvas,number) {
+  const key = [submissionId,q.quizOne,q.slot,q.question_id].join('/');
+  if (confirmedQuizKeys.has(key)) return confirmedQuizKeys.get(key);
+  const dialog=$('quiz-key-dialog'), form=$('quiz-key-form'), type=$('quiz-key-type');
+  form.reset();
+  $('quiz-key-source').textContent=number+'번 · '+q.book+' '+q.label;
+  $('quiz-key-error').textContent='';
+  canvas.style.cssText='display:block;max-width:100%;height:auto';
+  $('quiz-key-preview').replaceChildren(canvas);
+  const crop=$('quiz-key-crop');
+  function refresh() {
+    const text=type.value==='choice';
+    $('quiz-key-choices-label').hidden=!text;
+    $('quiz-key-crop-label').hidden=!text;
+    $('quiz-key-answer-label').textContent=type.value==='short' ? '정답' : type.value==='ox' ? '정답 (O 또는 X)' : '정답 번호 (1~4)';
+    canvas.style.clipPath=text ? 'inset(0 0 '+(100-Number(crop.value))+'% 0)' : '';
+  }
+  type.onchange=refresh; crop.oninput=refresh; refresh();
+  return new Promise((resolve,reject)=>{
+    let result;
+    $('quiz-key-cancel').onclick=()=>dialog.close();
+    dialog.onclose=()=>{
+      form.onsubmit=null; type.onchange=null; crop.oninput=null; dialog.onclose=null;
+      $('quiz-key-preview').replaceChildren();
+      if (!result) { reject(new DOMException('취소','AbortError')); return; }
+      confirmedQuizKeys.set(key,result); resolve(result);
+    };
+    form.onsubmit=event=>{
+      event.preventDefault();
+      try {
+        const image=type.value==='image', kind=image ? 'choice' : type.value;
+        const raw=$('quiz-key-answer').value.trim();
+        const plan=quizPlan({kind,answer:kind==='ox' ? raw.toUpperCase() : raw,choices:image ? numberButtons.join('\n') : $('quiz-key-choices').value});
+        if (kind==='short' && raw.length>15) throw Error('퀴즈앤 단답형 정답은 15자 이내로 입력해 주세요.');
+        if (type.value==='choice' && plan.imageChoices) throw Error('답 버튼의 보기는 각각 30자 이내로 입력해 주세요.');
+        result={plan,keep:type.value==='choice' ? Number(crop.value) : 100};
+        dialog.close();
+      } catch(error) { $('quiz-key-error').textContent=error.message; }
+    };
+    dialog.showModal();
+  });
+}
+
 async function downloadQuizImages(row,button,notice) {
   if (button.disabled || !usesQuizN(row.course)) return;
   button.disabled = true;
-  notice.textContent = '제출한 퀴즈 문항으로 이미지를 만드는 중입니다.';
+  notice.textContent = '제출한 퀴즈로 엑셀과 문제 이미지를 만드는 중입니다.';
   try {
     const [saved] = await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+row.submission.id,select:'id,quizzes,stage_questions'});
     if (!saved) throw Error('제출본을 찾지 못했습니다.');
     const picks = saved.stage_questions ?? [];
     const {withAsset,loadPage} = await questionAssets(row.course,picks);
-    const zip = await quizImageZip(saved.quizzes ?? [], picks.map(p=>stageImage(p,row.lesson,withAsset)), loadPage);
+    const zip = await quizImageZip(saved.quizzes ?? [], picks.map(p=>stageImage(p,row.lesson,withAsset)), loadPage, (q,canvas,number)=>confirmQuizKey(row.submission.id,q,canvas,number));
     const url = URL.createObjectURL(zip);
     const link = element('a');
     link.href = url;
@@ -1479,7 +1525,7 @@ async function downloadQuizImages(row,button,notice) {
     document.body.append(link); link.click(); link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),60000);
     notice.textContent = link.download+' 다운로드를 시작했습니다.';
-  } catch (error) { notice.textContent = '이미지를 받지 못했습니다. '+error.message; }
+  } catch (error) { notice.textContent = error.name==='AbortError' ? '다운로드를 취소했습니다.' : '등록 자료를 받지 못했습니다. '+error.message; }
   finally { button.disabled = false; }
 }
 
@@ -1786,7 +1832,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=7').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=8').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;

@@ -1,3 +1,4 @@
+import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
 const FONT = 'Noto Sans KR';
@@ -399,18 +400,71 @@ async function paperQuizImage(question, loadPage) {
   } finally {page.close();}
 }
 
-export async function quizImageZip(written, questions, loadPage) {
-  if (!written.length && !questions.length) throw Error('제출된 퀴즈 문항이 없습니다.');
-  await loadPptx(); // The local bundle also exposes JSZip.
-  const zip = new window.JSZip();
-  async function add(group,slot,canvas) {
-    const png = await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
-    if (!png) throw Error('문제 이미지를 저장하지 못했습니다.');
-    const name = '퀴즈앤'+group+'-'+String(slot).padStart(2,'0')+'.png';
-    if (zip.file(name)) throw Error('제출본의 문항 번호가 중복됩니다.');
-    zip.file(name,await png.arrayBuffer());
+// Each Excel row and its PNG are emitted from the same ordered entry.
+export async function quizImageZip(written, questions, loadPage, reviewMissing) {
+  const items = [
+    ...written.map(quiz => ({quiz,group:1,slot:quiz.slot})),
+    ...questions.map(q => ({q,quiz:q.quiz_override,group:q.quizOne ? 1 : 2,slot:q.slot})),
+  ].sort((a,b) => a.group-b.group || a.slot-b.slot);
+  if (!items.length || items.length>100) throw Error('제출된 퀴즈 문항 수를 확인해 주세요.');
+  await loadPptx();
+  let geometry;
+  if (questions.some(q=>q.quiz_override?.book_quiz?.mode==='single')) {
+    const response=await fetch(new URL('./quizn-layout.json?v=1',import.meta.url));
+    if (!response.ok) throw Error('교재 보기의 위치를 불러오지 못했습니다.');
+    geometry=await response.json();
   }
-  for (const quiz of written) await add('①',quiz.slot,writtenQuizImage(quiz));
-  for (const q of questions) await add(q.quizOne?'①':'②',q.slot,await paperQuizImage(q,loadPage));
+  const entries=[], zip = new window.JSZip(), slots=new Set();
+  for (const [idx,{q,quiz,group,slot}] of items.entries()) {
+    const key=group+'-'+slot;
+    if (!Number.isInteger(slot) || slot<1 || slots.has(key)) throw Error('제출본의 문항 번호를 확인해 주세요.');
+    slots.add(key);
+    const number=String(idx+1).padStart(2,'0');
+    const label=q ? q.book+' '+q.label : '직접 작성 '+slot+'번';
+    try {
+      let plan=quizPlan(quiz,q?.projection_layout,geometry?.numbers[q?.question_id]), canvas;
+      if (!q || (quiz && !quiz.book_quiz)) {
+        canvas=writtenQuizImage({...quiz,kind:plan.imageChoices ? 'choice' : 'short'});
+      } else if (!plan) {
+        canvas=await paperQuizImage(q,loadPage);
+        if (!reviewMissing) throw Error('제출본에 정답이 없습니다.');
+        const review=await reviewMissing(q,canvas,number);
+        plan=review.plan;
+        if (review.keep<100) {
+          const cropped=document.createElement('canvas'); cropped.width=canvas.width;
+          cropped.height=Math.max(1,Math.round(canvas.height*review.keep/100));
+          cropped.getContext('2d').drawImage(canvas,0,0); canvas=cropped;
+        }
+      } else if (plan.imageChoices) {
+        canvas=await paperQuizImage(q,loadPage);
+      } else if (quiz.book_quiz.mode==='pairs' && q.projection_layout.question) {
+        canvas=writtenQuizImage({prompt:q.projection_layout.question});
+      } else {
+        const bottom=geometry?.cutoffs[q.question_id], bounds=geometry?.bounds?.[q.question_id] ?? quiz.book_quiz.crop ?? q.projection_layout?.bounds ?? q.slide_crop;
+        if (!Number.isFinite(bottom) || !bounds || bottom<=bounds[1] || bottom>bounds[3]) {
+          throw Error('교재에서 문제와 보기의 경계를 확인해 주세요.');
+        }
+        const region=[bounds[0],bounds[1],bounds[2],bottom];
+        const page=await createImageBitmap(await loadPage({...q,projection_asset:null}));
+        try {
+          if (page.width<2200) throw Error('고해상도 교재 원본을 확인해 주세요.');
+          const regions=q.bundle_parts ? q.bundle_parts.map(box=>[box[0],box[1],box[2],Math.min(box[3],bottom)]).filter(box=>box[3]>box[1]) : [q.slide_prompt_crop,region].filter(Boolean);
+          canvas=combine(regions.map(box=>paintProblem(page,box,true)),Math.round(.011*page.width),false,false,'#fff');
+        } finally {page.close();}
+      }
+      const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+      if (!png) throw Error('PNG 파일을 만들지 못했습니다.');
+      zip.file(number+'.png',await png.arrayBuffer());
+      const prompt=(quiz && !quiz.book_quiz ? quiz.prompt : '')?.trim();
+      const question=number+'번 · '+(prompt && prompt.length<=140 ? prompt : '문제 이미지를 보고 답하세요.');
+      // The Show template offers 120 and 240 seconds, but not 180.
+      const seconds=!q ? [30,30,60,60,120][slot-1] : slot===(q.stage_mode==='rpm_pro' ? 2 : 3) ? 240 : 120;
+      entries.push({plan,question,seconds:seconds ?? '제한없음'});
+    } catch(error) {
+      if (error.name==='AbortError') throw error;
+      throw Error(number+'번 ('+label+') · '+error.message,{cause:error});
+    }
+  }
+  zip.file('퀴즈앤 업로드.xlsx',await quizWorkbook(entries));
   return zip.generateAsync({type:'blob'});
 }
