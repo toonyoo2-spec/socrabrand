@@ -27,7 +27,7 @@ export async function addEchoScenes(deck, scenes) {
     const slide = deck.addSlide();
     slide.background = {color:'000000'};
     slide.addShape(deck.ShapeType.rect,{x:.85,y:2.5375,w:.675,h:.094,line:{transparency:100},fill:{color:'9ADBFF'}});
-    const text = { x:.85,w:7.02,fontFace:'Pretendard ExtraBold',bold:true,margin:0,lang:'ko-KR',valign:'top',fit:'shrink',paraSpaceAfter:0 };
+    const text = { x:.85,w:7.02,fontFace:'Pretendard',bold:true,margin:0,lang:'ko-KR',valign:'top',fit:'shrink',paraSpaceAfter:0 };
     slide.addText(scene.label,{...text,y:3.06,h:.76,fontSize:40,color:'9ADBFF'});
     slide.addText(scene.body,{...text,y:3.90,h:scene.foot?2.03:3.44,fontSize:scene.size,color:'FFF9EC',lineSpacingMultiple:1});
     if (scene.foot) {

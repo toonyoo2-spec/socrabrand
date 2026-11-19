@@ -1,9 +1,9 @@
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
-import {addEchoScenes} from './intro.mjs?v=1';
+import {addEchoScenes} from './intro.mjs?v=2';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
-const FONT = 'Noto Sans KR';
+const FONT = 'Pretendard';
 const SLIDE_WIDTH = 20;
 const SLIDE_MARGIN = .625;
 let library;
@@ -216,7 +216,7 @@ function combine(panels, gap, horizontal = false, alignBottom = false, backgroun
 function textPanel(value, size, paper = false) {
   const canvas=document.createElement('canvas');
   const ctx=canvas.getContext('2d');
-  const font=size+'px "'+FONT+'", sans-serif';
+  const font='bold '+size+'px "'+FONT+'", sans-serif';
   ctx.font=font;
   canvas.width=Math.ceil(ctx.measureText(value).width)+10;
   canvas.height=Math.ceil(size*1.52);
@@ -314,7 +314,7 @@ function placeQuiz(slide, quiz) {
     : quiz.kind === 'ox' ? '\n\nO   /   X' : '';
   slide.addText(equationRuns(quiz.prompt + choices), {
     x: SLIDE_MARGIN, y: BODY_TOP + .42, w: BODY_WIDTH, h: BODY_HEIGHT, color: 'FFFFFF', margin: 0, valign: 'top', fontFace: FONT,
-    fontSize: 26, fit: 'shrink', breakLine: false,
+    fontSize: 26, bold: true, lang: 'ko-KR', fit: 'shrink', breakLine: false,
   });
   slide.addNotes('정답 ' + quiz.answer);
 }
@@ -383,7 +383,7 @@ function writtenQuizImage(quiz) {
     if (index) { lines.push([]); width = 0; }
     for (const run of equationRuns(block)) {
       const raised = Boolean(run.options?.superscript);
-      const font = (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
+      const font = 'bold ' + (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
       ctx.font = font;
       const words = [run.text];
       for (const word of words) {
