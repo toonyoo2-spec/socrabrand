@@ -614,7 +614,7 @@ async function loadCourse() {
   }
 }
 
-async function loadLesson() {
+async function loadLesson(requestedStage) {
   const lesson = currentLesson();
   const version = ++state.lessonVersion;
   $('lesson-tools').hidden = true;
@@ -699,7 +699,7 @@ async function loadLesson() {
     for (const id of [...formulaInputs, 'quiz-kind', 'quiz-choice-answer']) $(id).disabled = !state.composer;
     $('symbol-panel').hidden = !state.composer;
     const defaultStage = state.staff ? 'delivery' : 'catalog';
-    showStage(restored && state.view.stage ? state.view.stage : defaultStage, true);
+    showStage(requestedStage ?? (restored && state.view.stage ? state.view.stage : defaultStage), true);
   } catch (error) {
     if (version === state.lessonVersion) failure(error);
   }
@@ -755,7 +755,14 @@ function renderQuizStage(mode) {
 }
 
 function lessonCatalog() {
-  return state.catalog.filter(q => (!q.bundle_root_id || q.bundle_root_id === q.question_id) && (q.use_kind ?? 'lesson') === 'lesson');
+  const lesson = currentLesson();
+  const closingSection = /중단원\s*마무리/;
+  const hasClosingSection = closingSection.test(lesson?.topic) || closingSection.test(lesson?.section);
+  return state.catalog.filter(q =>
+    (!q.bundle_root_id || q.bundle_root_id === q.question_id) &&
+    (q.use_kind ?? 'lesson') === 'lesson' &&
+    (hasClosingSection || !closingSection.test(q.section))
+  );
 }
 
 function stageCatalog() {
@@ -1801,7 +1808,7 @@ for (const button of document.querySelectorAll('[data-track]')) {
     }
   });
 }
-protectUnsaved($('lesson'), loadLesson);
+protectUnsaved($('lesson'), () => loadLesson(state.stage));
 window.addEventListener('storage', event => {
   if (event.key && event.key !== tokenKey && event.key !== accountKey) return;
   const token = localStorage.getItem(tokenKey);
