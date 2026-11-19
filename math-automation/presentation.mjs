@@ -309,8 +309,27 @@ function placeQuiz(slide, quiz) {
   slide.addNotes('정답 ' + quiz.answer);
 }
 
+function addLessonIntro(deck, intro) {
+  for (const [index, data] of intro.images.entries()) {
+    const slide = deck.addSlide();
+    slide.background = { color: '000000' };
+    slide.addImage({ data, x: 0, y: 0, w: SLIDE_WIDTH, h: 11.25,
+      altText: ['수업 표지', '숙제 체크', '오늘의 퀴즈', '에코의 학습 보드'][index] });
+    if (index !== 3) continue;
+    slide.addText('오늘의 학습 내용', {
+      x: 4.28, y: 1.91, w: 3.57, h: .79, fontFace: FONT, fontSize: 22,
+      color: 'FFFFFF', bold: true, align: 'center', valign: 'mid', margin: 0, fit: 'shrink',
+    });
+    slide.addText(intro.topic, {
+      x: 3.85, y: 4.05, w: 12.3, h: 4.42, fontFace: FONT, fontSize: 65,
+      color: 'FFFFFF', bold: true, align: 'center', valign: 'mid', margin: .08,
+      fit: 'shrink', breakLine: false, lang: 'ko-KR',
+    });
+  }
+}
+
 export async function buildPresentation({
-  title, picks, quizzes, appendix, stageLabel = '퀴즈앤 ② · 교사부록', quizLabel = '퀴즈앤 ① · 직접 제작',
+  title, intro, picks, quizzes, appendix, stageLabel = '퀴즈앤 ② · 교사부록', quizLabel = '퀴즈앤 ① · 직접 제작',
 }, loadImage) {
   const Pptx = await loadPptx();
   const deck = new Pptx();
@@ -319,6 +338,7 @@ export async function buildPresentation({
   deck.title = title;
   deck.author = 'Socra LX팀';
   deck.lang = 'ko-KR';
+  if (intro) addLessonIntro(deck, intro);
 
   for (const question of picks) {
     const slide = await frame(deck, question.section, bookSource(question, !question.projection_asset), 'lesson', question.book);

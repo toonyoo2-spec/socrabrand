@@ -1,7 +1,7 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=11';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=16';
-import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=10';
+import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=17';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=11';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
@@ -1484,11 +1484,24 @@ function stageImage(pick,lesson,withAsset) {
   return {...withAsset(pick),stage_mode:mode,stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};
 }
 
+async function lessonIntro(course, lesson) {
+  const names = ['cover-' + course.track, 'homework', 'quiz', 'topic'];
+  const rows = await table('math_slide_intro_assets', {
+    name: 'in.(' + names.join(',') + ')', select: 'name,jpeg_base64',
+  });
+  const images = names.map(name => {
+    const art = rows.find(row => row.name === name);
+    if (!art?.jpeg_base64) throw Error('수업 시작 화면을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    return 'data:image/jpeg;base64,' + art.jpeg_base64;
+  });
+  return {images, topic: lesson.topic.replace(/^\([^)]*\)\s*/, '')};
+}
+
 async function slideBlob(row, submission) {
   const {course,lesson} = row;
   const appendix = usesQuizN(course) ? [] : submission.stage_questions;
   const {withAsset,loadPage} = await questionAssets(course,[...submission.selections,...appendix]);
-  return buildPresentation({title:deckTitle(row),picks:submission.selections.map(withAsset),
+  return buildPresentation({title:deckTitle(row),intro:await lessonIntro(course,lesson),picks:submission.selections.map(withAsset),
     quizzes:usesQuizN(course) ? [] : submission.quizzes,
     appendix:appendix.map(p=>stageImage(p,lesson,withAsset)),quizLabel:stageTitle('teacher')},loadPage);
 }
@@ -1592,7 +1605,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       if (!cells) throw Error('기존 셀 변경을 취소했습니다.');
       url=cells.url;destination=sheet;
     } else {
-      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,usesQuizN(row.course) ? 'han-lesson-only-1' : undefined);
+      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,usesQuizN(row.course) ? 'han-lesson-intro-1' : 'beam-lesson-intro-1');
       destination=folderUrl;
     }
     if (!await rpc('math_finish_transfer',{...args,p_url:url,p_destination:destination})) throw Error('Google 결과의 완료 기록을 확인해 주세요.');

@@ -136,20 +136,25 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   const lookup = new URLSearchParams({
     ...folderQuery(folder),
     q: "trashed = false and '" + parent + "' in parents and mimeType = '" + slidesMime +
-      "' and appProperties has { key='socraMathSubmission' and value='" + fileId(submission) + "' }" +
-      " and appProperties has { key='socraMathLayout' and value='" + layout + "' }",
-    fields: 'files(id,mimeType)', pageSize: '10',
+      "' and appProperties has { key='socraMathSubmission' and value='" + fileId(submission) + "' }",
+    fields: 'nextPageToken,files(id,mimeType,appProperties)', pageSize: '100',
   });
   const { files } = await fetch(driveApi + 'files?' + lookup, { headers, cache: 'no-store' })
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
-  if (files.length) return slidesEditUrl(files[0]);
+  const current = files.find(file => file.appProperties?.socraMathLayout === layout);
+  if (current) return slidesEditUrl(current);
+  const priorLayout = layout === 'han-lesson-intro-1' ? 'han-lesson-only-1' : projectionLayout;
+  const previous = files.filter(file => file.appProperties?.socraMathLayout === priorLayout);
+  if (previous.length > 1) throw Error('같은 제출본의 이전 슬라이드가 두 개 이상 있습니다. 저장 폴더를 확인해 주세요.');
+  const existing = previous[0];
   if (typeof blob === 'function') blob = await blob();
   await beforeWrite();
-  const start = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id,mimeType', {
-    method: 'POST',
+  const path = 'https://www.googleapis.com/upload/drive/v3/files' + (existing ? '/' + fileId(existing.id) : '');
+  const start = await fetch(path + '?uploadType=resumable&supportsAllDrives=true&fields=id,mimeType', {
+    method: existing ? 'PATCH' : 'POST',
     headers: { ...headers, 'Content-Type': 'application/json',
       'X-Upload-Content-Type': pptxMime, 'X-Upload-Content-Length': String(blob.size) },
-    body: JSON.stringify({ name, mimeType: slidesMime, parents:[parent],
+    body: JSON.stringify({ name, mimeType: slidesMime, ...(existing ? {} : { parents:[parent] }),
       appProperties: { socraMathSubmission: submission, socraMathLayout: layout } }),
   });
   if (!start.ok) throw Error('Google Drive에서 저장을 시작하지 못했습니다.');
