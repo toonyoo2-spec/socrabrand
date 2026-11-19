@@ -168,8 +168,8 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .fraction { display: inline-grid; vertical-align: middle; text-align: center; line-height: 1.12; margin: 1px 2px; }
 .fraction > span { padding: 0 3px; }
 .fraction > :first-child { border-bottom: 1px solid currentColor; }
-.choice-fields, .stage-choice-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 0; margin: 0; border: 0; }
-.choice-fields legend, .stage-choice-options legend { margin-bottom: 7px; padding: 0; font-size: .87rem; font-weight: 680; }
+.choice-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 0; margin: 0; border: 0; }
+.choice-fields legend { margin-bottom: 7px; padding: 0; font-size: .87rem; font-weight: 680; }
 .choice-fields label { display: flex; align-items: center; gap: 7px; padding: 5px; border-radius: 7px; background: var(--soft); }
 .choice-fields label span { flex: none; padding-left: 3px; font-size: .82rem; color: var(--muted); }
 .quiz-review { min-width: 0; min-height: 150px; background: var(--soft); border: 1px solid var(--border); border-radius: 9px; padding: 14px; }
@@ -186,10 +186,6 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .stage-pick { display: grid; gap: 4px; min-width: 0; }
 .stage-pick button { min-height: 35px; padding: 4px 8px; font-size: .8rem; justify-self: start; }
 .stage-pick button[data-required="true"] { border-color: #cfa790; color: var(--danger); }
-.stage-choice-form { margin-top: 12px; padding: 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--soft); }
-.stage-choice-form > label { margin: 8px 0; }
-.stage-choice-form .buttons { margin-top: 8px; }
-.stage-choice-form .symbols button { min-width: 34px; padding-inline: 5px; }
 #stage-symbols { margin-bottom: 10px; }
 
 #submission-checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(177px, 100%), 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
@@ -352,3 +348,7 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .usage-header h2 { margin: 0; font-size: 1.05rem; }
 #usage-error { margin: 1rem; }
 @media(max-width: 700px) { #usage-dialog { width: calc(100% - 12px); max-height: 96dvh; } }
+
+.stage-pick details { font-size: .86rem; margin: 4px 0 8px; }
+.stage-pick summary { cursor: pointer; color: var(--green-deep); }
+.stage-pick canvas { display: block; max-width: 100%; height: auto; }

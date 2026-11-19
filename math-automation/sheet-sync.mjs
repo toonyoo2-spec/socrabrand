@@ -25,16 +25,16 @@ const targets = {
 
 export function sheetDestination(course, input) {
   const target = targets[course?.id];
-  if (!target) throw Error('이 과정의 커리큘럼 양식을 찾을 수 없습니다.');
+  if (!target) throw Error('이 수업의 커리큘럼 양식을 찾을 수 없습니다.');
   let url;
   try { url = new URL(input.trim()); } catch { /* Show the same message as for unsupported links. */ }
   const id = url?.pathname.match(/^\/spreadsheets\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]+)(?:\/(?:edit|view))?\/?$/)?.[1];
   if (!id || url.origin !== 'https://docs.google.com' || url.username || url.password) {
-    throw Error('이 과정에 연결된 Google 스프레드시트 주소를 확인해 주세요.');
+    throw Error('이 수업에 연결된 Google 스프레드시트 주소를 확인해 주세요.');
   }
   const gids = [...url.searchParams.getAll('gid'), ...new URLSearchParams(url.hash.slice(1)).getAll('gid')];
   if (gids.some(gid => !/^\d{1,10}$/.test(gid) || Number(gid) > 2147483647 || Number(gid) !== Number(gids[0]))) {
-    throw Error('이 과정에 연결된 커리큘럼 탭 주소를 확인해 주세요.');
+    throw Error('이 수업에 연결된 커리큘럼 탭 주소를 확인해 주세요.');
   }
   return { ...target, id, gid: gids.length ? Number(gids[0]) : null };
 }
@@ -97,7 +97,7 @@ export async function syncSubmissionToSheet(target, lesson, submission, connecti
   const tab = meta.sheets?.map(sheet => sheet.properties).find(properties =>
     !properties.hidden && properties.sheetType === 'GRID' &&
     (target.gid === null ? properties.title === target.tab : properties.sheetId === target.gid));
-  if (!tab) throw Error('이 과정에 연결된 커리큘럼 탭을 찾지 못했습니다.');
+  if (!tab) throw Error('이 수업에 연결된 커리큘럼 탭을 찾지 못했습니다.');
 
   const name = "'" + tab.title.replaceAll("'", "''") + "'!";
   const ranges = new URLSearchParams({valueRenderOption:'UNFORMATTED_VALUE',dateTimeRenderOption:'SERIAL_NUMBER'});
@@ -116,7 +116,7 @@ export async function syncSubmissionToSheet(target, lesson, submission, connecti
   const [row] = matchingRows;
   const sessionDate = valueRanges[1].values[row - 6][1];
   const expectedDate = Date.parse(lesson.live_date + 'T00:00:00Z') / 86400000 + 25569;
-  if (sessionDate !== expectedDate) throw Error('선택한 강의의 날짜와 시트 D열 날짜가 다릅니다. 강사와 과정을 확인해 주세요.');
+  if (sessionDate !== expectedDate) throw Error('선택한 강의의 날짜와 시트 D열 날짜가 다릅니다. 강사와 수업명을 확인해 주세요.');
   const fullRow = await fetchSheet('/values/' + encodeURIComponent(name + 'A' + row + ':' + target.end + row)
     + '?valueRenderOption=FORMULA');
   const current = fullRow.values?.[0] ?? [];

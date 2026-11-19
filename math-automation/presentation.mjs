@@ -99,7 +99,7 @@ async function frame(deck, label, source, style, book) {
   return slide;
 }
 
-function paintProblem(image, crop) {
+function paintProblem(image, crop, rpm = false) {
   if (!Array.isArray(crop) || crop.length !== 4 ||
       !crop.every(value => Number.isFinite(value) && value >= 0 && value <= 1)) {
     throw Error('문항 이미지 범위를 확인해 주세요.');
@@ -119,6 +119,20 @@ function paintProblem(image, crop) {
   let minX = w, minY = h, maxX = -1, maxY = -1;
   for (let i = 0; i < ink.data.length; i += 4) {
     const r = ink.data[i], g = ink.data[i + 1], b = ink.data[i + 2];
+    if (rpm) {
+      // Invert ink lightness while preserving hue. Coverage stays continuous at antialiased edges.
+      const hi = Math.max(r, g, b);
+      const lo = Math.min(r, g, b);
+      if (lo < 233) {
+        const px = (i / 4) % w, py = Math.floor(i / 4 / w);
+        minX = Math.min(px,minX); maxX = Math.max(px,maxX); minY = Math.min(py,minY); maxY = Math.max(py,maxY);
+      }
+      for (let channel = 0; channel < 3; channel++) {
+        const coverage = (255 - hi + ink.data[i + channel] - lo) / 255;
+        ink.data[i + channel] = 17 + 238 * coverage * (1.32 - .32 * coverage);
+      }
+      continue;
+    }
     const light = .2126 * r + .7152 * g + .0722 * b;
     const colored = Math.max(r, g, b) - Math.min(r, g, b) > 23;
     const whiteInk = 17 + Math.round(238 * Math.min(1, Math.max(0, (239 - light) / 165)));
@@ -152,31 +166,62 @@ function placeProblem(slide, image) {
   slide.addImage({ data:image.data, x:.625, y:3.542, w:image.w * scale, h:image.h * scale });
 }
 
+function convertedPage(original, meta) {
+  if (!meta?.erase) return original;
+  const page = document.createElement('canvas');
+  page.width = original.width;
+  page.height = original.height;
+  const ctx = page.getContext('2d');
+  ctx.drawImage(original, 0, 0);
+  const pixels = ([x0,y0,x1,y1]) => [x0*page.width,y0*page.height,(x1-x0)*page.width,(y1-y0)*page.height];
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(...pixels(meta.erase));
+  if (meta.replaceNumber) {
+    const [from, to] = meta.replaceNumber.map(pixels);
+    ctx.fillRect(...to);
+    ctx.drawImage(original, ...from, ...to);
+  }
+  return page;
+}
+
+export async function bookQuizPreview(question, loadImage) {
+  return (await projectionProblem(question, loadImage)).canvas;
+}
+
 async function projectionProblem(question, loadImage) {
-  const image = await createImageBitmap(await loadImage(question));
+  const meta = question.quiz_override?.book_quiz;
+  const image = await createImageBitmap(await loadImage(meta ? {...question, projection_asset:null} : question));
   try {
-    if (question.projection_asset) {
+    if (question.projection_asset && !meta) {
       const canvas = document.createElement('canvas');
       canvas.width = image.width;
       canvas.height = image.height;
       canvas.getContext('2d').drawImage(image, 0, 0);
-      return { data:canvas.toDataURL('image/png'), w:canvas.width, h:canvas.height, scale:1 / 125 };
+      return { canvas, data:canvas.toDataURL('image/png'), w:canvas.width, h:canvas.height, scale:1 / 125 };
     }
-    const body = paintProblem(image, question.slide_crop);
-    if (!question.slide_prompt_crop) {
-      return { data:body.toDataURL('image/png'), w:body.width, h:body.height };
+    const rpm = ['rpm-student', 'rpm-pro-student'].includes(question.preview_book);
+    const scale = rpm ? .014 * 1075 / image.width : undefined;
+    const page = convertedPage(image, meta);
+    const parts = question.bundle_parts
+      ?? [question.slide_prompt_crop, meta?.crop ?? question.slide_crop].filter(Boolean);
+    const panels = parts.map(crop => paintProblem(page, crop, rpm));
+    if (panels.length === 1) {
+      const canvas = panels[0];
+      return { canvas, scale, data:canvas.toDataURL('image/png'), w:canvas.width, h:canvas.height };
     }
-    const prompt = paintProblem(image, question.slide_prompt_crop);
-    const gap = 14;
+    const gap = Math.round(14 * (rpm ? image.width / 1075 : 1));
     const combined = document.createElement('canvas');
-    combined.width = Math.max(prompt.width, body.width);
-    combined.height = prompt.height + gap + body.height;
+    combined.width = Math.max(...panels.map(panel => panel.width));
+    combined.height = panels.reduce((height,panel) => height+panel.height, 0) + gap*(panels.length-1);
     const output = combined.getContext('2d');
     output.fillStyle = '#' + DARK;
     output.fillRect(0, 0, combined.width, combined.height);
-    output.drawImage(prompt, 0, 0);
-    output.drawImage(body, 0, prompt.height + gap);
-    return { data:combined.toDataURL('image/png'), w:combined.width, h:combined.height };
+    let y = 0;
+    for (const panel of panels) {
+      output.drawImage(panel, 0, y);
+      y += panel.height + gap;
+    }
+    return { canvas:combined, scale, data:combined.toDataURL('image/png'), w:combined.width, h:combined.height };
   } finally {
     image.close();
   }
@@ -227,7 +272,16 @@ export async function buildPresentation({
   for (const question of appendix) {
     const slide = await frame(deck, question.stageLabel ?? stageLabel,
       question.book ? question.book + ' ' + question.label : question.label, question.quizOne ? 'teacher' : 'appendix');
-    if (question.quiz_override) placeQuiz(slide, { kind: 'choice', ...question.quiz_override });
+    const quiz = question.quiz_override;
+    if (quiz?.book_quiz) {
+      await addQuestionImage(slide, question, loadImage);
+      if (quiz.book_quiz.mode !== 'single') {
+        const lines = quiz.choices.split('\n').map((choice, i) => (i + 1) + '. ' + choice);
+        slide.addText([quiz.prompt, '', ...lines].join('\n'), { x:11.2, y:3.542, w:8, h:6.5,
+          fontFace:FONT, fontSize:24, margin:0, valign:'top', fit:'shrink', color:'FFFFFF' });
+      }
+      slide.addNotes('정답 ' + quiz.answer);
+    } else if (question.quiz_override) placeQuiz(slide, { kind: 'choice', ...question.quiz_override });
     else await addQuestionImage(slide, question, loadImage);
   }
   return new Blob([await deck.write({ outputType: 'arraybuffer', compression: true })], { type: MIME });

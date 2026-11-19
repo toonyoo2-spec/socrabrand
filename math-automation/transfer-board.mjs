@@ -26,7 +26,7 @@ export function element(tag, text, className) {
 export function lessonList(rows) {
   const groups = new Map();
   for (const row of rows) {
-    const key = row.course.track === 'concept' ? '개념' : '응용';
+    const key = row.course.track === 'concept' ? '개념탄탄' : '실력탄탄';
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(row.lesson.lesson + '강');
   }
@@ -41,7 +41,7 @@ export function transferCell(row, channel, change) {
   check.type='checkbox';
   check.checked=Boolean(row.plans[channel]) && state.available;
   check.disabled=!state.available;
-  const title = row.course.instructor + ' ' + (row.course.track === 'concept' ? '개념 ' : '응용 ') + row.lesson.lesson + '강 ' + channels[channel];
+  const title = row.course.instructor + ' ' + (row.course.track === 'concept' ? '개념탄탄 ' : '실력탄탄 ') + row.lesson.lesson + '강 ' + channels[channel];
   check.setAttribute('aria-label', title + ' 오늘 반영');
   check.addEventListener('change', () => change(row,channel,check.checked ? 'add' : 'remove',cell));
   label.append(check, element('span',state.text)); cell.append(label);

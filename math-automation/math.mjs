@@ -1,10 +1,10 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=9';
-import { buildPresentation } from './presentation.mjs?v=9';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=10';
+import { buildPresentation, bookQuizPreview } from './presentation.mjs?v=10';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=9';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
-import { workDay, transferStatus, element, lessonList, channels, transferCell } from './transfer-board.mjs?v=1';
+import { workDay, transferStatus, element, lessonList, channels, transferCell } from './transfer-board.mjs?v=2';
 
 const $ = id => document.getElementById(id);
 const tokenKey = 'socra_admin_token';
@@ -27,7 +27,7 @@ const quizModes = {
   practice: { stage: 'quiz-practice', source: '개념원리', title: '실전 스테이지' },
 };
 const resourceSelections = 'math_stage_group_selections';
-const tracks = { concept: '개념 · 개념원리', application: '응용 · RPM' };
+const tracks = { concept: '개념탄탄 · 개념원리', application: '실력탄탄 · RPM' };
 const resourceStages = {
   appendix: { kind: 'appendix', slots: ['부록 1번 (2분)', '부록 2번 (2분)', '부록 3번 (3분)'], copy: '교사부록 문항 3개를 선택해 주세요.' },
   practice: { kind: 'practice', slots: ['빈출 문제 (2분)', '고난도 문제 (3분)'], copy: '개념원리 · 빈출 1문항, 고난도 1문항' },
@@ -61,7 +61,7 @@ async function request(path, options = {}) {
     const data = await response.json().catch(() => ({}));
     const allowed = ['필수 수업 문항을 모두 선택해 주세요.', '퀴즈앤 또는 문제 출제 문항을 모두 선택해 주세요.',
       '이 회차에 맞는 문항을 선택해 주세요.', '퀴즈앤 직접 출제 문항 5개를 먼저 저장해 주세요.',
-      '퀴즈앤 5지선다 문항을 4지선다로 수정해 주세요.'];
+      '이 문항은 교재 정답을 확인하고 있습니다. 다른 문항을 골라 주세요.'];
     const constraint = (data.message ?? '').includes('math_quiz_exactly_four_choices');
     const message = allowed.includes(data.message) ? data.message
       : constraint ? '보기 4개와 1~4번 정답을 확인해 주세요.'
@@ -191,7 +191,6 @@ function showStage(stage, restore = false) {
     });
   }
   if (!restore && state.quizDirty) renderQuiz();
-  closeStageChoice();
   state.stage = Object.hasOwn(stages, stage) ? stage : 'catalog';
   for (const button of document.querySelectorAll('[data-stage]')) {
     const selected = button.dataset.stage === state.stage;
@@ -363,7 +362,7 @@ async function loadCatalog(courseId) {
   for (let offset = 0; ; offset += limit) {
     const next = await table('math_question_index', {
       course_id: 'eq.' + courseId,
-      select: 'question_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,slide_prompt_crop,use_kind,five_choice,projection_asset',
+      select: 'question_id,bundle_root_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,slide_prompt_crop,use_kind,five_choice,projection_asset',
       order: 'book,page,question_number,question_id', limit, offset,
     });
     rows.push(...next);
@@ -375,6 +374,7 @@ async function loadSite() {
   if ($('transfer-dialog').open) $('transfer-dialog').close();
   state.courseVersion += 1;
   state.lessonVersion += 1;
+  $('pending-course').hidden = true;
   state.courses = [];
   state.lessons = [];
   state.catalog = [];
@@ -391,12 +391,17 @@ async function loadSite() {
   try {
     const [courses, profiles, memberships] = await Promise.all([
       table('math_courses', { select: 'id,instructor,review_url,lesson_slots,required_lesson_slots,track,preview_course_id,quiz_modes', order: 'instructor' }),
-      table('profiles', { select: 'role', limit: 1 }),
+      table('profiles', { select: 'role,display_name', limit: 1 }),
       table('math_course_members', { select: 'course_id,team_role' }),
     ]);
     if (token !== state.token) return;
     if (!courses.length) {
-      showStatus('이 계정에 배정된 수학 강의가 없습니다.');
+      const assigned = memberships.some(member => member.team_role === 'teacher');
+      if (assigned) {
+        const name = profiles[0]?.display_name || '담당';
+        showStatus(name + ' 선생님 · 개념탄탄 / 실력탄탄');
+        $('pending-course').hidden = false;
+      } else showStatus('이 계정에 배정된 수학 강의가 없습니다.');
       return;
     }
     state.courses = courses;
@@ -490,7 +495,6 @@ async function loadLesson() {
       state.stagePicks.get(item.stage_mode)?.set(item.slot, item.question_id);
       if (item.quiz_override) state.stageEdits.get(item.stage_mode)?.set(item.slot, item.quiz_override);
     }
-    closeStageChoice();
     const savedStage = state.submitted?.stage_questions ?? [];
     renderMaterialLinks(materials);
     $('submission-panel').hidden = !state.composer;
@@ -599,12 +603,12 @@ function renderQuizStage(mode) {
 }
 
 function lessonCatalog() {
-  return state.catalog.filter(q => (q.use_kind ?? 'lesson') === 'lesson');
+  return state.catalog.filter(q => (!q.bundle_root_id || q.bundle_root_id === q.question_id) && (q.use_kind ?? 'lesson') === 'lesson');
 }
 
 function stageCatalog() {
   const kind = resourceStages[activeQuizMode()]?.kind;
-  return kind ? state.catalog.filter(q => (q.use_kind ?? 'lesson') === kind) : [];
+  return kind ? state.catalog.filter(q => (!q.bundle_root_id || q.bundle_root_id === q.question_id) && (q.use_kind ?? 'lesson') === kind) : [];
 }
 
 function setUnit(unit, section) {
@@ -631,6 +635,13 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
     const choices = [['', selected ? '문항 비우기' : '문항 선택'], ...questions.map(question => [question.question_id, question.label])];
     if (selected && !questions.includes(selected)) choices.splice(1, 0, [selected.question_id, selected.label + ' · 저장됨']);
     options(select, choices, selected?.question_id);
+    const used = new Set([...selectedIds].filter(([usedSlot]) => usedSlot !== slot).map(([,id]) => id));
+    for (const item of questions) {
+      if (item.bundle_root_id && used.has(item.bundle_root_id)) {
+        const option = select.querySelector('option[value="' + item.question_id + '"]');
+        if (option) { option.disabled = true; option.textContent += ' · 다른 자리에 선택됨'; }
+      }
+    }
     select.disabled = !state.composer;
     select.addEventListener('change', () => save(slot, select.value, select));
     if (!state.composer) {
@@ -693,22 +704,31 @@ function renderStagePicks() {
   $('stage-picks').replaceChildren(...controls.map((control, index) => {
     const slot = index + 1;
     const question = selectedStagePick(slot);
-    if (!state.composer || !question || !usesQuizAndResources()) return control;
-    const edited = state.stageEdits.get(mode).has(slot);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.dataset.required = String(question.five_choice && !edited);
-    button.textContent = edited ? '4지선다 저장됨 · 편집'
-      : question.five_choice ? '5지선다 → 4지선다 편집' : '4지선다로 편집';
-    button.addEventListener('click', () => openStageChoice(slot, question));
+    const quiz = state.stageEdits.get(mode)?.get(slot);
+    if (!question || !quiz || !usesQuizAndResources()) return control;
+    const details = document.createElement('details');
+    const summary = element('summary', quiz.book_quiz ? '4지선다 자동 저장 · 보기 확인' : '저장된 보기 확인');
+    const choices = document.createElement('ol');
+    for (const choice of quiz.choices.split('\n')) choices.append(element('li', choice));
+    details.append(summary, element('p', quiz.prompt), choices, element('p', '정답 ' + quiz.answer + '번'));
+    if (quiz.book_quiz) {
+      const course = currentCourse();
+      details.addEventListener('toggle', async function preview() {
+        if (!details.open) return;
+        details.removeEventListener('toggle', preview);
+        try {
+          const canvas = await bookQuizPreview({ ...question, quiz_override: quiz }, q => loadProjectionImage(course, q));
+          canvas.setAttribute('aria-label', question.label + ' 퀴즈 원문');
+          details.insertBefore(canvas, choices);
+        } catch { details.append(element('p', '교재 이미지는 옆의 미리보기에서 확인할 수 있습니다.')); }
+      });
+    }
     const container = document.createElement('div');
     container.className = 'stage-pick';
-    container.append(control, button);
+    container.append(control, details);
     return container;
   }));
 }
-
-const stageChoiceIds = ['stage-choice-1', 'stage-choice-2', 'stage-choice-3', 'stage-choice-4'];
 
 function usesQuizAndResources(mode = activeQuizMode()) {
   return ['appendix', 'rpm_final', 'rpm_pro'].includes(mode);
@@ -716,61 +736,6 @@ function usesQuizAndResources(mode = activeQuizMode()) {
 
 function selectedStagePick(slot, mode = activeQuizMode()) {
   return state.catalog.find(question => question.question_id === state.stagePicks.get(mode)?.get(slot));
-}
-
-function closeStageChoice() {
-  $('stage-choice-form').hidden = true;
-  state.stageEditSlot = null;
-  state.stageDirty = false;
-}
-
-function openStageChoice(slot, question) {
-  if (state.busy || (state.stageEditSlot !== slot && !confirmQuizChange())) return;
-  if (state.stageEditSlot === slot) return;
-  state.stageEditSlot = slot;
-  state.stageDirty = false;
-  const saved = state.stageEdits.get(activeQuizMode()).get(slot);
-  $('stage-choice-title').textContent = question.book + ' ' + question.label + ' · 4지선다';
-  $('stage-choice-prompt').value = saved?.prompt ?? '';
-  $('stage-choice-answer').value = saved?.answer ?? '';
-  const choices = saved?.choices.split('\n') ?? [];
-  stageChoiceIds.forEach((id, i) => { $(id).value = choices[i] ?? ''; });
-  $('stage-choice-form').hidden = false;
-  stageSymbols.reset();
-  $('stage-choice-prompt').focus();
-}
-
-async function saveStageChoice(event) {
-  event.preventDefault();
-  const slot = state.stageEditSlot;
-  const mode = activeQuizMode();
-  if (!slot || !state.composer || !usesQuizAndResources(mode)) return;
-  const prompt = $('stage-choice-prompt').value.trim();
-  const choices = stageChoiceIds.map(id => $(id).value.trim());
-  const answer = $('stage-choice-answer').value;
-  const incomplete = ['stage-choice-prompt', ...stageChoiceIds].find(id => hasIncompleteMath($(id).value));
-  if (incomplete) {
-    $('stage-status').textContent = '분수와 지수의 빈칸을 채워 주세요.';
-    $(incomplete).focus();
-    return;
-  }
-  if (!prompt || choices.some(choice => !choice) || !/^[1-4]$/.test(answer)) {
-    $('stage-status').textContent = '문제와 보기 4개, 정답을 모두 입력해 주세요.';
-    return;
-  }
-  await withSaving(async () => {
-    const filter = { ...context(), stage_mode: 'eq.' + mode, slot: 'eq.' + slot,
-      question_id: 'eq.' + state.stagePicks.get(mode).get(slot), select: 'quiz_override' };
-    const [saved] = await table(resourceSelections, filter, 'PATCH', {
-      quiz_override: { prompt, choices: choices.join('\n'), answer },
-    });
-    if (!saved?.quiz_override) throw Error('편집한 문항을 저장하지 못했습니다.');
-    state.stageEdits.get(mode).set(slot, saved.quiz_override);
-    state.edited = true;
-    closeStageChoice();
-    renderStagePicks();
-    $('stage-status').textContent = slot + '번 퀴즈앤 문항을 4지선다로 저장했습니다.';
-  }, 'stage-status');
 }
 
 function renderStagePreview() {
@@ -806,33 +771,31 @@ async function savePick(slot, value, select, mode) {
   const previous = picks.get(slot);
   const question = state.catalog.find(item => item.question_id === Number(value));
   if (!question && !previous) return;
-  if (mode && state.stageEditSlot === slot && !confirmQuizChange()) {
-    select.value = previous ?? '';
-    return;
-  }
   $(status).textContent = '';
   await withSaving(async () => {
-    const filter = { ...context(), slot: 'eq.' + slot, select: 'slot,question_id' };
+    const columns = mode ? 'slot,question_id,quiz_override' : 'slot,question_id';
+    const filter = { ...context(), slot: 'eq.' + slot, select: columns };
     if (mode) filter.stage_mode = 'eq.' + mode;
     if (previous) filter.question_id = 'eq.' + previous;
     const result = !question
       ? await table(name, filter, 'DELETE')
       : previous
         ? await table(name, filter, 'PATCH', { question_id: question.question_id })
-        : await table(name, { select: 'slot,question_id' }, 'POST', {
+        : await table(name, { select: columns }, 'POST', {
           course_id: currentCourse().id, lesson: currentLesson().lesson, slot, question_id: question.question_id,
           ...(mode ? { stage_mode: mode } : {}),
         });
     if (!result.length) throw new ApiError(403, '이 문항을 변경할 권한이 없거나 이미 변경됐습니다.');
     if (question) {
-      picks.set(slot, question.question_id);
+      picks.set(slot, result[0].question_id);
     } else {
       picks.delete(slot);
     }
     state.edited = true;
     if (mode) {
-      if (question?.question_id !== previous) state.stageEdits.get(mode).delete(slot);
-      if (state.stageEditSlot === slot) closeStageChoice();
+      const edits = state.stageEdits.get(mode);
+      if (question && result[0].quiz_override) edits.set(slot, result[0].quiz_override);
+      else edits.delete(slot);
       renderStagePicks();
     } else renderPicks();
     $(status).textContent = question ? slot + '번 자리에 ' + question.label + '을 저장했습니다.'
@@ -1052,9 +1015,9 @@ function renderSubmission() {
     const total = quizCount(mode);
     const conversion = usesQuizAndResources(mode) && [...(picks?.keys() ?? [])].some(slot =>
       selectedStagePick(slot, mode)?.five_choice && !state.stageEdits.get(mode).has(slot));
-    const unsaved = mode === 'teacher' ? state.quizDirty : mode === activeQuizMode() && state.stageDirty;
+    const unsaved = mode === 'teacher' && state.quizDirty;
     const ready = count === total && !conversion && !unsaved;
-    const detail = unsaved ? '저장 필요' : conversion ? '4지선다 편집 필요' : ready ? '완료' : '작성 필요';
+    const detail = unsaved ? '저장 필요' : conversion ? '교재 정답 확인 필요' : ready ? '완료' : '작성 필요';
     return { stage:quizModes[mode].stage, title:stageTitle(mode), count, total, conversion, unsaved, ready, detail };
   });
   const missing = groups.find(group => !group.ready);
@@ -1069,7 +1032,7 @@ function renderSubmission() {
   if (!ready) {
     $('submit-status').textContent = !basic ? '기본 문항 ' + requiredLessonSlots() + '개를 먼저 골라 주세요.'
       : missing.unsaved ? '입력한 퀴즈를 저장해 주세요.'
-        : missing.conversion ? missing.title + '의 5지선다 문항을 4지선다로 편집해 주세요.'
+        : missing.conversion ? missing.title + '에서 문항을 다시 선택해 주세요.'
         : missing.title + ' 문항을 모두 채워 주세요.';
   } else if (state.submitted && !state.edited) {
     const submitted = new Date(state.submitted.submitted_at).toLocaleString('ko-KR');
@@ -1165,7 +1128,7 @@ async function openTransfers(course) {
   try {
     const data=await transferData(course);
     if (ctx!==transferContext) return;
-    if (!data.settings) throw Error('이 과정의 기본 경로가 아직 등록되지 않았습니다.');
+    if (!data.settings) throw Error('이 수업의 기본 경로가 아직 등록되지 않았습니다.');
     Object.assign(ctx,data,{loading:false});
     $('destination-sheet').value=ctx.settings.sheet_url;
     $('destination-slides').value=ctx.settings.folder_url;
@@ -1243,7 +1206,7 @@ async function saveDestinations() {
     if (ctx!==transferContext) return;
     if (!updated.length) throw Error('다른 직원이 기본값을 변경했습니다. 팝업을 다시 열어 확인해 주세요.');
     ctx.settings=updated[0]; $('destination-sheet').value=sheet; $('destination-slides').value=url;
-    status.textContent='이 과정의 팀 기본값으로 저장했습니다.';
+    status.textContent='이 수업의 팀 기본값으로 저장했습니다.';
   } catch(error) {status.textContent=error.message;}
   finally { $('save-destinations').disabled=false; }
 }
@@ -1252,7 +1215,7 @@ async function slideBlob(row, submission) {
   const {course,lesson}=row;
   const picks=[...submission.selections,...submission.stage_questions];
   const ids=[...new Set(picks.map(p=>p.question_id))];
-  const items=await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset'});
+  const items=await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,bundle_root_id,bundle_parts,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset'});
   const withAsset=pick=>{
     const item=items.find(x=>x.question_id===pick.question_id);
     if (!item) throw Error('선택한 교재 문항을 찾을 수 없습니다.');
@@ -1260,10 +1223,25 @@ async function slideBlob(row, submission) {
   };
   return buildPresentation({title:deckTitle(row),picks:submission.selections.map(withAsset),quizzes:submission.quizzes,
     appendix:submission.stage_questions.map(p=>{const mode=savedResourceMode(p,lesson);return {...withAsset(p),stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};}),
-    quizLabel:stageTitle('teacher')},async q=>(await request(q.projection_asset
-      ? '/storage/v1/object/authenticated/math-teaching-materials/'+encodeURIComponent(course.id)+'/'+q.projection_asset
-      : previewPath(course.preview_course_id??course.id,q.preview_book,q.page))).blob());
+    quizLabel:stageTitle('teacher')},q => loadProjectionImage(course, q));
 }
+async function loadProjectionImage(course, question) {
+  if (question.projection_asset) {
+    const path = '/storage/v1/object/authenticated/math-teaching-materials/' + encodeURIComponent(course.id) + '/' + question.projection_asset;
+    return (await request(path)).blob();
+  }
+  const page = previewPath(course.preview_course_id ?? course.id, question.preview_book, question.page);
+  if (['rpm-student', 'rpm-pro-student'].includes(question.preview_book)) {
+    const highResolution = page.replace('/page-', '/projection-hq/page-');
+    try {
+      return (await request(highResolution)).blob();
+    } catch (error) {
+      if (![400, 404].includes(error.status)) throw error;
+    }
+  }
+  return (await request(page)).blob();
+}
+
 function deckTitle({course,lesson}) {
   return course.instructor+' · '+tracks[course.track]+' · '+lesson.lesson+'강 · '+lesson.topic.replace(/^\([^)]*\)\s*/,'')+' · 빔용';
 }
@@ -1413,7 +1391,7 @@ function previewPath(course, book, page) {
 }
 
 function confirmQuizChange() {
-  return !(state.quizDirty || state.stageDirty) || window.confirm('저장하지 않은 퀴즈가 있습니다. 이동할까요?');
+  return !state.quizDirty || window.confirm('저장하지 않은 퀴즈가 있습니다. 이동할까요?');
 }
 
 function protectUnsaved(select, callback) {
@@ -1430,7 +1408,6 @@ function protectUnsaved(select, callback) {
 }
 
 const teacherSymbols = mountMathSymbols($('symbol-panel'), formulaInputs.map($));
-const stageSymbols = mountMathSymbols($('stage-symbols'), ['stage-choice-prompt', ...stageChoiceIds].map($));
 for (const id of formulaInputs) {
   $(id).addEventListener('input', () => {
     state.quizDirty = true;
@@ -1464,11 +1441,6 @@ $('stage-section').addEventListener('change', () => {
 });
 $('teacher-section').addEventListener('submit', saveQuiz);
 $('quiz-clear').addEventListener('click', clearQuiz);
-$('stage-choice-form').addEventListener('submit', saveStageChoice);
-$('stage-choice-form').addEventListener('input', () => { state.stageDirty = true; renderSubmission(); });
-$('stage-choice-close').addEventListener('click', () => {
-  if (confirmQuizChange()) { closeStageChoice(); renderSubmission(); }
-});
 $('submit').addEventListener('click', submit);
 $('google-transfer').addEventListener('click', () => openTransfers(currentCourse()));
 $('transfer-cancel').addEventListener('click', () => $('transfer-dialog').close());
@@ -1522,7 +1494,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=1').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=2').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) await show(initial);
     status.hidden = true;
