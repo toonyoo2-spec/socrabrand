@@ -1,7 +1,8 @@
+import { lessonIntro } from './intro.mjs?v=1';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=11';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=18';
-import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=11';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=19';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=12';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
@@ -469,10 +470,10 @@ function renderStaffProgress() {
     if (usesQuizN(row.course)) {
       const download = element('button','퀴즈앤','quiz-download');
       download.type='button';
-      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 ZIP 받기');
-      download.addEventListener('click',()=>downloadQuizImages(row,download,$('transfer-feedback')));
+      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 엑셀 받기');
+      download.addEventListener('click',()=>downloadQuizExcel(row,download,$('transfer-feedback')));
       download.disabled = !row.submission;
-      download.title = row.submission ? '엑셀과 문제 이미지 받기' : '선생님이 제출하면 다운로드할 수 있습니다.';
+      download.title = row.submission ? '퀴즈앤 등록용 엑셀 받기' : '선생님이 제출하면 다운로드할 수 있습니다.';
       actions.append(download);
     }
     const counts = tr.insertCell();
@@ -812,7 +813,24 @@ function placeInSlot(slot, question, select) {
   if (select.value !== option.value) void savePick(slot, option.value, select);
 }
 
-async function movePick(from, to, source) {
+function selectionFeedback(message, undo) {
+  const notice = $('selection-status');
+  notice.textContent = message;
+  if (!undo) return;
+  const version = state.lessonVersion;
+  const button = element('button','되돌리기','pick-undo');
+  button.type = 'button';
+  button.addEventListener('click', () => {
+    if (version === state.lessonVersion && !state.busy) undo();
+  });
+  notice.append(' ',button);
+}
+
+function lessonSlotName(slot) {
+  return (slot <= requiredLessonSlots() ? '기본 ' : '예비 ') + slot + '번';
+}
+
+async function movePick(from, to, source, canUndo = true) {
   if (from === to || state.busy || !state.composer || state.picks.get(from) !== source) return;
   const target = state.picks.get(to) ?? null;
   await withSaving(async () => {
@@ -823,7 +841,10 @@ async function movePick(from, to, source) {
     if (target === null) state.picks.delete(from); else state.picks.set(from,target);
     state.edited = true;
     renderPicks();
-    $('selection-status').textContent = target === null ? from+'번 문항을 '+to+'번으로 옮겼습니다.' : from+'번과 '+to+'번 문항을 맞바꿨습니다.';
+    const message = !canUndo ? '원래 순서로 되돌렸습니다.' : target === null
+      ? lessonSlotName(from)+' 문항을 '+lessonSlotName(to)+'으로 옮겼습니다.'
+      : lessonSlotName(from)+'과 '+lessonSlotName(to)+'의 문항을 맞바꿨습니다.';
+    selectionFeedback(message, canUndo ? () => movePick(to,from,source,false) : null);
   }, 'selection-status');
 }
 
@@ -974,7 +995,7 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
 function renderPicks() {
   const current = catalogUnitQuestions();
   $('question-count').textContent = state.picks.size + ' / ' + lessonSlots() + '개 선정';
-  const labels = slot => (slot <= requiredLessonSlots() ? '기본 ' : '예비 ') + slot + '번';
+  const labels = lessonSlotName;
   const controls = pickControls(lessonSlots(), state.picks, current, labels, savePick);
   controls.slice(requiredLessonSlots()).forEach(control => control.classList.add('reserve'));
   const required=requiredLessonSlots();
@@ -1083,7 +1104,7 @@ async function withSaving(work, statusId) {
   }
 }
 
-async function savePick(slot, value, select, mode) {
+async function savePick(slot, value, select, mode, canUndo = true) {
   const picks = mode ? state.stagePicks.get(mode) : state.picks;
   const name = mode ? resourceSelections : 'math_selections';
   const status = mode ? 'stage-status' : 'selection-status';
@@ -1117,8 +1138,17 @@ async function savePick(slot, value, select, mode) {
       else edits.delete(slot);
       renderStagePicks();
     } else renderPicks();
-    $(status).textContent = question ? slot + '번 자리에 ' + question.label + '을 저장했습니다.'
-      : slot + '번 문항을 비웠습니다.';
+    if (mode) {
+      $(status).textContent = question ? slot+'번에 '+question.label+'을 저장했습니다.' : slot+'번 문항을 비웠습니다.';
+    } else {
+      const before = state.catalog.find(q => q.question_id === previous)?.label ?? '빈 자리';
+      const after = question?.label ?? '빈 자리';
+      const message = lessonSlotName(slot)+' · '+(canUndo ? before+' → '+after : after+' (되돌림)');
+      selectionFeedback(message, canUndo ? () => {
+        const control = $('question-slots').querySelectorAll('select')[slot-1];
+        if (control) void savePick(slot,previous ?? '',control,undefined,false);
+      } : null);
+    }
   }, status);
   if (select.isConnected) select.value = picks.get(slot) ?? '';
 }
@@ -1324,8 +1354,9 @@ function renderSubmissionChecklist(items) {
 }
 
 function renderSubmission() {
-  $('quiz-png').hidden = !usesQuizN(currentCourse());
-  $('quiz-png').disabled = !state.submitted;
+  $('lesson-ppt').disabled = !state.submitted;
+  $('quiz-excel').hidden = !usesQuizN(currentCourse());
+  $('quiz-excel').disabled = !state.submitted;
   updateStageProgress();
   const totalBasics = requiredLessonSlots();
   const selectedBasics = [...state.picks.keys()].filter(slot => slot <= totalBasics).length;
@@ -1621,25 +1652,17 @@ function stageImage(pick,lesson,withAsset) {
   return {...withAsset(pick),stage_mode:mode,stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};
 }
 
-async function lessonIntro(course, lesson) {
-  const names = ['cover-' + course.track, 'homework', 'quiz', 'topic'];
-  const rows = await table('math_slide_intro_assets', {
-    name: 'in.(' + names.join(',') + ')', select: 'name,jpeg_base64',
-  });
-  const images = names.map(name => {
-    const art = rows.find(row => row.name === name);
-    if (!art?.jpeg_base64) throw Error('수업 시작 화면을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
-    return 'data:image/jpeg;base64,' + art.jpeg_base64;
-  });
-  return {images, topic: lesson.topic.replace(/^\([^)]*\)\s*/, '')};
-}
-
 async function slideBlob(row, submission) {
   const {course,lesson} = row;
-  const appendix = usesQuizN(course) ? [] : submission.stage_questions;
+  const appendix = submission.stage_questions ?? [];
+  const review=submission.math_submission_reviews;
+  const approved=review?.status==='passed' ? review.crop_fixes : {};
   const {withAsset,loadPage} = await questionAssets(course,[...submission.selections,...appendix]);
-  return buildPresentation({title:deckTitle(row),intro:await lessonIntro(course,lesson),picks:submission.selections.map(withAsset),
-    quizzes:usesQuizN(course) ? [] : submission.quizzes,
+  return buildPresentation({title:deckTitle(row),intro:lessonIntro(course,lesson),picks:submission.selections.map(pick=>{
+      const item=withAsset(pick), bounds=approved?.[pick.question_id];
+      return bounds ? {...item,projection_layout:{bounds}} : item;
+    }),
+    quizzes:submission.quizzes ?? [],
     appendix:appendix.map(p=>stageImage(p,lesson,withAsset)),quizLabel:stageTitle('teacher')},loadPage);
 }
 
@@ -1654,20 +1677,17 @@ function confirmQuizKey(submissionId,q,canvas,number) {
   $('quiz-key-error').textContent='';
   canvas.style.cssText='display:block;max-width:100%;height:auto';
   $('quiz-key-preview').replaceChildren(canvas);
-  const crop=$('quiz-key-crop');
   function refresh() {
     const text=type.value==='choice';
     $('quiz-key-choices-label').hidden=!text;
-    $('quiz-key-crop-label').hidden=!text;
     $('quiz-key-answer-label').textContent=type.value==='short' ? '정답' : type.value==='ox' ? '정답 (O 또는 X)' : '정답 번호 (1~4)';
-    canvas.style.clipPath=text ? 'inset(0 0 '+(100-Number(crop.value))+'% 0)' : '';
   }
-  type.onchange=refresh; crop.oninput=refresh; refresh();
+  type.onchange=refresh; refresh();
   return new Promise((resolve,reject)=>{
     let result;
     $('quiz-key-cancel').onclick=()=>dialog.close();
     dialog.onclose=()=>{
-      form.onsubmit=null; type.onchange=null; crop.oninput=null; dialog.onclose=null;
+      form.onsubmit=null; type.onchange=null; dialog.onclose=null;
       $('quiz-key-preview').replaceChildren();
       if (!result) { reject(new DOMException('취소','AbortError')); return; }
       confirmedQuizKeys.set(key,result); resolve(result);
@@ -1680,7 +1700,7 @@ function confirmQuizKey(submissionId,q,canvas,number) {
         const plan=quizPlan({kind,answer:kind==='ox' ? raw.toUpperCase() : raw,choices:image ? numberButtons.join('\n') : $('quiz-key-choices').value});
         if (kind==='short' && raw.length>15) throw Error('퀴즈앤 단답형 정답은 15자 이내로 입력해 주세요.');
         if (type.value==='choice' && plan.imageChoices) throw Error('답 버튼의 보기는 각각 30자 이내로 입력해 주세요.');
-        result={plan,keep:type.value==='choice' ? Number(crop.value) : 100};
+        result={plan};
         dialog.close();
       } catch(error) { $('quiz-key-error').textContent=error.message; }
     };
@@ -1688,23 +1708,41 @@ function confirmQuizKey(submissionId,q,canvas,number) {
   });
 }
 
-async function downloadQuizImages(row,button,notice) {
+function downloadFile(blob,filename) {
+  const url=URL.createObjectURL(blob), link=element('a');
+  link.href=url;link.download=filename;
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+
+async function downloadLessonPpt() {
+  const button=$('lesson-ppt'), notice=$('submit-feedback');
+  if (button.disabled || !state.submitted) return;
+  const row={course:currentCourse(),lesson:currentLesson()}, id=state.submitted.id;
+  button.disabled=true;notice.textContent='수업 PPT를 만드는 중입니다.';
+  try {
+    const [saved]=await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+id,select:'id,selections,quizzes,stage_questions,math_submission_reviews(status,crop_fixes,updated_at)'});
+    if (!saved) throw Error('제출본을 찾지 못했습니다.');
+    const name=deckTitle(row)+'.pptx';
+    downloadFile(await slideBlob(row,saved),name);
+    notice.textContent=name+' 다운로드를 시작했습니다.';
+  } catch(error) {notice.textContent='PPT를 받지 못했습니다. '+error.message;}
+  finally {button.disabled=!state.submitted;}
+}
+
+async function downloadQuizExcel(row,button,notice) {
   if (button.disabled || !row.submission || !usesQuizN(row.course)) return;
   button.disabled = true;
-  notice.textContent = '제출한 퀴즈로 엑셀과 문제 이미지를 만드는 중입니다.';
+  notice.textContent = '제출한 퀴즈로 등록용 엑셀을 만드는 중입니다.';
   try {
     const [saved] = await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+row.submission.id,select:'id,quizzes,stage_questions'});
     if (!saved) throw Error('제출본을 찾지 못했습니다.');
     const picks = saved.stage_questions ?? [];
     const {withAsset,loadPage} = await questionAssets(row.course,picks);
-    const zip = await quizImageZip(saved.quizzes ?? [], picks.map(p=>stageImage(p,row.lesson,withAsset)), loadPage, (q,canvas,number)=>confirmQuizKey(row.submission.id,q,canvas,number), className(row.course)+' '+row.lesson.lesson+'강');
-    const url = URL.createObjectURL(zip);
-    const link = element('a');
-    link.href = url;
-    link.download = [row.course.instructor,className(row.course),row.lesson.lesson+'강','퀴즈앤'].join('_')+'.zip';
-    document.body.append(link); link.click(); link.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
-    notice.textContent = link.download+' 다운로드를 시작했습니다.';
+    const workbook = await quizExcel(saved.quizzes ?? [], picks.map(p=>stageImage(p,row.lesson,withAsset)), loadPage, (q,canvas,number)=>confirmQuizKey(row.submission.id,q,canvas,number));
+    const filename=[row.course.instructor,className(row.course),row.lesson.lesson+'강','퀴즈앤'].join('_')+'.xlsx';
+    downloadFile(workbook,filename);
+    notice.textContent=filename+' 다운로드를 시작했습니다.';
   } catch (error) { notice.textContent = error.name==='AbortError' ? '다운로드를 취소했습니다.' : '등록 자료를 받지 못했습니다. '+error.message; }
   finally { button.disabled = false; }
 }
@@ -1732,7 +1770,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
   const check=async()=>{const result=await rpc('math_claim_transfer',{...args,p_planned:true});if(result!=='ready') throw Error(actionMessages[result] || '반영 권한을 확인해 주세요.');};
   await check();
   try {
-    const [submission]=await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+sid,select:'id,selections,quizzes,stage_questions'});
+    const [submission]=await table('math_submissions',{course_id:'eq.'+row.course.id,id:'eq.'+sid,select:'id,selections,quizzes,stage_questions,math_submission_reviews(status,crop_fixes,updated_at)'});
     if (!submission) throw Error('제출본을 찾을 수 없습니다.');
     let url,destination;
     if (channel==='sheet') {
@@ -1744,7 +1782,11 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       if (!cells) throw Error('기존 셀 변경을 취소했습니다.');
       url=cells.url;destination=sheet;
     } else {
-      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,usesQuizN(row.course) ? 'han-lesson-intro-2' : 'beam-lesson-intro-2');
+      const review=submission.math_submission_reviews;
+      const baseLayout=usesQuizN(row.course) ? 'han-quiz-ppt-3' : 'beam-lesson-intro-3';
+      const layout=review?.status==='passed' && Object.keys(review.crop_fixes ?? {}).length
+        ? baseLayout+'@'+Date.parse(review.updated_at) : baseLayout;
+      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,layout);
       destination=folderUrl;
     }
     if (!await rpc('math_finish_transfer',{...args,p_url:url,p_destination:destination})) throw Error('Google 결과의 완료 기록을 확인해 주세요.');
@@ -1985,7 +2027,8 @@ $('stage-section').addEventListener('change', () => {
 $('teacher-section').addEventListener('submit', saveQuiz);
 $('quiz-clear').addEventListener('click', clearQuiz);
 $('submit').addEventListener('click', submit);
-$('quiz-png').addEventListener('click', () => downloadQuizImages({course:currentCourse(),lesson:currentLesson(),submission:state.submitted},$('quiz-png'),$('submit-feedback')));
+$('lesson-ppt').addEventListener('click',downloadLessonPpt);
+$('quiz-excel').addEventListener('click', () => downloadQuizExcel({course:currentCourse(),lesson:currentLesson(),submission:state.submitted},$('quiz-excel'),$('submit-feedback')));
 $('progress-week').addEventListener('change', () => {
   staffProgress.week=Number($('progress-week').value);
   $('transfer-feedback').textContent='';
@@ -2066,7 +2109,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=12').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=13').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;

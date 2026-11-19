@@ -143,8 +143,14 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
   const current = files.find(file => file.appProperties?.socraMathLayout === layout);
   if (current) return slidesEditUrl(current);
-  const priorLayout = layout === 'han-lesson-intro-1' ? 'han-lesson-only-1' : projectionLayout;
-  const previous = files.filter(file => file.appProperties?.socraMathLayout === priorLayout);
+  const predecessors = {
+    'han-quiz-ppt-3':['han-lesson-intro-2','han-lesson-intro-1','han-lesson-only-1'],
+    'beam-lesson-intro-3':['beam-lesson-intro-2','beam-lesson-intro-1'],
+    'han-lesson-intro-1':['han-lesson-only-1'],
+  };
+  const family = layout.split('@')[0];
+  const knownLayouts = [...(predecessors[family] ?? []), family, projectionLayout];
+  const previous = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]));
   if (previous.length > 1) throw Error('같은 제출본의 이전 슬라이드가 두 개 이상 있습니다. 저장 폴더를 확인해 주세요.');
   const existing = previous[0];
   if (typeof blob === 'function') blob = await blob();

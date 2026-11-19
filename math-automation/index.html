@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
   <link rel="stylesheet" href="math.css?v=22">
-  <script type="module" src="math.mjs?v=39"></script>
+  <script type="module" src="math.mjs?v=41"></script>
 </head>
 <body>
   <main>
@@ -172,7 +172,8 @@
                 <p id="submit-status" class="muted" aria-live="polite"></p>
                 <button type="button" class="button primary" id="submit">회차 제출</button>
               </div>
-              <button type="button" id="quiz-png" hidden>퀴즈앤 ZIP 받기</button>
+              <button type="button" id="lesson-ppt" disabled>수업 PPT 받기</button>
+              <button type="button" id="quiz-excel" hidden>퀴즈앤 엑셀 받기</button>
               <p id="submit-feedback" class="muted inline-status" role="status"></p>
             </section>
             <details id="staff-links" class="card" hidden>
@@ -220,13 +221,10 @@
       <p>이 문항은 제출본에 정답이 없습니다. 교재를 확인해 정답을 입력해 주세요.</p>
       <div id="quiz-key-preview" style="max-height:32vh; overflow:auto"></div>
       <label>응답 방식 <select id="quiz-key-type">
-        <option value="short">단답형</option><option value="choice">숫자·글자 보기</option><option value="image">이미지 속 보기 ①~④</option><option value="ox">OX형</option>
+        <option value="short">단답형</option><option value="choice">숫자·글자 보기</option><option value="image">PPT 속 보기 ①~④</option><option value="ox">OX형</option>
       </select></label>
       <label id="quiz-key-choices-label" hidden>답 버튼에 표시할 보기 4개 (한 줄에 하나씩)
         <textarea id="quiz-key-choices" rows="4"></textarea>
-      </label>
-      <label id="quiz-key-crop-label" hidden>이미지에 남길 부분 (아래쪽 보기 제외)
-        <input id="quiz-key-crop" type="range" min="5" max="100" value="100">
       </label>
       <label><span id="quiz-key-answer-label">정답</span> <input id="quiz-key-answer" required autocomplete="off"></label>
       <p role="status" id="quiz-key-error"></p>

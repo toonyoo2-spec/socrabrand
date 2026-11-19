@@ -1,6 +1,6 @@
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
-import {loadQuizDesign, frameQuizImage, quizFont} from './quizn-image.mjs?v=2';
+import {addEchoScenes} from './intro.mjs?v=1';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
 const FONT = 'Noto Sans KR';
@@ -348,53 +348,45 @@ export async function buildPresentation({
   deck.title = title;
   deck.author = 'Socra LX팀';
   deck.lang = 'ko-KR';
-  if (intro) addLessonIntro(deck, intro);
+  if (intro?.scenes) await addEchoScenes(deck, intro.scenes);
+  else if (intro) addLessonIntro(deck, intro);
 
   for (const question of picks) {
     const slide = await frame(deck, question.section, bookSource(question, !question.projection_asset), 'lesson', question.book);
     await addQuestionImage(slide, question, loadImage);
     slide.addNotes('수업 문항 ' + question.slot + '번 · ' + question.book + ' ' + question.label);
   }
-  for (const quiz of quizzes) {
-    const slide = await frame(deck, quizLabel, '문항 ' + quiz.slot, 'teacher');
-    placeQuiz(slide, quiz);
-  }
-  for (const question of appendix) {
-    const slide = await frame(deck, question.stageLabel ?? stageLabel,
-      bookSource(question, (!question.quiz_override || question.quiz_override.book_quiz) && !question.projection_asset), question.quizOne ? 'teacher' : 'appendix');
-    const quiz = question.quiz_override;
-    if (quiz?.book_quiz) {
-      await addQuestionImage(slide, question, loadImage);
-      slide.addNotes(bookSource(question,false) + ' · 정답 ' + quiz.answer);
-    } else if (question.quiz_override) placeQuiz(slide, { kind: 'choice', ...question.quiz_override });
-    else await addQuestionImage(slide, question, loadImage);
+  for (const [i,{q,quiz}] of orderedQuizItems(quizzes,appendix).entries()) {
+    const number = String(i+1).padStart(2,'0');
+    if (quiz) quizPlan(quiz,q?.projection_layout);
+    const source = q ? bookSource(q, (!quiz || quiz.book_quiz) && !q.projection_asset) : '직접 작성';
+    const slide = await frame(deck, q?.stageLabel ?? (q ? stageLabel : quizLabel),
+      number+'번 · '+source, !q || q.quizOne ? 'teacher' : 'appendix');
+    if (q && (!quiz || quiz.book_quiz)) await addQuestionImage(slide,q,loadImage);
+    else placeQuiz(slide,{kind:'choice',...quiz});
+    if (q && quiz?.book_quiz) slide.addNotes('퀴즈 '+number+'번 · 정답 '+quiz.answer);
   }
   return new Blob([await deck.write({ outputType: 'arraybuffer', compression: true })], { type: MIME });
 }
 
 // QuizN text questions use the same exponent notation as slides. Wrap before
 // drawing so long Korean prompts and narrow superscripts keep their full extent.
-function writtenQuizImage(quiz, styled = false) {
+function writtenQuizImage(quiz) {
   const choices = quiz.kind === 'choice' ? quiz.choices.split('\n').map((v,i)=>CIRCLED[i]+' '+v) : [];
   const blocks = [quiz.prompt, ...choices].join('\n\n').split('\n');
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const lines = [[]];
-  const maxWidth = styled ? 1260 : 1360, margin = styled ? 4 : 32, lineHeight = styled ? 90 : 58;
+  const maxWidth = 1360, margin = 32, lineHeight = 58;
   let width = 0, longest = 0;
   for (const [index,block] of blocks.entries()) {
     if (index) { lines.push([]); width = 0; }
     for (const run of equationRuns(block)) {
       const raised = Boolean(run.options?.superscript);
-      const font = styled ? '700 ' + (raised ? 40 : 63) + 'px ' + quizFont
-        : (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
+      const font = (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
       ctx.font = font;
-      const words = styled ? run.text.split(/(\s+)/u) : [run.text];
+      const words = [run.text];
       for (const word of words) {
-        if (styled && width && word.trim() && width + ctx.measureText(word).width > maxWidth) {
-          lines.push([]); width = 0;
-        }
-        if (styled && !width && !word.trim()) continue;
         for (const ch of word) {
           const advance = ctx.measureText(ch).width;
           if (width + advance > maxWidth) { lines.push([]); width = 0; }
@@ -407,11 +399,11 @@ function writtenQuizImage(quiz, styled = false) {
   }
   canvas.width = Math.ceil(longest) + margin*2;
   canvas.height = lines.length*lineHeight + margin*2;
-  if (!styled) { ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
-  ctx.fillStyle=styled ? '#f6f9f7' : '#111';
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#111';
   lines.forEach((line,i)=>{for (const glyph of line) {
     ctx.font=glyph.font;
-    ctx.fillText(glyph.ch, margin+glyph.x, margin+i*lineHeight+(styled ? (glyph.raised?42:66) : (glyph.raised?20:38)));
+    ctx.fillText(glyph.ch, margin+glyph.x, margin+i*lineHeight+(glyph.raised?20:38));
   }});
   return canvas;
 }
@@ -438,83 +430,47 @@ async function paperQuizImage(question, loadPage) {
   } finally {page.close();}
 }
 
-// Each Excel row and its PNG are emitted from the same ordered entry.
-export async function quizImageZip(written, questions, loadPage, reviewMissing, lesson = '') {
+function orderedQuizItems(written, questions) {
   const items = [
     ...written.map(quiz => ({quiz,group:1,slot:quiz.slot})),
     ...questions.map(q => ({q,quiz:q.quiz_override,group:q.quizOne ? 1 : 2,slot:q.slot})),
   ].sort((a,b) => a.group-b.group || a.slot-b.slot);
+  const slots=new Set();
+  for (const {group,slot} of items) {
+    const key=group+'-'+slot;
+    if (!Number.isInteger(slot) || slot<1 || slots.has(key)) throw Error('제출본의 퀴즈 번호를 확인해 주세요.');
+    slots.add(key);
+  }
+  return items;
+}
+
+export async function quizExcel(written, questions, loadPage, reviewMissing) {
+  const items=orderedQuizItems(written,questions);
   if (!items.length || items.length>100) throw Error('제출된 퀴즈 문항 수를 확인해 주세요.');
   await loadPptx();
   let geometry;
   if (questions.some(q=>q.quiz_override?.book_quiz?.mode==='single')) {
     const response=await fetch(new URL('./quizn-layout.json?v=1',import.meta.url));
-    if (!response.ok) throw Error('교재 보기의 위치를 불러오지 못했습니다.');
+    if (!response.ok) throw Error('교재 보기 데이터를 불러오지 못했습니다.');
     geometry=await response.json();
   }
-  const design = await loadQuizDesign();
-  const entries=[], zip = new window.JSZip(), slots=new Set();
-  for (const [idx,{q,quiz,group,slot}] of items.entries()) {
-    const key=group+'-'+slot;
-    if (!Number.isInteger(slot) || slot<1 || slots.has(key)) throw Error('제출본의 문항 번호를 확인해 주세요.');
-    slots.add(key);
+  const entries=[];
+  for (const [idx,{q,quiz,slot}] of items.entries()) {
     const number=String(idx+1).padStart(2,'0');
-    const label=q ? q.book+' '+q.label : '직접 작성 '+slot+'번';
     try {
-      let plan=quizPlan(quiz,q?.projection_layout,geometry?.numbers[q?.question_id]), canvas;
-      let paper = true;
-      if (!q || (quiz && !quiz.book_quiz)) {
-        paper = false;
-        canvas=writtenQuizImage({...quiz,kind:plan.imageChoices ? 'choice' : 'short'},true);
-      } else if (!plan) {
-        canvas=await paperQuizImage(q,loadPage);
+      let plan=quizPlan(quiz,q?.projection_layout,geometry?.numbers[q?.question_id]);
+      if (!plan) {
         if (!reviewMissing) throw Error('제출본에 정답이 없습니다.');
-        const review=await reviewMissing(q,canvas,number);
-        plan=review.plan;
-        if (review.keep<100) {
-          const cropped=document.createElement('canvas'); cropped.width=canvas.width;
-          cropped.height=Math.max(1,Math.round(canvas.height*review.keep/100));
-          cropped.getContext('2d').drawImage(canvas,0,0); canvas=cropped;
-        }
-      } else if (plan.imageChoices) {
-        canvas=await paperQuizImage(q,loadPage);
-      } else if (quiz.book_quiz.mode==='pairs' && q.projection_layout.question) {
-        paper = false;
-        canvas=writtenQuizImage({prompt:q.projection_layout.question},true);
-      } else {
-        const bottom=geometry?.cutoffs[q.question_id], bounds=geometry?.bounds?.[q.question_id] ?? quiz.book_quiz.crop ?? printedCrop(q);
-        if (!Number.isFinite(bottom) || !bounds || bottom<=bounds[1] || bottom>bounds[3]) {
-          throw Error('교재에서 문제와 보기의 경계를 확인해 주세요.');
-        }
-        const region=[bounds[0],bounds[1],bounds[2],bottom];
-        const page=await createImageBitmap(await loadPage({...q,projection_asset:null}));
-        try {
-          if (page.width<2200) throw Error('고해상도 교재 원본을 확인해 주세요.');
-          const closing = closingRegion(q);
-          if (closing) checkClosingPrint(page,closing);
-          const original = convertedPage(page,null,closing?.erase);
-          if (closing) {
-            region[0] = closing.bounds[0]; region[1] = closing.bounds[1];
-            region[2] = Math.min(region[2],closing.bounds[2]); region[3] = Math.min(region[3],closing.bounds[3]);
-          }
-          const regions=q.bundle_parts ? q.bundle_parts.map(box=>[box[0],box[1],box[2],Math.min(box[3],bottom)]).filter(box=>box[3]>box[1]) : [q.slide_prompt_crop,region].filter(Boolean);
-          canvas=combine(regions.map(box=>paintProblem(original,box,true)),Math.round(.011*page.width),false,false,'#fff');
-        } finally {page.close();}
+        plan=(await reviewMissing(q,await paperQuizImage(q,loadPage),number)).plan;
       }
-      const framed = frameQuizImage(design, canvas, {number,total:items.length,lesson,source:label,paper});
-      const png=await new Promise(resolve=>framed.toBlob(resolve,'image/png'));
-      if (!png) throw Error('PNG 파일을 만들지 못했습니다.');
-      zip.file(number+'.png',await png.arrayBuffer());
-      const prompt=(quiz && !quiz.book_quiz ? quiz.prompt : '')?.trim();
-      const question=number+'번 · '+(prompt && prompt.length<=140 ? prompt : '문제 이미지를 보고 답하세요.');
-      // The Show template offers 120 and 240 seconds, but not 180.
+      const prompt=quiz && !quiz.book_quiz ? quiz.prompt?.trim() : '';
+      const question=number+'번 · '+(prompt && prompt.length<=140 ? prompt : 'PPT의 '+number+'번 퀴즈를 보고 답하세요.');
       const seconds=!q ? [30,30,60,60,120][slot-1] : slot===(q.stage_mode==='rpm_pro' ? 2 : 3) ? 240 : 120;
       entries.push({plan,question,seconds:seconds ?? '제한없음'});
     } catch(error) {
       if (error.name==='AbortError') throw error;
-      throw Error(number+'번 ('+label+') · '+error.message,{cause:error});
+      throw Error(number+'번 · '+error.message,{cause:error});
     }
   }
-  zip.file('퀴즈앤 업로드.xlsx',await quizWorkbook(entries));
-  return zip.generateAsync({type:'blob'});
+  return new Blob([await quizWorkbook(entries)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
