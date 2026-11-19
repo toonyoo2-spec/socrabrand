@@ -1,6 +1,6 @@
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=10';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=11';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=15';
+import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=16';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=10';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -1570,7 +1570,9 @@ async function loadProjectionImage(course, question) {
 }
 
 function deckTitle({course,lesson}) {
-  return course.instructor+' · '+tracks[course.track]+' · '+lesson.lesson+'강 · '+lesson.topic.replace(/^\([^)]*\)\s*/,'')+' · 빔용';
+  const track = course.track === 'concept' ? '개념 탄탄' : '실력 탄탄';
+  const number = String(lesson.lesson).padStart(2, '0');
+  return '[RA 수학] 중1-1 '+track+'_'+number+'강 ('+course.instructor+')';
 }
 async function transferOne(task,connection,sheet,folder,folderUrl) {
   const {row,channel}=task, sid=row.submission.id, claim=crypto.randomUUID();
@@ -1635,6 +1637,11 @@ async function runTransfers() {
         }
         const url=await transferOne(task,connection,sheet,folder,dest?.url);
         const link=element('a','완료 · 열기');link.href=url;link.target='_blank';link.rel='noopener noreferrer';item.append(link);
+        if (task.channel==='slides') {
+          const folderLink=element('a','저장 폴더');
+          folderLink.href=dest.url; folderLink.target='_blank'; folderLink.rel='noopener noreferrer';
+          item.append(' · ',folderLink);
+        }
         if (task.channel==='slides' && task.row.course.id===state.courseId && task.row.lesson.lesson===currentLesson()?.lesson) resultLink(url);
       } catch(error) {item.append(error.message);}
     }
@@ -1904,7 +1911,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=10').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=11').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;

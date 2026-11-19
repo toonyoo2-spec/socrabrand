@@ -15,6 +15,11 @@ const targets = {
     checks: { I: '문제 1', S: '문제 11', T: '빈출 문제 1 (2분)', U: '빈출 문제 2 (2분)',
       V: '고난도 문제 3 (3분)', W: '문제 1 (2분)', X: '문제 2 (3분)' },
   },
+  'concept-foundations-oh': {
+    tab: '[개념원리_커리큘럼]', quizModes: ['teacher'],
+    base: 'IJKLMNOP', teacher: 'QRSTU', end: 'U',
+    checks: { I: '문제 1', P: '문제 8', Q: '문제 1 (30초)', U: '문제 5 (2분)' },
+  },
   'oh-pending': {
     tab: '[RPM_커리큘럼]',
     quizModes: ['practice'],
@@ -79,6 +84,20 @@ export function connectSheet() {
   return connectStaffGoogle(sheetsScope);
 }
 
+async function sheetError(response, email) {
+  const {error} = await response.json().catch(() => ({}));
+  const reasons = [...(error?.details ?? []), ...(error?.errors ?? [])].map(item => item.reason);
+  const account = email ? ' (' + email + ')' : '';
+  if (reasons.includes('SERVICE_DISABLED') || reasons.includes('accessNotConfigured')) {
+    return Error('수학자동화에 연결된 Google Cloud 프로젝트에서 Google Sheets API를 사용 설정해 주세요.');
+  }
+  if (response.status === 401 || reasons.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || reasons.includes('insufficientPermissions')) {
+    return Error('회사 Google 계정으로 다시 연결하고 스프레드시트 권한을 허용해 주세요.' + account);
+  }
+  if (response.status === 404) return Error('연결된 계정으로 커리큘럼 시트를 찾을 수 없습니다. 저장 위치의 시트 주소와 공유 대상을 확인해 주세요.' + account);
+  return Error('Google 시트 오류 ' + response.status + ' · ' + (error?.message || '잠시 후 다시 시도해 주세요.') + account);
+}
+
 export async function syncSubmissionToSheet(target, lesson, submission, connection, previousPicks = [], beforeWrite = async () => {}) {
   const entries = buildSheetWrites(target, lesson, submission);
   const active = new Set(submission.selections.map(item => item.slot));
@@ -86,11 +105,11 @@ export async function syncSubmissionToSheet(target, lesson, submission, connecti
     if (!active.has(item.slot) && target.base[item.slot - 1]) entries.push([target.base[item.slot - 1], '']);
   }
   if (!entries.length) throw Error('반영할 제출 문항이 없습니다.');
-  const { headers } = connection ?? await connectSheet();
+  const { headers, email } = connection ?? await connectSheet();
   const base = 'https://sheets.googleapis.com/v4/spreadsheets/' + target.id;
-  const fetchSheet = async (suffix, message = '회사 Google 계정으로 시트를 열 수 없습니다. 링크와 접근 권한을 확인해 주세요.') => {
+  const fetchSheet = async suffix => {
     const reply = await fetch(base + suffix, { headers, cache:'no-store' });
-    if (!reply.ok) throw Error(message);
+    if (!reply.ok) throw await sheetError(reply,email);
     return reply.json();
   };
   const meta = await fetchSheet('?fields=sheets(properties(sheetId,title,sheetType,hidden))');
@@ -134,7 +153,7 @@ export async function syncSubmissionToSheet(target, lesson, submission, connecti
       method:'POST', headers: { ...headers, 'Content-Type':'application/json' },
       body: JSON.stringify({ valueInputOption:'RAW', data }),
     });
-    if (!response.ok) throw Error('Google 시트에 반영하지 못했습니다. 편집 권한을 확인해 주세요.');
+    if (!response.ok) throw await sheetError(response,email);
     const outcome = await response.json();
     if (outcome.totalUpdatedCells !== changed.length) throw Error('일부 칸의 반영을 확인하지 못했습니다. 시트를 확인해 주세요.');
   }

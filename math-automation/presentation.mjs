@@ -18,10 +18,7 @@ function loadBadge(kind) {
   if (!badgeImages.has(kind)) {
     const pending = fetch(new URL('./projection-badges/' + kind + '.png', import.meta.url)).then(async response => {
       if (!response.ok) throw Error('교재 코너 배지를 불러오지 못했습니다.');
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      let binary = '';
-      for (const byte of bytes) binary += String.fromCharCode(byte);
-      return 'data:image/png;base64,' + btoa(binary);
+      return createImageBitmap(await response.blob());
     }).catch(error => { badgeImages.delete(kind); throw error; });
     badgeImages.set(kind, pending);
   }
@@ -94,7 +91,7 @@ async function frame(deck, label, source, style, book) {
   ctx.textBaseline = 'middle'; ctx.fillStyle = '#E4DDF2';
   const setFont = size => { ctx.font = '700 ' + size / 72 + 'px "' + FONT + '", sans-serif'; };
   if (kind) {
-    const img = new Image(); img.src = await loadBadge(kind); await img.decode();
+    const img = await loadBadge(kind);
     ctx.drawImage(img,.155,(height-theme.height)/2,theme.width,theme.height);
   } else {
     setFont(16); ctx.fillText(label,.15,height/2,sectionWidth+.01);
