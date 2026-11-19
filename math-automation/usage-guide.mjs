@@ -258,6 +258,7 @@ function initializeGuide(root) {
 }
 
 export function mountUsageGuide(host) {
+  host.hidden = true;
   const root = host.attachShadow({mode:'open'});
   const content = document.getElementById('usage-template').content.cloneNode(true);
   const stylesheet = content.querySelector('link');
@@ -267,5 +268,5 @@ export function mountUsageGuide(host) {
   });
   root.append(content);
   const show = initializeGuide(root);
-  return async initial => { await loaded; show(initial); };
+  return async initial => { await loaded; host.hidden = false; show(initial); };
 }

@@ -1738,10 +1738,12 @@ async function openUsageGuide() {
   const initial = state.stage?.startsWith('quiz') ? 'submit'
     : state.staff ? 'choose' : state.stage === 'delivery' ? 'submit' : 'select';
   const status = $('usage-error');
+  const topics = usageDialog.querySelector('.usage-topics');
+  topics.inert = true;
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=5').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=6').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;
@@ -1749,6 +1751,8 @@ async function openUsageGuide() {
     usageView = null;
     $('usage-content').replaceWith($('usage-content').cloneNode(false));
     status.textContent = '사용 방법을 불러오지 못했습니다. 창을 닫고 다시 열어 주세요.';
+  } finally {
+    topics.inert = false;
   }
 }
 $('usage-open').addEventListener('click', openUsageGuide);
