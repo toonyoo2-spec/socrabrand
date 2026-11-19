@@ -1,5 +1,5 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=10';
-import { buildPresentation, bookQuizPreview } from './presentation.mjs?v=10';
+import { buildPresentation, bookQuizPreview } from './presentation.mjs?v=11';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=9';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -362,7 +362,7 @@ async function loadCatalog(courseId) {
   for (let offset = 0; ; offset += limit) {
     const next = await table('math_question_index', {
       course_id: 'eq.' + courseId,
-      select: 'question_id,bundle_root_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,slide_prompt_crop,use_kind,five_choice,projection_asset',
+      select: 'question_id,bundle_root_id,book,unit,section,page,label,preview_top,preview_book,slide_crop,slide_prompt_crop,use_kind,five_choice,projection_asset,projection_layout',
       order: 'book,page,question_number,question_id', limit, offset,
     });
     rows.push(...next);
@@ -719,7 +719,9 @@ function renderStagePicks() {
         try {
           const canvas = await bookQuizPreview({ ...question, quiz_override: quiz }, q => loadProjectionImage(course, q));
           canvas.setAttribute('aria-label', question.label + ' 퀴즈 원문');
-          details.insertBefore(canvas, choices);
+          if (quiz.book_quiz.mode === 'pairs') {
+            choices.previousElementSibling?.remove(); choices.replaceWith(canvas);
+          } else details.insertBefore(canvas, choices);
         } catch { details.append(element('p', '교재 이미지는 옆의 미리보기에서 확인할 수 있습니다.')); }
       });
     }
@@ -1215,15 +1217,21 @@ async function slideBlob(row, submission) {
   const {course,lesson}=row;
   const picks=[...submission.selections,...submission.stage_questions];
   const ids=[...new Set(picks.map(p=>p.question_id))];
-  const items=await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,bundle_root_id,bundle_parts,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset'});
+  const items=await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,bundle_root_id,bundle_parts,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset,projection_layout'});
   const withAsset=pick=>{
     const item=items.find(x=>x.question_id===pick.question_id);
     if (!item) throw Error('선택한 교재 문항을 찾을 수 없습니다.');
     return {...item,slot:pick.slot,quiz_override:pick.quiz_override};
   };
+  const pages = new Map();
+  const loadPage = question => {
+    const key = question.projection_asset ?? question.preview_book + '/' + question.page;
+    if (!pages.has(key)) pages.set(key, loadProjectionImage(course, question));
+    return pages.get(key);
+  };
   return buildPresentation({title:deckTitle(row),picks:submission.selections.map(withAsset),quizzes:submission.quizzes,
     appendix:submission.stage_questions.map(p=>{const mode=savedResourceMode(p,lesson);return {...withAsset(p),stageLabel:stageTitle(mode),quizOne:quizModes[mode].number==='①'};}),
-    quizLabel:stageTitle('teacher')},q => loadProjectionImage(course, q));
+    quizLabel:stageTitle('teacher')},loadPage);
 }
 async function loadProjectionImage(course, question) {
   if (question.projection_asset) {
@@ -1231,15 +1239,8 @@ async function loadProjectionImage(course, question) {
     return (await request(path)).blob();
   }
   const page = previewPath(course.preview_course_id ?? course.id, question.preview_book, question.page);
-  if (['rpm-student', 'rpm-pro-student'].includes(question.preview_book)) {
-    const highResolution = page.replace('/page-', '/projection-hq/page-');
-    try {
-      return (await request(highResolution)).blob();
-    } catch (error) {
-      if (![400, 404].includes(error.status)) throw error;
-    }
-  }
-  return (await request(page)).blob();
+  const highResolution = page.replace('/page-', '/projection-hq/page-');
+  return (await request(highResolution)).blob();
 }
 
 function deckTitle({course,lesson}) {
@@ -1494,7 +1495,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=2').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=3').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) await show(initial);
     status.hidden = true;

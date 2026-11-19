@@ -57,49 +57,57 @@ function equationRuns(value) {
   });
 }
 
-function titleMeasure(value, fontSize) {
-  const context = document.createElement('canvas').getContext('2d');
-  context.font = '700 ' + fontSize * 4 / 3 + 'px "' + FONT + '", sans-serif';
-  return context.measureText(value).width / 96;
-}
+// Paint the badge on one baseline. Slides importers may independently wrap text boxes.
+const HEADER_Y = .62;
+const BODY_TOP = 1.65;
+// The reference deck reserves the right-hand side for live writing.
+const BODY_WIDTH = 10.31;
+const BODY_HEIGHT = 6.5;
+const CIRCLED = '①②③④⑤';
 
 async function frame(deck, label, source, style, book) {
   const slide = deck.addSlide();
-  slide.background = { color: DARK };
+  slide.background = { color:DARK };
   const kind = book === '개념원리' && (
-    label === '개념원리 확인하기' ? 'concept' :
-    label.startsWith('핵심문제') ? 'key' :
-    label.includes('시험에 나온다') ? 'exam' :
-    label === '중단원 마무리하기' ? 'closing' : null
+    label === '개념원리 확인하기' ? 'concept' : label.startsWith('핵심문제') ? 'key' :
+    label.includes('시험에 나온다') ? 'exam' : label === '중단원 마무리하기' ? 'closing' : null
   );
-  const theme = kind ? badges[kind] : style === 'teacher'
+  const theme = badges[kind] ?? (style === 'teacher'
     ? { fill:'352A13', line:'88692F', divider:'B39754' }
-    : { fill:'231B33', line:'60527E', divider:'8874A8' };
-  const maxTitleWidth = SLIDE_WIDTH - 2 * SLIDE_MARGIN - 2.753;
-  const sourceWidth = titleMeasure(source, 19);
-  const sourceSize = sourceWidth <= maxTitleWidth - .23 ? 19
-    : Math.max(1, Math.floor(19 * (maxTitleWidth - .23) / sourceWidth));
-  const titleWidth = Math.min(maxTitleWidth, Math.max(2.08, titleMeasure(source, sourceSize) + .23));
-  slide.addShape(deck.ShapeType.roundRect, { x:SLIDE_MARGIN, y:2.531, w:2.753 + titleWidth, h:.635, radius:.09,
-    fill:{ color:theme.fill }, line:{ color:theme.line, width:1.2 } });
+    : { fill:'231B33', line:'60527E', divider:'8874A8' });
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const dpi = 300, height = .635;
+  const font = size => '700 ' + (size * dpi / 72) + 'px "' + FONT + '", sans-serif';
+  ctx.font = font(16);
+  const sectionWidth = kind ? theme.width : ctx.measureText(label).width / dpi;
+  const divider = .15 + sectionWidth + .18;
+  const titleStart = divider + .17;
+  ctx.font = font(19);
+  const width = Math.min(BODY_WIDTH, titleStart + ctx.measureText(source).width / dpi + .19);
+  canvas.width = Math.ceil(width * dpi); canvas.height = Math.ceil(height * dpi);
+  ctx.scale(dpi,dpi);
+  ctx.fillStyle = '#' + theme.fill; ctx.strokeStyle = '#' + theme.line; ctx.lineWidth = .014;
+  ctx.beginPath(); ctx.roundRect(.009,.009,width-.018,height-.018,.09); ctx.fill(); ctx.stroke();
+  ctx.textBaseline = 'middle'; ctx.fillStyle = '#E4DDF2';
+  const setFont = size => { ctx.font = '700 ' + size / 72 + 'px "' + FONT + '", sans-serif'; };
   if (kind) {
-    slide.addImage({ data:await loadBadge(kind), x:.729, y:2.849 - theme.height / 2, w:theme.width, h:theme.height });
+    const img = new Image(); img.src = await loadBadge(kind); await img.decode();
+    ctx.drawImage(img,.155,(height-theme.height)/2,theme.width,theme.height);
   } else {
-    slide.addText(label, {
-      x:.779, y:2.585, w:2.24, h:.50, margin:0, color:'E4DDF2', bold:true, fontFace:FONT,
-      fontSize:Math.min(16, Math.floor(16 * 2.10 / titleMeasure(label, 16))), wrap:false,
-    });
+    setFont(16); ctx.fillText(label,.15,height/2,sectionWidth+.01);
   }
-  slide.addShape(deck.ShapeType.rect, { x:3.115, y:2.74, w:.0167, h:.229,
-    fill:{ color:theme.divider }, line:{ color:theme.divider, transparency:100 } });
-  slide.addText(source, {
-    x:3.281, y:2.635, w:titleWidth, h:.396, margin:0, color:'FFFFFF', bold:true,
-    fontFace:FONT, fontSize:sourceSize, wrap:false,
-  });
+  ctx.fillStyle = '#' + theme.divider; ctx.fillRect(divider,.19,.015,height-.38);
+  setFont(19); ctx.fillStyle = '#fff'; ctx.fillText(source,titleStart,height/2,width-titleStart-.14);
+  slide.addImage({data:canvas.toDataURL('image/png'),x:SLIDE_MARGIN,y:HEADER_Y,w:width,h:height,altText:label+' | '+source});
   return slide;
 }
 
-function paintProblem(image, crop, rpm = false) {
+function bookSource(question, hasPrintedNumber) {
+  return [question.book, hasPrintedNumber && question.page ? question.page + 'p' : question.label].filter(Boolean).join(' ');
+}
+
+function paintProblem(image, crop) {
   if (!Array.isArray(crop) || crop.length !== 4 ||
       !crop.every(value => Number.isFinite(value) && value >= 0 && value <= 1)) {
     throw Error('문항 이미지 범위를 확인해 주세요.');
@@ -119,33 +127,17 @@ function paintProblem(image, crop, rpm = false) {
   let minX = w, minY = h, maxX = -1, maxY = -1;
   for (let i = 0; i < ink.data.length; i += 4) {
     const r = ink.data[i], g = ink.data[i + 1], b = ink.data[i + 2];
-    if (rpm) {
-      // Invert ink lightness while preserving hue. Coverage stays continuous at antialiased edges.
-      const hi = Math.max(r, g, b);
-      const lo = Math.min(r, g, b);
-      if (lo < 233) {
-        const px = (i / 4) % w, py = Math.floor(i / 4 / w);
-        minX = Math.min(px,minX); maxX = Math.max(px,maxX); minY = Math.min(py,minY); maxY = Math.max(py,maxY);
-      }
-      for (let channel = 0; channel < 3; channel++) {
-        const coverage = (255 - hi + ink.data[i + channel] - lo) / 255;
-        ink.data[i + channel] = 17 + 238 * coverage * (1.32 - .32 * coverage);
-      }
-      continue;
-    }
-    const light = .2126 * r + .7152 * g + .0722 * b;
-    const colored = Math.max(r, g, b) - Math.min(r, g, b) > 23;
-    const whiteInk = 17 + Math.round(238 * Math.min(1, Math.max(0, (239 - light) / 165)));
-    if (whiteInk > 40 || (colored && light < 232)) {
+    // Invert ink lightness while preserving hue. Coverage stays continuous at antialiased edges.
+    const hi = Math.max(r, g, b);
+    const lo = Math.min(r, g, b);
+    if (lo < 233) {
       const px = (i / 4) % w, py = Math.floor(i / 4 / w);
-      minX = Math.min(px, minX); maxX = Math.max(px, maxX);
-      minY = Math.min(py, minY); maxY = Math.max(py, maxY);
+      minX = Math.min(px,minX); maxX = Math.max(px,maxX); minY = Math.min(py,minY); maxY = Math.max(py,maxY);
     }
-    // Preserve strongly colored diagrams while moving light background off the slide.
-    const colorScale = light > 194 ? .42 : 1.12;
-    ink.data[i] = colored ? Math.max(17, Math.min(255, Math.round(r * colorScale))) : whiteInk;
-    ink.data[i + 1] = colored ? Math.max(17, Math.min(255, Math.round(g * colorScale))) : whiteInk;
-    ink.data[i + 2] = colored ? Math.max(17, Math.min(255, Math.round(b * colorScale))) : whiteInk;
+    for (let channel = 0; channel < 3; channel++) {
+      const coverage = (255 - hi + ink.data[i + channel] - lo) / 255;
+      ink.data[i + channel] = 17 + 238 * Math.pow(coverage, .72);
+    }
   }
   context.putImageData(ink, 0, 0);
   if (maxX < minX || maxY < minY) throw Error('문항 이미지 안에서 내용을 확인하지 못했습니다.');
@@ -162,8 +154,20 @@ function paintProblem(image, crop, rpm = false) {
 }
 
 function placeProblem(slide, image) {
-  const scale = Math.min(image.scale ?? .014, 10.31 / image.w, 6.5 / image.h);
-  slide.addImage({ data:image.data, x:.625, y:3.542, w:image.w * scale, h:image.h * scale });
+  const panels = image.parts ?? [image.canvas];
+  const sizes = panels.map(panel => {
+    const scale = Math.min(image.scale, BODY_WIDTH / panel.width);
+    return {w:panel.width * scale, h:panel.height * scale};
+  });
+  const gap = .20;
+  const height = sizes.reduce((sum, size) => sum + size.h, 0) + gap * (panels.length - 1);
+  const fit = Math.min(1, BODY_HEIGHT / height);
+  let y = BODY_TOP + Math.min(.42, (BODY_HEIGHT - height * fit) / 2);
+  for (let i = 0; i < panels.length; i++) {
+    const w = sizes[i].w * fit, h = sizes[i].h * fit;
+    slide.addImage({data:panels[i].toDataURL('image/png'), x:SLIDE_MARGIN, y, w, h});
+    y += h + gap * fit;
+  }
 }
 
 function convertedPage(original, meta) {
@@ -184,47 +188,100 @@ function convertedPage(original, meta) {
   return page;
 }
 
+function combine(panels, gap, horizontal = false, alignBottom = false) {
+  if (panels.length === 1) return panels[0];
+  const canvas = document.createElement('canvas');
+  const widths = panels.map(p => p.width), heights = panels.map(p => p.height);
+  const sum = values => values.reduce((a,b) => a+b,0) + gap*(panels.length-1);
+  canvas.width = horizontal ? sum(widths) : Math.max(...widths);
+  canvas.height = horizontal ? Math.max(...heights) : sum(heights);
+  const ctx = canvas.getContext('2d'); ctx.fillStyle='#'+DARK; ctx.fillRect(0,0,canvas.width,canvas.height);
+  let offset = 0;
+  for (const panel of panels) {
+    const y = horizontal ? (alignBottom ? canvas.height-panel.height : (canvas.height-panel.height)/2) : offset;
+    ctx.drawImage(panel,horizontal ? offset : 0,y);
+    offset += (horizontal ? panel.width : panel.height) + gap;
+  }
+  return canvas;
+}
+
+function textPanel(value, size) {
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  const font=size+'px "'+FONT+'", sans-serif';
+  ctx.font=font;
+  canvas.width=Math.ceil(ctx.measureText(value).width)+10;
+  canvas.height=Math.ceil(size*1.52);
+  ctx.fillStyle='#'+DARK;ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.font=font;ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.fillText(value,4,canvas.height/2);
+  return canvas;
+}
+
+function pairIndices(quiz) {
+  const rows=quiz.choices.split('\n').map(choice=>choice.split(/\s*·\s*/).map(value=>Array.from(CIRCLED).indexOf(value)));
+  if (rows.length!==4 || rows.some(row=>row.length<2 || row.some(i=>i<0))) throw Error('묶음 보기 네 개를 확인해 주세요.');
+  return rows;
+}
+
+function pairPanel(page, quiz, layout) {
+  const rows=pairIndices(quiz);
+  const size=Math.round(page.width*.018), gap=Math.round(size*.38);
+  if (layout.question && layout.values?.length===5) {
+    const lines=rows.map((row,i)=>textPanel(CIRCLED[i]+'   '+row.map(j=>layout.values[j]).join(',   '),size));
+    return combine([textPanel(layout.question, size), ...lines],gap);
+  }
+  const {stem,cells,markers}=layout.pairs;
+  const question=paintProblem(page,stem);
+  const cleaned=document.createElement('canvas');cleaned.width=page.width;cleaned.height=page.height;
+  const ctx=cleaned.getContext('2d');ctx.drawImage(page,0,0);ctx.fillStyle='#fff';
+  for(const [l,t,r,b] of markers)ctx.fillRect(l*page.width,t*page.height,(r-l)*page.width,(b-t)*page.height);
+  const values=cells.map(cell=>paintProblem(cleaned,cell));
+  const separator=textPanel('·',size);
+  const lines=rows.map((row,i)=>{
+    const parts=[textPanel(CIRCLED[i],size)];
+    row.forEach((v,j)=>{if(j)parts.push(separator); if(layout.pairs.graphReferences)parts.push(textPanel('그래프 '+CIRCLED[v],size*.86)); parts.push(values[v]);});
+    return combine(parts,gap,true);
+  });
+  return combine([question,textPanel('해당하는 항목을 묶은 보기를 하나 고르세요.',size*.83),...lines],gap);
+}
+
 export async function bookQuizPreview(question, loadImage) {
   return (await projectionProblem(question, loadImage)).canvas;
 }
 
 async function projectionProblem(question, loadImage) {
-  const meta = question.quiz_override?.book_quiz;
-  const image = await createImageBitmap(await loadImage(meta ? {...question, projection_asset:null} : question));
+  const quiz=question.quiz_override, meta=quiz?.book_quiz, layout=question.projection_layout ?? {};
+  const image=await createImageBitmap(await loadImage(meta ? {...question,projection_asset:null} : question));
   try {
+    let canvas, parts;
+    let scale=.025 * 1075 / image.width;
     if (question.projection_asset && !meta) {
-      const canvas = document.createElement('canvas');
-      canvas.width = image.width;
-      canvas.height = image.height;
-      canvas.getContext('2d').drawImage(image, 0, 0);
-      return { canvas, data:canvas.toDataURL('image/png'), w:canvas.width, h:canvas.height, scale:1 / 125 };
+      canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
+      canvas.getContext('2d').drawImage(image,0,0);scale=1/125;
+    } else {
+      if (image.width<2200) throw Error('발표용 원본 해상도가 부족합니다. 교재 쪽을 확인해 주세요.');
+      const page=convertedPage(image,meta);
+      const gap=Math.round(.011*image.width);
+      if (meta?.mode==='pairs') {
+        if (!layout.pairs) throw Error('묶음 보기의 원본 위치를 확인해 주세요.');
+        canvas=pairPanel(page,quiz,layout);
+      } else if (layout.stemRows?.length && layout.body && !question.bundle_parts && !question.slide_prompt_crop) {
+        const stem=combine(layout.stemRows.map(r=>paintProblem(page,r)),0,true,true);
+        parts=[stem, paintProblem(page,layout.body)];
+        canvas=combine(parts,gap);
+      } else {
+        const parts=question.bundle_parts ?? [question.slide_prompt_crop, meta?.crop ?? layout.bounds ?? question.slide_crop].filter(Boolean);
+        if (!parts.length) throw Error('문항 이미지 범위가 없습니다.');
+        canvas=combine(parts.map(r=>paintProblem(page,r)),gap);
+      }
+      if (meta?.mode==='diagram') {
+        const options=meta.retained?.map((v,i)=>CIRCLED[i]+'  그래프 '+CIRCLED[v-1]);
+        if (options?.length!==4) throw Error('그래프 보기를 확인해 주세요.');
+        canvas=combine([canvas,textPanel(options.join('      '),Math.round(image.width*.016))],gap);
+      }
     }
-    const rpm = ['rpm-student', 'rpm-pro-student'].includes(question.preview_book);
-    const scale = rpm ? .014 * 1075 / image.width : undefined;
-    const page = convertedPage(image, meta);
-    const parts = question.bundle_parts
-      ?? [question.slide_prompt_crop, meta?.crop ?? question.slide_crop].filter(Boolean);
-    const panels = parts.map(crop => paintProblem(page, crop, rpm));
-    if (panels.length === 1) {
-      const canvas = panels[0];
-      return { canvas, scale, data:canvas.toDataURL('image/png'), w:canvas.width, h:canvas.height };
-    }
-    const gap = Math.round(14 * (rpm ? image.width / 1075 : 1));
-    const combined = document.createElement('canvas');
-    combined.width = Math.max(...panels.map(panel => panel.width));
-    combined.height = panels.reduce((height,panel) => height+panel.height, 0) + gap*(panels.length-1);
-    const output = combined.getContext('2d');
-    output.fillStyle = '#' + DARK;
-    output.fillRect(0, 0, combined.width, combined.height);
-    let y = 0;
-    for (const panel of panels) {
-      output.drawImage(panel, 0, y);
-      y += panel.height + gap;
-    }
-    return { canvas:combined, scale, data:combined.toDataURL('image/png'), w:combined.width, h:combined.height };
-  } finally {
-    image.close();
-  }
+    return {canvas, scale, parts};
+  } finally {image.close();}
 }
 
 async function addQuestionImage(slide, question, loadImage) {
@@ -243,7 +300,7 @@ function placeQuiz(slide, quiz) {
   const choices = options.length ? '\n\n' + options.map((choice, index) => (index + 1) + '. ' + choice).join('\n')
     : quiz.kind === 'ox' ? '\n\nO   /   X' : '';
   slide.addText(equationRuns(quiz.prompt + choices), {
-    x: .625, y: 3.542, w: 10.31, h: 6.5, color: 'FFFFFF', margin: 0, valign: 'top', fontFace: FONT,
+    x: SLIDE_MARGIN, y: BODY_TOP + .42, w: BODY_WIDTH, h: BODY_HEIGHT, color: 'FFFFFF', margin: 0, valign: 'top', fontFace: FONT,
     fontSize: 26, fit: 'shrink', breakLine: false,
   });
   slide.addNotes('정답 ' + quiz.answer);
@@ -261,7 +318,7 @@ export async function buildPresentation({
   deck.lang = 'ko-KR';
 
   for (const question of picks) {
-    const slide = await frame(deck, question.section, question.book + ' ' + question.label, 'lesson', question.book);
+    const slide = await frame(deck, question.section, bookSource(question, !question.projection_asset), 'lesson', question.book);
     await addQuestionImage(slide, question, loadImage);
     slide.addNotes('수업 문항 ' + question.slot + '번 · ' + question.book + ' ' + question.label);
   }
@@ -271,16 +328,11 @@ export async function buildPresentation({
   }
   for (const question of appendix) {
     const slide = await frame(deck, question.stageLabel ?? stageLabel,
-      question.book ? question.book + ' ' + question.label : question.label, question.quizOne ? 'teacher' : 'appendix');
+      bookSource(question, (!question.quiz_override || question.quiz_override.book_quiz) && !question.projection_asset), question.quizOne ? 'teacher' : 'appendix');
     const quiz = question.quiz_override;
     if (quiz?.book_quiz) {
       await addQuestionImage(slide, question, loadImage);
-      if (quiz.book_quiz.mode !== 'single') {
-        const lines = quiz.choices.split('\n').map((choice, i) => (i + 1) + '. ' + choice);
-        slide.addText([quiz.prompt, '', ...lines].join('\n'), { x:11.2, y:3.542, w:8, h:6.5,
-          fontFace:FONT, fontSize:24, margin:0, valign:'top', fit:'shrink', color:'FFFFFF' });
-      }
-      slide.addNotes('정답 ' + quiz.answer);
+      slide.addNotes(bookSource(question,false) + ' · 정답 ' + quiz.answer);
     } else if (question.quiz_override) placeQuiz(slide, { kind: 'choice', ...question.quiz_override });
     else await addQuestionImage(slide, question, loadImage);
   }
