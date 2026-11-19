@@ -15,7 +15,7 @@ const choiceInputs = ['quiz-choice-1', 'quiz-choice-2', 'quiz-choice-3', 'quiz-c
 const formulaInputs = ['quiz-prompt', 'quiz-answer', ...choiceInputs];
 const stages = {
   catalog: 'catalog', 'quiz-one': 'quiz-panel', 'quiz-two': 'quiz-panel',
-  'quiz-practice': 'quiz-panel', delivery: 'delivery-panel', progress: 'progress-panel',
+  'quiz-practice': 'quiz-panel', delivery: 'delivery-panel',
 };
 const stagePanels = new Set(Object.values(stages));
 const quizStages = ['quiz-one', 'quiz-two', 'quiz-practice'];
@@ -40,6 +40,9 @@ const state = {
 };
 let transferContext;
 let progressGeneration = 0;
+let staffProgress;
+const lessonWeek = number => Math.ceil(number / 2);
+const className = course => tracks[course.track].split(' · ')[0];
 
 class ApiError extends Error {
   constructor(status, message) {
@@ -110,7 +113,6 @@ function failure(error, id = 'load-status') {
 }
 
 function showStatus(message, { login = false, retry = false } = {}) {
-  $('progress-button').hidden = true;
   $('workspace').hidden = true;
   $('message').hidden = false;
   $('status').textContent = message;
@@ -176,7 +178,18 @@ function rememberView() {
   catch { /* The current page still works with browser storage disabled. */ }
 }
 
+function setStaffOverview(active) {
+  const field = $('course-field');
+  const parent = document.querySelector(active ? '.progress-title' : '.course-controls');
+  if (field.parentElement !== parent) {
+    if (active) parent.append(field);
+    else parent.prepend(field);
+  }
+  $('workspace').classList.toggle('staff-overview', active);
+}
+
 function showStage(stage, restore = false) {
+  if (stage === 'progress') stage = 'delivery';
   // Saved views from releases before the split used the "quiz" key.
   if (stage === 'quiz') stage = quizModes[currentLesson()?.quiz_mode]?.stage;
   if (quizStages.includes(stage) && !lessonModes().some(mode => quizModes[mode].stage === stage)) {
@@ -192,6 +205,7 @@ function showStage(stage, restore = false) {
   }
   if (!restore && state.quizDirty) renderQuiz();
   state.stage = Object.hasOwn(stages, stage) ? stage : 'catalog';
+  setStaffOverview(state.staff && state.stage === 'delivery');
   for (const button of document.querySelectorAll('[data-stage]')) {
     const selected = button.dataset.stage === state.stage;
     button.setAttribute('aria-pressed', String(selected));
@@ -202,12 +216,48 @@ function showStage(stage, restore = false) {
   if (!restore && window.scrollY > $('lesson-tools').offsetTop) window.scrollTo(0, $('lesson-tools').offsetTop);
   rememberView();
   renderSubmission();
-  if (state.stage === 'progress') void loadProgress();
+  if (state.stage === 'delivery' && $('all-progress').open) void loadProgress();
   return true;
 }
 
 function progressRows(name, filter, select) {
   return table(name, { course_id: filter, select });
+}
+
+async function submissionHistory(filter) {
+  const latest = new Map();
+  for (let offset = 0; ; offset += 500) {
+    const records = await table('math_submissions', {
+      course_id:filter, select:'course_id,lesson,id,submitted_at',
+      order:'submitted_at.desc,id.desc', limit:500, offset,
+    });
+    for (const record of records) {
+      const key = record.course_id + '/' + record.lesson;
+      if (latest.has(key)) latest.get(key).revised = true;
+      else latest.set(key, record);
+    }
+    if (records.length < 500) return latest;
+  }
+}
+
+const submissionClock = new Intl.DateTimeFormat('ko-KR', {
+  timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit',
+  hour:'2-digit', minute:'2-digit', hourCycle:'h23',
+});
+
+function renderTeacherStatus(cell, submission, started) {
+  cell.className = 'progress-status';
+  cell.dataset.state = submission ? 'done' : 'pending';
+  cell.textContent = submission ? (submission.revised ? '수정본 제출' : '제출됨') : started ? '작성 중' : '미작성';
+  if (!submission) return;
+  const date = new Date(submission.submitted_at);
+  if (!Number.isFinite(date.getTime())) return;
+  const parts = Object.fromEntries(submissionClock.formatToParts(date).map(part => [part.type, part.value]));
+  const time = element('time', parts.month + '.' + parts.day + ' ' + parts.hour + ':' + parts.minute, 'submission-time');
+  time.dateTime = submission.submitted_at;
+  time.title = submissionClock.format(date) + ' (한국시간)';
+  time.setAttribute('aria-label', time.title);
+  cell.append(time);
 }
 
 async function loadProgress() {
@@ -218,23 +268,64 @@ async function loadProgress() {
   const filter = 'in.(' + courses.map(course => course.id).join(',') + ')';
   const status = $('progress-status');
   const grid = $('progress-tracks');
-  $('progress-heading').textContent = instructor + ' · 작업현황';
-  $('transfer-board').hidden = true;
+  $('progress-heading').textContent = state.staff ? '작업현황' : instructor + ' · 작업현황';
+  const previous = state.staff && staffProgress?.instructor === instructor ? staffProgress : null;
+  if (previous?.pending) {
+    previous.needsRefresh = true;
+    return;
+  }
+  const active = document.activeElement;
+  const focusLabel = grid.contains(active) ? active.getAttribute('aria-label') : null;
+  grid.inert = true;
+  $('progress-filters').inert = true;
+  $('progress-transfer').hidden = !state.staff;
+  $('progress-transfer').disabled = true;
+  if (!previous) {
+    staffProgress = null;
+    $('progress-filters').hidden = true;
+    $('transfer-feedback').textContent = '';
+    grid.replaceChildren();
+  }
   grid.classList.toggle('staff-tracks',state.staff);
-  status.textContent = '회차별 작업현황을 불러오는 중입니다.';
-  grid.replaceChildren();
+  status.textContent = previous ? '' : '회차별 작업현황을 불러오는 중입니다.';
   try {
     const [lessons, picks, quizzes, extras, submissions, receipts, plans] = await Promise.all([
       progressRows('math_lessons', filter, 'course_id,lesson,live_date,topic,quiz_mode'),
       progressRows('math_selections', filter, 'course_id,lesson,slot'),
       progressRows('math_teacher_quizzes', filter, 'course_id,lesson,slot'),
       progressRows(resourceSelections, filter, 'course_id,lesson,slot,stage_mode'),
-      progressRows('math_transfer_versions', filter, 'course_id,lesson,id,sync_status,submitted_at'),
+      submissionHistory(filter),
       state.staff ? progressRows('math_transfer_state', filter, 'course_id,lesson,channel,completed_id,claim_until') : [],
       state.staff ? table('math_transfer_plans', { course_id:filter, work_day:'eq.'+workDay(), select:'course_id,lesson,channel,allow_repeat_id' }) : [],
     ]);
-    if (generation !== progressGeneration || version !== state.courseVersion || state.stage !== 'progress') return;
-    const staffRows = [];
+    if (generation !== progressGeneration || version !== state.courseVersion || state.stage !== 'delivery') return;
+    if (state.staff) {
+      const available = courses.filter(staffCourse);
+      const rows = lessons.flatMap(lesson => {
+        const course = available.find(c => c.id === lesson.course_id);
+        if (!course) return [];
+        const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
+        const submission = submissions.get(course.id + '/' + lesson.lesson);
+        const row = transferRow(course, lesson, submission, receipts, plans);
+        row.picks = picks.filter(matches).length;
+        row.quizCounts = lessonModes(lesson,course).map(mode => ({
+          title: quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제',
+          count: mode === 'teacher' ? quizzes.filter(matches).length : extras.filter(item => matches(item) && savedResourceMode(item,lesson) === mode).length,
+          total: quizCount(mode)
+        }));
+        return [row];
+      }).sort((a,b) => a.lesson.lesson-b.lesson.lesson || Number(a.course.track !== 'concept')-Number(b.course.track !== 'concept'));
+      const weeks = [...new Set(rows.map(row=>lessonWeek(row.lesson.lesson)))];
+      const first = selectedTransfers(rows)[0]?.row ?? rows.find(row => Object.keys(channels).some(ch=>transferStatus(row,ch).available)) ?? rows[0];
+      const week = weeks.includes(previous?.week) ? previous.week : lessonWeek(first?.lesson.lesson ?? 1);
+      staffProgress = {instructor,courses:available,rows,week,pending:0};
+      options($('progress-week'),weeks.map(w=>[w,w+'주차 · '+(2*w-1)+'–'+(2*w)+'강']),week);
+      $('progress-filters').hidden = false;
+      $('progress-transfer').disabled = !rows.length;
+      renderStaffProgress();
+      status.textContent = '';
+      return;
+    }
     for (const [track, label] of Object.entries(tracks)) {
       const course = courses.find(item => item.track === track);
       const group = document.createElement('section');
@@ -253,21 +344,16 @@ async function loadProgress() {
       } else {
         const courseLessons = lessons.filter(lesson => lesson.course_id === course.id).sort((a, b) => a.lesson - b.lesson);
         const courseModes = [...new Set(courseLessons.flatMap(lesson => lessonModes(lesson, course)))];
-        const courseSubmissions = submissions.filter(item => item.course_id === course.id);
+        const courseSubmissions = [...submissions.values()].filter(item => item.course_id === course.id);
         const summary = document.createElement('p');
         summary.className = 'muted';
         summary.textContent = '제출 ' + new Set(courseSubmissions.map(item => item.lesson)).size + ' / ' + courseLessons.length;
         heading.append(summary);
-        const staff = staffCourse(course);
-        if (staff) {
-          const launch = element('button','Google에 반영'); launch.type='button';
-          launch.addEventListener('click', () => openTransfers(course)); heading.append(launch);
-        }
         const progress = document.createElement('table');
         progress.setAttribute('aria-label', label + ' 회차별 작업현황');
         const head = progress.createTHead().insertRow();
         const quizHeaders = courseModes.map(mode => quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제');
-        for (const text of ['회차', '수업 문항', ...quizHeaders, '선생님', ...(staff ? ['Google 시트','슬라이드'] : [])]) {
+        for (const text of ['회차', '수업 문항', ...quizHeaders, '선생님']) {
           const header = document.createElement('th');
           header.scope = 'col';
           header.textContent = text;
@@ -276,7 +362,7 @@ async function loadProgress() {
         const body = progress.createTBody();
         for (const lesson of courseLessons) {
           const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
-          const submitted = courseSubmissions.filter(matches).sort((a, b) => b.submitted_at.localeCompare(a.submitted_at))[0];
+          const submitted = submissions.get(course.id + '/' + lesson.lesson);
           const row = body.insertRow();
           const button = document.createElement('button');
           button.type = 'button';
@@ -300,31 +386,86 @@ async function loadProgress() {
             progress.textContent = completed + ' / ' + quizCount(mode);
           }
           const status = row.insertCell();
-          status.className = 'progress-status';
-          status.dataset.state = submitted ? 'done' : 'pending';
-          status.textContent = submitted ? '제출됨' : [picks,quizzes,extras].some(data => data.some(matches)) ? '작성 중' : '미작성';
-          if (staff) {
-            const item = transferRow(course, lesson, submitted, receipts, plans);
-            staffRows.push(item);
-            for (const channel of Object.keys(channels)) row.append(transferCell(item,channel,updatePlan));
-          }
+          renderTeacherStatus(status, submitted, [picks,quizzes,extras].some(data => data.some(matches)));
+
         }
         group.append(progress);
       }
       grid.append(group);
     }
-    if (staffRows.length) {
-      $('transfer-board').hidden = false; $('transfer-day').textContent=workDay();
-      $('transfer-today').replaceChildren(...Object.entries(channels).map(([key,name]) => {
-        const pending = staffRows.filter(row => row.plans[key] && transferStatus(row,key).available);
-        const part=element('section'); part.append(element('h4',name+' · '+pending.length+'회차'),element('p',lessonList(pending) || '예정 없음'));
-        return part;
-      }));
-    }
     status.textContent = '';
   } catch (error) {
     if (generation === progressGeneration && version === state.courseVersion) failure(error, 'progress-status');
+  } finally {
+    if (generation === progressGeneration) {
+      grid.inert = false;
+      $('progress-filters').inert = false;
+      if (focusLabel && document.activeElement === document.body && state.stage === 'delivery') {
+        grid.querySelector('[aria-label="' + CSS.escape(focusLabel) + '"]')?.focus({preventScroll:true});
+      }
+    }
   }
+}
+
+function weekRows(view) {
+  return view.rows.filter(row=>lessonWeek(row.lesson.lesson)===view.week);
+}
+
+function refreshProgressActions() {
+  const view = staffProgress;
+  const week = weekRows(view);
+  const missing = week.some(row => Object.keys(channels).some(ch=>transferStatus(row,ch).available && !row.plans[ch]));
+  $('select-week').disabled = !missing || Boolean(view.pending);
+  $('progress-transfer').disabled = !view.rows.some(row=>row.submission) || Boolean(view.pending);
+  $('progress-week').disabled = !view.rows.length || Boolean(view.pending);
+}
+
+function renderStaffProgress() {
+  const view = staffProgress;
+  const rows = weekRows(view);
+  $('progress-total').textContent = rows.length + '개 수업 중 ' + rows.filter(row => row.submission).length + '개 제출';
+  $('lesson-delivery').hidden = !state.composer && view.week !== lessonWeek(currentLesson().lesson);
+  refreshProgressActions();
+  const grid = $('progress-tracks');
+  if (!rows.length) {
+    grid.replaceChildren(element('p','등록된 회차가 없습니다.','muted'));
+    return;
+  }
+  const section = element('section',undefined,'progress-track combined-track');
+  const table = element('table');
+  table.setAttribute('aria-label','두 수업의 회차별 작업현황');
+  const head = table.createTHead().insertRow();
+  for (const name of ['회차','수업명','문항 준비','제출 상태','시트','슬라이드']) {const th=element('th',name);if (name==='문항 준비') th.className='progress-counts';head.append(th);}
+  const body = table.createTBody();
+  for (const [index,row] of rows.entries()) {
+    const tr = body.insertRow();
+    if (!index || rows[index-1].lesson.lesson !== row.lesson.lesson) {
+      const lesson = element('th',row.lesson.lesson+'강','week-lesson');
+      lesson.scope='rowgroup';
+      lesson.rowSpan=rows.filter(item=>item.lesson.lesson===row.lesson.lesson).length;
+      const date=element('time',dateLabel.format(new Date(row.lesson.live_date+'T00:00:00Z')),'date');
+      date.dateTime=row.lesson.live_date; lesson.append(date); tr.append(lesson);
+    }
+    const open = element('button',className(row.course));
+    open.type = 'button';
+    open.title = row.lesson.topic;
+    open.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 열기');
+    open.addEventListener('click',() => openProgressLesson(row.course,row.lesson.lesson));
+    tr.insertCell().append(open);
+    const counts = tr.insertCell();
+    counts.className = 'progress-counts';
+    counts.append(element('span','수업 '+row.picks+'/'+row.course.lesson_slots));
+    for (const quiz of row.quizCounts) counts.append(element('span',quiz.title+' '+quiz.count+'/'+quiz.total));
+    const status = tr.insertCell();
+    renderTeacherStatus(status, row.submission, row.picks || row.quizCounts.some(q=>q.count));
+    for (const channel of Object.keys(channels)) {
+      const cell = transferCell(row,channel,updatePlan);
+      cell.dataset.channel = channels[channel];
+      tr.append(cell);
+    }
+  }
+  section.append(table);
+  grid.replaceChildren(section);
 }
 
 function openProgressLesson(course, lesson) {
@@ -349,7 +490,7 @@ function updateStageProgress() {
     const completed = mode === 'teacher' ? state.quizzes.size : state.stagePicks.get(mode)?.size ?? 0;
     $(stage + '-progress').textContent = mode ? quizModes[mode].source + ' · ' + completed + ' / ' + quizCount(mode) : '';
   }
-  $('delivery-progress').textContent = state.submitted ? (state.edited ? '수정 중' : '제출됨') : '미제출';
+  $('delivery-progress').textContent = state.staff ? '' : state.submitted ? (state.edited ? '수정 중' : '제출됨') : '미제출';
 }
 
 function context() {
@@ -375,6 +516,7 @@ async function loadSite() {
   state.courseVersion += 1;
   state.lessonVersion += 1;
   $('pending-course').hidden = true;
+  staffProgress = null;
   state.courses = [];
   state.lessons = [];
   state.catalog = [];
@@ -421,6 +563,7 @@ async function loadSite() {
 }
 
 async function loadCourse() {
+  setStaffOverview(false);
   const course = currentCourse();
   const role = state.memberships.find(member => member.course_id === course.id)?.team_role;
   state.staff = state.editor || role === 'staff';
@@ -429,12 +572,10 @@ async function loadCourse() {
   const version = ++state.courseVersion;
   ++state.lessonVersion;
   $('lesson-tools').hidden = true;
-  $('staff-panel').hidden = true;
   $('actions').hidden = true;
   $('google-help').hidden = true;
   $('topic').textContent = '';
   $('lesson').disabled = true;
-  $('progress-button').disabled = true;
   $('load-status').textContent = '회차와 교재를 불러오는 중입니다.';
   state.lessons = [];
   state.catalog = [];
@@ -467,7 +608,6 @@ async function loadLesson() {
   const lesson = currentLesson();
   const version = ++state.lessonVersion;
   $('lesson-tools').hidden = true;
-  $('staff-panel').hidden = true;
   $('actions').hidden = true;
   $('google-help').hidden = true;
   clearPreview();
@@ -497,8 +637,13 @@ async function loadLesson() {
     }
     const savedStage = state.submitted?.stage_questions ?? [];
     renderMaterialLinks(materials);
+    $('delivery-panel').classList.toggle('staff-delivery', state.staff);
+    $('delivery-label').textContent = state.staff ? '작업현황·Google 반영' : '제출·발표자료';
+    $('lesson-delivery-title').textContent = className(currentCourse()) + ' ' + lesson.lesson + (state.composer ? '강 제출·자료' : '강 자료 링크');
+    $('all-progress').open = state.staff || state.view.stage === 'progress';
+    $('lesson-delivery').open = !state.staff;
+    $('lesson-delivery').hidden = false;
     $('submission-panel').hidden = !state.composer;
-    $('staff-panel').hidden = !state.staff;
 
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
@@ -520,13 +665,10 @@ async function loadLesson() {
         return !draft || ['kind', 'prompt', 'answer', 'choices'].some(key => saved[key] !== draft[key]);
       });
     state.quizDirty = false;
-    $('export-status').textContent = '';
     $('selection-status').textContent = '';
     $('submit-feedback').textContent = '';
     $('load-status').textContent = '';
     $('lesson-tools').hidden = false;
-    $('progress-button').hidden = false;
-    $('progress-button').disabled = false;
     const books = lessonCatalog();
     $('catalog-empty').hidden = Boolean(books.length);
     $('catalog-fields').hidden = !books.length;
@@ -546,8 +688,8 @@ async function loadLesson() {
     $('quiz-save').hidden = !state.composer;
     for (const id of [...formulaInputs, 'quiz-kind', 'quiz-choice-answer']) $(id).disabled = !state.composer;
     $('symbol-panel').hidden = !state.composer;
-    showStage(restored ? state.view.stage : 'catalog', true);
-    renderExport();
+    const defaultStage = state.staff ? 'delivery' : 'catalog';
+    showStage(restored && state.view.stage ? state.view.stage : defaultStage, true);
   } catch (error) {
     if (version === state.lessonVersion) failure(error);
   }
@@ -761,7 +903,6 @@ async function withSaving(work, statusId) {
     active.forEach(control => { if (control.isConnected) control.disabled = false; });
     if (version === state.lessonVersion) {
       renderSubmission();
-      renderExport();
     }
   }
 }
@@ -1054,10 +1195,10 @@ async function submit() {
     if (!rows[0]) throw new ApiError(403, '이 회차를 제출할 권한이 없습니다.');
     state.submitted = rows[0];
     state.edited = false;
+    if (state.stage === 'delivery' && $('all-progress').open) void loadProgress();
     state.exportReceipt = null;
     $('ppt-result').hidden = true;
     $('ppt-result').removeAttribute('href');
-    $('export-status').textContent = '';
 
   }, 'submit-feedback');
 }
@@ -1099,11 +1240,6 @@ function transferRow(course, lesson, submission, receipts, plans) {
   return { course, lesson, submission, receipts:pick(receipts), plans:pick(plans) };
 }
 
-function renderExport() {
-  $('google-transfer').disabled = state.busy || !state.staff;
-  $('export-status').textContent = '오늘 반영할 회차와 저장 위치를 선택하세요.';
-}
-
 function rpc(name,body) { return table('rpc/'+name,{},'POST',body); }
 
 async function transferData(course) {
@@ -1118,25 +1254,46 @@ async function transferData(course) {
   return {rows:lessons.map(l => transferRow(course,l,submissions.find(s=>s.lesson===l.lesson),receipts,plans)),settings:settings[0]};
 }
 
-async function openTransfers(course) {
-  if (!staffCourse(course) || state.busy || transferContext) return;
-  const ctx=transferContext={course,day:workDay(),loading:true,rows:[]};
-  $('transfer-course').textContent=course.instructor+' · '+tracks[course.track];
+async function openTransfers(requested, week = null) {
+  const courses = Array.isArray(requested) ? requested : [requested];
+  if (!courses.length || courses.some(c=>!staffCourse(c)) || state.busy || transferContext || staffProgress?.pending) return;
+  const ctx = transferContext = {courses, week, day:workDay(), loading:true, rows:[], destinations:new Map(), pending:0};
+  $('transfer-course').textContent=courses[0].instructor+' · '+courses.map(className).join(' / ');
   $('transfer-preview').replaceChildren(); $('transfer-counts').textContent='';
   $('transfer-config-status').textContent=''; $('transfer-check-status').textContent='불러오는 중…';
   $('transfer-urls').disabled=true; $('transfer-run').disabled=true;
+  $('transfer-location').open=false;
   $('destination-sheet').value=''; $('destination-slides').value='';
+  $('destination-course-label').hidden = courses.length <= 1;
+  options($('destination-course'),courses.map(c=>[c.id,className(c)]),courses[0].id);
   $('transfer-dialog').showModal();
   try {
-    const data=await transferData(course);
+    const data = await Promise.all(courses.map(transferData));
     if (ctx!==transferContext) return;
-    if (!data.settings) throw Error('이 수업의 기본 경로가 아직 등록되지 않았습니다.');
-    Object.assign(ctx,data,{loading:false});
-    $('destination-sheet').value=ctx.settings.sheet_url;
-    $('destination-slides').value=ctx.settings.folder_url;
-    $('transfer-check-status').textContent=''; $('transfer-urls').disabled=false;
+    courses.forEach((course,i) => {
+      const settings = data[i].settings;
+      ctx.destinations.set(course.id,{course,settings,sheet:settings?.sheet_url ?? '',slides:settings?.folder_url ?? ''});
+    });
+    ctx.rows = data.flatMap(d=>d.rows).sort((a,b)=>a.lesson.lesson-b.lesson.lesson);
+    const missing = selectedTransfers(ctx.rows).find(({row,channel}) => !ctx.destinations.get(row.course.id)[channel]);
+    if (missing) {
+      $('transfer-location').open=true;
+      $('destination-course').value=missing.row.course.id;
+    }
+    ctx.loading = false;
+    $('transfer-urls').disabled=false; $('transfer-check-status').textContent='';
+    showDestination();
     renderTransfers();
   } catch(error) { if (ctx===transferContext) $('transfer-check-status').textContent=error.message; }
+}
+
+function showDestination() {
+  const target = transferContext.destinations.get($('destination-course').value);
+  $('destination-sheet').value = target.sheet;
+  $('destination-slides').value = target.slides;
+  $('save-destinations').disabled = !target.settings;
+  $('transfer-config-status').textContent = target.settings ? '' : '등록된 기본 주소가 없습니다. 이번에 사용할 주소를 입력하세요.';
+  for (const button of $('transfer-urls').querySelectorAll('[data-copy]')) button.disabled=!target[button.dataset.copy].trim();
 }
 
 function selectedTransfers(rows) {
@@ -1150,41 +1307,90 @@ function renderTransfers() {
   const head=grid.createTHead().insertRow();
   for (const label of ['회차','Google 시트','슬라이드']) head.append(element('th',label));
   const body=grid.createTBody();
-  for (const row of ctx.rows) {
+  const visible = ctx.rows.filter(row => row.submission && (ctx.week === null || lessonWeek(row.lesson.lesson) === ctx.week || Object.keys(row.plans).length));
+  for (const row of visible) {
     const tr=body.insertRow();
-    const title=element('th',row.lesson.lesson+'강'); title.scope='row'; title.title=row.lesson.topic; tr.append(title);
+    const title=element('th',className(row.course)+' '+row.lesson.lesson+'강'); title.scope='row'; title.title=row.lesson.topic; tr.append(title);
     for (const channel of Object.keys(channels)) tr.append(transferCell(row,channel,updatePlan));
   }
   $('transfer-preview').replaceChildren(grid);
+  if (!body.rows.length) {const cell=body.insertRow().insertCell();cell.colSpan=3;cell.textContent=ctx.week ? '이 주차에는 반영할 수업이 없습니다.' : '아직 제출된 회차가 없습니다.';}
+  renderTransferCounts();
+}
+
+function renderTransferCounts() {
+  const ctx=transferContext;
   const chosen=selectedTransfers(ctx.rows);
   $('transfer-counts').textContent=Object.entries(channels).map(([ch,label])=> {
-    const rows=chosen.filter(x=>x.channel===ch).map(x=>x.row.lesson.lesson+'강');
-    return label+' '+rows.length+'개'+(rows.length?' ('+rows.join('·')+')':'');
+    const rows=chosen.filter(x=>x.channel===ch).map(x=>x.row);
+    return label+' '+rows.length+'개'+(rows.length?' ('+lessonList(rows)+')':'');
   }).join(' / ');
-  $('transfer-run').disabled=Boolean(ctx.busy || !chosen.length);
-  for (const button of document.querySelectorAll('[data-copy]')) button.disabled=!$('destination-'+button.dataset.copy).value.trim();
+  $('transfer-run').disabled=Boolean(ctx.busy || ctx.loading || ctx.saving || ctx.pending || !chosen.length);
 }
 
 const actionMessages={busy:'다른 직원이 반영 중입니다.',revised:'새 제출본이 있습니다. 목록을 확인해 주세요.',done:'이미 완료되어 잠겨 있습니다.',removed:'오늘 목록에서 제외됐습니다.',day:'날짜가 바뀌었습니다. 팝업을 다시 열어 주세요.'};
 
 async function updatePlan(row,channel,action,cell) {
   const ctx=transferContext;
-  if (state.busy || ctx?.busy) return;
-  if (action==='repeat' && !window.confirm(row.lesson.lesson+'강 '+channels[channel]+'의 최신 제출본을 오늘 다시 반영할까요?')) return;
-  const notice=ctx?$('transfer-config-status'):$('transfer-feedback');
-  const controls=[...cell.querySelectorAll('button,input')]; controls.forEach(c=>c.disabled=true);
-  if (ctx) {ctx.pending=(ctx.pending||0)+1; $('transfer-run').disabled=true;}
+  const view=ctx ?? staffProgress;
+  if (!view || state.busy || ctx?.busy || cell.hasAttribute('aria-busy')) return;
+  if (action==='repeat' && !window.confirm(className(row.course)+' '+row.lesson.lesson+'강 '+channels[channel]+'를 오늘 다시 반영할까요?')) return;
+  const notice=ctx ? $('transfer-config-status') : $('transfer-feedback');
+  const button=ctx ? $('transfer-run') : $('progress-transfer');
+  const blockClick=event=>event.preventDefault();
+  cell.setAttribute('aria-busy','true');
+  cell.addEventListener('click',blockClick,true);
+  view.pending++;
+  button.disabled=true;
+  if (!ctx) refreshProgressActions();
+  else $('transfer-cancel').disabled=true;
+  let refresh=false;
   try {
     const result=await rpc('math_plan_transfer',{p_course:row.course.id,p_lesson:row.lesson.lesson,p_channel:channel,p_submission:row.submission?.id??null,p_action:action,p_day:ctx?.day??workDay()});
     if (result!=='ok') throw Error(actionMessages[result] || '선택을 저장하지 못했습니다.');
-    notice.textContent=row.lesson.lesson+'강 '+channels[channel]+(action==='remove'?' 선택을 해제했습니다.':'을 오늘 목록에 담았습니다.');
-  } catch(error) {notice.textContent=error.message;}
-  finally {
-    if (ctx && ctx===transferContext) {
-      try { const data=await transferData(ctx.course); if (ctx===transferContext) {ctx.rows=data.rows;renderTransfers();} }
-      catch(error) {notice.textContent=error.message;ctx.loading=true;$('transfer-run').disabled=true;}
-      ctx.pending--; if (ctx.pending) $('transfer-run').disabled=true;
-    } else if (!ctx && state.stage==='progress') void loadProgress();
+    if (action==='remove') delete row.plans[channel];
+    else row.plans[channel]={allow_repeat_id:action==='repeat' ? row.submission.id : null};
+    if (view !== (ctx ? transferContext : staffProgress)) return;
+    notice.textContent=className(row.course)+' '+row.lesson.lesson+'강 '+channels[channel]+(action==='remove'?' 선택을 해제했습니다.':'를 선택했습니다.');
+    cell.querySelector('input').checked=Boolean(row.plans[channel]) && transferStatus(row,channel).available;
+    if (action==='repeat' || (action==='remove' && transferStatus(row,channel).locked)) {
+      const replacement=transferCell(row,channel,updatePlan);
+      replacement.dataset.channel=channels[channel];
+      const focused=cell.contains(document.activeElement);
+      cell.replaceWith(replacement);
+      if (focused) (replacement.querySelector('button') ?? replacement.querySelector('input')).focus({preventScroll:true});
+    }
+  } catch(error) {
+    if (view !== (ctx ? transferContext : staffProgress)) return;
+    notice.textContent=error.message;
+    cell.querySelector('input').checked=Boolean(row.plans[channel]) && transferStatus(row,channel).available;
+    refresh=true;
+  } finally {
+    view.pending--;
+    cell.removeAttribute('aria-busy');
+    cell.removeEventListener('click',blockClick,true);
+    if (view === (ctx ? transferContext : staffProgress)) {
+      if (refresh) view.needsRefresh=true;
+      if (ctx) {renderTransferCounts(); $('transfer-cancel').disabled=Boolean(view.pending || ctx.busy || ctx.saving);}
+      else refreshProgressActions();
+      if (!view.pending && view.needsRefresh) {
+        delete view.needsRefresh;
+        if (ctx) {
+          ctx.loading=true; button.disabled=true;
+          try {
+            const data=await Promise.all(ctx.courses.map(transferData));
+            if (ctx===transferContext) {ctx.rows=data.flatMap(d=>d.rows);ctx.loading=false;renderTransfers();}
+          } catch {if (ctx===transferContext) notice.textContent+=' 창을 다시 열어 최신 상태를 확인하세요.';}
+        } else if (state.stage==='delivery') {
+          const focused=document.activeElement;
+          const label=cell.contains(focused) && focused.getAttribute('aria-label');
+          await loadProgress();
+          if (label && document.activeElement===document.body && state.stage==='delivery') {
+            $('progress-tracks').querySelector('[aria-label="'+CSS.escape(label)+'"]')?.focus({preventScroll:true});
+          }
+        }
+      }
+    }
   }
 }
 
@@ -1197,20 +1403,22 @@ async function saveDestinations() {
   const ctx=transferContext;
   if (!ctx || ctx.busy || ctx.loading) return;
   const status=$('transfer-config-status');
+  const target=ctx.destinations.get($('destination-course').value);
+  if (!target?.settings) return;
   try {
-    const sheet=sheetURL(ctx.course,$('destination-sheet').value);
+    const sheet=sheetURL(target.course,$('destination-sheet').value);
     const folder=$('destination-slides').value.trim();
     const url=folder ? folderDestination(folder).url : '';
-    if (sheet===ctx.settings.sheet_url && url===ctx.settings.folder_url) {status.textContent='이미 같은 팀 기본값입니다.';return;}
-    if (!window.confirm(ctx.course.instructor+' '+tracks[ctx.course.track]+'의 팀 기본 주소를 변경할까요? 두 직원에게 적용됩니다.')) return;
-    $('save-destinations').disabled=true;
-    const updated=await table('math_transfer_settings',{course_id:'eq.'+ctx.course.id,revision:'eq.'+ctx.settings.revision,select:'sheet_url,folder_url,revision'},'PATCH',{sheet_url:sheet,folder_url:url,revision:ctx.settings.revision+1});
+    if (sheet===target.settings.sheet_url && url===target.settings.folder_url) {status.textContent='이미 같은 팀 기본값입니다.';return;}
+    if (!window.confirm(target.course.instructor+' '+tracks[target.course.track]+'의 팀 기본 주소를 변경할까요? 두 직원에게 적용됩니다.')) return;
+    $('transfer-urls').disabled=true; $('transfer-cancel').disabled=true; ctx.saving=true; $('transfer-run').disabled=true;
+    const updated=await table('math_transfer_settings',{course_id:'eq.'+target.course.id,revision:'eq.'+target.settings.revision,select:'sheet_url,folder_url,revision'},'PATCH',{sheet_url:sheet,folder_url:url,revision:target.settings.revision+1});
     if (ctx!==transferContext) return;
     if (!updated.length) throw Error('다른 직원이 기본값을 변경했습니다. 팝업을 다시 열어 확인해 주세요.');
-    ctx.settings=updated[0]; $('destination-sheet').value=sheet; $('destination-slides').value=url;
+    target.settings=updated[0]; target.sheet=sheet; target.slides=url; showDestination();
     status.textContent='이 수업의 팀 기본값으로 저장했습니다.';
   } catch(error) {status.textContent=error.message;}
-  finally { $('save-destinations').disabled=false; }
+  finally { if (ctx===transferContext) {ctx.saving=false; $('transfer-urls').disabled=false; $('transfer-cancel').disabled=Boolean(ctx.pending); renderTransferCounts();} }
 }
 
 async function slideBlob(row, submission) {
@@ -1276,7 +1484,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
 
 async function runTransfers() {
   const ctx=transferContext;
-  if (!ctx || ctx.busy || ctx.pending || ctx.loading) return;
+  if (!ctx || ctx.busy || ctx.pending || ctx.loading || ctx.saving) return;
   const tasks=selectedTransfers(ctx.rows);
   if (!tasks.length) return;
   const status=$('transfer-check-status');status.replaceChildren();
@@ -1284,17 +1492,29 @@ async function runTransfers() {
   $('transfer-preview').inert=true;
   try {
     if (ctx.day!==workDay()) throw Error(actionMessages.day);
-    const has=key=>tasks.some(t=>t.channel===key);
-    const sheet=has('sheet') ? sheetURL(ctx.course,$('destination-sheet').value) : '';
-    const dest=has('slides') ? folderDestination($('destination-slides').value) : null;
-    const scopes=[...(sheet?['https://www.googleapis.com/auth/spreadsheets']:[]),...(dest?['https://www.googleapis.com/auth/drive']:[])];
-    const connection=await connectStaffGoogle(scopes.join(' '));
-    let folder,folderError;
-    if (dest) try {folder=await openDestinationFolder(connection,dest);} catch(error) {folderError=error.message;}
-    for (const task of tasks) {
-      const item=element('p',task.row.lesson.lesson+'강 '+channels[task.channel]+' · ');status.append(item);
+    const destinations=new Map();
+    for (const course of ctx.courses) {
+      const selected=tasks.filter(task=>task.row.course.id===course.id);
+      if (!selected.length) continue;
+      const draft=ctx.destinations.get(course.id);
       try {
-        if (task.channel==='slides' && folderError) throw Error(folderError);
+        const sheet=selected.some(t=>t.channel==='sheet') ? sheetURL(course,draft.sheet) : '';
+        const dest=selected.some(t=>t.channel==='slides') ? folderDestination(draft.slides) : null;
+        destinations.set(course.id,{sheet,dest});
+      } catch(error) {throw Error(className(course)+' · '+error.message);}
+    }
+    const scopes=Object.keys(channels).filter(ch=>tasks.some(t=>t.channel===ch)).map(ch=>'https://www.googleapis.com/auth/'+(ch==='sheet'?'spreadsheets':'drive'));
+    const connection=await connectStaffGoogle(scopes.join(' '));
+    const folders=new Map();
+    for (const task of tasks) {
+      const {sheet,dest}=destinations.get(task.row.course.id);
+      const item=element('p',className(task.row.course)+' '+task.row.lesson.lesson+'강 '+channels[task.channel]+' · ');status.append(item);
+      try {
+        let folder;
+        if (task.channel==='slides') {
+          if (!folders.has(dest.url)) folders.set(dest.url,openDestinationFolder(connection,dest));
+          folder=await folders.get(dest.url);
+        }
         const url=await transferOne(task,connection,sheet,folder,dest?.url);
         const link=element('a','완료 · 열기');link.href=url;link.target='_blank';link.rel='noopener noreferrer';item.append(link);
         if (task.channel==='slides' && task.row.course.id===state.courseId && task.row.lesson.lesson===currentLesson()?.lesson) resultLink(url);
@@ -1302,7 +1522,7 @@ async function runTransfers() {
     }
   } catch(error) {status.append(element('p',error.message));}
   finally {
-    try {ctx.rows=(await transferData(ctx.course)).rows;}
+    try {ctx.rows=(await Promise.all(ctx.courses.map(transferData))).flatMap(d=>d.rows).sort((a,b)=>a.lesson.lesson-b.lesson.lesson);}
     catch(error) {ctx.loading=true;status.append(element('p','목록을 다시 열어 반영 결과를 확인해 주세요.'));}
     ctx.busy=false; $('transfer-urls').disabled=false; $('transfer-preview').inert=false; $('transfer-cancel').disabled=false;
     renderTransfers();
@@ -1443,13 +1663,30 @@ $('stage-section').addEventListener('change', () => {
 $('teacher-section').addEventListener('submit', saveQuiz);
 $('quiz-clear').addEventListener('click', clearQuiz);
 $('submit').addEventListener('click', submit);
-$('google-transfer').addEventListener('click', () => openTransfers(currentCourse()));
+$('progress-week').addEventListener('change', () => {
+  staffProgress.week=Number($('progress-week').value);
+  $('transfer-feedback').textContent='';
+  renderStaffProgress();
+});
+$('select-week').addEventListener('click', () => {
+  const grid=$('progress-tracks');
+  const boxes=[...grid.querySelectorAll('input[type=checkbox]:not(:checked):enabled')];
+  for (const box of boxes) box.click();
+});
+$('progress-transfer').addEventListener('click', () => openTransfers(staffProgress.courses, staffProgress.week));
+$('destination-course').addEventListener('change',showDestination);
+$('all-progress').addEventListener('toggle', () => {
+  if (!state.staff && state.stage === 'delivery' && $('all-progress').open) void loadProgress();
+});
 $('transfer-cancel').addEventListener('click', () => $('transfer-dialog').close());
-$('transfer-dialog').addEventListener('cancel', event => { if (transferContext?.busy) event.preventDefault(); });
-$('transfer-dialog').addEventListener('close', () => { transferContext=null; if (state.stage==='progress') void loadProgress(); });
+$('transfer-dialog').addEventListener('cancel', event => { if (transferContext?.busy || transferContext?.pending || transferContext?.saving) event.preventDefault(); });
+$('transfer-dialog').addEventListener('close', () => { transferContext=null; if (state.stage==='delivery') void loadProgress(); });
 $('transfer-run').addEventListener('click', runTransfers);
 $('save-destinations').addEventListener('click', saveDestinations);
-for (const input of $('transfer-urls').querySelectorAll('input')) input.addEventListener('input', () => { const button=document.querySelector('[data-copy="'+(input.id==='destination-sheet'?'sheet':'slides')+'"]'); button.disabled=!input.value.trim(); });
+for (const input of $('transfer-urls').querySelectorAll('input')) input.addEventListener('input', () => { const key=input.id==='destination-sheet'?'sheet':'slides';
+  const target=transferContext?.destinations.get($('destination-course').value);
+  if (target) target[key]=input.value;
+  const button=document.querySelector('[data-copy="'+key+'"]'); button.disabled=!input.value.trim(); });
 for (const button of document.querySelectorAll('[data-copy]')) button.addEventListener('click', async () => {
   const field=$('destination-'+button.dataset.copy);
   try { await navigator.clipboard.writeText(field.value); $('transfer-config-status').textContent='주소를 복사했습니다.'; }
@@ -1459,6 +1696,7 @@ $('retry').addEventListener('click', loadSite);
 protectUnsaved($('course'), () => {
   const courses = state.courses.filter(course => course.instructor === $('course').value);
   const course = courses.find(item => item.track === currentCourse()?.track) ?? courses[0];
+  state.view = {course:course.id, lesson:currentLesson()?.lesson, stage:state.stage};
   selectCourse(course);
   void loadCourse();
 });
@@ -1485,6 +1723,14 @@ window.addEventListener('storage', event => {
 
 const usageDialog = $('usage-dialog');
 let usageView;
+function selectGuideTopic(topic) {
+  const root=$('usage-content').shadowRoot;
+  if (!root) return;
+  for (const section of root.querySelectorAll('.part')) section.hidden=section.id!==topic;
+  for (const button of usageDialog.querySelectorAll('[data-guide-topic]')) button.setAttribute('aria-pressed', String(button.dataset.guideTopic===topic));
+  usageDialog.scrollTop=0;
+}
+for (const button of usageDialog.querySelectorAll('[data-guide-topic]')) button.addEventListener('click',()=>selectGuideTopic(button.dataset.guideTopic));
 async function openUsageGuide() {
   if (usageDialog.open) return;
   usageDialog.showModal();
@@ -1495,9 +1741,9 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=4').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=5').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
-    if (usageDialog.open) await show(initial);
+    if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;
   } catch {
     usageView = null;

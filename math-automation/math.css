@@ -84,8 +84,6 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
   .button:not(:disabled):hover, button:not(:disabled):hover { background: #eef4ef; }
   .button.primary:not(:disabled):hover { background: var(--green-deep); }
 }
-#progress-button { min-height: 37px; font-size: .87rem; }
-#progress-button[aria-pressed="true"] { background: var(--selected); border-color: #8cb19a; }
 
 .muted { color: var(--muted); font-size: .86rem; line-height: 1.45; }
 .buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
@@ -262,7 +260,7 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 @media (max-width: 520px) {
   main { padding: 17px 12px 40px; }
   .heading, .heading-actions { gap: 6px; }
-  #progress-button, #usage-open { padding-inline: 7px; white-space: nowrap; }
+  #usage-open { padding-inline: 7px; white-space: nowrap; }
   .course-controls { grid-template-columns: minmax(0, 1fr) max-content; gap: 7px 10px; }
   #lesson-field { grid-column: 1 / -1; }
   .stage-nav { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -275,21 +273,14 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 }
 @media (pointer: coarse) {
   input, textarea, select, button, .button, #usage-open,
-  #progress-button, .track-buttons button, .slot-grid select, .symbols button, .mobile-jump,
+  .track-buttons button, .slot-grid select, .symbols button, .mobile-jump,
   .math-next-field,
   .stage-pick button, .progress-track td button, .drive-path button { min-height: 44px; }
   .symbols button { min-width: 44px; }
 }
 
-#transfer-board { margin: 10px 0 20px; }
-#transfer-board h3, .transfer-head h4, .transfer-today p { margin: 0; }
-#transfer-day, .transfer-head span { color: var(--muted); font-size: .85rem; }
-.transfer-today { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-.transfer-today section { border: 1px solid var(--border); border-radius: 9px; background: var(--soft); padding: 12px 14px; }
-.transfer-head { display:flex; align-items:baseline; justify-content:space-between; gap: 8px; }
-.transfer-today p { margin: 7px 0 10px; }
 #transfer-feedback:empty, #transfer-check-status:empty { display:none; }
-#transfer-feedback { margin: 10px 0 0; white-space:pre-line; }
+#transfer-feedback { margin:6px 0 0; font-size:.85rem; color:var(--muted); }
 .progress-tracks.staff-tracks { grid-template-columns: 1fr; }
 .staff-tracks .progress-track td { vertical-align: middle; }
 .plan-check { display:inline-flex; align-items:center; gap:6px; font-weight:500; }
@@ -299,7 +290,6 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 #transfer-dialog::backdrop { background:#10231baa; }
 #transfer-preview p { overflow-wrap:anywhere; }
 @media (max-width:700px) {
- .transfer-today { grid-template-columns: 1fr; }
  .staff-tracks table { font-size:.78rem; }
  .staff-tracks .plan-check { display:flex; gap:4px; flex-wrap:wrap; }
  .staff-tracks .progress-track th, .staff-tracks .progress-track td { padding-inline:4px; }
@@ -352,3 +342,73 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .stage-pick details { font-size: .86rem; margin: 4px 0 8px; }
 .stage-pick summary { cursor: pointer; color: var(--green-deep); }
 .stage-pick canvas { display: block; max-width: 100%; height: auto; }
+
+/* Keep the lesson toolbar proportional to its labels and Korean date values. */
+.lesson-context { column-gap:16px; padding:10px 15px; }
+.course-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px 14px; }
+.course-controls label, .course-controls .track-field, .topic { display:flex; align-items:center; gap:7px; }
+.course-controls label, .track-field > span, .topic > span { white-space:nowrap; color:var(--muted); font-size:.8rem; }
+.course-controls select { width:auto; min-height:36px; padding:4px 6px; color:var(--green-deep); }
+.track-buttons { min-height:36px; padding:2px; }
+.track-buttons button { min-height:30px; padding:3px 9px; }
+.topic { padding-left:14px; }
+.topic strong { font-size:.94rem; }
+.stage-nav { grid-auto-columns:max-content; gap:2px; padding:3px; }
+.stage-nav button { min-height:38px; flex-direction:row; align-items:center; gap:7px; padding:5px 10px; }
+.staff-overview .track-field, .staff-overview #lesson-field, .staff-overview .topic, .staff-overview .stage-nav small { display:none; }
+.staff-overview .lesson-context:has(#load-status:empty) { display:none; }
+#delivery-panel { display:flex; flex-direction:column; }
+#delivery-panel:not(.staff-delivery) #all-progress { order:1; }
+#all-progress > summary, #lesson-delivery > summary { font-size:.9rem; font-weight:650; padding:10px 3px; color:var(--green); cursor:pointer; }
+.staff-delivery #all-progress > summary, #delivery-panel:not(.staff-delivery) #lesson-delivery > summary { display:none; }
+.submission-time { display:block; margin-top:2px; white-space:nowrap; font-size:.74rem; font-weight:450; color:var(--muted); font-variant-numeric:tabular-nums; }
+.progress-heading { align-items:center; margin-bottom:9px; }
+.progress-heading h2 { margin:0; }
+.progress-title, .progress-title label { display:flex; align-items:center; gap:8px; }
+.progress-title { flex-wrap:wrap; gap:8px 16px; }
+.progress-title label { color:var(--muted); font-size:.8rem; }
+.progress-title select { width:auto; min-height:36px; padding:4px 6px; }
+.progress-filters { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:3px 0 12px; }
+.progress-filters label { display:flex; align-items:center; gap:8px; }
+.progress-filters select, .progress-filters button { width:auto; min-height:36px; padding:4px 8px; }
+.progress-filters > span { font-size:.83rem; color:var(--muted); }
+#select-week { margin-left:auto; }
+.combined-track th, .combined-track td { vertical-align:middle; }
+.combined-track thead { background:var(--soft); }
+.combined-track .week-lesson { font-size:.98rem; color:var(--ink,var(--green-deep)); }
+.combined-track .date { font-weight:500; }
+.progress-counts span { display:inline-block; white-space:nowrap; margin-right:9px; font-size:.8rem; }
+#destination-course-label { display:flex; align-items:center; gap:8px; padding-bottom:8px; margin-bottom:8px; border-bottom:1px solid var(--border); }
+#destination-course { width:auto; }
+#transfer-location { margin:0 0 14px; }
+#transfer-location summary { cursor:pointer; color:var(--green); font-weight:650; }
+#transfer-location[open] summary { margin-bottom:8px; }
+#usage-dialog { width:min(1560px,calc(100% - 24px)); max-height:calc(100dvh - 24px); }
+.usage-header { flex-wrap:wrap; padding:8px 16px; gap:7px 14px; }
+.usage-topics { display:flex; gap:3px; }
+.usage-topics button { min-height:34px; font-size:.83rem; padding:4px 9px; background:transparent; border-color:transparent; }
+.usage-topics button[aria-pressed="true"] { background:white; border-color:var(--field); }
+#usage-close { margin-left:auto; min-height:34px; }
+@media(min-width:901px) { .course-controls { flex-wrap:nowrap; } }
+@media(max-width:900px) {
+  .lesson-context { grid-template-columns:1fr; gap:7px; }
+  .topic { padding-left:0; border:0; }
+}
+@media(max-width:670px) {
+  .course-controls { gap:6px 12px; }
+  .heading { margin-bottom:9px; }
+  .stage-nav { display:flex; width:100%; flex-wrap:wrap; }
+  .stage-nav button { flex:1 1 40%; justify-content:flex-start; }
+  .combined-track .progress-counts { display:none; }
+  .combined-track th, .combined-track td { font-size:.76rem; }
+  .combined-track td button, .combined-track .week-lesson { white-space:nowrap; }
+  .combined-track .plan-check { gap:3px; }
+  .combined-track thead th, .combined-track .plan-check span { white-space:nowrap; }
+  .submission-time { font-size:.7rem; }
+  #usage-dialog { width:calc(100% - 8px); max-height:calc(100dvh - 8px); }
+  .usage-header { padding:6px 10px; }
+  .usage-topics { order:3; width:100%; }
+}
+@media(pointer:coarse) {
+  .course-controls select, .track-buttons button, .stage-nav button, .progress-title select, .progress-filters button, .progress-filters select, .usage-topics button { min-height:44px; }
+}

@@ -7,15 +7,14 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=18">
-  <script type="module" src="math.mjs?v=28"></script>
+  <link rel="stylesheet" href="math.css?v=19">
+  <script type="module" src="math.mjs?v=29"></script>
 </head>
 <body>
   <main>
     <header class="heading">
       <h1>수학자동화</h1>
       <div class="heading-actions">
-        <button type="button" id="progress-button" data-stage="progress" aria-pressed="false" aria-controls="progress-panel" hidden>작업현황</button>
         <button type="button" id="usage-open" aria-haspopup="dialog" aria-controls="usage-dialog">사용 방법</button>
       </div>
     </header>
@@ -37,7 +36,7 @@
               <button type="button" data-track="application" aria-pressed="false">실력탄탄</button>
             </div>
           </div>
-          <label id="lesson-field">회차 · 라이브 날짜 <select id="lesson"></select></label>
+          <label id="lesson-field">회차 <select id="lesson"></select></label>
         </div>
         <p class="topic"><span>수업 범위</span><strong id="topic"></strong></p>
         <p id="load-status" aria-live="polite"></p>
@@ -48,18 +47,8 @@
           <button type="button" data-stage="quiz-one" aria-pressed="false" aria-controls="quiz-panel" hidden><span>퀴즈앤 ①</span><small id="quiz-one-progress"></small></button>
           <button type="button" data-stage="quiz-two" aria-pressed="false" aria-controls="quiz-panel" hidden><span>퀴즈앤 ②</span><small id="quiz-two-progress"></small></button>
           <button type="button" data-stage="quiz-practice" aria-pressed="false" aria-controls="quiz-panel" hidden><span>문제 출제</span><small id="quiz-practice-progress"></small></button>
-          <button type="button" data-stage="delivery" aria-pressed="false" aria-controls="delivery-panel"><span>제출·발표자료</span><small id="delivery-progress"></small></button>
+          <button type="button" data-stage="delivery" aria-pressed="false" aria-controls="delivery-panel"><span id="delivery-label">제출·발표자료</span><small id="delivery-progress"></small></button>
         </nav>
-        <section id="progress-panel" class="card" aria-labelledby="progress-heading" hidden>
-          <h2 id="progress-heading">작업현황</h2>
-          <p id="progress-status" class="muted" role="status"></p>
-          <section id="transfer-board" hidden aria-labelledby="transfer-title">
-            <div class="panel-heading"><h3 id="transfer-title">오늘 넘길 회차</h3><time id="transfer-day"></time></div>
-            <div id="transfer-today" class="transfer-today"></div>
-            <p id="transfer-feedback" role="status" aria-live="polite"></p>
-          </section>
-          <div id="progress-tracks" class="progress-tracks"></div>
-        </section>
         <section id="catalog" class="card" aria-labelledby="catalog-heading" hidden>
           <div class="panel-heading"><h2 id="catalog-heading">수업 문항 선정</h2><p id="question-count" class="muted" aria-live="polite"></p></div>
           <p id="catalog-empty" class="muted" hidden>교재 문항을 등록하고 있습니다.</p>
@@ -158,31 +147,42 @@
           </div>
         </section>
         <div id="delivery-panel" hidden>
-          <section id="submission-panel" class="card" aria-labelledby="submit-heading">
-            <h2 id="submit-heading">회차 제출</h2>
-            <ul id="submission-checklist" aria-label="제출 전 확인"></ul>
-            <div class="submit delivery-footer">
-              <p id="submit-status" class="muted" aria-live="polite"></p>
-              <button type="button" class="button primary" id="submit">회차 제출</button>
-            </div>
-            <p id="submit-feedback" class="muted inline-status" role="status"></p>
-          </section>
-          <section id="staff-panel" class="card" aria-labelledby="export-heading" hidden>
-            <h2 id="export-heading">제출본 반영</h2>
-            <p id="export-status" class="muted" aria-live="polite"></p>
-            <button class="button primary" id="google-transfer" type="button" aria-haspopup="dialog">Google에 반영</button>
-            <a id="ppt-result" class="result-link" target="_blank" rel="noopener noreferrer" hidden>저장한 프레젠테이션 열기</a>
-          </section>
-          <details id="staff-links" class="card" hidden>
-            <summary>Google 자료 링크</summary>
-            <div id="actions" class="buttons" hidden>
-              <a id="curriculum" class="button" target="_blank" rel="noopener noreferrer" hidden>이 회차 커리큘럼</a>
-              <a id="review" class="button" target="_blank" rel="noopener noreferrer" hidden>1강 검수</a>
-              <a id="presentation" class="button" target="_blank" rel="noopener noreferrer" hidden>발표자료 열기</a>
-              <span id="no-deck" class="muted" hidden>등록된 발표자료 없음</span>
-            </div>
-            <ul id="material-links" class="material-links"></ul>
-            <p id="google-help" class="muted" hidden>회사 계정 권한으로 열립니다.</p>
+          <details id="all-progress"><summary>전체 회차 작업현황</summary>
+            <section id="progress-panel" class="card" aria-labelledby="progress-heading">
+              <div class="panel-heading progress-heading"><div class="progress-title"><h2 id="progress-heading">작업현황</h2></div>
+                <button type="button" class="button primary" id="progress-transfer" hidden>Google에 반영</button></div>
+              <p id="progress-status" class="muted" role="status"></p>
+              <div id="progress-filters" class="progress-filters" hidden>
+                <label>주차 <select id="progress-week"></select></label>
+                <span id="progress-total"></span>
+                <button type="button" id="select-week">이 주 자료 선택</button>
+              </div>
+              <div id="progress-tracks" class="progress-tracks"></div>
+              <p id="transfer-feedback" role="status" aria-live="polite"></p>
+            </section>
+          </details>
+          <details id="lesson-delivery"><summary id="lesson-delivery-title">현재 회차 자료</summary>
+            <section id="submission-panel" class="card" aria-labelledby="submit-heading">
+              <h2 id="submit-heading">회차 제출</h2>
+              <ul id="submission-checklist" aria-label="제출 전 확인"></ul>
+              <div class="submit delivery-footer">
+                <p id="submit-status" class="muted" aria-live="polite"></p>
+                <button type="button" class="button primary" id="submit">회차 제출</button>
+              </div>
+              <p id="submit-feedback" class="muted inline-status" role="status"></p>
+            </section>
+            <details id="staff-links" class="card" hidden>
+              <summary>Google 자료 링크</summary>
+              <div id="actions" class="buttons" hidden>
+                <a id="curriculum" class="button" target="_blank" rel="noopener noreferrer" hidden>이 회차 커리큘럼</a>
+                <a id="review" class="button" target="_blank" rel="noopener noreferrer" hidden>1강 검수</a>
+                <a id="presentation" class="button" target="_blank" rel="noopener noreferrer" hidden>발표자료 열기</a>
+                <span id="no-deck" class="muted" hidden>등록된 발표자료 없음</span>
+              </div>
+              <a id="ppt-result" class="result-link" target="_blank" rel="noopener noreferrer" hidden>저장한 프레젠테이션 열기</a>
+              <ul id="material-links" class="material-links"></ul>
+              <p id="google-help" class="muted" hidden>회사 계정 권한으로 열립니다.</p>
+            </details>
           </details>
         </div>
       </div>
@@ -191,20 +191,22 @@
   <dialog id="transfer-dialog" aria-labelledby="transfer-preview-title">
     <header class="panel-heading"><h2 id="transfer-preview-title">Google에 반영</h2><button id="transfer-cancel" type="button">닫기</button></header>
     <p id="transfer-course" class="muted"></p>
-    <fieldset id="transfer-urls"><legend>반영할 위치</legend>
+    <details id="transfer-location"><summary>저장 위치 확인·변경</summary>
+    <fieldset id="transfer-urls"><legend>수업별 저장 위치</legend>
+      <label id="destination-course-label" for="destination-course" hidden>저장 위치를 확인할 수업 <select id="destination-course"></select></label>
       <label for="destination-sheet">Google 시트 URL</label>
       <div class="url-line"><input id="destination-sheet" type="url" spellcheck="false"><button type="button" data-copy="sheet" aria-label="Google 시트 주소 복사">복사</button></div>
       <label for="destination-slides">슬라이드 저장 폴더 URL</label>
       <div class="url-line"><input id="destination-slides" type="url" spellcheck="false" placeholder="Google Drive 폴더 주소"><button type="button" data-copy="slides" aria-label="저장 폴더 주소 복사">복사</button></div>
       <div class="default-actions"><small>주소 수정은 이번 반영에 적용됩니다.</small><button type="button" id="save-destinations">팀 기본값으로 저장</button></div>
-    </fieldset>
+    </fieldset></details>
     <p id="transfer-config-status" role="status"></p>
-    <h3>오늘 넘길 회차</h3><div id="transfer-preview"></div>
+    <h3>반영할 수업</h3><div id="transfer-preview"></div>
     <p id="transfer-counts"></p><div id="transfer-check-status" role="status"></div>
     <div class="drive-footer"><button id="transfer-run" type="button" class="button primary" disabled>선택한 항목 반영</button></div>
   </dialog>
   <dialog id="usage-dialog" aria-labelledby="usage-title">
-    <header class="usage-header"><h2 id="usage-title">수학자동화 사용 방법</h2><button id="usage-close" type="button" autofocus>닫기</button></header>
+    <header class="usage-header"><h2 id="usage-title">수학자동화 사용 방법</h2><nav class="usage-topics" aria-label="도움말 주제"><button type="button" data-guide-topic="workflow" aria-pressed="true">작업 순서</button><button type="button" data-guide-topic="guide-courses" aria-pressed="false">문항 구성</button><button type="button" data-guide-topic="drive" aria-pressed="false">드라이브</button></nav><button id="usage-close" type="button" autofocus>닫기</button></header>
     <p id="usage-error" role="status" hidden></p>
     <div id="usage-content"></div>
   </dialog>
@@ -221,7 +223,7 @@
 <div class="outputs" role="group" aria-label="4단계. 시트와 슬라이드 중 하나 또는 둘 다 선택"><span class="branch-caption" aria-hidden="true"><em>04</em>필요한 자료 선택</span><button type="button" class="node sheet " id="sheet" data-key="sheet" aria-pressed="false"><span class="node-top"><svg aria-hidden="true" class="ico" viewBox="0 0 24 24"><use href="#i-sheet"/></svg><span>04</span></span><strong>구글 시트</strong><small>회차별 문항 기록</small></button><button type="button" class="node slides " id="deck" data-key="deck" aria-pressed="false"><span class="node-top"><svg aria-hidden="true" class="ico" viewBox="0 0 24 24"><use href="#i-slides"/></svg><span>04</span></span><strong>구글 슬라이드</strong><small>발표자료를 폴더에 저장</small></button></div>
 <button type="button" class="node  " id="done" data-key="done" aria-pressed="false"><span class="node-top"><svg aria-hidden="true" class="ico" viewBox="0 0 24 24"><use href="#i-check"/></svg><span>05</span></span><strong>반영 완료</strong><small>시트와 슬라이드 확인</small></button></div></div>
 <div class="details" id="flow-detail" aria-live="polite" aria-atomic="true"><div class="guide-step-title"><strong>수업 선택</strong><span class="role">선생님</span></div><ol class="step-list"></ol></div></div>
-<table class="course-table"><caption>회차당 문항 구성</caption><thead><tr><th scope="col">강사</th><th scope="col">개념탄탄 · 개념원리</th><th scope="col">실력탄탄 · RPM</th></tr></thead><tbody><tr><th scope="row">한태인</th><td>수업 8 · 직접 출제 5 · 교사부록 3</td><td>수업 11 · RPM 3 · <span class="table-term">RPM Pro 2</span></td></tr><tr><th scope="row">오지예</th><td>수업 8 · 직접 출제 5</td><td>수업 11 · 개념원리 출제 2</td></tr></tbody></table></section>
+</section><section class="part" id="guide-courses" hidden><table class="course-table"><caption>회차당 문항 구성</caption><thead><tr><th scope="col">강사</th><th scope="col">개념탄탄 · 개념원리</th><th scope="col">실력탄탄 · RPM</th></tr></thead><tbody><tr><th scope="row">한태인</th><td>수업 8 · 직접 출제 5 · 교사부록 3</td><td>수업 11 · RPM 3 · <span class="table-term">RPM Pro 2</span></td></tr><tr><th scope="row">오지예</th><td>수업 8 · 직접 출제 5</td><td>수업 11 · 개념원리 출제 2</td></tr></tbody></table></section>
 <section class="part" id="drive"><div class="part-head"><span class="section-num">02</span><h2>추천 드라이브 구조</h2><p class="hint">폴더나 시트를 눌러 보세요.</p></div>
 <div class="panel"><div class="drive-layout"><div class="scroll tree-surface" tabindex="0" aria-label="드라이브 폴더 트리 가로 보기"><div class="graph tree"><svg class="wires" aria-hidden="true"></svg>
 <button type="button" id="root" class="tree-node root" data-key="root" aria-label="상위 폴더 수학 수업 자료" aria-pressed="false"><svg aria-hidden="true" class="ico" viewBox="0 0 24 24"><use href="#i-drive"/></svg><span>수학 수업 자료</span></button>
