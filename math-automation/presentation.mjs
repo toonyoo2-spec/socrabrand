@@ -1,4 +1,5 @@
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
+import {loadQuizDesign, frameQuizImage, quizFont} from './quizn-image.mjs?v=1';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
 const FONT = 'Noto Sans KR';
@@ -346,36 +347,44 @@ export async function buildPresentation({
 
 // QuizN text questions use the same exponent notation as slides. Wrap before
 // drawing so long Korean prompts and narrow superscripts keep their full extent.
-function writtenQuizImage(quiz) {
+function writtenQuizImage(quiz, styled = false) {
   const choices = quiz.kind === 'choice' ? quiz.choices.split('\n').map((v,i)=>CIRCLED[i]+' '+v) : [];
   const blocks = [quiz.prompt, ...choices].join('\n\n').split('\n');
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const lines = [[]];
-  const maxWidth = 1360, margin = 32, lineHeight = 58;
+  const maxWidth = styled ? 1260 : 1360, margin = styled ? 4 : 32, lineHeight = styled ? 90 : 58;
   let width = 0, longest = 0;
   for (const [index,block] of blocks.entries()) {
     if (index) { lines.push([]); width = 0; }
     for (const run of equationRuns(block)) {
       const raised = Boolean(run.options?.superscript);
-      const font = (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
+      const font = styled ? '700 ' + (raised ? 40 : 63) + 'px ' + quizFont
+        : (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
       ctx.font = font;
-      for (const ch of run.text) {
-        const advance = ctx.measureText(ch).width;
-        if (width + advance > maxWidth) { lines.push([]); width = 0; }
-        lines.at(-1).push({ch, x:width, font, raised});
-        width += advance;
-        longest = Math.max(longest,width);
+      const words = styled ? run.text.split(/(\s+)/u) : [run.text];
+      for (const word of words) {
+        if (styled && width && word.trim() && width + ctx.measureText(word).width > maxWidth) {
+          lines.push([]); width = 0;
+        }
+        if (styled && !width && !word.trim()) continue;
+        for (const ch of word) {
+          const advance = ctx.measureText(ch).width;
+          if (width + advance > maxWidth) { lines.push([]); width = 0; }
+          lines.at(-1).push({ch, x:width, font, raised});
+          width += advance;
+          longest = Math.max(longest,width);
+        }
       }
     }
   }
   canvas.width = Math.ceil(longest) + margin*2;
   canvas.height = lines.length*lineHeight + margin*2;
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='#111';
+  if (!styled) { ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+  ctx.fillStyle=styled ? '#f6f9f7' : '#111';
   lines.forEach((line,i)=>{for (const glyph of line) {
     ctx.font=glyph.font;
-    ctx.fillText(glyph.ch, margin+glyph.x, margin+i*lineHeight+(glyph.raised?20:38));
+    ctx.fillText(glyph.ch, margin+glyph.x, margin+i*lineHeight+(styled ? (glyph.raised?42:66) : (glyph.raised?20:38)));
   }});
   return canvas;
 }
@@ -401,7 +410,7 @@ async function paperQuizImage(question, loadPage) {
 }
 
 // Each Excel row and its PNG are emitted from the same ordered entry.
-export async function quizImageZip(written, questions, loadPage, reviewMissing) {
+export async function quizImageZip(written, questions, loadPage, reviewMissing, lesson = '') {
   const items = [
     ...written.map(quiz => ({quiz,group:1,slot:quiz.slot})),
     ...questions.map(q => ({q,quiz:q.quiz_override,group:q.quizOne ? 1 : 2,slot:q.slot})),
@@ -414,6 +423,7 @@ export async function quizImageZip(written, questions, loadPage, reviewMissing) 
     if (!response.ok) throw Error('교재 보기의 위치를 불러오지 못했습니다.');
     geometry=await response.json();
   }
+  const design = await loadQuizDesign();
   const entries=[], zip = new window.JSZip(), slots=new Set();
   for (const [idx,{q,quiz,group,slot}] of items.entries()) {
     const key=group+'-'+slot;
@@ -423,8 +433,10 @@ export async function quizImageZip(written, questions, loadPage, reviewMissing) 
     const label=q ? q.book+' '+q.label : '직접 작성 '+slot+'번';
     try {
       let plan=quizPlan(quiz,q?.projection_layout,geometry?.numbers[q?.question_id]), canvas;
+      let paper = true;
       if (!q || (quiz && !quiz.book_quiz)) {
-        canvas=writtenQuizImage({...quiz,kind:plan.imageChoices ? 'choice' : 'short'});
+        paper = false;
+        canvas=writtenQuizImage({...quiz,kind:plan.imageChoices ? 'choice' : 'short'},true);
       } else if (!plan) {
         canvas=await paperQuizImage(q,loadPage);
         if (!reviewMissing) throw Error('제출본에 정답이 없습니다.');
@@ -438,7 +450,8 @@ export async function quizImageZip(written, questions, loadPage, reviewMissing) 
       } else if (plan.imageChoices) {
         canvas=await paperQuizImage(q,loadPage);
       } else if (quiz.book_quiz.mode==='pairs' && q.projection_layout.question) {
-        canvas=writtenQuizImage({prompt:q.projection_layout.question});
+        paper = false;
+        canvas=writtenQuizImage({prompt:q.projection_layout.question},true);
       } else {
         const bottom=geometry?.cutoffs[q.question_id], bounds=geometry?.bounds?.[q.question_id] ?? quiz.book_quiz.crop ?? q.projection_layout?.bounds ?? q.slide_crop;
         if (!Number.isFinite(bottom) || !bounds || bottom<=bounds[1] || bottom>bounds[3]) {
@@ -452,7 +465,8 @@ export async function quizImageZip(written, questions, loadPage, reviewMissing) 
           canvas=combine(regions.map(box=>paintProblem(page,box,true)),Math.round(.011*page.width),false,false,'#fff');
         } finally {page.close();}
       }
-      const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+      const framed = frameQuizImage(design, canvas, {number,total:items.length,lesson,source:label,paper});
+      const png=await new Promise(resolve=>framed.toBlob(resolve,'image/png'));
       if (!png) throw Error('PNG 파일을 만들지 못했습니다.');
       zip.file(number+'.png',await png.arrayBuffer());
       const prompt=(quiz && !quiz.book_quiz ? quiz.prompt : '')?.trim();

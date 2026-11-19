@@ -1,6 +1,6 @@
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=10';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=13';
+import { buildPresentation, bookQuizPreview, quizImageZip } from './presentation.mjs?v=14';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=10';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -456,9 +456,9 @@ function renderStaffProgress() {
     const courseCell = tr.insertCell();
     courseCell.append(open);
     if (usesQuizN(row.course) && row.submission) {
-      const download = element('button','퀴즈앤 등록 자료');
+      const download = element('button','퀴즈앤 ZIP 받기');
       download.type='button';
-      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 등록 자료 받기');
+      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 ZIP 받기');
       download.addEventListener('click',()=>downloadQuizImages(row,download,$('transfer-feedback')));
       courseCell.append(document.createElement('br'),download);
     }
@@ -1517,7 +1517,7 @@ async function downloadQuizImages(row,button,notice) {
     if (!saved) throw Error('제출본을 찾지 못했습니다.');
     const picks = saved.stage_questions ?? [];
     const {withAsset,loadPage} = await questionAssets(row.course,picks);
-    const zip = await quizImageZip(saved.quizzes ?? [], picks.map(p=>stageImage(p,row.lesson,withAsset)), loadPage, (q,canvas,number)=>confirmQuizKey(row.submission.id,q,canvas,number));
+    const zip = await quizImageZip(saved.quizzes ?? [], picks.map(p=>stageImage(p,row.lesson,withAsset)), loadPage, (q,canvas,number)=>confirmQuizKey(row.submission.id,q,canvas,number), className(row.course)+' '+row.lesson.lesson+'강');
     const url = URL.createObjectURL(zip);
     const link = element('a');
     link.href = url;
@@ -1832,7 +1832,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=8').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=9').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;
