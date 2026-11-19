@@ -7,8 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
-  <link rel="stylesheet" href="math.css?v=21">
-  <script type="module" src="math.mjs?v=38"></script>
+  <link rel="stylesheet" href="math.css?v=22">
+  <script type="module" src="math.mjs?v=39"></script>
 </head>
 <body>
   <main>
@@ -192,6 +192,10 @@
       </div>
     </section>
   </main>
+  <dialog id="question-slot-dialog" aria-labelledby="slot-dialog-title">
+    <form method="dialog" class="panel-heading"><h3 id="slot-dialog-title">문항 넣을 자리</h3><button>닫기</button></form>
+    <div id="slot-dialog-options"></div>
+  </dialog>
   <dialog id="transfer-dialog" aria-labelledby="transfer-preview-title">
     <header class="panel-heading"><h2 id="transfer-preview-title">Google에 반영</h2><button id="transfer-cancel" type="button">닫기</button></header>
     <p id="transfer-course" class="muted"></p>

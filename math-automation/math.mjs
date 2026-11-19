@@ -231,7 +231,7 @@ async function submissionHistory(filter) {
   const latest = new Map();
   for (let offset = 0; ; offset += 500) {
     const records = await table('math_submissions', {
-      course_id:filter, select:'course_id,lesson,id,submitted_at',
+      course_id:filter, select:'course_id,lesson,id,submitted_at,math_submission_reviews(status,detail)',
       order:'submitted_at.desc,id.desc', limit:500, offset,
     });
     for (const record of records) {
@@ -248,6 +248,11 @@ const submissionClock = new Intl.DateTimeFormat('ko-KR', {
   hour:'2-digit', minute:'2-digit', hourCycle:'h23',
 });
 
+function reviewLabel(submission) {
+  const review=submission?.math_submission_reviews;
+  return {queued:'검수 대기',running:'검수 중',passed:'검수 완료',attention:'확인 필요'}[review?.status] ?? '';
+}
+
 function renderTeacherStatus(cell, submission, started) {
   cell.className = 'progress-status';
   cell.dataset.state = submission ? 'done' : 'pending';
@@ -261,6 +266,8 @@ function renderTeacherStatus(cell, submission, started) {
   time.title = submissionClock.format(date) + ' (한국시간)';
   time.setAttribute('aria-label', time.title);
   cell.append(time);
+  const review = reviewLabel(submission);
+  if (review) cell.append(element('small', [review,submission.math_submission_reviews.detail].filter(Boolean).join(' · '),'submission-time'));
 }
 
 async function loadProgress() {
@@ -636,7 +643,7 @@ async function loadLesson(requestedStage) {
     const [picks, quizzes, submissions, stagePicks, materials] = await Promise.all([
       table('math_selections', { ...filter, select: 'slot,question_id' }),
       modes.includes('teacher') ? table('math_teacher_quizzes', { ...filter, select: 'slot,kind,prompt,answer,choices' }) : [],
-      table('math_submissions', { ...filter, select: 'id,submitted_at,sync_status,selections,quizzes,stage_questions', order: 'submitted_at.desc', limit: 1 }),
+      table('math_submissions', { ...filter, select: 'id,submitted_at,sync_status,selections,quizzes,stage_questions,math_submission_reviews(status,detail)', order: 'submitted_at.desc', limit: 1 }),
       resourceModes.length ? table(resourceSelections, { ...filter, select: 'stage_mode,slot,question_id,quiz_override' }) : [],
       state.staff ? table('math_course_materials', { course_id: filter.course_id, select: 'label,url', order: 'label' }) : [],
     ]);
@@ -797,10 +804,90 @@ function catalogUnitQuestions() {
   return lessonCatalog().filter(q => q.book === $('book').value && q.unit === $('unit').value);
 }
 
+let draggedQuestion = null;
+
+function placeInSlot(slot, question, select) {
+  const option = [...select.options].find(item => item.value === String(question.question_id));
+  if (state.busy || !state.composer || !option || option.disabled || select.disabled) return;
+  if (select.value !== option.value) void savePick(slot, option.value, select);
+}
+
+async function movePick(from, to, source) {
+  if (from === to || state.busy || !state.composer || state.picks.get(from) !== source) return;
+  const target = state.picks.get(to) ?? null;
+  await withSaving(async () => {
+    const moved = await rpc('math_swap_picks', {p_course:currentCourse().id,p_lesson:currentLesson().lesson,
+      p_from:from,p_to:to,p_source:source,p_target:target});
+    if (!moved) { await loadLesson(state.stage); throw Error('다른 곳에서 문항이 바뀌었습니다. 새로 불러온 목록을 확인해 주세요.'); }
+    state.picks.set(to,source);
+    if (target === null) state.picks.delete(from); else state.picks.set(from,target);
+    state.edited = true;
+    renderPicks();
+    $('selection-status').textContent = target === null ? from+'번 문항을 '+to+'번으로 옮겼습니다.' : from+'번과 '+to+'번 문항을 맞바꿨습니다.';
+  }, 'selection-status');
+}
+
+function chooseQuestionSlot(question, from) {
+  const dialog = $('question-slot-dialog');
+  if (state.busy || !state.composer || dialog.open) return;
+  $('slot-dialog-title').textContent = question.label + (from ? ' 옮길 자리' : ' 넣을 자리');
+  const controls = [...$('question-slots').querySelectorAll('select')];
+  $('slot-dialog-options').replaceChildren(...controls.map((select, index) => {
+    const slot = index + 1;
+    const button = element('button');
+    button.type = 'button';
+    const assigned = state.catalog.find(q => q.question_id === state.picks.get(slot));
+    button.append(element('strong', (slot <= requiredLessonSlots() ? '기본 ' : '예비 ') + slot + '번'),
+      element('span', assigned?.label || '빈 자리'));
+    const option = [...select.options].find(item => item.value === String(question.question_id));
+    button.disabled = select.disabled || (from ? slot === from : !option || option.disabled);
+    button.addEventListener('click', () => { dialog.close(); if (from) void movePick(from, slot, question.question_id); else placeInSlot(slot, question, select); });
+    return button;
+  }));
+  dialog.showModal();
+}
+
+function addQuestionRegions(image, questions) {
+  const surface = element('div', undefined, 'pick-page');
+  image.draggable = false;
+  surface.append(image);
+  for (const question of questions) {
+    const bounds = question.slide_crop;
+    if (!Array.isArray(bounds) || bounds.length !== 4) continue;
+    const [x,y,right,bottom] = bounds;
+    const button = element('button', undefined, 'pick-region');
+    button.type = 'button';
+    button.title = question.label + ' · 클릭해서 자리 선택 또는 원하는 칸으로 드래그';
+    button.setAttribute('aria-label',button.title);
+    button.setAttribute('aria-haspopup','dialog');
+    Object.assign(button.style, {left:x*100+'%', top:y*100+'%', width:(right-x)*100+'%', height:(bottom-y)*100+'%'});
+    button.draggable = true;
+    let suppressClick = false;
+    button.addEventListener('pointerdown', () => { suppressClick = false; });
+    button.addEventListener('click', event => {
+      if (!suppressClick || event.detail === 0) chooseQuestionSlot(question);
+    });
+    button.addEventListener('dragstart', event => {
+      if (state.busy || !state.composer) { event.preventDefault(); return; }
+      suppressClick = true;
+      draggedQuestion = {question, version:state.lessonVersion};
+      event.dataTransfer.setData('text/plain',question.label);
+      event.dataTransfer.effectAllowed = 'copy';
+    });
+    button.addEventListener('dragend', () => {
+      draggedQuestion = null;
+      $('question-slots').querySelectorAll('.drop-slot').forEach(el => el.classList.remove('drop-slot'));
+    });
+    surface.append(button);
+  }
+  return surface;
+}
+
 function pickControls(total, selectedIds, questions, slotLabel, save) {
   const slots = [];
   for (let slot = 1; slot <= total; slot += 1) {
     const label = document.createElement('label');
+    let moveHandle;
     label.textContent = slotLabel(slot);
     const select = document.createElement('select');
     const selected = state.catalog.find(question => question.question_id === selectedIds.get(slot));
@@ -830,12 +917,56 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
         if (option) { option.disabled = true; option.textContent += ' · 다른 자리에 선택됨'; }
       }
     }
+    if (save === savePick && state.composer) {
+      if (selected) {
+        const handle = element('button','⠿','slot-handle');
+        handle.type = 'button'; handle.draggable = true;
+        handle.setAttribute('aria-label',slotLabel(slot)+' 문항 옮기기');
+        handle.title = '끌어서 순서 변경 · 클릭해서 옮길 자리 선택';
+        let justDragged = false;
+        handle.addEventListener('pointerdown', () => { justDragged = false; });
+        handle.addEventListener('click', event => {
+          event.preventDefault();
+          if (!justDragged || event.detail === 0) chooseQuestionSlot(selected,slot);
+        });
+        handle.addEventListener('dragstart', event => {
+          if (state.busy) { event.preventDefault(); return; }
+          justDragged = true;
+          draggedQuestion = {question:selected,from:slot,version:state.lessonVersion};
+          event.dataTransfer.setData('text/plain', selected.label); event.dataTransfer.effectAllowed = 'move';
+        });
+        handle.addEventListener('dragend', () => {
+          draggedQuestion = null;
+          $('question-slots').querySelectorAll('.drop-slot').forEach(el => el.classList.remove('drop-slot'));
+        });
+        moveHandle = handle;
+      }
+      label.addEventListener('dragover', event => {
+        if (draggedQuestion?.version !== state.lessonVersion || state.busy) return;
+        event.preventDefault(); event.dataTransfer.dropEffect = draggedQuestion.from ? 'move' : 'copy'; label.classList.add('drop-slot');
+      });
+      label.addEventListener('dragleave', event => {
+        if (!label.contains(event.relatedTarget)) label.classList.remove('drop-slot');
+      });
+      label.addEventListener('drop', event => {
+        label.classList.remove('drop-slot');
+        if (draggedQuestion?.version !== state.lessonVersion) return;
+        event.preventDefault();
+        if (draggedQuestion.from) void movePick(draggedQuestion.from,slot,draggedQuestion.question.question_id);
+        else placeInSlot(slot, draggedQuestion.question, select);
+        draggedQuestion = null;
+      });
+    }
     select.disabled = !state.composer;
     select.addEventListener('change', () => save(slot, select.value, select));
     if (!state.composer) {
       const saved=element('span', selected?.label || '미선정','review-pick');label.append(saved);
     } else label.append(select);
-    slots.push(label);
+    if (moveHandle) {
+      const wrap = element('div',undefined,'slot-with-handle');
+      wrap.append(label,moveHandle);
+      slots.push(wrap);
+    } else slots.push(label);
   }
   return slots;
 }
@@ -853,7 +984,7 @@ function renderPicks() {
     section.append(element('h4',name+' · '+done+' / '+total),...items);
     return section;
   };
-  $('selection-role').textContent=state.composer ? '' : '선생님이 저장한 수업 문항입니다.';
+  $('selection-role').textContent=state.composer ? '교재에서 문제를 눌러 자리를 고르거나, 원하는 칸으로 끌어 놓으세요.' : '선생님이 저장한 수업 문항입니다.';
   $('question-slots').replaceChildren(group('기본',picked,required,controls.slice(0,required)));
   if (controls.length>required) $('question-slots').append(group('예비',state.picks.size-picked,controls.length-required,controls.slice(required)));
 }
@@ -1226,9 +1357,9 @@ function renderSubmission() {
         : missing.title + ' 문항을 모두 채워 주세요.';
   } else if (state.submitted && !state.edited) {
     const submitted = new Date(state.submitted.submitted_at).toLocaleString('ko-KR');
-    $('submit-status').textContent = '제출 완료 · ' + submitted + (state.submitted.sync_status === 'synced' ? ' · Google 반영 완료' : ' · Google 연결 대기');
+    $('submit-status').textContent = '제출 완료 · ' + submitted + (reviewLabel(state.submitted) ? ' · '+reviewLabel(state.submitted) : '') + (state.submitted.sync_status === 'synced' ? ' · Google 반영 완료' : ' · Google 연결 대기');
   } else {
-    $('submit-status').textContent = '제출하면 현재 문항이 제출본으로 저장됩니다.';
+    $('submit-status').textContent = '제출하면 이 회차의 자료를 저장하고 검수를 요청합니다.';
   }
 }
 
@@ -1240,7 +1371,7 @@ async function submit() {
       course_id: currentCourse().id, lesson: currentLesson().lesson,
     });
     if (!rows[0]) throw new ApiError(403, '이 회차를 제출할 권한이 없습니다.');
-    state.submitted = rows[0];
+    state.submitted = {...rows[0],math_submission_reviews:{status:'queued'}};
     state.edited = false;
     if (state.stage === 'delivery' && $('all-progress').open) void loadProgress();
     state.exportReceipt = null;
@@ -1723,7 +1854,7 @@ function renderPageStack(prefix, bookName, title, questions, grouped = false) {
     groups.get(name).set(q.page,q.preview_book);
   }
   const pages = Array.from(groups, ([name, group]) =>
-    [...group].sort(([a],[b]) => a-b).map(([page,book], i) => ({page,book,heading:i === 0 ? name : ''}))
+    [...group].sort(([a],[b]) => a-b).map(([page,book], i) => ({page,book,section:name,heading:i === 0 ? name : ''}))
   ).flat();
   const activeCourse = currentCourse();
   const course = activeCourse?.preview_course_id ?? activeCourse?.id;
@@ -1739,17 +1870,20 @@ function renderPageStack(prefix, bookName, title, questions, grouped = false) {
       if (!entry.isIntersecting) continue;
       observer.unobserve(entry.target);
       const { page, book } = entry.target.dataset;
-      void loadCatalogPage(entry.target, course, book, page, urls);
+      const items = grouped && state.composer ? questions.filter(q => q.page === Number(page)
+        && q.preview_book === book && q.section === entry.target.dataset.section) : [];
+      void loadCatalogPage(entry.target, course, book, page, urls, items);
     }
   }, { root: scroller, rootMargin: '500px 0px' });
   const anchors = [];
   state.pagePreviews.set(prefix, {key,observer,urls,anchors});
   if (grouped) $('type-links').replaceChildren();
-  for (const {page, book, heading} of pages) {
+  for (const {page, book, heading, section} of pages) {
     const figure = document.createElement('figure');
     figure.className = 'catalog-page';
     figure.dataset.page = page;
     figure.dataset.book = book;
+    figure.dataset.section = section;
     const caption = document.createElement('figcaption');
     caption.textContent = page + '쪽';
     const placeholder = document.createElement('p');
@@ -1777,7 +1911,7 @@ function renderPageStack(prefix, bookName, title, questions, grouped = false) {
   scroller.scrollTop = 0;
 }
 
-async function loadCatalogPage(figure, course, book, page, urls) {
+async function loadCatalogPage(figure, course, book, page, urls, questions) {
   const placeholder = figure.querySelector('.page-placeholder');
   try {
     const file = await (await request(previewPath(course, book, page))).blob();
@@ -1788,7 +1922,7 @@ async function loadCatalogPage(figure, course, book, page, urls) {
     const image = new Image();
     image.alt = page + '쪽 교재 원본';
     image.src = url;
-    placeholder.replaceWith(image);
+    placeholder.replaceWith(questions.length ? addQuestionRegions(image, questions) : image);
   } catch {
     placeholder.textContent = '이 쪽의 미리보기를 열 수 없습니다.';
   }
@@ -1932,7 +2066,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=11').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=12').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;
