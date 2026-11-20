@@ -1,14 +1,7 @@
+import {typeRuns,loadLessonFonts} from './math-type.mjs';
 // Lay out selectable text in the browser, then transfer its lines, rules and original figures to PPT.
 const FACE='Pretendard', PX=96, marks='①②③④⑤';
 const W=1300,H=835,LEFT=62,TOP=161;
-let fontReady;
-function prepareFont(){
-  fontReady??=(async()=>{
-    const face=new FontFace(FACE,'url("'+new URL('./fonts/pretendard-bold.woff2',import.meta.url)+'")',{weight:'700'});
-    document.fonts.add(await face.load());
-  })().catch(e=>{fontReady=null;throw e;});
-  return fontReady;
-}
 const node=(tag,css='')=>{const n=document.createElement(tag);n.style.cssText=css;return n;};
 function closingBrace(value,start){
   let depth=0;
@@ -30,7 +23,14 @@ function fractionSlash(value){
 function styleText(el,text){
   const value=String(text);
   let i=0,plain='';
-  function flush(){if(plain){el.append(document.createTextNode(plain));plain='';}}
+  function flush(){
+    for(const {text,options} of typeRuns(plain)){
+      const span=node('span');span.style.fontFamily=options.fontFace;
+      span.style.fontStyle=options.italic?'italic':'normal';span.dataset.face=options.fontFace;
+      span.textContent=text;el.append(span);
+    }
+    plain='';
+  }
   while(i<value.length){
     if(value.startsWith('<u>',i)){
       const end=value.indexOf('</u>',i+3);
@@ -135,8 +135,8 @@ function* textLines(t){
 }
 export async function addGothicQuestion(slide,q,loadImage){
   const g=q.gothic_content;
-  if(!g?.stem)throw Error(q.book+' '+q.label+' · 제출본의 고딕 원문을 준비하고 있습니다.');
-  await prepareFont();
+  if(!g?.stem)throw Error(q.book+' '+q.label+' · 제출본의 문항 원문을 준비하고 있습니다.');
+  await loadLessonFonts();
   const root=node('div','position:fixed;top:0;left:-5000px;visibility:hidden;width:'+W+'px;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;font:700 50px "'+FACE+'",sans-serif;line-height:1.38;letter-spacing:0;');
   document.body.append(root);
   try{
@@ -159,7 +159,7 @@ export async function addGothicQuestion(slide,q,loadImage){
       const t=walker.currentNode,css=getComputedStyle(t.parentElement);
       for(const l of textLines(t)){
         if(!l.text.trim())continue;
-        slide.addText(l.text,{...xy(l.left,l.top),w:(l.right-l.left+12)/PX,h:(l.bottom-l.top)/PX,margin:0,fontFace:FACE,bold:true,color:'FFFFFF',fontSize:parseFloat(css.fontSize)*.75,
+        slide.addText(l.text,{...xy(l.left,l.top),w:(l.right-l.left+12)/PX,h:(l.bottom-l.top)/PX,margin:0,fontFace:t.parentElement.dataset.face??FACE,italic:css.fontStyle==='italic',bold:true,color:'FFFFFF',fontSize:parseFloat(css.fontSize)*.75,
           underline:!!t.parentElement.closest('u'),valign:'mid',align:'left',wrap:false,lang:'ko-KR',paraSpaceAfter:0,paraSpaceBefore:0});
       }
     }

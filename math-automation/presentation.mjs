@@ -1,8 +1,9 @@
-import {addGothicQuestion} from './gothic-question.mjs';
-import {fillTemplate} from './template-slides.mjs';
+import {typeRuns,loadLessonFonts} from './math-type.mjs';
+import {addGothicQuestion} from './gothic-question.mjs?v=2';
+import {fillTemplate} from './template-slides.mjs?v=2';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
-import {addEchoScenes} from './intro.mjs?v=2';
+import {addEchoScenes} from './intro.mjs?v=3';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
 const FONT = 'Pretendard';
@@ -33,11 +34,11 @@ function equationRuns(value) {
     const runs = [];
     let start = 0;
     for (const match of line.matchAll(/\^\{([^{}]{1,60})\}/g)) {
-      if (match.index > start) runs.push({ text:line.slice(start, match.index) });
-      runs.push({ text:match[1], options:{ superscript:true } });
+      if (match.index > start) runs.push(...typeRuns(line.slice(start, match.index)));
+      runs.push(...typeRuns(match[1]).map(r=>({...r,options:{...r.options,superscript:true}})));
       start = match.index + match[0].length;
     }
-    if (start < line.length || !runs.length) runs.push({ text:line.slice(start) || ' ' });
+    if (start < line.length || !runs.length) runs.push(...typeRuns(line.slice(start) || ' '));
     if (index < lines.length - 1) {
       const last = runs.at(-1);
       last.options = { ...last.options, breakLine:true };
@@ -77,7 +78,7 @@ async function frame(deck, label, source, style, book) {
     {text:label, options:{fontSize:16,color:kind==='closing'?'D8C4F4':'E4E8ED'}},
     {text:'   |   ', options:{fontSize:16,color:theme.divider}},
     {text:source, options:{fontSize:19,color:'FFFFFF'}}
-  ], {x:SLIDE_MARGIN+.12,y:HEADER_Y,w:width-.24,h:height,margin:0,fontFace:FONT,bold:true,
+  ].flatMap(({text,options})=>typeRuns(text,false).map(r=>({...r,options:{...r.options,...options}}))), {x:SLIDE_MARGIN+.12,y:HEADER_Y,w:width-.24,h:height,margin:0,fontFace:FONT,bold:true,
       valign:'mid',align:'left',wrap:false,fit:'shrink',lang:'ko-KR'});
   return slide;
 }
@@ -307,7 +308,7 @@ function addLessonIntro(deck, intro) {
       x: 4.28, y: 1.91, w: 3.57, h: .79, fontFace: FONT, fontSize: 22,
       color: 'FFFFFF', bold: true, align: 'center', valign: 'mid', margin: 0, fit: 'shrink',
     });
-    slide.addText(intro.topic, {
+    slide.addText(typeRuns(intro.topic), {
       x: 3.85, y: 4.05, w: 12.3, h: 4.42, fontFace: FONT, fontSize: 65,
       color: 'FFFFFF', bold: true, align: 'center', valign: 'mid', margin: .08,
       fit: 'shrink', breakLine: false, lang: 'ko-KR',
@@ -318,6 +319,7 @@ function addLessonIntro(deck, intro) {
 export async function buildPresentation({
   title, intro, templateBytes, topic, nextTopic, onSlideOrder, picks, quizzes, appendix, stageLabel = '퀴즈앤 ② · 교사부록', quizLabel = '퀴즈앤 ①',
 }, loadImage) {
+  await loadLessonFonts();
   const Pptx = await loadPptx();
   const deck = new Pptx();
   deck.defineLayout({ name:'PROJECTION', width:SLIDE_WIDTH, height:11.25 });
@@ -362,7 +364,7 @@ function writtenQuizImage(quiz) {
     if (index) { lines.push([]); width = 0; }
     for (const run of equationRuns(block)) {
       const raised = Boolean(run.options?.superscript);
-      const font = 'bold ' + (raised ? 27 : 40) + 'px "' + FONT + '", sans-serif';
+      const font = (run.options?.italic?'italic ':'') + 'bold ' + (raised ? 27 : 40) + 'px "' + (run.options?.fontFace??FONT) + '", sans-serif';
       ctx.font = font;
       const words = [run.text];
       for (const word of words) {

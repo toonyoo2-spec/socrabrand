@@ -176,6 +176,8 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   };
   const family = layout.split('@')[0];
   const knownLayouts = [...(predecessors[family] ?? []), family, projectionLayout];
+  if (family.startsWith('lx-lora-v3-')) knownLayouts.push(family.replace('lx-lora-v3-','lx-gothic-v2-'),family.replace('lx-lora-v3-','lx-sample-v1-'));
+  if (family==='han-lora-v5') knownLayouts.push('han-gothic-v4','han-quiz-ppt-3',...Object.values(predecessors).flat());
   if (family.startsWith('lx-gothic-v2-')) knownLayouts.push(family.replace('lx-gothic-v2-','lx-sample-v1-'));
   if (family.startsWith('lx-') || family==='han-gothic-v4') knownLayouts.push('han-quiz-ppt-3','beam-lesson-intro-3',...Object.values(predecessors).flat());
   const previous = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]) || (priorReceipt?.submission && file.appProperties?.socraMathSubmission===priorReceipt.submission));

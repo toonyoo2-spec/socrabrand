@@ -1,3 +1,4 @@
+import {typeRuns} from './math-type.mjs';
 // Populate a copy of the approved PPTX. Masters, slide layouts and artwork stay native.
 const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const parts = (node,name) => Array.from(node.getElementsByTagNameNS('*',name));
@@ -20,8 +21,22 @@ function setTopic(shape,value) {
   const paras=parts(shape,'p');
   const runs=parts(paras[0],'t');
   if(!runs.length) throw Error('학습 주제 입력란을 찾지 못했습니다.');
-  runs[0].textContent=value;
-  for(const run of runs.slice(1))run.textContent='';
+  const prototype=runs[0].parentNode;
+  const paragraph=paras[0], doc=shape.ownerDocument, ns=prototype.namespaceURI;
+  for(const {text,options} of typeRuns(value)){
+    const run=prototype.cloneNode(true), t=first(run,'t');
+    t.textContent=text;
+    let pr=first(run,'rPr');
+    if(!pr){pr=doc.createElementNS(ns,'a:rPr');run.insertBefore(pr,t);}
+    pr.setAttribute('i',options.italic?'1':'0');pr.setAttribute('b','1');
+    for(const tag of ['latin','ea','cs']){
+      let face=first(pr,tag);
+      if(!face){face=doc.createElementNS(ns,'a:'+tag);pr.append(face);}
+      face.setAttribute('typeface',options.fontFace);
+    }
+    paragraph.insertBefore(run,prototype);
+  }
+  for(const t of runs)t.parentNode.remove();
   for(const para of paras.slice(1))para.remove();
 }
 const textOf = node => parts(node,'t').map(n=>n.textContent).join('').trim();

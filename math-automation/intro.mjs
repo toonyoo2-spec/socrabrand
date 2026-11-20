@@ -1,3 +1,4 @@
+import {typeRuns} from './math-type.mjs';
 // Coordinates are in the 20 × 11.25 inch projector layout.
 export function lessonIntro(course, lesson) {
   const concept = course.track === 'concept';
@@ -29,7 +30,7 @@ export async function addEchoScenes(deck, scenes) {
     slide.addShape(deck.ShapeType.rect,{x:.85,y:2.5375,w:.675,h:.094,line:{transparency:100},fill:{color:'9ADBFF'}});
     const text = { x:.85,w:7.02,fontFace:'Pretendard',bold:true,margin:0,lang:'ko-KR',valign:'top',fit:'shrink',paraSpaceAfter:0 };
     slide.addText(scene.label,{...text,y:3.06,h:.76,fontSize:40,color:'9ADBFF'});
-    slide.addText(scene.body,{...text,y:3.90,h:scene.foot?2.03:3.44,fontSize:scene.size,color:'FFF9EC',lineSpacingMultiple:1});
+    slide.addText(scene.art==='topic'?typeRuns(scene.body):scene.body,{...text,y:3.90,h:scene.foot?2.03:3.44,fontSize:scene.size,color:'FFF9EC',lineSpacingMultiple:1});
     if (scene.foot) {
       const homework=scene.art==='homework';
       slide.addText(scene.foot,{...text,y:homework?6.16:5.72,h:.9,fontSize:homework?27.5:40,color:'9ADBFF'});
