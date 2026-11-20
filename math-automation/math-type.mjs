@@ -18,6 +18,8 @@ function isValue(t){
 export function typeRuns(value, math=true){
   // A pasted mathematical italic x (𝑥) denotes the same variable as a typed x.
   const normalized=String(value).replace(/[\u{1D434}-\u{1D467}\u{1D468}-\u{1D49B}ℎ]/gu,ch=>ch.normalize('NFKC'));
+  const chapter=normalized.match(/^\s*(?:[Ⅰ-Ⅻ]+|[IVX]+)\s*[-–]\s*\d+(?=\s|$)/u)?.[0] ?? '';
+  let offset=0;
   const ts=normalized.match(tokens)??[],runs=[];
   for(let i=0;i<ts.length;i++){
     const t=ts[i];
@@ -25,9 +27,13 @@ export function typeRuns(value, math=true){
     const punct=/^[-+*/=<>()[\]{}|!,:;.]$/.test(t);
     const before=neighbor(i-1,-1),after=neighbor(i+1,1);
     const joinsMath='([{'.includes(t)?isValue(after):')]}'.includes(t)?isValue(before):(isValue(before)||isValue(after));
-    const italic=math&&(isValue(t)||punct&&joinsMath);
+    const inChapter=offset<chapter.length;
+    offset+=t.length;
+    const variable = /^[a-zA-Zα-ωΑ-Ω]+$/u.test(t) && isValue(t);
+    const italic = Boolean(math && !inChapter && variable);
     for(const ch of t){
-      const fontFace=faceFor(ch);
+      const fontFace = !math || inChapter || /^[○△□×]$/.test(ch) && /[옳안이면]/.test(normalized) ? 'Pretendard' :
+        isValue(t) || (punct && joinsMath) ? faceFor(ch) : 'Pretendard';
       const last=runs.at(-1);
       if(last && last.options.fontFace===fontFace && last.options.italic===italic)last.text+=ch;
       else runs.push({text:ch,options:{fontFace,italic,bold:true}});

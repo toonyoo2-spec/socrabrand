@@ -1,4 +1,4 @@
-import {typeRuns,loadLessonFonts} from './math-type.mjs';
+import {typeRuns,loadLessonFonts} from './math-type.mjs?v=2';
 // Lay out selectable text in the browser, then transfer its lines, rules and original figures to PPT.
 const FACE='Pretendard', PX=96, marks='①②③④⑤';
 const W=1300,H=835,LEFT=62,TOP=161;
@@ -20,11 +20,11 @@ function fractionSlash(value){
   }
   return -1;
 }
-function styleText(el,text){
+function styleText(el,text,math=true){
   const value=String(text);
   let i=0,plain='';
   function flush(){
-    for(const {text,options} of typeRuns(plain)){
+    for(const {text,options} of typeRuns(plain,math)){
       const span=node('span');span.style.fontFamily=options.fontFace;
       span.style.fontStyle=options.italic?'italic':'normal';span.dataset.face=options.fontFace;
       span.textContent=text;el.append(span);
@@ -36,6 +36,12 @@ function styleText(el,text){
       const end=value.indexOf('</u>',i+3);
       if(end<0)throw Error('문항의 밑줄 범위를 확인해 주세요.');
       flush();const u=node('u');styleText(u,value.slice(i+3,end));el.append(u);i=end+4;continue;
+    }
+    const blank=value.slice(i).match(/^_{2,}/);
+    if(blank){
+      flush();
+      const rule=node('span','display:inline-block;vertical-align:baseline;width:'+Math.min(5,Math.max(1.5,blank[0].length*.42))+'em;border-bottom:2px solid white');
+      rule.dataset.rule='1';el.append(rule);i+=blank[0].length;continue;
     }
     const script=value[i]==='^'||value[i]==='_';
     if(script && (value[i+1]==='{' || (value[i]==='^' && /^[A-Za-z0-9]/.test(value.slice(i+1))))){
@@ -76,7 +82,26 @@ async function figureSource(image, bounds){
   const [l,t,r,b]=bounds;
   const x=Math.floor(l*image.width),y=Math.floor(t*image.height);
   const c=node('canvas');c.width=Math.ceil(r*image.width)-x;c.height=Math.ceil(b*image.height)-y;
-  c.getContext('2d').drawImage(image,x,y,c.width,c.height,0,0,c.width,c.height);
+  const ctx=c.getContext('2d');
+  ctx.drawImage(image,x,y,c.width,c.height,0,0,c.width,c.height);
+  const pixels=ctx.getImageData(0,0,c.width,c.height), data=pixels.data;
+  // Preserve chromatic features in diagrams. Monochrome ink becomes white on projection.
+  const colored=data.some((_,i)=>i%4===0 && Math.max(data[i],data[i+1],data[i+2])-Math.min(data[i],data[i+1],data[i+2])>35);
+  if(!colored){
+    const alpha=new Uint8Array(c.width*c.height);
+    for(let j=0;j<alpha.length;j++)alpha[j]=(255-data[4*j])*data[4*j+3]/255;
+    for(let j=0;j<alpha.length;j++){
+      const i=4*j,x=j%c.width;
+      data[i+3]=Math.min(255,1.65*Math.max(alpha[j],x?alpha[j-1]:0,x<c.width-1?alpha[j+1]:0,alpha[j-c.width]??0,alpha[j+c.width]??0));
+      data[i]=data[i+1]=data[i+2]=255;
+    }
+  }else for(let i=0;i<data.length;i+=4){
+    const hi=Math.max(data[i],data[i+1],data[i+2]),lo=Math.min(data[i],data[i+1],data[i+2]);
+    if(hi-lo>8 || lo<250)continue;
+    data[i+3]=Math.round(data[i+3]*(255-lo)/255);
+    data[i]=data[i+1]=data[i+2]=255;
+  }
+  ctx.putImageData(pixels,0,0);
   const img=node('img','vertical-align:middle;max-width:92%;height:auto;max-height:4.1em;object-fit:contain;margin:0 .16em');
   img.src=c.toDataURL('image/png');await img.decode();
   img.style.width='min('+Math.min(750,c.width*.50)+'px, '+(4.1*c.width/c.height)+'em)';
@@ -101,9 +126,33 @@ async function addContent(root,g,quiz,loadImage,q){
       }
     }
   }
+  async function layoutBody(body,value){
+    const items=[...value.matchAll(/(?:^|\n|[ \u3000]{2,})(\(\d+\)|\d{4,})(?=[ \u3000])/g)];
+    if(items.length<2 || items[0].index!==0){await rich(body,value);return;}
+    const entries=items.map((m,i)=>({label:m[1],text:value.slice(m.index+m[0].length,items[i+1]?.index).trim()}));
+    const hasBlank=entries.every(e=>/\([ \u3000]+\)$/.test(e.text));
+    const columns=entries.every(e=>e.text.length<44) && !entries.some(e=>/[가-힣]{2}/.test(e.text.replace(/\[\[그림\d+\]\]/g,''))) ? 2 :
+      entries.every(e=>e.text.includes('[[그림')) ? 2 : 1;
+    body.style.cssText+=';display:grid;grid-template-columns:repeat('+columns+',minmax(0,1fr));gap:.32em 1em;';
+    for(const {label,text} of entries){
+      const row=node('div','display:grid;grid-template-columns:max-content 1fr'+(hasBlank?' max-content':'')+';column-gap:.35em;align-items:baseline;min-width:0');
+      const number=node('span');styleText(number,label,false);row.append(number);
+      const cell=node('div','min-width:0');
+      await rich(cell,(hasBlank?text.replace(/\s*\([ \u3000]+\)$/,''):text).replace(/(하면)[ \u3000]+(?=\d+\s*=)/g,'$1\n'));
+      const illustration=cell.querySelector(':scope > img:first-child');
+      if(illustration && columns===2){
+        const frame=node('span','display:inline-flex;height:4.4em;align-items:flex-start;vertical-align:top;');
+        illustration.before(frame);frame.append(illustration);
+        row.style.alignItems='start';
+      }
+      row.append(cell);
+      if(hasBlank){const answer=node('span');styleText(answer,'(　　 )',false);row.append(answer);}
+      body.append(row);
+    }
+  }
   try{
     const stem=node('div','line-height:1.38;margin-bottom:.36em');await rich(stem,g.stem);root.append(stem);
-    if(g.body){const body=node('div','font-size:.84em;line-height:1.38;margin-bottom:.3em');await rich(body,g.body);root.append(body);}
+    if(g.body){const body=node('div','font-size:.84em;line-height:1.38;margin-bottom:.3em');await layoutBody(body,g.body);root.append(body);}
     const choices=displayedChoices(g,quiz);
     if(choices.length){
       const grid=node('div','display:grid;gap:.14em .64em;font-size:.86em;line-height:1.35;grid-template-columns:repeat('+ (choices.some(c=>c.length>30)?1:2)+', minmax(0,1fr))');
@@ -145,6 +194,11 @@ export async function addGothicQuestion(slide,q,loadImage){
     while(root.getBoundingClientRect().height>H && size>21){root.style.fontSize=(--size)+'px';}
     if(root.getBoundingClientRect().height>H||root.scrollWidth>W+1)throw Error(q.label+' · 한 장에 문항을 배치할 수 없습니다.');
     const border=root.getBoundingClientRect();
+    for(const row of root.querySelectorAll('div,table,img,span[data-rule]')){
+      const box=row.getBoundingClientRect();
+      if(box.right>border.right+1 || box.left<border.left-1 || box.bottom>border.top+H+1)
+        throw Error(q.label+' · 문항 또는 답칸이 투사 영역을 벗어났습니다.');
+    }
     const xy=(l,t)=>({x:(LEFT+l-border.left)/PX,y:(TOP+t-border.top)/PX});
     for(const cell of root.querySelectorAll('td,[data-rule]')){
       const r=cell.getBoundingClientRect();
