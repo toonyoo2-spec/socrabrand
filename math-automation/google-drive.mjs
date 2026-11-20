@@ -176,7 +176,8 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   };
   const family = layout.split('@')[0];
   const knownLayouts = [...(predecessors[family] ?? []), family, projectionLayout];
-  if (family.startsWith('lx-sample-v1-')) knownLayouts.push('han-quiz-ppt-3','beam-lesson-intro-3',...Object.values(predecessors).flat());
+  if (family.startsWith('lx-gothic-v2-')) knownLayouts.push(family.replace('lx-gothic-v2-','lx-sample-v1-'));
+  if (family.startsWith('lx-') || family==='han-gothic-v4') knownLayouts.push('han-quiz-ppt-3','beam-lesson-intro-3',...Object.values(predecessors).flat());
   const previous = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]) || (priorReceipt?.submission && file.appProperties?.socraMathSubmission===priorReceipt.submission));
   if (previous.length > 1) throw Error('같은 제출본의 이전 슬라이드가 두 개 이상 있습니다. 저장 폴더를 확인해 주세요.');
   const existing = previous[0] ?? confirmed;

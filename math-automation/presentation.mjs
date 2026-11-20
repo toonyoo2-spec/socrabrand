@@ -1,3 +1,4 @@
+import {addGothicQuestion} from './gothic-question.mjs';
 import {fillTemplate} from './template-slides.mjs';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
@@ -161,23 +162,6 @@ function checkClosingPrint(page, region) {
   }
 }
 
-function placeProblem(slide, image) {
-  const panels = image.parts ?? [image.canvas];
-  const sizes = panels.map(panel => {
-    const scale = Math.min(image.scale, BODY_WIDTH / panel.width);
-    return {w:panel.width * scale, h:panel.height * scale};
-  });
-  const gap = .20;
-  const height = sizes.reduce((sum, size) => sum + size.h, 0) + gap * (panels.length - 1);
-  const fit = Math.min(1, BODY_HEIGHT / height);
-  let y = BODY_TOP + Math.min(.42, (BODY_HEIGHT - height * fit) / 2);
-  for (let i = 0; i < panels.length; i++) {
-    const w = sizes[i].w * fit, h = sizes[i].h * fit;
-    slide.addImage({data:panels[i].toDataURL('image/png'), x:SLIDE_MARGIN, y, w, h});
-    y += h + gap * fit;
-  }
-}
-
 function convertedPage(original, meta, masks = []) {
   if (!meta?.erase && !masks.length) return original;
   const page = document.createElement('canvas');
@@ -298,14 +282,6 @@ async function projectionProblem(question, loadImage) {
   } finally {image.close();}
 }
 
-async function addQuestionImage(slide, question, loadImage) {
-  try {
-    placeProblem(slide, await projectionProblem(question, loadImage));
-  } catch (error) {
-    throw Error([question.book, question.label].filter(Boolean).join(' ') + ' · ' + error.message, { cause:error });
-  }
-}
-
 function placeQuiz(slide, quiz) {
   const options = quiz.kind === 'choice' ? quiz.choices.split('\n') : [];
   if (quiz.kind === 'choice' && (options.length !== 4 || options.some(choice => !choice.trim()) || !/^[1-4]$/.test(quiz.answer))) {
@@ -353,17 +329,17 @@ export async function buildPresentation({
   else if (!templateBytes && intro) addLessonIntro(deck, intro);
 
   for (const question of picks) {
-    const slide = await frame(deck, question.section, bookSource(question, !question.projection_asset), 'lesson', question.book);
-    await addQuestionImage(slide, question, loadImage);
+    const slide = await frame(deck, question.section, bookSource(question,false)+(question.gothic_content?.tag && !question.label.includes(question.gothic_content.tag)?' · '+question.gothic_content.tag:''), 'lesson', question.book);
+    await addGothicQuestion(slide, question, loadImage);
     slide.addNotes('수업 문항 ' + question.slot + '번 · ' + question.book + ' ' + question.label);
   }
   for (const [i,{q,quiz}] of orderedQuizItems(quizzes,appendix).entries()) {
     const number = String(i+1).padStart(2,'0');
     if (quiz) quizPlan(quiz,q?.projection_layout);
-    const source = q ? bookSource(q, (!quiz || quiz.book_quiz) && !q.projection_asset) : '';
-    const slide = await frame(deck, q?.stageLabel ?? (q ? stageLabel : quizLabel),
+    const source = q ? bookSource(q,false) : '';
+    const slide = await frame(deck, q?.stage_mode==='practice' ? '실전 스테이지' : (q ? (q.quizOne ? '퀴즈앤 1' : '퀴즈앤 2') : '퀴즈앤 1'),
       number+'번'+(source?' · '+source:''), !q || q.quizOne ? 'teacher' : 'appendix');
-    if (q && (!quiz || quiz.book_quiz)) await addQuestionImage(slide,q,loadImage);
+    if (q && (!quiz || quiz.book_quiz)) await addGothicQuestion(slide,q,loadImage);
     else placeQuiz(slide,{kind:'choice',...quiz});
     if (q && quiz?.book_quiz) slide.addNotes('퀴즈 '+number+'번 · 정답 '+quiz.answer);
   }

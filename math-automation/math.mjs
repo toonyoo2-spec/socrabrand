@@ -2,8 +2,8 @@ import {submissionTemplate,conceptMode,slotLimits} from './lesson-template.mjs?v
 import { lessonIntro } from './intro.mjs?v=1';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=13';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=21';
-import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=13';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=22';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=14';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
@@ -1687,7 +1687,7 @@ async function saveDestinations() {
 
 async function questionAssets(course, picks) {
   const ids=[...new Set(picks.map(p=>p.question_id))];
-  const items=ids.length ? await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,bundle_root_id,bundle_parts,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset,projection_layout'}) : [];
+  const items=ids.length ? await table('math_question_index',{course_id:'eq.'+course.id,question_id:'in.('+ids.join(',')+')',select:'question_id,bundle_root_id,bundle_parts,book,section,page,label,preview_book,slide_crop,slide_prompt_crop,projection_asset,projection_layout,gothic_content'}) : [];
   const withAsset=pick=>{
     const item=items.find(x=>x.question_id===pick.question_id);
     if (!item) throw Error('선택한 교재 문항을 찾을 수 없습니다.');
@@ -1713,6 +1713,11 @@ async function slideBlob(row, submission) {
   const review=submission.math_submission_reviews;
   const approved=review?.status==='passed' ? review.crop_fixes : {};
   const {withAsset,loadPage} = await questionAssets(course,[...submission.selections,...appendix]);
+  const needsText = [...submission.selections,...appendix].some(p=>(!p.quiz_override || p.quiz_override.book_quiz) && !withAsset(p).gothic_content?.stem);
+  if (needsText) {
+    const status=await rpc('math_request_gothic_review',{p_id:submission.id});
+    throw Error(status==='attention' ? '교재 원문 또는 도형을 검수해야 합니다. 제출 검수 결과를 확인해 주세요.' : '제출 문항의 고딕 조판과 원본 대조가 진행 중입니다. 검수 완료 후 다시 받아 주세요.');
+  }
   const template = submissionTemplate(course,submission);
   const next = (currentCourse()?.id===course.id ? state.lessons.find(l=>l.lesson===lesson.lesson+1) : null)
     ?? (template ? (await table('math_lessons',{course_id:'eq.'+course.id,lesson:'eq.'+(lesson.lesson+1),select:'topic',limit:1}))[0] : null);
@@ -1843,7 +1848,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
     } else {
       const review=submission.math_submission_reviews;
       const template=submissionTemplate(row.course,submission);
-      const baseLayout=template ? 'lx-sample-v1-'+template : 'han-quiz-ppt-3';
+      const baseLayout=template ? 'lx-gothic-v2-'+template : 'han-gothic-v4';
       const layout=review?.status==='passed' && Object.keys(review.crop_fixes ?? {}).length
         ? baseLayout+'@'+Date.parse(review.updated_at) : baseLayout;
       const prev=row.receipts.slides;
