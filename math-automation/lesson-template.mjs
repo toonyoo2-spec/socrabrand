@@ -6,12 +6,16 @@ const templates = {
   'rpm-application-han': {rpm_final:'han-rpm-1',rpm_pro:'han-rpm-2'},
 };
 
-export function submissionTemplate(course, submission) {
+export function submissionTemplate(course, submission, scheduledMode = submission.quiz_mode) {
   const choices=templates[course.id];
   if (!choices) throw Error('등록된 PPT 양식이 없는 수업입니다.');
   const modes=new Set((submission.stage_questions ?? []).map(q=>q.stage_mode).filter(Boolean));
   if (submission.quizzes?.length) modes.add('teacher');
   const selected=submission.selected_quiz_mode;
+  if (scheduledMode && Object.keys(choices).length > 1 &&
+      ((selected && selected !== scheduledMode) || modes.size !== 1 || !modes.has(scheduledMode))) {
+    throw Error('이 제출본은 회차에 지정된 세트와 다릅니다. 커리큘럼을 확인하고 다시 제출해 주세요.');
+  }
   const legacyPair=!selected && modes.size>1;
   const mode=selected ?? [...modes][0] ?? Object.keys(choices)[0];
   const [required]=slotLimits(course,legacyPair ? null : mode);
@@ -23,11 +27,6 @@ export function submissionTemplate(course, submission) {
   return choices[mode];
 }
 
-export function conceptMode(teacherCount, appendixCount, preferred) {
-  if (appendixCount===3 && teacherCount!==5) return 'appendix';
-  if (teacherCount===5 && appendixCount!==3) return 'teacher';
-  return preferred || (appendixCount && !teacherCount ? 'appendix' : 'teacher');
-}
 export function slotLimits(course, mode) {
   if (course?.id==='concept-foundations-han') return mode==='appendix' ? [8,11] : [5,8];
   // Review jobs carry the course identity but do not include its slot counts.

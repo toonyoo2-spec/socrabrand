@@ -63,7 +63,10 @@ function questionLabel(item) {
 }
 
 export function buildSheetWrites(target, lesson, submission) {
-  const modes = submission.selected_quiz_mode ? [submission.selected_quiz_mode] : target.quizModes;
+  const modes = target.quizModes.length > 1 ? [lesson.quiz_mode] : target.quizModes;
+  if (submission.selected_quiz_mode && !modes.includes(submission.selected_quiz_mode)) {
+    throw Error('제출본과 커리큘럼의 퀴즈앤 세트가 다릅니다. 해당 회차를 다시 제출해 주세요.');
+  }
   if (modes.some(mode => !target.quizModes.includes(mode))) throw Error('제출본의 퀴즈 유형과 과정이 다릅니다.');
   const quizWrites = modes.flatMap(mode => {
     const columns = target[mode];
@@ -79,7 +82,7 @@ export function buildSheetWrites(target, lesson, submission) {
   let base=cellEntries(target.base, submission.selections.filter(q=>q.slot<=target.base.length),questionLabel);
   const extra=submission.selections.filter(q=>q.slot>target.base.length);
   if(extra.length) {
-    if(submission.selected_quiz_mode!=='appendix' || target.base.length!==8) throw Error('제출본 문항 번호와 시트 열이 맞지 않습니다.');
+    if(!modes.includes('appendix') || target.base.length!==8) throw Error('제출본 문항 번호와 시트 열이 맞지 않습니다.');
     // The existing sheet reserves I:P for lesson picks. Pair reserves with basics 6–8.
     for(const q of extra) {
       const slot=q.slot-3, cell=base.find(([column])=>column===target.base[slot-1]);
@@ -116,7 +119,7 @@ export async function syncSubmissionToSheet(target, lesson, submission, connecti
   const active = new Set(entries.map(([column]) => column));
   const previousEntries = Array.isArray(previous)
     ? cellEntries(target.base, previous, questionLabel)
-    : previous ? buildSheetWrites(target, lesson, previous) : [];
+    : previous ? cellEntries(target.base, previous.selections.filter(q => q.slot <= target.base.length), questionLabel) : [];
   for (const [column] of previousEntries) {
     if (!active.has(column)) entries.push([column, '']);
   }
@@ -152,6 +155,23 @@ export async function syncSubmissionToSheet(target, lesson, submission, connecti
   const sessionDate = valueRanges[1].values[row - 6][1];
   const expectedDate = Date.parse(lesson.live_date + 'T00:00:00Z') / 86400000 + 25569;
   if (sessionDate !== expectedDate) throw Error('선택한 강의의 날짜와 시트 D열 날짜가 다릅니다. 강사와 수업명을 확인해 주세요.');
+  if (target.quizModes.length > 1) {
+    const expected = lesson.quiz_mode;
+    const first = target[target.quizModes[0]][0];
+    const range = name + first + row + ':' + target.end + row;
+    const query = new URLSearchParams({ ranges:range, fields:'sheets(data(rowData(values(effectiveFormat(backgroundColor)))))' });
+    const grid = await fetchSheet('?' + query);
+    const cells = grid.sheets?.[0]?.data?.[0]?.rowData?.[0]?.values ?? [];
+    for (const mode of target.quizModes) {
+      for (const col of target[mode]) {
+        const color = cells[columnIndex(col) - columnIndex(first)]?.effectiveFormat?.backgroundColor;
+        const dark = color && Math.max(color.red ?? 0, color.green ?? 0, color.blue ?? 0) < 0.5;
+        if (!color || dark !== (mode !== expected)) {
+          throw Error('시트의 음영과 이 회차의 퀴즈앤 설정이 다릅니다. 커리큘럼을 확인해 주세요.');
+        }
+      }
+    }
+  }
   const fullRow = await fetchSheet('/values/' + encodeURIComponent(name + 'A' + row + ':' + target.end + row)
     + '?valueRenderOption=FORMULA');
   const current = fullRow.values?.[0] ?? [];

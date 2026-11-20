@@ -1,6 +1,6 @@
-import {submissionTemplate,conceptMode,slotLimits} from './lesson-template.mjs?v=2';
+import {submissionTemplate,slotLimits} from './lesson-template.mjs?v=3';
 import { lessonIntro } from './intro.mjs?v=1';
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=13';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=14';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
 import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=23';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=15';
@@ -45,7 +45,7 @@ let transferContext;
 let progressGeneration = 0;
 let staffProgress;
 const lessonWeek = number => Math.ceil(number / 2);
-const usesQuizN = course => course.instructor === '한태인';
+const usesQuizN = course => course?.instructor === '한태인';
 const className = course => tracks[course.track].split(' · ')[0];
 
 class ApiError extends Error {
@@ -160,6 +160,7 @@ function currentLesson() {
 }
 
 function lessonModes(lesson = currentLesson(), course = currentCourse()) {
+  if (usesQuizN(course)) return lesson?.quiz_mode ? [lesson.quiz_mode] : [];
   return course?.quiz_modes ?? (lesson ? [lesson.quiz_mode] : []);
 }
 
@@ -276,7 +277,7 @@ async function loadProgress() {
   const generation = ++progressGeneration;
   const version = state.courseVersion;
   const instructor = currentCourse()?.instructor;
-  const courses = state.courses.filter(course => course.instructor === instructor);
+  const courses = state.courses.filter(course => course?.instructor === instructor);
   const filter = 'in.(' + courses.map(course => course.id).join(',') + ')';
   const status = $('progress-status');
   const grid = $('progress-tracks');
@@ -319,7 +320,7 @@ async function loadProgress() {
         const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
         const submission = submissions.get(course.id + '/' + lesson.lesson);
         const row = transferRow(course, lesson, submission, receipts, plans);
-        row.lessonProgress = lessonPickProgress(course, picks.filter(matches).map(item => item.slot), conceptMode(quizzes.filter(matches).length, extras.filter(item => matches(item) && item.stage_mode === 'appendix').length, submission?.selected_quiz_mode));
+        row.lessonProgress = lessonPickProgress(course, picks.filter(matches).map(item => item.slot), lesson.quiz_mode);
         row.quizCounts = lessonModes(lesson,course).map(mode => ({
           title: quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제',
           count: mode === 'teacher' ? quizzes.filter(matches).length : extras.filter(item => matches(item) && savedResourceMode(item,lesson) === mode).length,
@@ -386,7 +387,7 @@ async function loadProgress() {
           date.dateTime = lesson.live_date;
           date.textContent = dateLabel.format(new Date(lesson.live_date + 'T00:00:00Z'));
           row.insertCell().append(button, date);
-          row.insertCell().textContent = lessonProgressLabel(lessonPickProgress(course, picks.filter(matches).map(item => item.slot), conceptMode(quizzes.filter(matches).length, extras.filter(item => matches(item) && item.stage_mode === 'appendix').length, submitted?.selected_quiz_mode)));
+          row.insertCell().textContent = lessonProgressLabel(lessonPickProgress(course, picks.filter(matches).map(item => item.slot), lesson.quiz_mode));
           for (const mode of courseModes) {
             const progress = row.insertCell();
             if (!lessonModes(lesson, course).includes(mode)) {
@@ -650,7 +651,7 @@ async function loadLesson(requestedStage) {
       state.staff ? table('math_course_materials', { course_id: filter.course_id, select: 'label,url', order: 'label' }) : [],
     ]);
     if (version !== state.lessonVersion) return;
-    state.picks = new Map(picks.map(value => [value.slot, value.question_id]));
+    state.picks = new Map(picks.filter(value => value.slot <= lessonSlots()).map(value => [value.slot, value.question_id]));
     state.quizzes = new Map(quizzes.map(value => [value.slot, value]));
     state.submitted = submissions[0] ?? null;
     state.stagePicks = new Map(resourceModes.map(mode => [mode, new Map()]));
@@ -660,7 +661,6 @@ async function loadLesson(requestedStage) {
       state.stagePicks.get(item.stage_mode)?.set(item.slot, item.question_id);
       if (item.quiz_override) state.stageEdits.get(item.stage_mode)?.set(item.slot, item.quiz_override);
     }
-    state.preferredQuizMode = state.submitted?.selected_quiz_mode ?? null;
     renderMaterialLinks(materials);
     $('delivery-panel').classList.toggle('staff-delivery', state.staff);
     $('delivery-label').textContent = state.staff ? '작업현황·Google 반영' : '제출·발표자료';
@@ -725,20 +725,13 @@ function renderMaterialLinks(materials) {
   $('material-links').replaceChildren(...links);
 }
 
-function draftMode() {
-  const appendix=state.stagePicks.get('appendix');
-  const complete=appendix?.size===3 && [...appendix.keys()].every(slot =>
-    !selectedStagePick(slot,'appendix')?.five_choice || state.stageEdits?.get('appendix')?.has(slot));
-  const written=state.quizDirty ? Math.min(state.quizzes.size,4) : state.quizzes.size;
-  return conceptMode(written, complete ? 3 : Math.min(appendix?.size??0,2),state.preferredQuizMode);
-}
 function lessonSlots() {
-  return slotLimits(currentCourse(),draftMode())[1];
+  return slotLimits(currentCourse(),currentLesson()?.quiz_mode)[1];
 }
 function requiredLessonSlots() {
-  return slotLimits(currentCourse(),draftMode())[0];
+  return slotLimits(currentCourse(),currentLesson()?.quiz_mode)[0];
 }
-function lessonPickProgress(course = currentCourse(), slots = state.picks.keys(), mode = draftMode()) {
+function lessonPickProgress(course = currentCourse(), slots = state.picks.keys(), mode = currentLesson()?.quiz_mode) {
   const [required,total] = slotLimits(course,mode);
   let basic = 0;
   let reserve = 0;
@@ -1015,7 +1008,7 @@ function renderPicks() {
   };
   $('selection-role').textContent=state.composer ? '교재에서 문제를 눌러 자리를 고르거나, 원하는 칸으로 끌어 놓으세요.' : '선생님이 저장한 수업 문항입니다.';
   if(state.composer && currentCourse().id==='concept-foundations-han'){
-    $('selection-role').textContent += draftMode()==='appendix' ? ' 교사부록 ②는 기본 8개, 예비 최대 3개입니다.' : ' 퀴즈앤 ①은 기본 5개, 교사부록 ②는 기본 8개입니다.';
+    $('selection-role').textContent += currentLesson()?.quiz_mode==='appendix' ? ' 교사부록 ②는 기본 8개, 예비 최대 3개입니다.' : ' 퀴즈앤 ①은 기본 5개, 예비 최대 3개입니다.';
   }
   $('question-slots').replaceChildren(group('기본',picked,required,controls.slice(0,required)));
   if (controls.length>required) $('question-slots').append(group('예비 (선택)',reserve,optional,controls.slice(required)));
@@ -1368,7 +1361,7 @@ function changedSubmission(mode) {
   const saved = state.submitted;
   if (!saved) return true;
   if (mode && saved.selected_quiz_mode !== mode) return true;
-  if (saved.selections.length !== [...state.picks.keys()].filter(slot => slot <= slotLimits(currentCourse(),mode ?? draftMode())[1]).length ||
+  if (saved.selections.length !== [...state.picks.keys()].filter(slot => slot <= slotLimits(currentCourse(),mode ?? currentLesson()?.quiz_mode)[1]).length ||
       saved.selections.some(p => state.picks.get(p.slot) !== p.question_id)) return true;
   if (!mode || mode === 'teacher') {
     if (saved.quizzes.length !== state.quizzes.size || saved.quizzes.some(q => {
@@ -1387,18 +1380,6 @@ function changedSubmission(mode) {
   });
 }
 
-function chooseSubmissionQuiz(groups) {
-  const choices = groups.filter(group => group.ready);
-  const select = $('submission-quiz-mode');
-  const selected = choices.length === 1 ? choices[0].mode
-    : choices.find(group => group.mode === state.preferredQuizMode)?.mode ?? '';
-  const options = [new Option('사용할 세트 선택', ''), ...choices.map(group => new Option(group.title, group.mode))];
-  select.replaceChildren(...options);
-  select.value = selected;
-  $('quiz-mode-field').hidden = choices.length < 2;
-  return selected;
-}
-
 function renderSubmission() {
   $('lesson-ppt').disabled = !state.submitted;
   $('quiz-excel').hidden = !usesQuizN(currentCourse());
@@ -1414,14 +1395,12 @@ function renderSubmission() {
     const detail = unsaved ? '저장 필요' : conversion ? '교재 정답 확인 필요' : ready ? '완료' : '작성 필요';
     return { mode, stage:quizModes[mode].stage, title:stageTitle(mode), count, total, conversion, unsaved, ready, detail };
   });
-  const alternative = usesQuizN(currentCourse()) && groups.length > 1;
-  $('quiz-mode-field').hidden = true;
-  const mode = alternative ? chooseSubmissionQuiz(groups) : null;
+  const mode = usesQuizN(currentCourse()) ? currentLesson().quiz_mode : null;
 
-  const {required:totalBasics, basic:selectedBasics, reserve, optional} = lessonPickProgress(currentCourse(),state.picks.keys(),mode || draftMode());
+  const {required:totalBasics, basic:selectedBasics, reserve, optional} = lessonPickProgress();
   const basic = selectedBasics === totalBasics;
   const missing = groups.find(group => !group.ready);
-  const ready = basic && (alternative ? Boolean(mode) : !missing);
+  const ready = basic && groups.length > 0 && !missing;
   state.edited = changedSubmission(mode);
   updateStageProgress();
   renderSubmissionChecklist([
@@ -1433,8 +1412,7 @@ function renderSubmission() {
   $('submit').textContent = state.submitted ? '수정본 제출' : '회차 제출';
   if (!ready) {
     $('submit-status').textContent = !basic ? '기본 문항 ' + requiredLessonSlots() + '개를 먼저 골라 주세요.'
-      : alternative ? (groups.every(group => group.ready) ? '이번 회차에 사용할 퀴즈앤을 선택해 주세요.'
-        : '퀴즈앤 ①·② 중 한 세트의 문항과 보기를 모두 준비해 주세요.')
+      : !groups.length ? '회차별 커리큘럼을 확인해 주세요.'
       : missing.unsaved ? '입력한 퀴즈를 저장해 주세요.'
         : missing.conversion ? missing.title + '에서 문항을 다시 선택해 주세요.'
         : missing.title + ' 문항을 모두 채워 주세요.';
@@ -1453,11 +1431,10 @@ async function submit() {
   await withSaving(async () => {
     const rows = await table('math_submissions', { select: 'id,submitted_at,sync_status,selected_quiz_mode,selections,quizzes,stage_questions' }, 'POST', {
       course_id: currentCourse().id, lesson: currentLesson().lesson,
-      ...(usesQuizN(currentCourse()) && lessonModes().length > 1 ? {selected_quiz_mode:$('submission-quiz-mode').value} : {}),
+      ...(usesQuizN(currentCourse()) ? {selected_quiz_mode:currentLesson().quiz_mode} : {}),
     });
     if (!rows[0]) throw new ApiError(403, '이 회차를 제출할 권한이 없습니다.');
     state.submitted = {...rows[0],math_submission_reviews:{status:'queued'}};
-    state.preferredQuizMode = rows[0].selected_quiz_mode ?? null;
     state.edited = false;
     if (state.stage === 'delivery' && $('all-progress').open) void loadProgress();
     state.exportReceipt = null;
@@ -1718,7 +1695,7 @@ async function slideBlob(row, submission) {
     const status=await rpc('math_request_gothic_review',{p_id:submission.id});
     throw Error(status==='attention' ? '교재 원문 또는 도형을 검수해야 합니다. 제출 검수 결과를 확인해 주세요.' : '제출 문항의 수식 조판과 원본 대조가 진행 중입니다. 검수 완료 후 다시 받아 주세요.');
   }
-  const template = submissionTemplate(course,submission);
+  const template = submissionTemplate(course,submission,lesson.quiz_mode);
   const next = (currentCourse()?.id===course.id ? state.lessons.find(l=>l.lesson===lesson.lesson+1) : null)
     ?? (template ? (await table('math_lessons',{course_id:'eq.'+course.id,lesson:'eq.'+(lesson.lesson+1),select:'topic',limit:1}))[0] : null);
   const templateBytes=template ? await (await request('/storage/v1/object/authenticated/math-ppt-templates/'+course.id+'/'+template+'-v1.pptx')).arrayBuffer() : null;
@@ -1847,7 +1824,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       url=cells.url;destination=sheet;
     } else {
       const review=submission.math_submission_reviews;
-      const template=submissionTemplate(row.course,submission);
+      const template=submissionTemplate(row.course,submission,row.lesson.quiz_mode);
       const baseLayout=template ? 'lx-lora-v3-'+template : 'han-lora-v5';
       const layout=review?.status==='passed' && Object.keys(review.crop_fixes ?? {}).length
         ? baseLayout+'@'+Date.parse(review.updated_at) : baseLayout;
@@ -2094,10 +2071,6 @@ $('stage-section').addEventListener('change', () => {
 });
 $('teacher-section').addEventListener('submit', saveQuiz);
 $('quiz-clear').addEventListener('click', clearQuiz);
-$('submission-quiz-mode').addEventListener('change', event => {
-  state.preferredQuizMode = event.target.value;
-  renderSubmission();
-});
 $('submit').addEventListener('click', submit);
 $('lesson-ppt').addEventListener('click',downloadLessonPpt);
 $('quiz-excel').addEventListener('click', () => downloadQuizExcel({course:currentCourse(),lesson:currentLesson(),submission:state.submitted},$('quiz-excel'),$('submit-feedback')));
@@ -2132,7 +2105,7 @@ for (const button of document.querySelectorAll('[data-copy]')) button.addEventLi
 });
 $('retry').addEventListener('click', loadSite);
 protectUnsaved($('course'), () => {
-  const courses = state.courses.filter(course => course.instructor === $('course').value);
+  const courses = state.courses.filter(course => course?.instructor === $('course').value);
   const course = courses.find(item => item.track === currentCourse()?.track) ?? courses[0];
   state.view = {course:course.id, lesson:currentLesson()?.lesson, stage:state.stage};
   selectCourse(course);
@@ -2181,7 +2154,7 @@ async function openUsageGuide() {
   status.textContent = '사용 방법을 불러오는 중입니다.';
   status.hidden = false;
   try {
-    usageView ??= import('./usage-guide.mjs?v=14').then(module => module.mountUsageGuide($('usage-content')));
+    usageView ??= import('./usage-guide.mjs?v=15').then(module => module.mountUsageGuide($('usage-content')));
     const show = await usageView;
     if (usageDialog.open) {selectGuideTopic('workflow');await show(initial);}
     status.hidden = true;
