@@ -99,6 +99,7 @@ textarea { flex:1; min-width:0; min-height:38px; height:38px; max-height:30vh; r
   .top h1 { white-space:normal }
   .teams { grid-template-columns:repeat(2,minmax(0,150px)) }
 }
+#tabs button.off{opacity:.35;cursor:not-allowed;filter:grayscale(1)}
 </style></head><body>
 <div class="gate" id="gate" hidden>
   <img src="img/logo_dark.png" alt="리얼 아카데미">
@@ -153,9 +154,10 @@ function load(k){try{return localStorage.getItem(k)}catch{return null}}
 function setTeam(t){team=t;store("ra_team",t);$("gate").hidden=true;$("who").innerHTML="<b>"+esc(t)+"</b><button type='button' id='chg'>변경</button>";$("chg").onclick=()=>{$("gate").hidden=false};render()}
 $("teams").innerHTML=TEAMS.map(t=>"<button type='button'>"+t+"</button>").join("");
 $("teams").querySelectorAll("button").forEach(b=>b.onclick=()=>setTeam(b.textContent));
+const OFF_TABS=['14'];   // 11/20 KWAN: 마이페이지 탭 비활성화
 function renderTabs(){
   $("tabs").innerHTML=TABS.map(t=>{const n=notes.filter(x=>tabOf(x)===t.id&&x.status!=="done").length;
-    return "<button type='button' role='tab' data-tab='"+t.id+"' aria-selected='"+(t.id===TAB.id)+"' class='"+(t.id===TAB.id?"cur":"")+"'><span>"+t.id+"</span>"+esc(t.name)+(n?"<sup>"+n+"</sup>":"")+"</button>"}).join("");
+    const off=OFF_TABS.includes(t.id);return "<button type='button' role='tab' data-tab='"+t.id+"' aria-selected='"+(t.id===TAB.id)+"'"+(off?" disabled aria-disabled='true' title='준비 중'":"")+" class='"+(t.id===TAB.id?"cur":"")+(off?" off":"")+"'><span>"+t.id+"</span>"+esc(t.name)+(n?"<sup>"+n+"</sup>":"")+"</button>"}).join("");
 }
 function blockHTML(b){
   const it=b.id==="all"?[]:[...b.lines.map(l=>({t:l.t,h:esc(l.text)})),...b.events.map(e=>({t:e.t,ev:1,h:e.kind==="voice"?esc(e.name)+(e.note?"<br>"+esc(e.note):""):esc(e.name)+(e.mode==="emph"||e.name==="누름"?"":" 클릭")+" · "+(MODE[e.mode]||"")}))].sort((x,y)=>x.t-y.t);
@@ -173,7 +175,7 @@ function openTab(id,keepTime){
   $("blocks").innerHTML=BLOCKS.map(blockHTML).join("");$("panel").scrollTop=0;
   render();
 }
-$("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b&&b.dataset.tab!==TAB.id)openTab(b.dataset.tab)});
+$("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b&&!OFF_TABS.includes(b.dataset.tab)&&b.dataset.tab!==TAB.id)openTab(b.dataset.tab)});
 function commentHTML(n){
   const done=n.status==="done",mine=myIds.includes(n.id);
   return "<div class='c"+(done?" done":"")+(mine?" mine":"")+"'><p>"+esc(n.text)+"</p>"+
@@ -253,7 +255,7 @@ document.addEventListener("submit",async e=>{
   finally{btn.disabled=false}
 });
 document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter"&&e.target.tagName==="TEXTAREA")e.target.form.requestSubmit()});
-const h=(location.hash||"").slice(1);openTab(TABS.some(t=>t.id===h)?h:(load("ra_tab")||"01"));
+const h=(location.hash||"").slice(1);openTab(TABS.some(t=>t.id===h)&&!OFF_TABS.includes(h)?h:((x=>OFF_TABS.includes(x)?"01":x)(load("ra_tab")||"01")));
 const saved=load("ra_team");if(saved&&TEAMS.includes(saved))setTeam(saved);else{$("gate").hidden=false;render()}
 async function removeNote(id){
   try{
