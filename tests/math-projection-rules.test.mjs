@@ -29,3 +29,38 @@ test('inline variables retain Lora italic in questions and lesson titles',()=>{
     });
   }
 });
+
+import {execFileSync} from 'node:child_process';
+// Run against exports from the normal slide generator, including template resizing.
+test('exported question numbers, answer fields and rules align in the actual PPTX', {skip:!process.env.MATH_QA_EXPORTS},()=>{
+  execFileSync('python3',['-c',String.raw`
+from pathlib import Path
+from zipfile import ZipFile
+import sys,json,xml.etree.ElementTree as ET
+root=Path(sys.argv[1])
+def shapes(course,question):
+    folder=root/course
+    number=json.loads((folder/'slide-order.json').read_text()).index(question)+1
+    with ZipFile(folder/'lesson.pptx') as deck:
+        slide=ET.fromstring(deck.read('ppt/slides/slide%d.xml'%number))
+    result={}
+    for sp in slide.findall('.//{*}sp'):
+        label=''.join(t.text or '' for t in sp.findall('.//{*}t')).strip()
+        off=sp.find('./{*}spPr/{*}xfrm/{*}off')
+        if off is not None: result.setdefault(label,[]).append(int(off.get('x')))
+    return slide,result
+for course,q,numbers in [('han-concept-1',21,['(%d)'%i for i in range(1,7)]),('han-rpm-1',4426,['%04d'%i for i in range(1,7)])]:
+    _,items=shapes(course,q)
+    for column in [numbers[::2],numbers[1::2]]:
+        xs=[items[label][0] for label in column]
+        assert max(xs)-min(xs)<1000,(q,column,xs)
+    assert items[numbers[1]][0]>items[numbers[0]][0]
+_,items=shapes('han-concept-1',2)
+blanks=[x for text,xs in items.items() if ''.join(text.split())=='()' for x in xs]
+assert len(blanks)==4 and max(blanks)-min(blanks)<1000
+slide,items=shapes('han-concept-1',5)
+assert len(slide.findall('.//{*}pic'))==2
+assert len([g for g in slide.findall('.//{*}prstGeom') if g.get('prst')=='line'])==2
+assert not any('__' in t for t in items)
+`,process.env.MATH_QA_EXPORTS],{stdio:'pipe'});
+});
