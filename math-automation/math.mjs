@@ -1,8 +1,9 @@
+import {submissionTemplate,conceptMode,slotLimits} from './lesson-template.mjs';
 import { lessonIntro } from './intro.mjs?v=1';
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=12';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=13';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=20';
-import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=12';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=21';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=13';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
@@ -214,7 +215,7 @@ function showStage(stage, restore = false) {
     button.setAttribute('aria-pressed', String(selected));
   }
   for (const panel of stagePanels) $(panel).hidden = panel !== stages[state.stage];
-  if (state.stage === 'catalog') positionCatalog();
+  if (state.stage === 'catalog') { renderPicks(); positionCatalog(); }
   const mode = activeQuizMode();
   if (mode) renderQuizStage(mode);
   if (!restore && window.scrollY > $('lesson-tools').offsetTop) window.scrollTo(0, $('lesson-tools').offsetTop);
@@ -232,7 +233,7 @@ async function submissionHistory(filter) {
   const latest = new Map();
   for (let offset = 0; ; offset += 500) {
     const records = await table('math_submissions', {
-      course_id:filter, select:'course_id,lesson,id,submitted_at,math_submission_reviews(status,detail)',
+      course_id:filter, select:'course_id,lesson,id,selected_quiz_mode,submitted_at,math_submission_reviews(status,detail)',
       order:'submitted_at.desc,id.desc', limit:500, offset,
     });
     for (const record of records) {
@@ -318,7 +319,7 @@ async function loadProgress() {
         const matches = item => item.course_id === course.id && item.lesson === lesson.lesson;
         const submission = submissions.get(course.id + '/' + lesson.lesson);
         const row = transferRow(course, lesson, submission, receipts, plans);
-        row.lessonProgress = lessonPickProgress(course, picks.filter(matches).map(item => item.slot));
+        row.lessonProgress = lessonPickProgress(course, picks.filter(matches).map(item => item.slot), conceptMode(quizzes.filter(matches).length, extras.filter(item => matches(item) && item.stage_mode === 'appendix').length, submission?.selected_quiz_mode));
         row.quizCounts = lessonModes(lesson,course).map(mode => ({
           title: quizModes[mode].number ? '퀴즈앤 ' + quizModes[mode].number : '문제 출제',
           count: mode === 'teacher' ? quizzes.filter(matches).length : extras.filter(item => matches(item) && savedResourceMode(item,lesson) === mode).length,
@@ -385,7 +386,7 @@ async function loadProgress() {
           date.dateTime = lesson.live_date;
           date.textContent = dateLabel.format(new Date(lesson.live_date + 'T00:00:00Z'));
           row.insertCell().append(button, date);
-          row.insertCell().textContent = lessonProgressLabel(lessonPickProgress(course, picks.filter(matches).map(item => item.slot)));
+          row.insertCell().textContent = lessonProgressLabel(lessonPickProgress(course, picks.filter(matches).map(item => item.slot), conceptMode(quizzes.filter(matches).length, extras.filter(item => matches(item) && item.stage_mode === 'appendix').length, submitted?.selected_quiz_mode)));
           for (const mode of courseModes) {
             const progress = row.insertCell();
             if (!lessonModes(lesson, course).includes(mode)) {
@@ -689,7 +690,7 @@ async function loadLesson(requestedStage) {
     $('actions').hidden = !state.staff;
     $('google-help').hidden = !state.staff;
     $('staff-links').hidden = !state.staff;
-    options($('book'), values(books, 'book'), currentCourse().lesson_slots === 11 ? 'RPM' : undefined);
+    options($('book'), values(books, 'book'), currentCourse().track === 'application' ? 'RPM' : undefined);
     setUnit(lesson.unit, lesson.section);
     const restored = state.view.course === currentCourse().id && state.view.lesson === lesson.lesson;
     renderQuizSlots(restored ? state.view.quizSlot : 1);
@@ -724,17 +725,21 @@ function renderMaterialLinks(materials) {
   $('material-links').replaceChildren(...links);
 }
 
+function draftMode() {
+  const appendix=state.stagePicks.get('appendix');
+  const complete=appendix?.size===3 && [...appendix.keys()].every(slot =>
+    !selectedStagePick(slot,'appendix')?.five_choice || state.stageEdits?.get('appendix')?.has(slot));
+  const written=state.quizDirty ? Math.min(state.quizzes.size,4) : state.quizzes.size;
+  return conceptMode(written, complete ? 3 : Math.min(appendix?.size??0,2),state.preferredQuizMode);
+}
 function lessonSlots() {
-  return currentCourse()?.lesson_slots ?? 8;
+  return slotLimits(currentCourse(),draftMode())[1];
 }
-
-function requiredLessonSlots(course = currentCourse()) {
-  return course?.required_lesson_slots ?? 5;
+function requiredLessonSlots() {
+  return slotLimits(currentCourse(),draftMode())[0];
 }
-
-function lessonPickProgress(course = currentCourse(), slots = state.picks.keys()) {
-  const required = requiredLessonSlots(course);
-  const total = course?.lesson_slots ?? 8;
+function lessonPickProgress(course = currentCourse(), slots = state.picks.keys(), mode = draftMode()) {
+  const [required,total] = slotLimits(course,mode);
   let basic = 0;
   let reserve = 0;
   for (const slot of new Set(slots)) {
@@ -1009,6 +1014,9 @@ function renderPicks() {
     return section;
   };
   $('selection-role').textContent=state.composer ? '교재에서 문제를 눌러 자리를 고르거나, 원하는 칸으로 끌어 놓으세요.' : '선생님이 저장한 수업 문항입니다.';
+  if(state.composer && currentCourse().id==='concept-foundations-han'){
+    $('selection-role').textContent += draftMode()==='appendix' ? ' 교사부록 ②는 기본 8개, 예비 최대 3개입니다.' : ' 퀴즈앤 ①은 기본 5개, 교사부록 ②는 기본 8개입니다.';
+  }
   $('question-slots').replaceChildren(group('기본',picked,required,controls.slice(0,required)));
   if (controls.length>required) $('question-slots').append(group('예비 (선택)',reserve,optional,controls.slice(required)));
 }
@@ -1360,7 +1368,7 @@ function changedSubmission(mode) {
   const saved = state.submitted;
   if (!saved) return true;
   if (mode && saved.selected_quiz_mode !== mode) return true;
-  if (saved.selections.length !== state.picks.size ||
+  if (saved.selections.length !== [...state.picks.keys()].filter(slot => slot <= slotLimits(currentCourse(),mode ?? draftMode())[1]).length ||
       saved.selections.some(p => state.picks.get(p.slot) !== p.question_id)) return true;
   if (!mode || mode === 'teacher') {
     if (saved.quizzes.length !== state.quizzes.size || saved.quizzes.some(q => {
@@ -1395,8 +1403,6 @@ function renderSubmission() {
   $('lesson-ppt').disabled = !state.submitted;
   $('quiz-excel').hidden = !usesQuizN(currentCourse());
   $('quiz-excel').disabled = !state.submitted;
-  const {required:totalBasics, basic:selectedBasics, reserve, optional} = lessonPickProgress();
-  const basic = selectedBasics === totalBasics;
   const groups = lessonModes().map(mode => {
     const picks = state.stagePicks.get(mode);
     const count = mode === 'teacher' ? state.quizzes.size : picks?.size ?? 0;
@@ -1411,6 +1417,9 @@ function renderSubmission() {
   const alternative = usesQuizN(currentCourse()) && groups.length > 1;
   $('quiz-mode-field').hidden = true;
   const mode = alternative ? chooseSubmissionQuiz(groups) : null;
+
+  const {required:totalBasics, basic:selectedBasics, reserve, optional} = lessonPickProgress(currentCourse(),state.picks.keys(),mode || draftMode());
+  const basic = selectedBasics === totalBasics;
   const missing = groups.find(group => !group.ready);
   const ready = basic && (alternative ? Boolean(mode) : !missing);
   state.edited = changedSubmission(mode);
@@ -1704,12 +1713,16 @@ async function slideBlob(row, submission) {
   const review=submission.math_submission_reviews;
   const approved=review?.status==='passed' ? review.crop_fixes : {};
   const {withAsset,loadPage} = await questionAssets(course,[...submission.selections,...appendix]);
-  return buildPresentation({title:deckTitle(row),intro:lessonIntro(course,lesson),picks:submission.selections.map(pick=>{
+  const template = submissionTemplate(course,submission);
+  const next = (currentCourse()?.id===course.id ? state.lessons.find(l=>l.lesson===lesson.lesson+1) : null)
+    ?? (template ? (await table('math_lessons',{course_id:'eq.'+course.id,lesson:'eq.'+(lesson.lesson+1),select:'topic',limit:1}))[0] : null);
+  const templateBytes=template ? await (await request('/storage/v1/object/authenticated/math-ppt-templates/'+course.id+'/'+template+'-v1.pptx')).arrayBuffer() : null;
+  return buildPresentation({title:deckTitle(row),intro:lessonIntro(course,lesson),templateBytes,topic:lesson.topic,nextTopic:next?.topic,picks:submission.selections.map(pick=>{
       const item=withAsset(pick), bounds=approved?.[pick.question_id];
       return bounds ? {...item,projection_layout:{bounds}} : item;
     }),
     quizzes:submission.quizzes ?? [],
-    appendix:appendix.map(p=>stageImage(p,lesson,withAsset)),quizLabel:stageTitle('teacher')},loadPage);
+    appendix:appendix.map(p=>stageImage(p,lesson,withAsset)),quizLabel:'퀴즈앤 ①'},loadPage);
 }
 
 // Confirm only unkeyed textbook items. A revised submission gets a fresh cache key.
@@ -1829,10 +1842,14 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       url=cells.url;destination=sheet;
     } else {
       const review=submission.math_submission_reviews;
-      const baseLayout=usesQuizN(row.course) ? 'han-quiz-ppt-3' : 'beam-lesson-intro-3';
+      const template=submissionTemplate(row.course,submission);
+      const baseLayout=template ? 'lx-sample-v1-'+template : 'han-quiz-ppt-3';
       const layout=review?.status==='passed' && Object.keys(review.crop_fixes ?? {}).length
         ? baseLayout+'@'+Date.parse(review.updated_at) : baseLayout;
-      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,layout);
+      const prev=row.receipts.slides;
+      const [prior]=prev?.completed_id ? await table('math_staff_exports',{course_id:'eq.'+row.course.id,submission_id:'eq.'+prev.completed_id,select:'drive_url'}) : [];
+      const priorId=prior?.drive_url?.match(/^https:\/\/docs\.google\.com\/presentation\/d\/([A-Za-z0-9_-]+)\/edit/)?.[1];
+      url=await saveSlidesToStaffDrive(connection,()=>slideBlob(row,submission),deckTitle(row),sid,folder,check,layout,{id:priorId,submission:prev?.completed_id});
       destination=folderUrl;
     }
     if (!await rpc('math_finish_transfer',{...args,p_url:url,p_destination:destination})) throw Error('Google 결과의 완료 기록을 확인해 주세요.');

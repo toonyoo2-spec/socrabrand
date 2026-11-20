@@ -1,3 +1,4 @@
+import {fillTemplate} from './template-slides.mjs';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
 import {addEchoScenes} from './intro.mjs?v=2';
@@ -339,7 +340,7 @@ function addLessonIntro(deck, intro) {
 }
 
 export async function buildPresentation({
-  title, intro, picks, quizzes, appendix, stageLabel = '퀴즈앤 ② · 교사부록', quizLabel = '퀴즈앤 ① · 직접 제작',
+  title, intro, templateBytes, topic, nextTopic, onSlideOrder, picks, quizzes, appendix, stageLabel = '퀴즈앤 ② · 교사부록', quizLabel = '퀴즈앤 ①',
 }, loadImage) {
   const Pptx = await loadPptx();
   const deck = new Pptx();
@@ -348,8 +349,8 @@ export async function buildPresentation({
   deck.title = title;
   deck.author = 'Socra LX팀';
   deck.lang = 'ko-KR';
-  if (intro?.scenes) await addEchoScenes(deck, intro.scenes);
-  else if (intro) addLessonIntro(deck, intro);
+  if (!templateBytes && intro?.scenes) await addEchoScenes(deck, intro.scenes);
+  else if (!templateBytes && intro) addLessonIntro(deck, intro);
 
   for (const question of picks) {
     const slide = await frame(deck, question.section, bookSource(question, !question.projection_asset), 'lesson', question.book);
@@ -359,14 +360,16 @@ export async function buildPresentation({
   for (const [i,{q,quiz}] of orderedQuizItems(quizzes,appendix).entries()) {
     const number = String(i+1).padStart(2,'0');
     if (quiz) quizPlan(quiz,q?.projection_layout);
-    const source = q ? bookSource(q, (!quiz || quiz.book_quiz) && !q.projection_asset) : '직접 작성';
+    const source = q ? bookSource(q, (!quiz || quiz.book_quiz) && !q.projection_asset) : '';
     const slide = await frame(deck, q?.stageLabel ?? (q ? stageLabel : quizLabel),
-      number+'번 · '+source, !q || q.quizOne ? 'teacher' : 'appendix');
+      number+'번'+(source?' · '+source:''), !q || q.quizOne ? 'teacher' : 'appendix');
     if (q && (!quiz || quiz.book_quiz)) await addQuestionImage(slide,q,loadImage);
     else placeQuiz(slide,{kind:'choice',...quiz});
     if (q && quiz?.book_quiz) slide.addNotes('퀴즈 '+number+'번 · 정답 '+quiz.answer);
   }
-  return new Blob([await deck.write({ outputType: 'arraybuffer', compression: true })], { type: MIME });
+  const generated=await deck.write({outputType:'arraybuffer',compression:true});
+  if(templateBytes) return fillTemplate(templateBytes,generated,picks,orderedQuizItems(quizzes,appendix),topic,nextTopic,title,onSlideOrder);
+  return new Blob([generated],{type:MIME});
 }
 
 // QuizN text questions use the same exponent notation as slides. Wrap before

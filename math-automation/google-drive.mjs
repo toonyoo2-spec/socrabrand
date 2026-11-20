@@ -128,21 +128,47 @@ function slidesEditUrl(file) {
   return 'https://docs.google.com/presentation/d/' + file.id + '/edit';
 }
 
-export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder, beforeWrite = async () => {}, layout = projectionLayout) {
+const savedSlideIds = new Map();
+function savedId(key) {
+  try { return savedSlideIds.get(key) || globalThis.sessionStorage?.getItem(key); }
+  catch { return savedSlideIds.get(key); }
+}
+function rememberId(key, file) {
+  const url = slidesEditUrl(file);
+  savedSlideIds.set(key,file.id);
+  try { globalThis.sessionStorage?.setItem(key,file.id); } catch { /* In-memory fallback. */ }
+  return url;
+}
+
+export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder, beforeWrite = async () => {}, layout = projectionLayout, priorReceipt) {
   const parent = fileId(folder.id);
   const headers={...connection.headers};
   if (folder.resourceKey) headers['X-Goog-Drive-Resource-Keys']=parent+'/'+folder.resourceKey;
   if (!folder.canAddChildren) throw Error('이 폴더에는 파일을 저장할 수 없습니다.');
+  const key = 'socra-slide/' + parent + '/' + fileId(submission);
+  const candidates = [{id:savedId(key),submission}, priorReceipt].filter(candidate=>candidate?.id);
+  let confirmed;
+  for (const hint of candidates) {
+    const response = await fetch(driveApi+'files/'+fileId(hint.id)+'?supportsAllDrives=true&fields=id,parents,mimeType,trashed,appProperties',{headers,cache:'no-store'});
+    if (response.status===404) continue;
+    const file = await checkGoogleResponse(response,'기존 슬라이드의 저장 위치를 확인하지 못했습니다.');
+    if (file.trashed || file.mimeType!==slidesMime || !file.parents?.includes(parent) || file.appProperties?.socraMathSubmission!==hint.submission) continue;
+    if (hint.submission===submission && file.appProperties.socraMathLayout===layout) return rememberId(key,file);
+    confirmed=file;
+    break;
+  }
+  const submissionFilter = sid => "appProperties has { key='socraMathSubmission' and value='" + fileId(sid) + "' }";
+  const searchIds = [...new Set([submission,priorReceipt?.submission].filter(Boolean))];
   const lookup = new URLSearchParams({
     ...folderQuery(folder),
     q: "trashed = false and '" + parent + "' in parents and mimeType = '" + slidesMime +
-      "' and appProperties has { key='socraMathSubmission' and value='" + fileId(submission) + "' }",
+      "' and (" + searchIds.map(submissionFilter).join(' or ') + ")",
     fields: 'nextPageToken,files(id,mimeType,appProperties)', pageSize: '100',
   });
   const { files } = await fetch(driveApi + 'files?' + lookup, { headers, cache: 'no-store' })
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
-  const current = files.find(file => file.appProperties?.socraMathLayout === layout);
-  if (current) return slidesEditUrl(current);
+  const current = files.find(file => file.appProperties?.socraMathSubmission === submission && file.appProperties?.socraMathLayout === layout);
+  if (current) return rememberId(key,current);
   const predecessors = {
     'han-quiz-ppt-3':['han-lesson-intro-2','han-lesson-intro-1','han-lesson-only-1'],
     'beam-lesson-intro-3':['beam-lesson-intro-2','beam-lesson-intro-1'],
@@ -150,9 +176,10 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   };
   const family = layout.split('@')[0];
   const knownLayouts = [...(predecessors[family] ?? []), family, projectionLayout];
-  const previous = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]));
+  if (family.startsWith('lx-sample-v1-')) knownLayouts.push('han-quiz-ppt-3','beam-lesson-intro-3',...Object.values(predecessors).flat());
+  const previous = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]) || (priorReceipt?.submission && file.appProperties?.socraMathSubmission===priorReceipt.submission));
   if (previous.length > 1) throw Error('같은 제출본의 이전 슬라이드가 두 개 이상 있습니다. 저장 폴더를 확인해 주세요.');
-  const existing = previous[0];
+  const existing = previous[0] ?? confirmed;
   if (typeof blob === 'function') blob = await blob();
   await beforeWrite();
   const path = 'https://www.googleapis.com/upload/drive/v3/files' + (existing ? '/' + fileId(existing.id) : '');
@@ -174,5 +201,5 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   const uploaded = await fetch(location.href, {
     method: 'PUT', headers: { ...headers, 'Content-Type': pptxMime }, body: blob,
   }).then(response => checkGoogleResponse(response, '내 Google Drive에 프레젠테이션을 저장하지 못했습니다.'));
-  return slidesEditUrl(uploaded);
+  return rememberId(key,uploaded);
 }

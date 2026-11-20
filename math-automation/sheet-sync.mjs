@@ -76,8 +76,19 @@ export function buildSheetWrites(target, lesson, submission) {
       ? questionLabel(item) + '\n' + formatQuiz({ kind: 'choice', ...item.quiz_override })
       : questionLabel(item));
   });
+  let base=cellEntries(target.base, submission.selections.filter(q=>q.slot<=target.base.length),questionLabel);
+  const extra=submission.selections.filter(q=>q.slot>target.base.length);
+  if(extra.length) {
+    if(submission.selected_quiz_mode!=='appendix' || target.base.length!==8) throw Error('제출본 문항 번호와 시트 열이 맞지 않습니다.');
+    // The existing sheet reserves I:P for lesson picks. Pair reserves with basics 6–8.
+    for(const q of extra) {
+      const slot=q.slot-3, cell=base.find(([column])=>column===target.base[slot-1]);
+      if(!cell || slot<6 || slot>8)throw Error('예비 문항에 대응하는 기본 문항을 확인해 주세요.');
+      cell[1]='기본 '+slot+'번 · '+cell[1]+'\n예비 '+q.slot+'번 · '+questionLabel(q);
+    }
+  }
   return [
-    ...cellEntries(target.base, submission.selections, questionLabel),
+    ...base,
     ...quizWrites,
   ];
 }
