@@ -2,7 +2,7 @@ import {submissionTemplate,slotLimits} from './lesson-template.mjs?v=3';
 import { lessonIntro } from './intro.mjs?v=1';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=14';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=24';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=25';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=15';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';

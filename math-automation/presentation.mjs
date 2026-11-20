@@ -1,5 +1,5 @@
 import {typeRuns,loadLessonFonts} from './math-type.mjs?v=2';
-import {addGothicQuestion} from './gothic-question.mjs?v=3';
+import {addGothicQuestion} from './gothic-question.mjs?v=4';
 import {fillTemplate} from './template-slides.mjs?v=2';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';

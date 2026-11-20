@@ -95,13 +95,8 @@ async function figureSource(image, bounds){
       data[i+3]=Math.min(255,1.65*Math.max(alpha[j],x?alpha[j-1]:0,x<c.width-1?alpha[j+1]:0,alpha[j-c.width]??0,alpha[j+c.width]??0));
       data[i]=data[i+1]=data[i+2]=255;
     }
-  }else for(let i=0;i<data.length;i+=4){
-    const hi=Math.max(data[i],data[i+1],data[i+2]),lo=Math.min(data[i],data[i+1],data[i+2]);
-    if(hi-lo>8 || lo<250)continue;
-    data[i+3]=Math.round(data[i+3]*(255-lo)/255);
-    data[i]=data[i+1]=data[i+2]=255;
+    ctx.putImageData(pixels,0,0);
   }
-  ctx.putImageData(pixels,0,0);
   const img=node('img','vertical-align:middle;max-width:92%;height:auto;max-height:4.1em;object-fit:contain;margin:0 .16em');
   img.src=c.toDataURL('image/png');await img.decode();
   img.style.width='min('+Math.min(750,c.width*.50)+'px, '+(4.1*c.width/c.height)+'em)';
