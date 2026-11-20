@@ -12,8 +12,13 @@ export function submissionTemplate(course, submission) {
   const modes=new Set((submission.stage_questions ?? []).map(q=>q.stage_mode).filter(Boolean));
   if (submission.quizzes?.length) modes.add('teacher');
   const selected=submission.selected_quiz_mode;
-  if (!selected && modes.size>1) return null; // Historical two-set submission.
+  const legacyPair=!selected && modes.size>1;
   const mode=selected ?? [...modes][0] ?? Object.keys(choices)[0];
+  const [required]=slotLimits(course,legacyPair ? null : mode);
+  const filled=new Set((submission.selections ?? []).filter(p=>p.question_id!=null).map(p=>p.slot));
+  const missing=Array.from({length:required},(_,i)=>i+1).filter(slot=>!filled.has(slot));
+  if (missing.length) throw Error('기본 수업 문항 '+missing.join(', ')+'번을 채워 다시 제출해 주세요.');
+  if (legacyPair) return null; // Historical two-set submission.
   if (!choices[mode] || [...modes].some(value=>value!==mode)) throw Error('제출한 세트와 PPT 양식이 일치하지 않습니다.');
   return choices[mode];
 }
@@ -25,5 +30,7 @@ export function conceptMode(teacherCount, appendixCount, preferred) {
 }
 export function slotLimits(course, mode) {
   if (course?.id==='concept-foundations-han') return mode==='appendix' ? [8,11] : [5,8];
-  return [course?.required_lesson_slots??5,course?.lesson_slots??8];
+  // Review jobs carry the course identity but do not include its slot counts.
+  const rpm=course?.id==='rpm-application-han' || course?.id==='oh-pending';
+  return [course?.required_lesson_slots??(rpm?8:5),course?.lesson_slots??(rpm?11:8)];
 }

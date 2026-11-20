@@ -1,4 +1,4 @@
-import {submissionTemplate,conceptMode,slotLimits} from './lesson-template.mjs';
+import {submissionTemplate,conceptMode,slotLimits} from './lesson-template.mjs?v=2';
 import { lessonIntro } from './intro.mjs?v=1';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=13';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
