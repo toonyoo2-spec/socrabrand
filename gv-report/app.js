@@ -230,7 +230,7 @@
     var t = e.target;
     var tab = t.closest("#report [role=tab]"); if (tab) { showTab(tab.id.slice(2), true); return; }
     var go = t.closest("#report [data-go]"); if (go) { showTab(go.getAttribute("data-go"), true); return; }
-    var pop = t.closest("[data-pop]"); if (pop) { var pk = pop.getAttribute("data-pop"); $(pk + "Sheet").hidden = false; $(pk + "Bg").hidden = false; $(pk + "Sheet").querySelector("[data-popclose]").focus(); return; }
+    var pop = t.closest("[data-pop]"); if (pop) { var pk = pop.getAttribute("data-pop"); $(pk + "Sheet").hidden = false; $(pk + "Bg").hidden = false; $(pk + "Sheet").querySelector(".sheet-body").scrollTop = 0; $(pk + "Sheet").querySelector("[data-popclose]").focus(); return; }
     var pcl = t.closest("[data-popclose]"); if (pcl) { popHide(); return; }
     if (t.closest("#lvOpen")) { lvShow(); return; }
     if (t.closest("#lvClose") || t.closest("#lvBg")) { lvHide(); return; }

@@ -320,8 +320,17 @@
       STAGES.map(function (s) { return '<span style="grid-column:span ' + (s[1] - s[0] + 1) + '"' + (p.lv >= s[0] && p.lv <= s[1] ? ' class="cur"' : "") + ">" + s[2] + "</span>"; }).join("") + '</div><p class="lv9n">레벨 9는 업데이트 예정이에요.</p>';
   }
   var X = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-  var CEFR_POP = '<div class="sheet-bg" id="cefrBg" data-popclose="cefr" hidden></div><div class="sheet lvg" id="cefrSheet" role="dialog" aria-modal="true" aria-labelledby="cefrTitle" hidden><div class="sheet-in"><div class="sheet-head"><b id="cefrTitle">CEFR이란</b><button type="button" data-popclose="cefr" aria-label="닫기">' + X + '</button></div>' +
-    '<div class="sheet-body"><p class="cefr-t">CEFR(Common European Framework of Reference for Languages)은 유럽평의회가 발표한 외국어 능력 평가 국제 표준이에요. 학습자가 외국어로 “실제로 무엇을 할 수 있는지”를 A1부터 C2까지 총 6단계로 구분한 지표예요.</p><ol class="cefr-s" aria-label="CEFR 6단계"><li>A1</li><li>A2</li><li>B1</li><li>B2</li><li>C1</li><li>C2</li></ol></div></div></div>';
+  /* CEFR 안내 팝업. 이름·6단계는 유럽평의회 기준, Basic·Plus와 레벨 연결은 GV 라이팅 레벨 가이드 1쪽 */
+  var CEFR = [["A1", "Breakthrough", "기본적인 의사소통을 하고 간단한 표현을 이해해요."], ["A2", "Waystage", "일상생활에 필요한 간단한 정보를 주고받을 수 있어요."], ["B1", "Threshold", "익숙한 주제의 핵심을 이해하고 경험이나 의견을 표현할 수 있어요."], ["B2", "Vantage", "복잡한 글의 요지를 이해하고 다양한 주제를 논리적으로 표현할 수 있어요."], ["C1", "Effective Operational Proficiency", "길고 복잡한 글을 이해하고 유창하게 의사소통할 수 있어요."], ["C2", "Mastery", "듣고 읽은 내용을 대부분 쉽게 이해하고 미묘한 의미 차이까지 파악할 수 있어요."]];
+  function cefrPop(p) {
+    var me = LEVELS[p.lv] ? LEVELS[p.lv].cefr.split(" ")[0] : "", sub = "", i;
+    for (i = 1; i <= 8; i++) if (me && LEVELS[i].cefr.split(" ")[0] === me) sub += '<li' + (i === p.lv ? ' class="cur" aria-current="step"' : "") + "><b>" + LEVELS[i].cefr + "</b><span>레벨 " + i + " · " + esc(LEVELS[i].short) + "</span></li>";
+    return '<div class="sheet-bg" id="cefrBg" data-popclose="cefr" hidden></div><div class="sheet lvg" id="cefrSheet" role="dialog" aria-modal="true" aria-labelledby="cefrTitle" hidden><div class="sheet-in"><div class="sheet-head"><b id="cefrTitle">CEFR이란</b><button type="button" data-popclose="cefr" aria-label="닫기">' + X + '</button></div><div class="sheet-body">' +
+      '<p class="cefr-t">CEFR(Common European Framework of Reference for Languages)은 유럽평의회가 발표한 외국어 능력 평가 국제 표준이에요. 외국어로 실제로 무엇을 할 수 있는지를 A1부터 C2까지 6단계로 나눠요.</p>' +
+      '<ol class="cefr-l">' + CEFR.map(function (c) { return '<li' + (c[0] === me ? ' class="cur" aria-current="step"' : "") + "><i>" + c[0] + '</i><div><b lang="en">' + c[1] + "</b>" + (c[0] === me ? "<em>지금 배우는 단계</em>" : "") + "<p>" + c[2] + "</p></div></li>"; }).join("") + "</ol>" +
+      (sub ? '<h3 class="cefr-h">Basic과 Plus</h3><p class="cefr-t">GV 라이팅에서는 같은 CEFR 단계를 Basic과 Plus로 나눠요. Basic에서 기본 표현을 익히고, Plus에서 표현을 더 넓혀요.</p><ul class="cefr-b">' + sub + "</ul>" : "") +
+      '<p class="fnote">CEFR은 레벨에서 배우는 내용의 수준이며, 시험으로 측정한 결과는 아니에요.</p></div></div></div>';
+  }
   function levelGuide(p) {
     return '<div class="sheet-bg" id="lvBg" hidden></div><div class="sheet lvg" id="lvSheet" role="dialog" aria-modal="true" aria-labelledby="lvTitle" hidden><div class="sheet-in">' +
       '<div class="sheet-head"><b id="lvTitle">GV 라이팅 레벨별 학습 내용</b><button type="button" id="lvClose" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>' +
@@ -334,7 +343,7 @@
             '<dl><div><dt>CEFR · 참고 학년</dt><dd>' + esc(LEVELS[i].cefr + " · " + LEVELS[i].grade) + "</dd></div><div><dt>학습 목표</dt><dd>" + esc(GUIDE[i].goal) + "</dd></div><div><dt>주요 문법</dt><dd>" + esc(GUIDE[i].gr) + "</dd></div><div><dt>대표 문장</dt><dd lang=\"en\">" + esc(LEVELS[i].rep) + "<small lang=\"ko\">" + esc(GUIDE[i].ko) + "</small></dd></div></dl></details></li>";
         }
         return h + "</ul>";
-      }).join("") + '<p class="fnote">레벨과 학교 학년은 일대일로 맞지 않아요. 학년은 참고로만 봐 주세요.</p></div></div></div>' + CEFR_POP;
+      }).join("") + '<p class="fnote">레벨과 학교 학년은 일대일로 맞지 않아요. 학년은 참고로만 봐 주세요.</p></div></div></div>' + cefrPop(p);
   }
   /* 비포·애프터: 이전 시안의 GV 노트 모양 + 수정 후 답안 */
   function wrote(kd, n) {

@@ -670,8 +670,7 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 /* 팀 피드백 반영 (11/24) */
 .qm { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: 4px; border: 1px solid #B9C4BE; border-radius: 50%; background: #fff; font-size: 12.5px; font-weight: 800; color: var(--t2); position: relative; vertical-align: 1px; }
 .qm::after { content: ""; position: absolute; inset: -11px; }
-.cefr-t { font-size: 15.5px; line-height: 1.75; } .cefr-s { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
-.cefr-s li { padding: 10px 0; text-align: center; font-size: 15px; font-weight: 800; background: var(--green-wash); color: var(--green-ink); }
+.cefr-t { font-size: 15.5px; line-height: 1.75; }
 .soon { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 8px; min-height: 48px; align-items: center; font-size: 14px; color: var(--t2); } .soon b { color: var(--ink); font-size: 14.5px; }
 .defs { margin: 16px 0 0; border-top: 1px solid var(--rule); } .defs > div { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--rule); font-size: 14.5px; line-height: 1.6; } .defs dt { font-weight: 800; } .defs dd { margin: 0; color: var(--t2); text-wrap: pretty; }
 .tipbox { margin-top: 16px; padding: 14px 16px; background: #F3F7F5; border-radius: 8px; } .tipbox b { font-size: 14.5px; font-weight: 800; } .tipbox p { margin-top: 2px; font-size: 14.5px; line-height: 1.65; color: var(--t2); text-wrap: pretty; }
@@ -794,6 +793,9 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 .live-n{background:#E9F4EE;color:#24352C}
 .vb .ctabar .cta:hover{background:#06653D}
 .v-first{margin-top:6px}
+.cefr-t { word-break: keep-all; } .cefr-l, .cefr-b { list-style: none; margin: 18px 0 0; padding: 0; } .cefr-l li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 14px 12px; border-top: 1px solid #E3EAE6; } .cefr-l i { height: 34px; display: grid; place-items: center; border-radius: 10px; background: #F1F4F2; font: 800 15px "Urbanist", "Pretendard Variable", Pretendard, sans-serif; font-style: normal; color: #4B5A52; }
+.cefr-l b { font-size: 15px; font-weight: 800; } .cefr-l em { display: inline-block; margin-left: 8px; font-style: normal; font-size: 13px; font-weight: 800; color: #08794A; } .cefr-l p { margin-top: 2px; font-size: 14.5px; line-height: 1.6; color: #4B5A52; text-wrap: pretty; word-break: keep-all; } .cefr-l .cur { border-radius: 16px; border-color: transparent; background: #E9F4EE; } .cefr-l .cur + li { border-color: transparent; } .cefr-l .cur i { background: #08794A; color: #fff; }
+.sheet .cefr-h { margin: 26px 0 6px; font-size: 17px; font-weight: 800; letter-spacing: -.03em; color: #10221A; } .cefr-b { margin-top: 14px; display: grid; gap: 8px; } .cefr-b li { padding: 12px 14px; border-radius: 14px; background: #F3F7F5; } .cefr-b b { display: block; font-size: 15px; font-weight: 800; } .cefr-b span { font-size: 14.5px; color: #4B5A52; } .cefr-b .cur { background: #E9F4EE; } .cefr-b .cur b { color: #08794A; }
 .vb .note .aft,.vb .note .aft b,.vb .note .eyebrow{color:#08794A}.vb .v-lv9 li:not(.ok):not(.me) b{color:#66736C}
 /* AI 작성 안내 */
 .ai-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.55; color: var(--sub); }
@@ -906,7 +908,7 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="render.js?v=1124p"></script>
-<script src="app.js?v=1124p"></script>
+<script src="render.js?v=1124q"></script>
+<script src="app.js?v=1124q"></script>
 </body>
 </html>
