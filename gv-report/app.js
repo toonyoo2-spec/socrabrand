@@ -87,7 +87,7 @@
     catch (err) { if (expired(err)) return; return showMessage("목록을 불러오지 못했어요", "잠시 뒤 새로고침해 주세요."); }
     $("gate").hidden = true; $("reportWrap").hidden = false;
     var want = new URLSearchParams(location.search).get("r");
-    var first = byId(want) || reports.filter(function (x) { return x.is_sample; })[0] || reports.filter(function (x) { return x.status === "ready"; })[0] || reports[0];
+    var first = byId(want) || reports.filter(function (x) { return x.variant === "새 시안"; })[0] || reports.filter(function (x) { return x.is_sample; })[0] || reports.filter(function (x) { return x.status === "ready"; })[0] || reports[0];
     renderList();
     if (first) openReport(first.id, false); else showEmptyCenter();
     pollTimer();
@@ -106,12 +106,14 @@
       '<em class="' + (ready ? "ready" : "wait") + '">' + (ready ? "완성" : "준비 중") + "</em><small>" + esc(meta) + "</small></button></li>";
   }
   function renderList() {
-    var sample = reports.filter(function (x) { return x.is_sample; }), rest = reports.filter(function (x) { return !x.is_sample; });
+    var draft = reports.filter(function (x) { return x.variant === "새 시안"; }), others = reports.filter(function (x) { return x.variant !== "새 시안"; });
+    var sample = others.filter(function (x) { return x.is_sample; }), rest = others.filter(function (x) { return !x.is_sample; });
     rest.sort(function (a, b) { return (a.status === b.status ? 0 : a.status === "ready" ? -1 : 1) || String(a.name || "~").localeCompare(String(b.name || "~"), "ko") || a.id.localeCompare(b.id); });
-    sampleBox.innerHTML = sample.length ? '<div class="sample"><span class="sample-tag">' + STAR + "대표 샘플</span><p>처음 보시는 분은 이 리포트부터 보세요." + (sample.length > 1 ? " ‘수정 샘플’은 학부모용 화면, ‘지표 전체 보기’는 평가 항목을 모두 펼친 화면이에요." : " 다른 리포트도 같은 기준으로 만들었어요.") + "</p><ul class=\"rlist\">" + sample.map(item).join("") + "</ul></div>" : "";
+    var draftHtml = draft.length ? '<div class="sample"><span class="sample-tag">' + STAR + "새 시안</span><p>요약·어휘·문법·총평 구성이에요. 학생마다 문구가 어떻게 달라지는지 비교해 보세요.</p><ul class=\"rlist\">" + draft.map(item).join("") + "</ul></div>" : "";
+    sampleBox.innerHTML = draftHtml + (sample.length ? '<div class="sample"><span class="sample-tag">' + STAR + (draft.length ? "이전 샘플" : "대표 샘플") + "</span><p>" + (draft.length ? "지난번 시안이에요. 비교할 때 보세요." : "처음 보시는 분은 이 리포트부터 보세요.") + (sample.length > 1 ? " ‘수정 샘플’은 학부모용 화면, ‘지표 전체 보기’는 평가 항목을 모두 펼친 화면이에요." : " 다른 리포트도 같은 기준으로 만들었어요.") + "</p><ul class=\"rlist\">" + sample.map(item).join("") + "</ul></div>" : "");
     $("allLabel").textContent = "전체 학생 " + rest.length + "명";
     rlist.innerHTML = rest.length ? rest.map(item).join("") : '<li class="list-empty">아직 다른 학생이 없어요. 위 칸에 학생 ID를 넣어 만들어 보세요.</li>';
-    $("listCount").textContent = "모두 " + reports.length + "명 · 학생을 누르면 가운데에 리포트가 나와요";
+    $("listCount").textContent = "리포트 " + reports.length + "개 · 누르면 가운데에 리포트가 나와요";
     filterList();
   }
   function filterList() {
@@ -237,6 +239,7 @@
       var send = $("praiseSend"); if (send) { send.disabled = !on; send.textContent = on ? "칭찬 카드 보내기" : "보낼 말을 골라 주세요"; }
       return;
     }
+    if (t.closest("#consultBtn")) { toast("지금은 시안이에요. 실제 리포트에서는 상담 신청으로 이어져요."); return; }
     if (t.closest("#praiseSend")) { toast("지금은 미리보기예요. 실제 리포트에서는 칭찬 카드가 아이에게 전달돼요."); return; }
     if (wide.matches) { var it = t.closest("#report [data-item]"); if (it) { pickSection(it.getAttribute("data-item"), true); fbText.focus(); } }
   });

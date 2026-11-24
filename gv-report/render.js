@@ -43,7 +43,7 @@
   }
   function note(kind, n) {
     var hasHl = n.lines.some(function (l) { return /\{\{/.test(l[0]); }), hasFix = n.lines.some(function (l) { return /\[\[/.test(l[0]); });
-    return '<section class="note' + (kind === "now" ? " now" : "") + '" data-item="note-' + kind + '"><div class="note-top"><div><span class="eyebrow">' + (kind === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + "</span></div>" +
+    return '<section class="note' + (kind === "now" ? " now" : "") + '" data-item="note-' + kind + '"><div class="note-top"><div><span class="eyebrow">' + esc(n.label || (kind === "now" ? "지금" : "처음")) + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + "</span></div>" +
       '<ul class="lines">' + n.lines.map(function (l) { return '<li><span class="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span></li>"; }).join("") + "</ul>" +
       ((hasHl || hasFix) ? '<div class="legend">' + (hasHl ? '<span><i class="k1"></i>영어로 쓰지 못한 부분</span>' : "") + (hasFix ? '<span><i class="k2"></i>다듬을 부분</span>' : "") + "</div>" : "") + "</section>";
   }
@@ -82,7 +82,7 @@
     var nx = LEVELS[d.level + 1];
     return '<div class="sheet-bg" id="lvBg" hidden></div><div class="sheet" id="lvSheet" role="dialog" aria-modal="true" aria-labelledby="lvTitle" hidden><div class="sheet-in">' +
       '<div class="sheet-head"><b id="lvTitle">지금 배우는 수준</b><button type="button" id="lvClose" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>' +
-      '<div class="sheet-body" data-item="level"><p class="sh-title">LV ' + d.level + "은<br>" + esc(lv.title) + "예요</p>" +
+      '<div class="sheet-body" data-item="level"><p class="sh-title">LV ' + d.level + jo(d.level, "은", "는") + "<br>" + esc(lv.title) + "예요</p>" +
       '<p class="lead">레벨마다 배우는 문장의 수준이에요.<br>' + esc(nm) + "의 실력을 매긴 게 아니라,<br>지금 배우는 내용의 수준을 보여 드려요.</p>" +
       '<ol class="ladder" aria-label="GV 라이팅 레벨별 수준">' + ladder + "</ol>" +
       '<div class="lv-detail"><div><span>LV ' + d.level + ' 대표 문장</span><p class="ex">' + esc(lv.rep) + "</p></div>" +
@@ -194,7 +194,111 @@
     return h;
   }
 
+  /* ---------- 새 시안 (요약 · 어휘 · 문법 · 총평): "배운 영어를 혼자 꺼내 쓸 수 있나요?" ----------
+     데이터는 숫자만 받고, 화면 문장은 아래 규칙으로 만든다. 선은 임시값이고 기준이 정해지면 RULE만 고친다. */
+  var RULE = {
+    lesson: 60,        /* 레벨마다 레슨 수 */
+    cur: 10,           /* 이만큼 레슨을 해야 '지금 배우는 레벨'로 본다 */
+    gap: 10,           /* 처음 정답률 - 힌트 없이 정답률(%p)이 이 이상이면 '힌트와 함께' */
+    vLow: 60, gLow: 50 /* 정답률이 이 아래면 '익히는 중' */
+  };
+  function jo(n, a, b) { return "136780".indexOf(String(n).slice(-1)) >= 0 ? a : b; } /* 숫자 뒤 조사: 1이 2가 */
+  function facts(x) {
+    var ok = x.ok / x.q * 100, solo = x.solo / x.q * 100;
+    return { q: x.q, ok: x.ok, solo: x.solo, okP: ok, soloP: solo, gap: ok - solo, ok10: Math.round(ok / 10), solo10: Math.round(solo / 10) };
+  }
+  function num(n) { return Number(n).toLocaleString(); }
+  function vKind(f) { return f.gap >= RULE.gap ? "hint" : f.okP < RULE.vLow ? "low" : "solo"; }
+  function gKind(f) { return f.gap >= RULE.gap ? "hint" : f.okP < RULE.gLow ? "low" : "solo"; }
+  function progress(levels) {
+    var L = levels.slice().sort(function (a, b) { return a[0] - b[0]; }), big = L.filter(function (x) { return x[1] >= RULE.cur; });
+    var top = big.length ? big[big.length - 1] : L.reduce(function (m, x) { return x[1] > m[1] ? x : m; }), lv = top[0], n = top[1], left = RULE.lesson - n;
+    var done = L.filter(function (x) { return x[1] >= RULE.lesson && x[0] < lv; }).map(function (x) { return x[0]; });
+    var o = { lv: lv, n: n, left: left };
+    if (left <= 0) { o.h = "레벨 " + lv + " 레슨 " + RULE.lesson + "개를\n**모두 마쳤어요**"; o.s = "다음은 레벨 " + (lv + 1) + jo(lv + 1, "이에요.", "예요."); }
+    else if (done.length) { o.h = "레벨 " + done.join("·") + jo(done[done.length - 1], "을", "를") + " 마치고\n**레벨 " + lv + " 레슨 " + n + "개**를 했어요"; o.s = "레벨 " + lv + jo(lv, "은", "는") + " " + RULE.lesson + "개 중 " + left + "개 남았어요."; }
+    else { o.h = "레벨 " + lv + " 레슨 " + RULE.lesson + "개 중\n**" + n + "개**를 마쳤어요"; o.s = left + "개를 더 하면 레벨 " + lv + jo(lv, "이", "가") + " 끝나요."; }
+    return o;
+  }
+  function vText(f, k) {
+    if (k === "hint") return ["단어 10개 중 **" + f.solo10 + "개**는\n힌트 없이 써요", "힌트를 본 것까지 더하면\n처음에 " + f.ok10 + "개를 맞혀요."];
+    if (k === "low") return ["단어를 **익히는 중**이에요", "지금은 10개 중 " + f.solo10 + "개를 혼자 써요."];
+    return ["단어 10개 중\n**" + f.solo10 + "개**를 혼자 써요", ""];
+  }
+  function gText(f, k) {
+    if (k === "hint") return ["문장 10개 중\n**" + f.ok10 + "개**를 맞혀요", "힌트 없이는 " + f.solo10 + "개예요."];
+    if (k === "low") return ["문장 만들기를\n**익히는 중**이에요", "지금은 10개 중 " + f.solo10 + "개를 혼자 써요."];
+    return ["문장 10개 중 **" + f.solo10 + "개**는\n힌트 없이 한 번에 써요", ""];
+  }
+  function verdict(p, v, vk, g, gk) {
+    var DK = ["한→영 다이어리", "한국어 문장을 보고\n영어로 짧게 써 봐요."], DO = ["내 생각 쓰기 다이어리", "오늘 있었던 일이나 내 생각을\n영어로 써 봐요."];
+    var DR = ["에코런 드릴링", "배운 단어를\n힌트 없이 다시 써 봐요."], WD = ["에코런 단어 연습", "배운 단어를 다시 보고\n정확하게 써 봐요."], GM = ["GV 마스터", "배운 문장을\n다시 써 봐요."];
+    if (vk === "low" || gk === "low") return { next: "배운 레벨 복습하기",
+      say: ["지금 레벨 " + p.lv + jo(p.lv, "을", "를") + " 배우고 있어요.", (g.solo10 === v.solo10 ? "문장과 단어 모두 10개 중 " + g.solo10 : "문장은 10개 중 " + g.solo10 + "개, 단어는 10개 중 " + v.solo10) + "개를 혼자 써요. 배운 레벨을 한 번 복습하면 좋아요."], recs: [DK, gk === "low" ? GM : WD] };
+    if (vk === "hint" && gk === "hint") return { next: "힌트를 열기 전에 먼저 써 보기",
+      say: ["처음에 단어는 10개 중 " + v.ok10 + "개, 문장은 10개 중 " + g.ok10 + "개를 맞혀요.", "힌트 없이 쓴 것은 단어 " + v.solo10 + "개, 문장 " + g.solo10 + "개예요. 틀려도 괜찮으니 힌트를 열기 전에 먼저 한 번 써 보세요."], recs: [DK, g.soloP <= v.soloP ? GM : DR] };
+    if (vk === "hint") return { next: "단어를 힌트 없이 떠올리기",
+      say: ["배운 문장은 10개 중 " + g.solo10 + "개를 힌트 없이 써요.", "다음은 단어예요. 지금은 10개 중 " + v.solo10 + "개를 힌트 없이 쓰고 있으니, 힌트를 열기 전에 먼저 한 번 써 보세요."], recs: [DK, DR] };
+    if (gk === "hint") return { next: "문장을 힌트 없이 만들기",
+      say: ["배운 단어는 10개 중 " + v.solo10 + "개를 혼자 써요.", "다음은 문장이에요. 지금은 10개 중 " + g.solo10 + "개를 힌트 없이 쓰고 있으니, 힌트를 열기 전에 먼저 한 번 써 보세요."], recs: [DK, GM] };
+    return { next: "배운 표현으로 내 생각 쓰기",
+      say: [(g.solo10 === v.solo10 ? "문장과 단어 모두 10개 중 " + g.solo10 : "문장은 10개 중 " + g.solo10 + "개, 단어는 10개 중 " + v.solo10) + "개를 혼자 써요.", "이제 배운 표현으로 내 생각을 영어로 써 보세요."], recs: [DO, p.left > 0 ? ["다음 레슨", "레벨 " + p.lv + " 레슨을\n이어서 해 봐요."] : ["다음 레벨", "레벨 " + (p.lv + 1) + " 레슨을\n시작해 봐요."]] };
+  }
+  function ten(f, showHint, unit) {
+    var s = "", i, hintN = showHint ? Math.max(0, f.ok10 - f.solo10) : 0;
+    for (i = 0; i < 10; i++) s += '<i class="' + (i < f.solo10 ? "on" : i < f.solo10 + hintN ? "hint" : "") + '"></i>';
+    var lab = unit + " 10개 중 힌트 없이 " + f.solo10 + "개" + (hintN ? ", 힌트를 보고 " + hintN + "개" : "");
+    return '<div class="ten" role="img" aria-label="' + esc(lab) + '">' + s + '</div><div class="ten-key"><span><i class="on"></i>힌트 없이 ' + f.solo10 + "개</span>" + (hintN ? '<span><i class="hint"></i>힌트 보고 ' + hintN + "개</span>" : "") + "</div>";
+  }
+  function countFold(f, unit) {
+    return '<details class="basis"><summary>어떻게 셌나요?<svg width="14" height="14" aria-hidden="true"><use href="#chev"/></svg></summary><div class="basis-body tk-count">' +
+      "<div><span>힌트 없이 처음에 맞힌 " + unit + "</span><b>" + num(f.solo) + " / " + num(f.q) + " <small>" + f.soloP.toFixed(1) + "%</small></b></div>" +
+      "<div><span>처음에 맞힌 " + unit + " 전체</span><b>" + num(f.ok) + " / " + num(f.q) + " <small>" + f.okP.toFixed(1) + "%</small></b></div>" +
+      "<p>처음 낸 답만 세고, 10개 기준으로 바꿔 보여 드려요.</p></div></details>";
+  }
+  function blockCard(key, b, title, name) {
+    var word = title.split(" ").pop();
+    return '<section class="card" data-item="' + key + '" data-name="' + esc(name) + '"><span class="eyebrow">쌓인 ' + title + '</span><div class="blk"><div><span>배운 ' + word + '</span><b>' + num(b[0]) + "<small>개</small></b></div><div class=\"in\"><span>지금 자신 있게 쓰는 " + word + "</span><b>" + num(b[1]) + "<small>개</small></b></div></div>" +
+      '<span class="blk-bar" aria-hidden="true"><i style="width:' + pct(b[1], b[0]) + '%"></i></span><p class="how">앱 점수가 80점 이상이면 자신 있게 쓰는 ' + word + jo2(word) + ".<br>복습하면 늘고, 오래 쉬면 줄 수 있어요.</p></section>";
+  }
+  function jo2(w) { var c = w.charCodeAt(w.length - 1); return (c - 44032) % 28 ? "이에요" : "예요"; }
+  function renderTalk(id, d) {
+    var nm = d.name || "학생", p = progress(d.levels), v = facts(d.v), g = facts(d.g), vk = vKind(v), gk = gKind(g), vt = vText(v, vk), gt = gText(g, gk), end = verdict(p, v, vk, g, gk);
+    var lv = LEVELS[p.lv] || LEVELS[1], N = d.notes;
+    var others = d.levels.filter(function (x) { return x[0] !== p.lv && x[1] < RULE.lesson; }).map(function (x) { return "레벨 " + x[0] + " " + x[1] + "개"; });
+    var tabs = [["summary", "요약"], ["vocab", "어휘"], ["gram", "문법"], ["total", "총평"]];
+    var h = '<div class="app sheet-tpl talk"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>GV 라이팅 리포트</span>' +
+      '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
+      '<nav class="tabbar pad" aria-label="리포트 탭"><div class="tabs" role="tablist">' +
+      tabs.map(function (t, i) { return '<button type="button" role="tab" id="t-' + t[0] + '" aria-controls="p-' + t[0] + '" aria-selected="' + (i ? "false" : "true") + '"' + (i ? ' tabindex="-1"' : "") + ">" + t[1] + "</button>"; }).join("") + '</div></nav><main class="pad">';
+    function panel(k, body) { return '<div class="panel" role="tabpanel" id="p-' + k + '" aria-labelledby="t-' + k + '" tabindex="0"' + (k === "summary" ? "" : " hidden") + ">" + body + "</div>"; }
+    function answer(key, name, q, t, extra) { return '<section class="card ans" data-item="' + key + '" data-name="' + name + '">' + (key === "talk-sum" ? '<p class="who">' + esc(nm) + "의 학습 리포트</p>" : "") + '<span class="eyebrow">' + q + "</span><h2>" + rich(t[0], "em") + "</h2>" + (t[1] ? '<p class="lead">' + rich(t[1]) + "</p>" : "") + extra + "</section>"; }
+
+    h += panel("summary",
+      answer("talk-sum", "어디까지 왔나요", "얼마나 꾸준히, 어디까지 왔나요?", [p.h, p.s],
+        '<div class="pg"><span class="pg-bar" role="img" aria-label="' + esc("레벨 " + p.lv + " 레슨 " + RULE.lesson + "개 중 " + p.n + "개") + '"><i style="width:' + pct(p.n, RULE.lesson) + '%"></i></span><span class="pg-k"><b>' + p.n + "</b> / " + RULE.lesson + "</span></div>" +
+        (others.length ? '<p class="how">함께 한 레슨: ' + esc(others.join(", ")) + "</p>" : "")) +
+      '<section class="card" data-item="talk-level" data-name="지금 배우는 수준"><span class="eyebrow">지금 배우는 수준</span><button type="button" class="level-strip" id="lvOpen" aria-haspopup="dialog" style="margin-top:10px"><span class="ls-lv">LV ' + p.lv + '</span><span class="ls-txt"><b>' + esc(lv.title) + "</b><small>CEFR " + esc(lv.cefr) + " · 눌러서 자세히 보기</small></span>" + CHEV + "</button></section>" +
+      '<section class="card" data-item="talk-days" data-name="학습한 날"><span class="eyebrow">꾸준함</span><div class="blk"><div><span>학습한 날</span><b>' + num(d.days) + "<small>일</small></b></div>" + (d.week ? "<div><span>한 주에</span><b>" + d.week + "<small>일 정도</small></b></div>" : "") + "</div>" +
+      '<p class="how">' + esc(d.period[0] + " ~ " + d.period[1]) + "<br>GV 라이팅과 다른 학습을 한 날을 모두 셌어요.</p></section>" +
+      '<div class="jump"><button type="button" class="jump-b" data-go="vocab"><span>어휘</span><b>' + rich(vt[0], "em") + "</b>" + CHEV + '</button><button type="button" class="jump-b" data-go="gram"><span>문법</span><b>' + rich(gt[0], "em") + "</b>" + CHEV + "</button></div>");
+
+    h += panel("vocab", answer("talk-vocab", "단어를 혼자 쓰나요", "배운 단어를 혼자 쓸 수 있나요?", vt, ten(v, vk === "hint", "단어") + countFold(v, "단어")) + blockCard("talk-vblock", d.vb, "단어", "배운 단어 수"));
+
+    h += panel("gram", answer("talk-gram", "문장을 혼자 만드나요", "배운 문장을 혼자 만들 수 있나요?", gt, ten(g, gk === "hint", "문장") + countFold(g, "문장")) + blockCard("talk-gblock", d.gb, "문장 패턴", "배운 문장 패턴 수") +
+      (N ? '<section class="card" style="padding-bottom:16px" data-item="talk-notes" data-name="직접 쓴 문장"><span class="eyebrow">직접 쓴 문장</span><h2>처음 쓴 글과 최근 쓴 글</h2><p class="lead">레슨 하나에서 처음 쓴 문장을 모두 옮겼어요.<br>작은 글씨는 쓰려고 했던 뜻이에요.</p></section>' + note("then", N.first) + note("now", N.recent) + '<section class="card" data-item="talk-notesay" data-name="문장 설명"><p class="say" style="margin-top:0">' + rich(N.say) + "</p></section>" : ""));
+
+    h += panel("total",
+      '<section class="card teacher" data-item="talk-lia" data-name="리아 선생님의 한마디"><div class="t-head"><span class="t-avatar"><svg aria-hidden="true"><use href="#cube"/></svg></span><div><b>리아 선생님의 한마디</b><small>' + esc(nm) + " 학부모님께</small></div></div>" +
+      end.say.map(function (s, i) { return i ? "<p>" + esc(s).replace(/요\. /g, "요.<br>") + "</p>" : '<p class="first">' + esc(s) + "</p>"; }).join("") + '<div class="next-goal"><span>다음에 연습할 것</span><p>' + esc(end.next) + "</p></div></section>" +
+      '<section class="card" data-item="talk-recs" data-name="추천 학습"><span class="eyebrow">추천 학습</span><h2>이렇게 이어 가 보세요</h2><ol class="todo">' + end.recs.map(function (r, i) { return '<li><i aria-hidden="true">' + (i + 1) + "</i><div><b>" + esc(r[0]) + "</b><span>" + rich(r[1]) + "</span></div></li>"; }).join("") + "</ol>" +
+      '<p class="how">나이와 학습 기간에 따라 더 맞는 방법이 있을 수 있어요.</p><button type="button" class="btn" id="consultBtn" style="margin-top:16px">학습 상담 받기</button>' + AI_NOTE + "</section>");
+
+    return h + '</main><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelSheet({ level: p.lv }, nm);
+  }
+
   window.renderReport = function (id, d) {
+    if (d.template === "talk") return renderTalk(id, d);
     if (d.template === "all") return renderAll(id, d);
     if (d.template === "sheet") return renderSheet(id, d);
     var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생";
