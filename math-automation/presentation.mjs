@@ -287,7 +287,9 @@ async function addBookProblem(slide, question, loadImage) {
   if (question.gothic_content?.stem) {
     return addGothicQuestion(slide, question, loadImage);
   }
-  const {canvas, scale} = await projectionProblem(question, loadImage);
+  // Keep the complete source region, including whitespace within word problems.
+  const layout = {...question.projection_layout, stemRows:undefined};
+  const {canvas, scale} = await projectionProblem({...question, projection_layout:layout}, loadImage);
   const ratio = Math.min(scale, BODY_WIDTH / canvas.width, BODY_HEIGHT / canvas.height);
   slide.addImage({data:canvas.toDataURL('image/png'), x:SLIDE_MARGIN, y:BODY_TOP,
     w:canvas.width * ratio, h:canvas.height * ratio});
