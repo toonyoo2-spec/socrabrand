@@ -283,6 +283,16 @@ async function projectionProblem(question, loadImage) {
   } finally {image.close();}
 }
 
+async function addBookProblem(slide, question, loadImage) {
+  if (question.gothic_content?.stem) {
+    return addGothicQuestion(slide, question, loadImage);
+  }
+  const {canvas, scale} = await projectionProblem(question, loadImage);
+  const ratio = Math.min(scale, BODY_WIDTH / canvas.width, BODY_HEIGHT / canvas.height);
+  slide.addImage({data:canvas.toDataURL('image/png'), x:SLIDE_MARGIN, y:BODY_TOP,
+    w:canvas.width * ratio, h:canvas.height * ratio});
+}
+
 function placeQuiz(slide, quiz) {
   const options = quiz.kind === 'choice' ? quiz.choices.split('\n') : [];
   if (quiz.kind === 'choice' && (options.length !== 4 || options.some(choice => !choice.trim()) || !/^[1-4]$/.test(quiz.answer))) {
@@ -332,7 +342,7 @@ export async function buildPresentation({
 
   for (const question of picks) {
     const slide = await frame(deck, question.section, bookSource(question,false)+(question.gothic_content?.tag && !question.label.includes(question.gothic_content.tag)?' · '+question.gothic_content.tag:''), 'lesson', question.book);
-    await addGothicQuestion(slide, question, loadImage);
+    await addBookProblem(slide, question, loadImage);
     slide.addNotes('수업 문항 ' + question.slot + '번 · ' + question.book + ' ' + question.label);
   }
   for (const [i,{q,quiz}] of orderedQuizItems(quizzes,appendix).entries()) {
@@ -341,7 +351,7 @@ export async function buildPresentation({
     const source = q ? bookSource(q,false) : '';
     const slide = await frame(deck, q?.stage_mode==='practice' ? '실전 스테이지' : (q ? (q.quizOne ? '퀴즈앤 1' : '퀴즈앤 2') : '퀴즈앤 1'),
       number+'번'+(source?' · '+source:''), !q || q.quizOne ? 'teacher' : 'appendix');
-    if (q && (!quiz || quiz.book_quiz)) await addGothicQuestion(slide,q,loadImage);
+    if (q && (!quiz || quiz.book_quiz)) await addBookProblem(slide,q,loadImage);
     else placeQuiz(slide,{kind:'choice',...quiz});
     if (q && quiz?.book_quiz) slide.addNotes('퀴즈 '+number+'번 · 정답 '+quiz.answer);
   }

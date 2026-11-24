@@ -2,7 +2,7 @@ import {submissionTemplate,slotLimits} from './lesson-template.mjs?v=3';
 import { lessonIntro } from './intro.mjs?v=1';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=14';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=25';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=26';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=15';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -1690,11 +1690,6 @@ async function slideBlob(row, submission) {
   const review=submission.math_submission_reviews;
   const approved=review?.status==='passed' ? review.crop_fixes : {};
   const {withAsset,loadPage} = await questionAssets(course,[...submission.selections,...appendix]);
-  const needsText = [...submission.selections,...appendix].some(p=>(!p.quiz_override || p.quiz_override.book_quiz) && !withAsset(p).gothic_content?.stem);
-  if (needsText) {
-    const status=await rpc('math_request_gothic_review',{p_id:submission.id});
-    throw Error(status==='attention' ? '교재 원문 또는 도형을 검수해야 합니다. 제출 검수 결과를 확인해 주세요.' : '제출 문항의 수식 조판과 원본 대조가 진행 중입니다. 검수 완료 후 다시 받아 주세요.');
-  }
   const template = submissionTemplate(course,submission,lesson.quiz_mode);
   const next = (currentCourse()?.id===course.id ? state.lessons.find(l=>l.lesson===lesson.lesson+1) : null)
     ?? (template ? (await table('math_lessons',{course_id:'eq.'+course.id,lesson:'eq.'+(lesson.lesson+1),select:'topic',limit:1}))[0] : null);
