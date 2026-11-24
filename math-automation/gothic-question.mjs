@@ -177,6 +177,33 @@ function* textLines(t){
   }
   if(line)yield line;
 }
+// Use a native rich-text line for ordinary prose. Independently positioned boxes
+// reflow at different widths in PowerPoint and Google Slides when a font changes.
+function addProseLines(slide, block, xy) {
+  const bounds=block.getBoundingClientRect();
+  const walker=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);
+  let line;
+  function emit(){
+    if(!line || !line.runs.some(r=>r.text.trim()))return;
+    slide.addText(line.runs,{...xy(line.left,line.top),w:(bounds.right-line.left)/PX,
+      h:(line.bottom-line.top)/PX,margin:0,fontFace:FACE,bold:true,color:'FFFFFF',
+      fontSize:line.size*.75,align:'left',valign:'mid',wrap:false,lang:'ko-KR',
+      paraSpaceBefore:0,paraSpaceAfter:0});
+  }
+  while(walker.nextNode()){
+    const text=walker.currentNode,el=text.parentElement,css=getComputedStyle(el);
+    for(const part of textLines(text)){
+      const mid=(part.top+part.bottom)/2;
+      if(!line || Math.abs(line.mid-mid)>parseFloat(css.fontSize)*.4){
+        emit();line={mid,left:part.left,top:part.top,bottom:part.bottom,size:parseFloat(css.fontSize),runs:[]};
+      }
+      line.top=Math.min(line.top,part.top);line.bottom=Math.max(line.bottom,part.bottom);
+      line.runs.push({text:part.text,options:{fontFace:el.dataset.face??FACE,
+        italic:css.fontStyle==='italic',underline:Boolean(el.closest('u'))}});
+    }
+  }
+  emit();
+}
 export async function addGothicQuestion(slide,q,loadImage){
   const g=q.gothic_content;
   if(!g?.stem)throw Error(q.book+' '+q.label+' · 제출본의 문항 원문을 준비하고 있습니다.');
@@ -203,9 +230,16 @@ export async function addGothicQuestion(slide,q,loadImage){
     for(const img of root.querySelectorAll('img')){
       const r=img.getBoundingClientRect();slide.addImage({data:img.src,...xy(r.left,r.top),w:r.width/PX,h:r.height/PX,altText:'원본 도형'});
     }
+    const prose=new Set();
+    for(const block of root.querySelectorAll('div')){
+      // Fractions, superscripts, tables, diagrams and grids have independent geometry.
+      if(getComputedStyle(block).display!=='block' || block.querySelector('div,table,img,sup,sub,[data-rule],span:not([data-face])'))continue;
+      addProseLines(slide,block,xy);prose.add(block);
+    }
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
     while(walker.nextNode()){
       const t=walker.currentNode,css=getComputedStyle(t.parentElement);
+      if(prose.has(t.parentElement.closest('div')))continue;
       for(const l of textLines(t)){
         if(!l.text.trim())continue;
         slide.addText(l.text,{...xy(l.left,l.top),w:(l.right-l.left+12)/PX,h:(l.bottom-l.top)/PX,margin:0,fontFace:t.parentElement.dataset.face??FACE,italic:css.fontStyle==='italic',bold:true,color:'FFFFFF',fontSize:parseFloat(css.fontSize)*.75,
