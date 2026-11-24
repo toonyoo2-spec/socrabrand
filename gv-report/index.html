@@ -604,13 +604,13 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 .sec .cap, .fnote { margin-top: 12px; font-size: 13px; color: var(--t2); line-height: 1.6; text-wrap: pretty; }
 .sec .cap.c { text-align: center; }
 /* 레벨 경로 */
-.path { list-style: none; margin: 18px 0 0; padding: 0; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; }
+.path { list-style: none; margin: 18px 0 0; padding: 0; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; }
 .path i { display: block; height: 10px; background: var(--no); overflow: hidden; }
 .path li:first-child i { border-radius: 5px 0 0 5px; } .path li:last-child i { border-radius: 0 5px 5px 0; }
 .path u { display: block; height: 100%; background: var(--solo); }
 .path b { display: block; margin-top: 6px; text-align: center; font-size: 13px; font-weight: 700; color: #7C8781; line-height: 22px; font-variant-numeric: tabular-nums; }
 .path .cur b { width: 22px; margin-inline: auto; border-radius: 50%; background: var(--deep); color: var(--ink); }
-.stages { margin-top: 6px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; }
+.stages { margin-top: 6px; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; }
 .stages span { padding-top: 6px; border-top: 1px solid #CBD4CF; font-size: 12px; font-weight: 500; line-height: 1.4; color: var(--t2); text-align: center; text-wrap: balance; }
 .stages .cur { border-top: 2px solid var(--deep); padding-top: 5px; color: var(--ink); font-weight: 700; }
 .lvnow { margin-top: 22px; } .sec h2 + .lvnow { margin-top: 12px; }
@@ -661,6 +661,19 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 .cmt { margin-top: 18px; padding-left: 14px; border-left: 3px solid var(--solo); }
 .cmt p { font-size: 15.5px; line-height: 1.65; text-wrap: pretty; } .cmt p + p { margin-top: 2px; }
 .cmt strong { font-weight: 800; }
+/* 팀 피드백 반영 (11/24) */
+.qm { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: 4px; border: 1px solid #B9C4BE; border-radius: 50%; background: #fff; font-size: 12.5px; font-weight: 800; color: var(--t2); position: relative; vertical-align: 1px; }
+.qm::after { content: ""; position: absolute; inset: -11px; }
+.cefr-t { font-size: 15.5px; line-height: 1.75; } .cefr-s { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+.cefr-s li { padding: 10px 0; text-align: center; font-size: 15px; font-weight: 800; background: var(--green-wash); color: var(--green-ink); }
+.soon { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 8px; min-height: 48px; align-items: center; font-size: 14px; color: var(--t2); } .soon b { color: var(--ink); font-size: 14.5px; }
+.defs { margin: 16px 0 0; border-top: 1px solid var(--rule); } .defs > div { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--rule); font-size: 14.5px; line-height: 1.6; } .defs dt { font-weight: 800; } .defs dd { margin: 0; color: var(--t2); text-wrap: pretty; }
+.tipbox { margin-top: 16px; padding: 14px 16px; background: #F3F7F5; border-radius: 8px; } .tipbox b { font-size: 14.5px; font-weight: 800; } .tipbox p { margin-top: 2px; font-size: 14.5px; line-height: 1.65; color: var(--t2); text-wrap: pretty; }
+.noteband { margin: 18px -20px 0; padding: 18px 16px; background: #EFF4F1; display: grid; gap: 14px; }
+.lines .aft { display: block; margin-top: 5px; font-size: 15px; font-weight: 600; line-height: 1.5; color: var(--green-ink); } .lines .aft em { display: block; font-style: normal; font-size: 12px; font-weight: 700; color: var(--t2); }
+.rp .note .eyebrow { font-size: 13px; } .rp .note .fix { text-decoration: underline wavy #F08A5D; text-decoration-thickness: 1.5px; text-underline-offset: 5px; } .rp .note .hl { background: linear-gradient(transparent 52%, var(--mark) 52%, var(--mark) 92%, transparent 92%); padding: 0 2px; }
+.exbox { margin-top: 16px; padding: 16px; border: 1px solid var(--rule); border-radius: 8px; } .exbox span { font-size: 13px; font-weight: 700; color: var(--green-ink); } .exbox p { margin-top: 4px; font-size: 17px; font-weight: 700; line-height: 1.5; } .exbox small { display: block; margin-top: 4px; font-size: 14px; line-height: 1.55; color: var(--t2); }
+.ctabar { position: sticky; bottom: 0; z-index: 14; padding: 10px 20px calc(12px + env(safe-area-inset-bottom, 0px)); background: #fff; border-top: 1px solid var(--rule); box-shadow: 0 -10px 24px -18px rgba(20, 23, 26, .5); } .ctabar .cta { margin-top: 0; min-height: 50px; }
 /* 작성 문장 */
 .wr { margin-top: 18px; border-top: 2px solid var(--deep); }
 .wr-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 12px; }
@@ -811,7 +824,7 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="render.js?v=1124d"></script>
-<script src="app.js?v=1124d"></script>
+<script src="render.js?v=1124f"></script>
+<script src="app.js?v=1124f"></script>
 </body>
 </html>

@@ -222,12 +222,15 @@
     var h = location.hash.slice(1); showTab(tabIds().indexOf(h) >= 0 ? h : "summary", false);
     buildSections();
   }
+  function popHide() { var s = $("cefrSheet"); if (!s || s.hidden) return; s.hidden = true; $("cefrBg").hidden = true; var o = document.querySelector("#report [data-pop=cefr]"); if (o) o.focus(); }
   function lvShow() { var s = $("lvSheet"), b = $("lvBg"); if (!s) return; s.hidden = false; b.hidden = false; var body = s.querySelector(".sheet-body"); if (body) body.scrollTop = 0; $("lvClose").focus(); }
   function lvHide() { var s = $("lvSheet"), b = $("lvBg"); if (!s || s.hidden) return; s.hidden = true; b.hidden = true; var o = $("lvOpen"); if (o) o.focus(); }
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("#report [role=tab]"); if (tab) { showTab(tab.id.slice(2), true); return; }
     var go = t.closest("#report [data-go]"); if (go) { showTab(go.getAttribute("data-go"), true); return; }
+    var pop = t.closest("[data-pop]"); if (pop) { var pk = pop.getAttribute("data-pop"); $(pk + "Sheet").hidden = false; $(pk + "Bg").hidden = false; $(pk + "Sheet").querySelector("[data-popclose]").focus(); return; }
+    var pcl = t.closest("[data-popclose]"); if (pcl) { popHide(); return; }
     if (t.closest("#lvOpen")) { lvShow(); return; }
     if (t.closest("#lvClose") || t.closest("#lvBg")) { lvHide(); return; }
     if (t.closest("#chatOpen")) { openSide("fbPanel"); return; }
@@ -244,7 +247,7 @@
     if (wide.matches) { var it = t.closest("#report [data-item]"); if (it) { pickSection(it.getAttribute("data-item"), true); fbText.focus(); } }
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { lvHide(); closeSide("fbPanel"); closeSide("listPanel"); return; }
+    if (e.key === "Escape") { lvHide(); popHide(); closeSide("fbPanel"); closeSide("listPanel"); return; }
     if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && e.target.closest && e.target.closest("#report [role=tab]")) {
       var have = tabIds();
       var cur = have.indexOf(document.querySelector("#report [role=tab][aria-selected=true]").id.slice(2));
