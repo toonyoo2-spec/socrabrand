@@ -250,6 +250,16 @@
     if (k === "low") return ["새로운 " + w.word + o + " 배우며 레슨을 이어 가고 있어요.", "GV 마스터로 배운 레슨을 복습하면 더 정확하게 쓸 수 있어요."];
     return ["맞힌 " + w.word + josa(w.word, "은", "는") + " 대부분 힌트 없이 스스로 썼어요.", "레슨을 마친 뒤 GV 마스터로 복습하면 배운 표현을 더 오래 기억할 수 있어요."];
   }
+  /* 대치라이브 추천 (지희님·은비님 11/24 합의): 독립 문장 완성률 70% 이상이면 한 단계 위, 40~70%는 같은 레벨, 40% 미만은 이전 레벨과 함께.
+     위·아래 레벨이 없으면 가장 가까운 레벨만 안내한다 */
+  var LIVE = ["Beginner", "Intermediate", "Advanced", "Master"], LIVE_NOTE = "우리 아이에게 어떤 수업이 잘 맞을지 궁금하시면 상담을 신청해 주세요. 학습 기록을 바탕으로 수준에 맞는 강의를 추천해 드려요.";
+  function live(p, g) {
+    var i = p.lv <= 2 ? 0 : p.lv <= 4 ? 1 : p.lv <= 6 ? 2 : 3, s = g.pct.solo, nm;
+    if (s >= 70) { nm = LIVE[Math.min(3, i + 1)]; return ["대치라이브 " + nm, nm + " 레벨의 대치라이브에 도전해 더 발전된 표현을 익혀보세요."]; }
+    if (s >= 40) { nm = LIVE[i]; return ["대치라이브 " + nm, nm + " 레벨의 대치라이브에서 배운 문장 패턴을 자신의 것으로 만들어 보세요."]; }
+    nm = i ? LIVE[i - 1] + "~" + LIVE[i] : LIVE[i];
+    return ["대치라이브 " + nm, nm + " 레벨의 대치라이브를 들으며 문장 구성 능력을 키워보세요."];
+  }
   function verdict(d, p, v, vk, g, gk) {
     var KE = ["다이어리 (한→영)", "하고 싶은 말을 영어 문장으로 만들어 보는 활동이에요. 배운 표현을 자기 이야기에 써 보기 좋아요."], FR = ["다이어리 (내 생각)", "자기 생각을 영어로 표현해 보는 활동이에요. 배운 표현을 다양한 주제에 써 볼 수 있어요."];
     var DR = ["에코런 단어 연습", "단어를 듣고 따라 말하며 익히는 활동이에요. 짧게 자주 해 보면 좋을 것 같아요."], GM = ["GV 마스터", "배운 GV 레슨을 다시 복습하는 활동이에요. 문법과 어휘를 오래 기억하는 데 도움이 돼요."];
@@ -269,7 +279,7 @@
       head: { s: "단어와 문장을 힌트 없이 스스로 쓰는 경우가 많아요.", v: "문장은 힌트 없이 쓰는 경우가 많고, 단어는 힌트를 함께 보고 있어요.", g: "단어는 힌트 없이 쓰는 경우가 많고, 문장은 힌트를 함께 보고 있어요.", b: "힌트를 활용해 단어와 문장을 완성하고 있어요.", l: "새로운 단어와 문장을 배우며 레슨을 이어 가고 있어요." }[c],
       good: ["잘하고 있어요", { s: "힌트 없이 단어와 문장 쓰기", v: "힌트 없이 문장 쓰기", g: "힌트 없이 단어 쓰기", b: v.okP >= g.okP ? "단어 완성하기" : "문장 완성하기", l: "레슨 " + num(d.lessons) + "개 학습" }[c]],
       next: ["다음 한 걸음", { s: "배운 표현으로 생각 말하기", v: "힌트 없이 단어 쓰기", g: "힌트 없이 문장 쓰기", b: "힌트 보기 전에 먼저 쓰기", l: "배운 레슨 복습하기" }[c]],
-      recs: { s: [FR, p.full ? (LEVELS[p.lv + 1] ? ["레벨 " + (p.lv + 1) + " 레슨", "다음 레벨의 레슨을 시작해요."] : GM) : ["레벨 " + p.lv + " 다음 레슨", "지금 레벨의 남은 레슨 " + (RULE.lesson - p.n) + "개를 이어서 학습해요."]], v: [KE, DR], g: [KE, GM], b: [KE, g.soloP <= v.soloP ? GM : DR], l: [KE, gk === "low" ? GM : DR] }[c] };
+      recs: { s: [FR, p.full ? (LEVELS[p.lv + 1] ? ["레벨 " + (p.lv + 1) + " 레슨", "다음 레벨의 레슨을 시작해요."] : GM) : ["레벨 " + p.lv + " 다음 레슨", "지금 레벨의 남은 레슨 " + (RULE.lesson - p.n) + "개를 이어서 학습해요."]], v: [KE, DR], g: [KE, GM], b: [KE, g.soloP <= v.soloP ? GM : DR], l: [KE, gk === "low" ? GM : DR] }[c].concat([live(p, g)]) };
   }
   /* 첫 시도 결과 막대: 힌트 없이 정답 · 힌트 사용 정답 · 오답을 한 줄로 */
   var SEG = [["solo", "힌트 없이 정답"], ["hint", "힌트 사용 정답"]], ALL = [["solo"], ["hint"], ["no"]];
@@ -326,7 +336,7 @@
     }).join("") + "</ul>" + (hl || fx ? '<div class="legend">' + (hl ? '<span><i class="k1"></i>한국어로 쓴 부분</span>' : "") + (fx ? '<span><i class="k2"></i>다시 볼 부분</span>' : "") + "</div>" : "") + "</div>";
   }
   function recIcon(t) {
-    var k = /다이어리/.test(t) ? '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/>' : /에코런/.test(t) ? '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 010 6M19 6.5a8 8 0 010 11"/>' : /마스터/.test(t) ? '<path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 3v4.5h-4.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
+    var k = /라이브/.test(t) ? '<path d="M3 6h12v12H3zM15 10.5l6-3.5v10l-6-3.5"/>' : /다이어리/.test(t) ? '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/>' : /에코런/.test(t) ? '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 010 6M19 6.5a8 8 0 010 11"/>' : /마스터/.test(t) ? '<path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 3v4.5h-4.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
     return '<i><svg viewBox="0 0 24 24" aria-hidden="true">' + k + "</svg></i>";
   }
   /* 소제목 아이콘 (A·B 공통) */
@@ -374,7 +384,7 @@
     h += panel("total", '<section class="v-hero v-lia" data-item="b-lia" data-name="리아 선생님의 한마디"><div><p class="v-who">리아 선생님의 한마디</p><h2 class="v-h">' + esc(end.good[1]) + ',<br><b>잘하고 있어요</b></h2></div><img src="img/echo_thumb.png" alt="" width="92" height="135"></section>',
       '<section class="v-memo"><p>' + end.say.map(function (s) { return esc(s); }).join("</p><p>") + "</p></section>" +
       (p.lv < 9 ? sec("next", "다음 학습 과정", '<div class="v-step"><i class="a">' + p.lv + '</i><p class="v-sm">' + (p.full ? "레벨 " + p.lv + " 레슨을 모두 마쳤어요." : "레벨 " + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.") + '</p><span class="bar"></span><span></span><i class="z">' + (p.lv + 1) + "</i><b>" + (nx ? esc(nx.title) : "2027년 상반기에 안내해 드릴 예정이에요") + "</b></div>" + (nx ? '<div class="v-ex"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" : "")) : "") +
-      sec("recs", "추천 학습", '<ul class="v-rc">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<div><b>" + esc(r[0]) + "</b><p>" + esc(r[1]) + "</p></div></li>"; }).join("") + "</ul>" + AI_NOTE));
+      sec("recs", "추천 학습", '<ul class="v-rc">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<div><b>" + esc(r[0]) + "</b><p>" + esc(r[1]) + "</p></div></li>"; }).join("") + '</ul><p class="live-n">' + LIVE_NOTE + "</p>" + AI_NOTE));
     return h + '</main><div class="ctabar" data-item="b-cta" data-name="학습 상담 버튼"><button type="button" class="cta" id="consultBtn">학습 상담 신청</button></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
   }
 
@@ -419,7 +429,7 @@
       (p.lv < 9 ? sec("talk-next", "다음 학습 과정", "다음 학습 과정", "", nx ?
         '<div class="lvnow"><p class="lvnow-t"><b>레벨 ' + (p.lv + 1) + "</b>" + esc(nx.title) + '</p><p class="lvnow-g">' + esc(GUIDE[p.lv + 1].goal) + '</p></div><div class="exbox"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" +
         (p.full ? "" : '<p class="cap">레벨 ' + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.</p>") : '<p class="lvnow-g">레벨 9의 학습 내용은 2027년 상반기에 안내해 드릴 예정이에요.</p>') : "") +
-      sec("talk-recs", "추천 학습", "추천 학습", "", '<ol class="recs">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></li>"; }).join("") + "</ol>" + AI_NOTE));
+      sec("talk-recs", "추천 학습", "추천 학습", "", '<ol class="recs">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></li>"; }).join("") + '</ol><p class="live-n">' + LIVE_NOTE + "</p>" + AI_NOTE));
 
     return h + '</main><div class="ctabar" data-item="talk-cta" data-name="학습 상담 버튼"><button type="button" class="cta" id="consultBtn">학습 상담 신청</button></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
   }
