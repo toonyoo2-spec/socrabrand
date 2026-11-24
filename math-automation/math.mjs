@@ -253,7 +253,7 @@ const submissionClock = new Intl.DateTimeFormat('ko-KR', {
 
 function reviewLabel(submission) {
   const review=submission?.math_submission_reviews;
-  return {queued:'검수 대기',running:'검수 중',passed:'검수 완료',attention:'확인 필요'}[review?.status] ?? '';
+  return {queued:'고딕 변환 대기',running:'고딕 변환 중',passed:'',attention:''}[review?.status] ?? '';
 }
 
 function renderTeacherStatus(cell, submission, started) {
@@ -270,7 +270,7 @@ function renderTeacherStatus(cell, submission, started) {
   time.setAttribute('aria-label', time.title);
   cell.append(time);
   const review = reviewLabel(submission);
-  if (review) cell.append(element('small', [review,submission.math_submission_reviews.detail].filter(Boolean).join(' · '),'submission-time'));
+  if (review) cell.append(element('small', review,'submission-time'));
 }
 
 async function loadProgress() {
@@ -1420,8 +1420,8 @@ function renderSubmission() {
     const submitted = new Date(state.submitted.submitted_at).toLocaleString('ko-KR');
     $('submit-status').textContent = '제출 완료 · ' + submitted + (reviewLabel(state.submitted) ? ' · '+reviewLabel(state.submitted) : '') + (state.submitted.sync_status === 'synced' ? ' · Google 반영 완료' : ' · Google 연결 대기');
   } else {
-    $('submit-status').textContent = mode ? '수업 문항과 퀴즈앤 ' + quizModes[mode].number + '을 제출하고 검수를 요청합니다.'
-      : '제출하면 이 회차의 자료를 저장하고 검수를 요청합니다.';
+    $('submit-status').textContent = mode ? '수업 문항과 퀴즈앤 ' + quizModes[mode].number + '을 제출하면 교재 문항의 고딕 변환이 자동으로 시작됩니다.'
+      : '제출하면 이 회차의 자료를 저장하고 교재 문항을 고딕으로 변환합니다.';
   }
 }
 
