@@ -325,6 +325,10 @@
       return '<li><span class="en" lang="en">' + rich(l[0]) + "</span>" + (l[2] ? '<span class="aft" lang="en"><em lang="ko">수정 후 답안</em>' + rich(l[2]) + "</span>" : "") + '<span class="ko">' + esc(l[1]) + "</span></li>";
     }).join("") + "</ul>" + (hl || fx ? '<div class="legend">' + (hl ? '<span><i class="k1"></i>한국어로 쓴 부분</span>' : "") + (fx ? '<span><i class="k2"></i>다시 볼 부분</span>' : "") + "</div>" : "") + "</div>";
   }
+  function recIcon(t) {
+    var k = /다이어리/.test(t) ? '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/>' : /에코런/.test(t) ? '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 010 6M19 6.5a8 8 0 010 11"/>' : /마스터/.test(t) ? '<path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 3v4.5h-4.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
+    return '<i><svg viewBox="0 0 24 24" aria-hidden="true">' + k + "</svg></i>";
+  }
   function renderTalk(id, d) {
     var nm = d.name || "학생", p = progress(d.levels), v = facts(d.v), g = facts(d.g), vk = kind(v, RULE.vLow), gk = kind(g, RULE.gLow), end = verdict(d, p, v, vk, g, gk);
     var lv = LEVELS[p.lv] || { title: "레벨 " + p.lv + " 과정", cefr: "안내 예정" }, gd = GUIDE[p.lv] || { goal: "" }, nx = LEVELS[p.lv + 1], N = d.notes;
@@ -342,7 +346,7 @@
       (d.access ? '<div><span>학습일 비율</span><b>' + pc(d.days / d.access * 100) + "</b></div>" : "") + "</div>";
 
     h += panel("summary",
-      '<section class="hero" data-item="talk-sum" data-name="종합 결과"><div class="hero-t"><div><p class="hero-k">GV 라이팅 학습 리포트</p><h1>' + esc(nm) + '</h1><p class="hero-s">' + months(d.period) + '개월 동안, 우리&nbsp;자녀의 영어로 표현하는 힘은 어떻게 성장해&nbsp;왔을까요?</p></div><img src="img/echo_thumb.png" alt="" width="82" height="120"></div>' +
+      '<section class="hero" data-item="talk-sum" data-name="종합 결과"><div class="hero-t"><div><p class="hero-k">GV 라이팅 학습 리포트</p><h1>' + esc(nm) + '</h1><p class="hero-s">' + months(d.period) + '개월 동안, 우리&nbsp;자녀의 <b>영어로 표현하는&nbsp;힘</b>은 어떻게 성장해&nbsp;왔을까요?</p></div><img src="img/echo_thumb.png" alt="" width="82" height="120"></div>' +
       '<dl><div><dt>현재 레벨</dt><dd>레벨 ' + p.lv + " " + (p.full ? "학습 완료" : "학습 중") + "</dd></div><div><dt>학습 기간</dt><dd>" + esc(d.period.join(" – ")) + "</dd></div></dl></section>" +
       sec("talk-level", "학습 레벨", "학습 레벨", "", levelPath(d, p) +
         '<div class="lvnow"><p class="lvnow-t"><b>레벨 ' + p.lv + "</b>" + esc(lv.title) + '</p><p class="lvnow-g">' + esc(gd.goal) + "</p></div>" +
@@ -361,12 +365,12 @@
         '<div class="noteband">' + wrote("then", N.first) + wrote("now", N.recent) + '</div><div class="cmt">' + N.say.split("\n").map(function (t) { return "<p>" + rich(t) + "</p>"; }).join("") + "</div>") : ""));
 
     h += panel("total",
-      sec("talk-lia", "리아 선생님의 한마디", "리아 선생님의 한마디", "", '<div class="op">' + end.say.map(function (s) { return "<p>" + esc(s).replace(/(단어|문장) (\d)/g, "$1&nbsp;$2") + "</p>"; }).join("") + "</div>" +
+      sec("talk-lia", "리아 선생님의 한마디", "리아 선생님의 한마디", "", '<div class="op">' + end.say.map(function (s) { return "<p>" + esc(s).replace(/(단어|문장) (\d)/g, "$1&nbsp;$2").replace(/(\d+(?:\.\d+)?%의 (?:단어|문장)|아주 훌륭해요|더 높은 수준의 학습|힌트를 열기 전에 먼저 써 보면|배운 레슨을 복습하면)/g, "<mark>$1</mark>") + "</p>"; }).join("") + "</div>" +
         '<div class="pair2"><div><span>' + end.good[0] + "</span><b>" + esc(end.good[1]) + '</b></div><div class="nx"><span>' + end.next[0] + "</span><b>" + esc(end.next[1]) + "</b></div></div>") +
       (p.lv < 9 ? sec("talk-next", "다음 학습 과정", "다음 학습 과정", "", nx ?
         '<div class="lvnow"><p class="lvnow-t"><b>레벨 ' + (p.lv + 1) + "</b>" + esc(nx.title) + '</p><p class="lvnow-g">' + esc(GUIDE[p.lv + 1].goal) + '</p></div><div class="exbox"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" +
         (p.full ? "" : '<p class="cap">레벨 ' + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.</p>") : '<p class="lvnow-g">레벨 9의 학습 내용은 2027년 상반기에 안내해 드릴 예정이에요.</p>') : "") +
-      sec("talk-recs", "추천 학습", "추천 학습", "", '<ol class="recs">' + end.recs.map(function (r) { return "<li><b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></li>"; }).join("") + "</ol>" + AI_NOTE));
+      sec("talk-recs", "추천 학습", "추천 학습", "", '<ol class="recs">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></li>"; }).join("") + "</ol>" + AI_NOTE));
 
     return h + '</main><div class="ctabar" data-item="talk-cta" data-name="학습 상담 버튼"><button type="button" class="cta" id="consultBtn">학습 상담 신청</button></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
   }
