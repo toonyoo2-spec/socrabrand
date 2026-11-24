@@ -320,15 +320,14 @@
       STAGES.map(function (s) { return '<span style="grid-column:span ' + (s[1] - s[0] + 1) + '"' + (p.lv >= s[0] && p.lv <= s[1] ? ' class="cur"' : "") + ">" + s[2] + "</span>"; }).join("") + '</div><p class="lv9n">레벨 9는 업데이트 예정이에요.</p>';
   }
   var X = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-  /* CEFR 안내 팝업. 이름·6단계는 유럽평의회 기준, Basic·Plus와 레벨 연결은 GV 라이팅 레벨 가이드 1쪽 */
+  /* CEFR 안내 팝업. 이름·6단계는 유럽평의회 기준, Basic·Plus는 따로 설명하지 않고 커리큘럼 팝업으로 보여 준다(지희님 11/24) */
   var CEFR = [["A1", "Breakthrough", "기본적인 의사소통을 하고 간단한 표현을 이해해요."], ["A2", "Waystage", "일상생활에 필요한 간단한 정보를 주고받을 수 있어요."], ["B1", "Threshold", "익숙한 주제의 핵심을 이해하고 경험이나 의견을 표현할 수 있어요."], ["B2", "Vantage", "복잡한 글의 요지를 이해하고 다양한 주제를 논리적으로 표현할 수 있어요."], ["C1", "Effective Operational Proficiency", "길고 복잡한 글을 이해하고 유창하게 의사소통할 수 있어요."], ["C2", "Mastery", "듣고 읽은 내용을 대부분 쉽게 이해하고 미묘한 의미 차이까지 파악할 수 있어요."]];
   function cefrPop(p) {
-    var me = LEVELS[p.lv] ? LEVELS[p.lv].cefr.split(" ")[0] : "", sub = "", i;
-    for (i = 1; i <= 8; i++) if (me && LEVELS[i].cefr.split(" ")[0] === me) sub += '<li' + (i === p.lv ? ' class="cur" aria-current="step"' : "") + "><b>" + LEVELS[i].cefr + "</b><span>레벨 " + i + " · " + esc(LEVELS[i].short) + "</span></li>";
+    var me = LEVELS[p.lv] ? LEVELS[p.lv].cefr.split(" ")[0] : "";
     return '<div class="sheet-bg" id="cefrBg" data-popclose="cefr" hidden></div><div class="sheet lvg" id="cefrSheet" role="dialog" aria-modal="true" aria-labelledby="cefrTitle" hidden><div class="sheet-in"><div class="sheet-head"><b id="cefrTitle">CEFR이란</b><button type="button" data-popclose="cefr" aria-label="닫기">' + X + '</button></div><div class="sheet-body">' +
       '<p class="cefr-t">CEFR(Common European Framework of Reference for Languages)은 유럽평의회가 발표한 외국어 능력 평가 국제 표준이에요. 외국어로 실제로 무엇을 할 수 있는지를 A1부터 C2까지 6단계로 나눠요.</p>' +
       '<ol class="cefr-l">' + CEFR.map(function (c) { return '<li' + (c[0] === me ? ' class="cur" aria-current="step"' : "") + "><i>" + c[0] + '</i><div><b lang="en">' + c[1] + "</b>" + (c[0] === me ? "<em>지금 배우는 단계</em>" : "") + "<p>" + c[2] + "</p></div></li>"; }).join("") + "</ol>" +
-      (sub ? '<h3 class="cefr-h">Basic과 Plus</h3><p class="cefr-t">GV 라이팅에서는 같은 CEFR 단계를 Basic과 Plus로 나눠요. Basic에서 기본 표현을 익히고, Plus에서 표현을 더 넓혀요.</p><ul class="cefr-b">' + sub + "</ul>" : "") +
+      '<button type="button" class="v-lnk" data-pop="cur" aria-haspopup="dialog">리얼 아카데미 커리큘럼</button>' +
       '<p class="fnote">CEFR은 레벨에서 배우는 내용의 수준이며, 시험으로 측정한 결과는 아니에요.</p></div></div></div>';
   }
   function levelGuide(p) {
@@ -343,7 +342,7 @@
             '<dl><div><dt>CEFR · 참고 학년</dt><dd>' + esc(LEVELS[i].cefr + " · " + LEVELS[i].grade) + "</dd></div><div><dt>학습 목표</dt><dd>" + esc(GUIDE[i].goal) + "</dd></div><div><dt>주요 문법</dt><dd>" + esc(GUIDE[i].gr) + "</dd></div><div><dt>대표 문장</dt><dd lang=\"en\">" + esc(LEVELS[i].rep) + "<small lang=\"ko\">" + esc(GUIDE[i].ko) + "</small></dd></div></dl></details></li>";
         }
         return h + "</ul>";
-      }).join("") + '<p class="fnote">레벨과 학교 학년은 일대일로 맞지 않아요. 학년은 참고로만 봐 주세요.</p></div></div></div>' + cefrPop(p);
+      }).join("") + '<p class="fnote">레벨과 학교 학년은 일대일로 맞지 않아요. 학년은 참고로만 봐 주세요.</p></div></div></div>' + cefrPop(p) + window.curriculumPopup(p.lv);
   }
   /* 비포·애프터: 이전 시안의 GV 노트 모양 + 수정 후 답안 */
   function wrote(kd, n) {
@@ -351,6 +350,14 @@
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
       return '<li><span class="en" lang="en">' + rich(l[0]) + "</span>" + (l[2] ? '<span class="aft" lang="en"><em lang="ko">수정 후 답안</em>' + rich(l[2]) + "</span>" : "") + '<span class="ko">' + esc(l[1]) + "</span></li>";
     }).join("") + "</ul>" + (hl || fx ? '<div class="legend">' + (hl ? '<span><i class="k1"></i>한국어로 쓴 부분</span>' : "") + (fx ? '<span><i class="k2"></i>다시 볼 부분</span>' : "") + "</div>" : "") + "</div>";
+  }
+  /* 학생 원문 (지희님 11/24): AI 개입 없는 데이터. 레벨 1~4는 Stage 2 첫 입력, 레벨 5 이상은 Stage 3 1차 에세이와 G-block 조건 달성 여부.
+     data.orig = { lv, lesson, lines: [[학생 원문, G-block 패턴]] } 또는 { lv, lesson, essay, gs: [[G-block 패턴, 달성 여부(true/false)]] } */
+  function origin(o) {
+    var at = "레벨 " + o.lv + " 레슨 " + o.lesson;
+    return '<p class="v-tx">' + (o.essay ? at + "에서 학생이 1차로 쓴 에세이예요." : "힌트를 가장 많이 사용한 레슨에서 학생이 직접 입력한 문장이에요.") + '</p><div class="noteband"><div class="note now"><div class="note-top"><div><span class="eyebrow">학생 원문</span></div><span class="stamp">' + at + "</span></div>" +
+      (o.essay ? '<p class="og-e" lang="en">' + esc(o.essay) + '</p></div></div><ul class="og-g"><li class="og-h">G-block 패턴</li>' + o.gs.map(function (g) { return '<li><span lang="en">' + esc(g[0]) + "</span><b" + (g[1] ? ' class="ok"' : "") + ">" + (g[1] ? "달성" : "미달성") + "</b></li>"; }).join("") + "</ul>" :
+        '<ul class="lines">' + o.lines.map(function (l) { return '<li><span class="en" lang="en">' + esc(l[0]) + '</span><span class="aft" lang="en"><em lang="ko">G-block 패턴</em>' + esc(l[1]) + "</span></li>"; }).join("") + "</ul></div></div>");
   }
   function recIcon(t) {
     var k = /라이브/.test(t) ? '<path d="M3 6h12v12H3zM15 10.5l6-3.5v10l-6-3.5"/>' : /다이어리/.test(t) ? '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/>' : /에코런/.test(t) ? '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 010 6M19 6.5a8 8 0 010 11"/>' : /마스터|복습/.test(t) ? '<path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 3v4.5h-4.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
@@ -392,12 +399,12 @@
     var h = '<div class="app vb"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><span>GV 라이팅</span><button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
       '<nav class="tabbar pad" aria-label="리포트 탭"><div class="v-tabs" role="tablist">' + tabs.map(function (t, i) { return '<button type="button" role="tab" id="t-' + t[0] + '" aria-controls="p-' + t[0] + '" aria-selected="' + (i ? "false" : "true") + '"' + (i ? ' tabindex="-1"' : "") + ">" + t[1] + "</button>"; }).join("") + "</div></nav><main>";
     h += panel("summary", '<section class="v-hero" data-item="b-sum" data-name="종합 결과"><p class="v-who">' + esc(nm) + '</p><h1 class="v-h">' + months(d.period) + "개월 동안, 우리&nbsp;자녀의 <b>영어로 표현하는&nbsp;힘</b>은 어떻게 성장해&nbsp;왔을까요?</h1>" + roadMap(p.n) + '<p class="v-cap"><span>레벨 ' + p.lv + " 레슨</span><span><b>" + p.n + "</b> / " + RULE.lesson + "개</span></p></section>",
-      sec("level", "학습 레벨", '<ol class="v-lv9" aria-label="레벨 1부터 9">' + l9 + '</ol><p class="lv9n">레벨 9는 업데이트 예정이에요.</p><p class="v-lvt">' + esc(lv.title) + '</p><p class="v-tx">' + esc(gd.goal) + '</p><dl class="v-facts">' + (p.done.length ? "<div><dt>학습 완료</dt><dd>레벨 " + p.done.join(" · ") + "</dd></div>" : "") + "<div><dt>CEFR <button type='button' class='qm' data-pop='cefr' aria-label='CEFR 설명 보기' aria-haspopup='dialog'>?</button></dt><dd>" + esc(lv.cefr) + "</dd></div></dl>" + (p.others.length ? '<p class="v-sm">이 밖에 ' + p.others.map(function (x) { return "레벨 " + x[0] + " 레슨 " + x[1] + "개"; }).join(", ") + "를 학습했어요.</p>" : "") + '<button type="button" class="v-lnk" id="lvOpen" aria-haspopup="dialog">레벨별 학습 내용</button>') +
+      sec("level", "학습 레벨", '<ol class="v-lv9" aria-label="레벨 1부터 9">' + l9 + '</ol><p class="lv9n">레벨 9는 업데이트 예정이에요.</p><p class="v-lvt">' + esc(lv.title) + '</p><p class="v-tx">' + esc(gd.goal) + '</p><dl class="v-facts">' + (p.done.length ? "<div><dt>학습 완료</dt><dd>레벨 " + p.done.join(" · ") + "</dd></div>" : "") + "<div><dt>CEFR <button type='button' class='qm' data-pop='cefr' aria-label='CEFR 설명 보기' aria-haspopup='dialog'>?</button></dt><dd>" + esc(lv.cefr) + "</dd></div></dl>" + (p.others.length ? '<p class="v-sm">이 밖에 ' + p.others.map(function (x) { return "레벨 " + x[0] + " 레슨 " + x[1] + "개"; }).join(", ") + "를 학습했어요.</p>" : "") + '<button type="button" class="v-lnk" id="lvOpen" aria-haspopup="dialog">레벨별 학습 내용</button><button type="button" class="v-lnk" data-pop="cur" aria-haspopup="dialog">리얼 아카데미 커리큘럼</button>') +
       sec("areas", "영역별 결과", '<p class="v-tx">' + esc(end.head) + '</p><div class="v-rings"><button type="button" data-go="vocab">' + ring(v, 116, 15, WH, true) + "<b>어휘 (V-block)</b><span>" + VW.acc + '</span></button><button type="button" data-go="gram">' + ring(g, 116, 15, WH, true) + "<b>문법 (G-block)</b><span>" + GW.acc + '</span></button></div><p class="v-leg"><span><i style="background:var(--green)"></i>힌트 없이 정답</span><span><i style="background:var(--v-hint)"></i>힌트 사용 정답</span></p><p class="v-sm v-first">퍼센트는 문항을 처음 풀었을 때 맞힌 비율이에요.</p>') +
       sec("days", "학습 참여", '<p class="v-blk"><b>' + num(d.days) + "</b><span>일 학습" + (d.access ? " · 앱 접속 <strong>" + num(d.access) + "일</strong> 중" : "") + "</span></p>" + (d.access ? '<div class="v-ln"><i style="width:' + (d.days / d.access * 100).toFixed(1) + '%"></i></div>' : "") + '<p class="v-sm" style="margin-top:10px">' + esc(d.period.join(" – ")) + " 기준이며, GV 라이팅이 아닌 학습을 한 날도 포함돼요.</p>"));
     var V = skill("vocab", "어휘 학습 결과", v, vk, VW, d.vb), Q = skill("gram", "문법 학습 결과", g, gk, GW, d.gb);
     h += panel("vocab", V[0], V[1]);
-    h += panel("gram", Q[0], Q[1] + (N ? sec("notes", "작성 문장 비교", '<p class="v-tx">피드백을 받기 전, 처음 제출한 문장이에요.</p><div class="noteband">' + wrote("then", N.first) + wrote("now", N.recent) + '</div><div class="v-say">' + N.say.split("\n").map(function (t) { return "<p>" + rich(t) + "</p>"; }).join("") + "</div>") : ""));
+    h += panel("gram", Q[0], Q[1] + (d.orig ? sec("notes", "학생 원문", origin(d.orig)) : N ? sec("notes", "작성 문장 비교", '<p class="v-tx">예시 문장이에요. AI 개입 없이 학생이 직접 입력한 원문으로 바꿀 예정이에요.</p><div class="noteband">' + wrote("then", N.first) + wrote("now", N.recent) + '</div><div class="v-say">' + N.say.split("\n").map(function (t) { return "<p>" + rich(t) + "</p>"; }).join("") + "</div>") : ""));
     h += panel("total", '<section class="v-hero v-lia" data-item="b-lia" data-name="리아 선생님의 한마디"><div><p class="v-who">리아 선생님의 한마디</p><h2 class="v-h">' + esc(end.good[1]) + ',<br><b>잘하고 있어요</b></h2></div><img src="img/echo_thumb.png" alt="" width="92" height="135"></section>',
       '<section class="v-memo"><p>' + end.say.map(function (s) { return esc(s); }).join("</p><p>") + "</p></section>" +
       (p.lv < 9 ? sec("next", "다음 학습 과정", '<div class="v-step"><i class="a">' + p.lv + '</i><p class="v-sm">' + (p.full ? "레벨 " + p.lv + " 레슨을 모두 마쳤어요." : "레벨 " + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.") + '</p><span class="bar"></span><span></span><i class="z">' + (p.lv + 1) + "</i><b>" + (nx ? esc(nx.title) : "2027년 상반기에 안내해 드릴 예정이에요") + "</b></div>" + (nx ? '<div class="v-ex"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" : "")) : "") +

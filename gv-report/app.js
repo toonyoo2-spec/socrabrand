@@ -223,14 +223,18 @@
     var h = location.hash.slice(1); showTab(tabIds().indexOf(h) >= 0 ? h : "summary", false);
     buildSections();
   }
-  function popHide() { var s = $("cefrSheet"); if (!s || s.hidden) return; s.hidden = true; $("cefrBg").hidden = true; var o = document.querySelector("#report [data-pop=cefr]"); if (o) o.focus(); }
+  var popFrom = null; /* 팝업을 연 버튼. 닫으면 그 자리로 돌아간다 */
+  function popHide(keep) { ["cefr", "cur"].forEach(function (k) { var s = $(k + "Sheet"); if (!s || s.hidden) return; s.hidden = true; $(k + "Bg").hidden = true; if (!keep && popFrom && popFrom.isConnected) popFrom.focus(); }); }
+  function popShow(b) { var k = b.getAttribute("data-pop"), inside = b.closest(".sheet"); popHide(true); if (!inside) popFrom = b; $(k + "Sheet").hidden = false; $(k + "Bg").hidden = false; $(k + "Sheet").querySelector(".sheet-body").scrollTop = 0; $(k + "Sheet").querySelector("[data-popclose]").focus(); }
+  function curTab(k) { document.querySelectorAll("#curSheet [data-cur]").forEach(function (b) { var on = b.getAttribute("data-cur") === k; b.setAttribute("aria-pressed", String(on)); $("cup-" + b.getAttribute("data-cur")).hidden = !on; }); $("curSheet").querySelector(".sheet-body").scrollTop = 0; }
   function lvShow() { var s = $("lvSheet"), b = $("lvBg"); if (!s) return; s.hidden = false; b.hidden = false; var body = s.querySelector(".sheet-body"); if (body) body.scrollTop = 0; $("lvClose").focus(); }
   function lvHide() { var s = $("lvSheet"), b = $("lvBg"); if (!s || s.hidden) return; s.hidden = true; b.hidden = true; var o = $("lvOpen"); if (o) o.focus(); }
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("#report [role=tab]"); if (tab) { showTab(tab.id.slice(2), true); return; }
     var go = t.closest("#report [data-go]"); if (go) { showTab(go.getAttribute("data-go"), true); return; }
-    var pop = t.closest("[data-pop]"); if (pop) { var pk = pop.getAttribute("data-pop"); $(pk + "Sheet").hidden = false; $(pk + "Bg").hidden = false; $(pk + "Sheet").querySelector(".sheet-body").scrollTop = 0; $(pk + "Sheet").querySelector("[data-popclose]").focus(); return; }
+    var pop = t.closest("[data-pop]"); if (pop) { popShow(pop); return; }
+    var ct = t.closest("[data-cur]"); if (ct) { curTab(ct.getAttribute("data-cur")); return; }
     var pcl = t.closest("[data-popclose]"); if (pcl) { popHide(); return; }
     if (t.closest("#lvOpen")) { lvShow(); return; }
     if (t.closest("#lvClose") || t.closest("#lvBg")) { lvHide(); return; }
