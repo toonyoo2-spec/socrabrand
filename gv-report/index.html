@@ -782,7 +782,18 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 .live-n { margin-top: 18px; padding: 16px 18px; border-radius: 16px; background: #EDF9F3; font-size: 15px; line-height: 1.65; color: #24513B; text-wrap: pretty; }
 .lv9n { margin-top: 10px; font-size: 13px; color: #6B7770; text-align: right; }
 a.cta { display: grid; place-items: center; text-decoration: none; }
-/* A·B 전환 */
+/* 컬러: 밝은 지면 (11/24 확정). 바탕은 밝게, 글자는 검게, 초록은 진도와 숫자에만 */
+.vb{--v-bg:#E9F4EE;--v-dark:#CFE2D8;--v-on:#10B46A;--v-hint-on:#E9A512;--v-soft:#4B5C53;--v-pale:#F3F7F5;--green:#10B46A;--v-hint:#E9A512;--g:#08794A;--cta:#08794A;--v-rule:#E3EAE6;--v-t2:#4B5A52}
+.vb .top img{filter:none}.vb .top .test{background:#fff;color:#14241C}
+.v-tabs button{color:#5A6A62}.v-tabs button[aria-selected=true]{color:#10221A}.v-tabs button[aria-selected=true]::after{background:#08864D}
+.v-hero{color:#10221A}.v-h b{color:#08794A}.v-cap b{color:#08794A}.v-s b,.v-hleg b{color:#10221A}.v-big{color:#08794A}
+.v-road path{stroke-width:24}.v-road circle.on{fill:#0A8A50}.v-road circle.off{fill:#A3C3B2}.v-road text.on{fill:#043A22}.v-road text.off{fill:#44584D}
+.v-sec h2,.v-ring p,.v-tip b{color:#10221A}.v-sec h2{letter-spacing:-.04em}
+.v-lv9 .me b,.v-step .a,.v-rc i{background:#08794A}.v-lv9 .ok b{background:#CDEBDB;color:#075F3A}
+.v-lnk{color:#10221A}.vb .noteband{background:#E9F4EE}.v-memo::before{background:rgba(124,203,163,.7)}
+.live-n{background:#E9F4EE;color:#24352C}
+.vb .ctabar .cta:hover{background:#06653D}
+.vb .note .aft,.vb .note .aft b,.vb .note .eyebrow{color:#08794A}.vb .v-lv9 li:not(.ok):not(.me) b{color:#66736C}
 /* AI 작성 안내 */
 .ai-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.55; color: var(--sub); }
 .fb-compose { border-top: 1px solid var(--line); padding: 10px 18px 14px; display: grid; gap: 8px; }
@@ -894,7 +905,7 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="render.js?v=1124n"></script>
-<script src="app.js?v=1124n"></script>
+<script src="render.js?v=1124o"></script>
+<script src="app.js?v=1124o"></script>
 </body>
 </html>
