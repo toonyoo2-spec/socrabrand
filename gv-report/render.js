@@ -414,7 +414,7 @@
         '<div class="noteband">' + wrote("then", N.first) + wrote("now", N.recent) + '</div><div class="cmt">' + N.say.split("\n").map(function (t) { return "<p>" + rich(t) + "</p>"; }).join("") + "</div>") : ""));
 
     h += panel("total",
-      sec("talk-lia", "리아 선생님의 한마디", "리아 선생님의 한마디", "", '<div class="op">' + end.say.map(function (s) { return "<p>" + esc(s).replace(/(단어|문장) (\d)/g, "$1&nbsp;$2").replace(/(\d+(?:\.\d+)?%의 (?:단어|문장)|아주 훌륭해요|더 높은 수준의 학습|힌트를 열기 전에 먼저 써 보면|배운 레슨을 복습하면)/g, "<mark>$1</mark>") + "</p>"; }).join("") + "</div>" +
+      sec("talk-lia", "리아 선생님의 한마디", "리아 선생님의 한마디", "", '<div class="v-memo">' + end.say.map(function (s) { return "<p>" + esc(s).replace(/(단어|문장) (\d)/g, "$1&nbsp;$2").replace(/(\d+(?:\.\d+)?%의 (?:단어|문장)|아주 훌륭해요|더 높은 수준의 학습|힌트를 열기 전에 먼저 써 보면|배운 레슨을 복습하면)/g, "<mark>$1</mark>") + "</p>"; }).join("") + "</div>" +
         '<div class="pair2"><div><span>' + end.good[0] + "</span><b>" + esc(end.good[1]) + '</b></div><div class="nx"><span>' + end.next[0] + "</span><b>" + esc(end.next[1]) + "</b></div></div>") +
       (p.lv < 9 ? sec("talk-next", "다음 학습 과정", "다음 학습 과정", "", nx ?
         '<div class="lvnow"><p class="lvnow-t"><b>레벨 ' + (p.lv + 1) + "</b>" + esc(nx.title) + '</p><p class="lvnow-g">' + esc(GUIDE[p.lv + 1].goal) + '</p></div><div class="exbox"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" +
