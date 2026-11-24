@@ -778,13 +778,11 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 .v-ex { margin: 14px 0 0 48px; padding: 16px 18px; border-radius: 18px; background: var(--v-pale); } .v-ex span { font-size: 13.5px; font-weight: 800; color: var(--g); } .v-ex p { margin-top: 3px; font-size: 17px; font-weight: 700; line-height: 1.5; } .v-ex small { display: block; margin-top: 4px; font-size: 14px; line-height: 1.55; color: var(--v-t2); }
 .v-rc { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; } .v-rc li { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; padding: 18px; border-radius: 22px; background: var(--v-pale); } .v-rc i { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--v-bg); } .v-rc svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; } .v-rc b { font-size: 17px; font-weight: 800; } .v-rc p { margin-top: 2px; font-size: 14.5px; line-height: 1.6; color: var(--v-t2); text-wrap: pretty; }
 .vb .ctabar { padding: 12px 24px calc(16px + env(safe-area-inset-bottom, 0px)); border-top-color: var(--v-rule); box-shadow: none; } .vb .ctabar .cta { min-height: 56px; border-radius: 18px; background: var(--cta); color: #fff; font-size: 18px; } .vb footer { background: #fff; padding-top: 16px; }
-.vtagx { text-decoration: none; margin-right: 6px; padding: 1px 6px; border-radius: 6px; background: var(--green-wash); font-size: 11.5px; color: var(--green-ink); }
 .rp .v-memo { margin-top: 28px; } .rp .v-memo mark { font-weight: 700; color: #06683D; } .rp .v-memo + .pair2 { margin-top: 32px; }
 .live-n { margin-top: 18px; padding: 16px 18px; border-radius: 16px; background: #EDF9F3; font-size: 15px; line-height: 1.65; color: #24513B; text-wrap: pretty; }
 .lv9n { margin-top: 10px; font-size: 13px; color: #6B7770; text-align: right; }
+a.cta { display: grid; place-items: center; text-decoration: none; }
 /* A·B 전환 */
-.verseg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: min(390px, 100%); margin: 0 auto 12px; padding: 4px; border-radius: 14px; background: #D3DCD7; } .verseg button { min-height: 40px; border: 0; border-radius: 11px; background: none; font: 800 14.5px var(--font); color: var(--sub); } .verseg button[aria-pressed="true"] { background: #fff; color: var(--green-ink); }
-@media (max-width: 599px) { .verseg { width: calc(100% - 32px); } } @media (min-width: 1180px) { .verseg { margin-inline: 0; } }
 /* AI 작성 안내 */
 .ai-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.55; color: var(--sub); }
 .fb-compose { border-top: 1px solid var(--line); padding: 10px 18px 14px; display: grid; gap: 8px; }
@@ -873,7 +871,6 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 
   <div class="center">
     <div class="frame-label"><span><b id="barTitle">GV 라이팅 리포트</b></span><span class="bar-actions"><button type="button" class="bar-btn only-narrow" data-open="listPanel">학생 목록</button><button type="button" class="bar-btn" id="logoutBtn">로그아웃</button></span></div>
-    <div class="verseg" id="verSeg" role="group" aria-label="시안 고르기" hidden><button type="button" data-ver="a" aria-pressed="true">A안</button><button type="button" data-ver="b" aria-pressed="false">B안</button></div>
     <div id="report"></div>
   </div>
 
@@ -897,7 +894,7 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="render.js?v=1124l"></script>
-<script src="app.js?v=1124l"></script>
+<script src="render.js?v=1124n"></script>
+<script src="app.js?v=1124n"></script>
 </body>
 </html>

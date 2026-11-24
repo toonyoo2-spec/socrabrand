@@ -252,6 +252,7 @@
   }
   /* 추천 학습 (LX팀 11/24 확정). 판단은 대표 레벨의 독립 문장 완성률 s, 독립 어휘 작성률 w 로만 한다.
      라이브 1개 + 이외 학습 최대 2개. 레벨별 값(d.rep)이 없으면 전체 값을 쓴다 */
+  var CONSULT = "https://realacademy.link/4xADfX5"; /* 학습 상담 예약 단축 링크 (은비님 11/24) */
   var LIVE = ["Starter", "Beginner", "Intermediate", "Advanced", "Master"], LIVE_NOTE = "우리 아이에게 어떤 수업이 잘 맞을지 궁금하시면 상담을 신청해 주세요. 학습 기록을 바탕으로 수준에 맞는 강의를 추천해 드려요.";
   function repRate(d, p, v, g) { var r = d.rep && d.rep.lv === p.lv ? d.rep : {}; return { s: r.g != null ? r.g : g.pct.solo, w: r.v != null ? r.v : v.pct.solo }; }
   function live(p, s) {
@@ -392,7 +393,7 @@
       '<section class="v-memo"><p>' + end.say.map(function (s) { return esc(s); }).join("</p><p>") + "</p></section>" +
       (p.lv < 9 ? sec("next", "다음 학습 과정", '<div class="v-step"><i class="a">' + p.lv + '</i><p class="v-sm">' + (p.full ? "레벨 " + p.lv + " 레슨을 모두 마쳤어요." : "레벨 " + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.") + '</p><span class="bar"></span><span></span><i class="z">' + (p.lv + 1) + "</i><b>" + (nx ? esc(nx.title) : "2027년 상반기에 안내해 드릴 예정이에요") + "</b></div>" + (nx ? '<div class="v-ex"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" : "")) : "") +
       sec("recs", "추천 학습", '<ul class="v-rc">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<div><b>" + esc(r[0]) + "</b><p>" + esc(r[1]) + "</p></div></li>"; }).join("") + '</ul><p class="live-n">' + LIVE_NOTE + "</p>" + AI_NOTE));
-    return h + '</main><div class="ctabar" data-item="b-cta" data-name="학습 상담 버튼"><button type="button" class="cta" id="consultBtn">학습 상담 신청</button></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
+    return h + '</main><div class="ctabar" data-item="b-cta" data-name="학습 상담 버튼"><a class="cta" id="consultBtn" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer">학습 상담 신청</a></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
   }
 
   function renderTalk(id, d) {
@@ -438,13 +439,13 @@
         (p.full ? "" : '<p class="cap">레벨 ' + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.</p>") : '<p class="lvnow-g">레벨 9의 학습 내용은 2027년 상반기에 안내해 드릴 예정이에요.</p>') : "") +
       sec("talk-recs", "추천 학습", "추천 학습", "", '<ol class="recs">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></li>"; }).join("") + '</ol><p class="live-n">' + LIVE_NOTE + "</p>" + AI_NOTE));
 
-    return h + '</main><div class="ctabar" data-item="talk-cta" data-name="학습 상담 버튼"><button type="button" class="cta" id="consultBtn">학습 상담 신청</button></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
+    return h + '</main><div class="ctabar" data-item="talk-cta" data-name="학습 상담 버튼"><a class="cta" id="consultBtn" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer">학습 상담 신청</a></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
   }
 
   function jo(n, a, b) { return "136780".indexOf(String(n).slice(-1)) >= 0 ? a : b; } /* 숫자 뒤 조사 */
 
-  window.renderReport = function (id, d, ver) {
-    if (d.template === "talk") return ver === "b" ? renderB(id, d) : renderTalk(id, d);
+  window.renderReport = function (id, d) {
+    if (d.template === "talk") return renderB(id, d); /* B안 확정. A안(renderTalk)은 예비로 남겨 둔다 */
     if (d.template === "all") return renderAll(id, d);
     if (d.template === "sheet") return renderSheet(id, d);
     var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생";

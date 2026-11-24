@@ -160,26 +160,13 @@
   });
 
   /* ---------- 가운데: 리포트 ---------- */
-  /* A·B 시안: 주소(&v=b)와 이 브라우저에 기억한다 */
-  var ver = (new URLSearchParams(location.search).get("v") || ls("gv_report_ver")) === "b" ? "b" : "a", lastData = null;
-  function setUrl() { if (current) history.replaceState(null, "", "?r=" + encodeURIComponent(current.id) + (ver === "b" ? "&v=b" : "")); }
-  function drawReport(tab) {
-    var ab = lastData.template === "talk"; $("verSeg").hidden = !ab;
-    $("verSeg").querySelectorAll("[data-ver]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-ver") === ver)); });
-    $("report").innerHTML = window.renderReport(current.student_id, lastData, ver);
-    setupReport(); if (tab) showTab(tab, false);
-  }
-  function setVer(v) {
-    if (v === ver || !lastData) return;
-    var on = document.querySelector("#report [role=tab][aria-selected=true]"), tab = on ? on.id.slice(2) : "summary";
-    ver = v; ls("gv_report_ver", v); setUrl(); filterSec = null; drawReport(tab); window.scrollTo(0, 0); loadFb();
-  }
-  $("verSeg").addEventListener("click", function (e) { var b = e.target.closest("[data-ver]"); if (b) setVer(b.getAttribute("data-ver")); });
+  /* 2026-11-24 B안으로 확정. A안 의견(talk-)은 B안의 같은 부분(b-)으로 보여 준다 */
+  var lastData = null;
+  function drawReport() { $("report").innerHTML = window.renderReport(current.student_id, lastData); setupReport(); }
   async function openReport(id, push) {
     var meta = byId(id); if (!meta) return;
     current = meta; renderList();
-    if (push) setUrl();
-    $("verSeg").hidden = true;
+    if (push) history.replaceState(null, "", "?r=" + encodeURIComponent(id));
     var nm = meta.name || (meta.student_id + " 학생");
     $("barTitle").textContent = nm + " · " + meta.student_id;
     $("fbSub").textContent = nm + " 리포트에 남긴 의견";
@@ -256,7 +243,7 @@
       var send = $("praiseSend"); if (send) { send.disabled = !on; send.textContent = on ? "칭찬 카드 보내기" : "보낼 말을 골라 주세요"; }
       return;
     }
-    if (t.closest("#consultBtn")) { toast("지금은 시안이에요. 실제 리포트에서는 상담 신청으로 이어져요."); return; }
+    if (t.closest("#consultBtn")) return; /* 새 탭에서 상담 예약 페이지 */
     if (t.closest("#praiseSend")) { toast("지금은 미리보기예요. 실제 리포트에서는 칭찬 카드가 아이에게 전달돼요."); return; }
     if (wide.matches) { var it = t.closest("#report [data-item]"); if (it) { pickSection(it.getAttribute("data-item"), true); fbText.focus(); } }
   });
@@ -309,10 +296,9 @@
     });
     sel.innerHTML = sections.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.tab ? x.tab + " · " + x.name : x.name) + "</option>"; }).join("");
   }
-  /* 지금 보는 안에 없는 부분의 이름 (A안 의견을 B안에서 볼 때 등) */
+  /* 지금 화면에 없는 부분의 이름 (작성 문장이 없는 학생 등) */
   var SECN = { sum: ["요약", "종합 결과"], level: ["요약", "학습 레벨"], days: ["요약", "학습 참여"], areas: ["요약", "영역별 결과"], vocab: ["어휘", "어휘 학습 결과"], vblock: ["어휘", "V-block 학습 현황"], gram: ["문법", "문법 학습 결과"], gblock: ["문법", "G-block 학습 현황"], notes: ["문법", "작성 문장 비교"], lia: ["총평", "리아 선생님의 한마디"], next: ["총평", "다음 학습 과정"], recs: ["총평", "추천 학습"], cta: ["", "학습 상담 버튼"] };
-  function verOf(id) { return /^b-/.test(id || "") ? "b" : /^talk-/.test(id || "") ? "a" : ""; }
-  function secOf(id) { for (var i = 0; i < sections.length; i++) if (sections[i].id === (id || "")) return sections[i]; var s = SECN[String(id).replace(/^(b|talk)-/, "")]; return { id: id, name: s ? s[1] : NAMES[id] || id, tab: s ? s[0] : "" }; }
+  function secOf(id) { for (var i = 0; i < sections.length; i++) if (sections[i].id === (id || "")) return sections[i]; var s = SECN[String(id).replace(/^b-/, "")]; return { id: id, name: s ? s[1] : NAMES[id] || id, tab: s ? s[0] : "" }; }
   function pickSection(id, focusThread) {
     if (!sections.some(function (x) { return x.id === (id || ""); })) id = "";
     sel.value = id || "";
@@ -330,7 +316,7 @@
     var rid = current.id;
     try {
       var docs = await api("gv_report_feedback?select=id,section,author_id,author_name,body,created_at,done,done_by_name,done_at&report_id=eq." + encodeURIComponent(rid) + "&order=created_at.asc");
-      if (current && current.id === rid) { fb.docs = docs || []; renderFb(); }
+      if (current && current.id === rid) { fb.docs = (docs || []).map(function (d) { if (d.section) d.section = d.section.replace(/^talk-/, "b-"); return d; }); renderFb(); }
     } catch (err) { expired(err); }
     finally { fb.loading = false; done(); }
     if (fb.again) { fb.again = false; return loadFb(); }
@@ -373,7 +359,7 @@
       return order.filter(function (k) { return by[k] && (!filterSec || k === filterSec); }).map(function (k) {
         var list = by[k].filter(function (d) { return !!d.done === done; }); if (!list.length) return "";
         var x = secOf(k);
-        return '<section class="fb-group' + (done ? " is-done" : "") + '">' + (filterSec ? "" : '<button type="button" class="fb-group-h" data-jump="' + esc(k) + '"><span><b>' + (verOf(k) ? '<u class="vtagx">' + verOf(k).toUpperCase() + "안</u>" : "") + esc(x.name) + "</b>" +
+        return '<section class="fb-group' + (done ? " is-done" : "") + '">' + (filterSec ? "" : '<button type="button" class="fb-group-h" data-jump="' + esc(k) + '"><span><b>' + esc(x.name) + "</b>" +
           (x.tab ? "<small>" + esc(x.tab) + " 탭 · 눌러서 그 부분으로 가기</small>" : "") + "</span>" + (done ? "" : "<em>" + list.length + "</em>") + "</button>") +
           list.map(function (d) { return msgHtml(d, me); }).join("") + "</section>";
       }).join("");
@@ -402,7 +388,7 @@
       return;
     }
     var j = e.target.closest("[data-jump]"); if (!j) return;
-    var id = j.getAttribute("data-jump"); if (verOf(id) && verOf(id) !== ver) setVer(verOf(id));
+    var id = j.getAttribute("data-jump"); 
     var x = secOf(id);
     pickSection(id, !!id); if (!id) return;
     closeSide("fbPanel");
