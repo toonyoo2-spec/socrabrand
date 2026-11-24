@@ -278,7 +278,7 @@
       ALL.map(function (s) { return f[s[0]] ? '<i class="' + s[0] + '" style="flex-grow:' + f[s[0]] + '"></i>' : ""; }).join("") + "</span>";
   }
   function sec(key, name, title, sub, body) {
-    return '<section class="sec" data-item="' + key + '" data-name="' + esc(name) + '"><h2>' + esc(title) + "</h2>" + (sub ? '<p class="sub">' + sub + "</p>" : "") + body + "</section>";
+    return '<section class="sec" data-item="' + key + '" data-name="' + esc(name) + '"><h2>' + secIcon(key) + esc(title) + "</h2>" + (sub ? '<p class="sub">' + sub + "</p>" : "") + body + "</section>";
   }
   function skill(key, title, f, k, w) {
     return sec(key, title, title, w.block + " " + num(f.q) + "문항을 처음 풀었을 때의 결과예요.",
@@ -329,6 +329,55 @@
     var k = /다이어리/.test(t) ? '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/>' : /에코런/.test(t) ? '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 010 6M19 6.5a8 8 0 010 11"/>' : /마스터/.test(t) ? '<path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 3v4.5h-4.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
     return '<i><svg viewBox="0 0 24 24" aria-hidden="true">' + k + "</svg></i>";
   }
+  /* 소제목 아이콘 (A·B 공통) */
+  var SICON = { level: '<path d="M4 19h4v-5H4zM10 19h4V9h-4zM16 19h4V4h-4z"/>', days: '<path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>', areas: '<path d="M12 3a9 9 0 109 9h-9z"/><path d="M15 3.5A9 9 0 0120.5 9H15z"/>', vocab: '<path d="M3 18L8 6l5 12M4.7 14h6.6"/><path d="M21 18v-6a3 3 0 10-.1 3.5"/>', gram: '<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>', block: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>', notes: '<path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3"/>', lia: '<path d="M4 5h16v11H9l-5 4z"/>', next: '<path d="M5 12h14M13 6l6 6-6 6"/>', recs: '<path d="M12 4l2.4 5 5.6.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.6-.8z"/>' };
+  function secIcon(key) { var k = key.replace(/^(b|talk)-/, "").replace(/^[vg]block$/, "block"); return SICON[k] ? '<i class="si"><svg viewBox="0 0 24 24" aria-hidden="true">' + SICON[k] + "</svg></i>" : ""; }
+
+  /* ---------- B안: 탭마다 초록 첫 화면에 그림 하나, 아래 흰 지면에 설명 ----------
+     레슨 길 · 원형 · 레벨 줄이 모두 같은 둥근 선. 문구와 숫자는 A안과 같은 규칙을 쓴다. 클래스는 모두 v- 로 시작 */
+  function roadMap(n) {
+    var X0 = 22, X1 = 342, Y0 = 92, G = 38, R = G / 2, W = X1 - X0, arc = Math.PI * R, total = 6 * W + 5 * arc, gap = total / 59;
+    function at(s) { for (var k = 0; k < 6; k++) { if (s <= W + .001 || k === 5) return [k % 2 ? X1 - s : X0 + s, Y0 + k * G]; s -= W; if (s < arc) { var a = s / R; return [k % 2 ? X0 - Math.sin(a) * R : X1 + Math.sin(a) * R, Y0 + k * G + R - Math.cos(a) * R]; } s -= arc; } }
+    var d = "M" + X0 + " " + Y0, k; for (k = 0; k < 6; k++) { var y = Y0 + k * G, right = k % 2 === 0; d += "H" + (right ? X1 : X0); if (k < 5) d += "A" + R + " " + R + " 0 0 " + (right ? 1 : 0) + " " + (right ? X1 : X0) + " " + (y + G); }
+    var dots = "", i; for (i = 1; i <= 60; i++) { var q = at((i - 1) * gap), ok = i <= n; dots += i % 10 === 0 ? '<text x="' + q[0].toFixed(1) + '" y="' + (q[1] + 4).toFixed(1) + '" class="' + (ok ? "on" : "off") + '">' + i + "</text>" : '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="2.4" class="' + (ok ? "on" : "off") + '"/>'; }
+    var e = at((n - 1) * gap), w = 58, h = w * 1.47, ex = Math.max(4, Math.min(364 - w - 4, e[0] - w / 2)), top = n <= 12 ? 0 : n <= 24 ? 30 : 64;
+    return '<div class="v-road"><svg viewBox="0 ' + top + " 364 " + (Y0 + 5 * G + 20 - top) + '" role="img" aria-label="레슨 60개 중 ' + n + '개 완료"><path class="base" d="' + d + '"/><path class="done" d="' + d + '" stroke-dasharray="' + Math.max(1, (n - 1) * gap).toFixed(1) + ' 5000"/>' + dots + '<image href="img/echo_thumb.png" x="' + ex.toFixed(1) + '" y="' + (e[1] - h + 6).toFixed(1) + '" width="' + w + '" height="' + h.toFixed(1) + '"/></svg></div>';
+  }
+  function ring(f, size, th, c, label) {
+    var r = (size - th) / 2, C = 2 * Math.PI * r, g = 3, a = f.pct.solo / 100 * C, b = f.pct.hint / 100 * C, m = size / 2;
+    function arc(len, off, col) { return len > 1 ? '<circle cx="' + m + '" cy="' + m + '" r="' + r + '" fill="none" stroke="' + col + '" stroke-width="' + th + '" stroke-dasharray="' + Math.max(1, len - g).toFixed(1) + " " + C.toFixed(1) + '" stroke-dashoffset="' + (-off).toFixed(1) + '"/>' : ""; }
+    return '<div class="v-ring"><svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + " " + size + '" role="img" aria-label="' + esc("힌트 없이 " + f.pct.solo + "%, 힌트 사용 " + f.pct.hint + "%") + '"><circle cx="' + m + '" cy="' + m + '" r="' + r + '" fill="none" stroke="' + c[2] + '" stroke-width="' + th + '"/>' + arc(a, 0, c[0]) + arc(b, a, c[1]) + "</svg>" + (label ? "<p>" + pc(f.okP) + "</p>" : "") + "</div>";
+  }
+  function renderB(id, d) {
+    var nm = d.name || "학생", p = progress(d.levels), v = facts(d.v), g = facts(d.g), vk = kind(v, RULE.vLow), gk = kind(g, RULE.gLow), end = verdict(d, p, v, vk, g, gk);
+    var lv = LEVELS[p.lv] || { title: "레벨 " + p.lv + " 과정", cefr: "안내 예정" }, gd = GUIDE[p.lv] || { goal: "" }, nx = LEVELS[p.lv + 1], N = d.notes;
+    var VW = { word: "단어", acc: "어휘 작성률", solo: "독립 어휘 작성률", code: "V-block", what: "필수 단어예요", obj: "단어를", k: "v" }, GW = { word: "문장", acc: "문장 완성률", solo: "독립 문장 완성률", code: "G-block", what: "문장 패턴이에요", obj: "문장 패턴을", k: "g" };
+    var ON = ["var(--v-on)", "var(--v-hint-on)", "var(--v-dark)"], WH = ["var(--green)", "var(--v-hint)", "#E6EDE9"];
+    var tabs = [["summary", "요약"], ["vocab", "어휘"], ["gram", "문법"], ["total", "총평"]];
+    function sec(key, name, body, tt) { return '<section class="v-sec" data-item="b-' + key + '" data-name="' + esc(name) + '"><h2>' + secIcon("b-" + key) + esc(tt || name) + "</h2>" + body + "</section>"; }
+    function panel(k, hero, body) { return '<div class="panel v-panel" role="tabpanel" id="p-' + k + '" aria-labelledby="t-' + k + '" tabindex="0"' + (k === "summary" ? "" : " hidden") + ">" + hero + '<div class="v-sheet">' + body + "</div></div>"; }
+    function skill(key, title, f, k, w, b) {
+      return ['<section class="v-hero" data-item="b-' + key + '" data-name="' + esc(title) + '"><p class="v-who">' + title + '</p><div class="v-hring"><div><p class="v-big">' + pc(f.okP) + '</p><p class="v-s"><b>' + w.acc + "</b><br>" + num(f.q) + "문항을 처음 풀었을 때<br>맞힌 비율이에요.</p></div>" + ring(f, 144, 22, ON) + '</div><ul class="v-hleg"><li><i style="background:var(--v-on)"></i>힌트 없이 <b>' + num(f.solo) + '</b></li><li><i style="background:var(--v-hint-on)"></i>힌트 사용 <b>' + num(f.hint) + "</b></li><li>" + w.solo + " <b>" + p1(f.soloP) + "</b></li></ul></section>",
+        '<section class="v-sec"><div class="v-say">' + comment(f, k, w).map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") + "</div></section>" +
+        sec(w.k + "block", w.code + " 학습 현황", '<p class="v-blk"><b>' + num(b[1]) + "</b><span>개 마스터 · <strong>" + num(b[0]) + '개</strong> 획득</span></p><div class="v-ln" role="img" aria-label="획득 ' + b[0] + "개 중 마스터 " + b[1] + '개"><i style="width:' + (b[0] ? b[1] / b[0] * 100 : 0).toFixed(1) + '%"></i></div><dl class="v-defs"><div><dt>획득</dt><dd>새로운 ' + w.obj + " 배웠어요. 스스로 쓰려면 연습이 더 필요해요.</dd></div><div><dt>마스터</dt><dd>배운 " + w.obj + ' 힌트 없이도 스스로 써서 문장을 만들 수 있어요.</dd></div></dl><div class="v-tip"><b>GV 마스터란</b><p>GV 레슨 하나를 완료하면 진행할 수 있는 복습 프로그램이에요. 헷갈렸거나 틀린 단어와 문장을 복습하면 그 블록을 마스터할 수 있어요.</p></div>')];
+    }
+    var l9 = "", i; for (i = 1; i <= 9; i++) l9 += '<li class="' + (i === p.lv ? "me" : p.allDone.indexOf(i) >= 0 ? "ok" : i === 9 ? "yet" : "") + '"' + (i === p.lv ? ' aria-current="step"' : "") + "><b>" + i + "</b></li>";
+    var h = '<div class="app vb"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><span>GV 라이팅</span><button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
+      '<nav class="tabbar pad" aria-label="리포트 탭"><div class="v-tabs" role="tablist">' + tabs.map(function (t, i) { return '<button type="button" role="tab" id="t-' + t[0] + '" aria-controls="p-' + t[0] + '" aria-selected="' + (i ? "false" : "true") + '"' + (i ? ' tabindex="-1"' : "") + ">" + t[1] + "</button>"; }).join("") + "</div></nav><main>";
+    h += panel("summary", '<section class="v-hero" data-item="b-sum" data-name="종합 결과"><p class="v-who">' + esc(nm) + '</p><h1 class="v-h">' + months(d.period) + "개월 동안, 우리&nbsp;자녀의 <b>영어로 표현하는&nbsp;힘</b>은 어떻게 성장해&nbsp;왔을까요?</h1>" + roadMap(p.n) + '<p class="v-cap"><span>레벨 ' + p.lv + " 레슨</span><span><b>" + p.n + "</b> / " + RULE.lesson + "개</span></p></section>",
+      sec("level", "학습 레벨", '<ol class="v-lv9" aria-label="레벨 1부터 9">' + l9 + '</ol><p class="v-lvt">' + esc(lv.title) + '</p><p class="v-tx">' + esc(gd.goal) + '</p><dl class="v-facts">' + (p.done.length ? "<div><dt>학습 완료</dt><dd>레벨 " + p.done.join(" · ") + "</dd></div>" : "") + "<div><dt>CEFR <button type='button' class='qm' data-pop='cefr' aria-label='CEFR 설명 보기' aria-haspopup='dialog'>?</button></dt><dd>" + esc(lv.cefr) + "</dd></div></dl>" + (p.others.length ? '<p class="v-sm">이 밖에 ' + p.others.map(function (x) { return "레벨 " + x[0] + " 레슨 " + x[1] + "개"; }).join(", ") + "를 학습했어요.</p>" : "") + '<button type="button" class="v-lnk" id="lvOpen" aria-haspopup="dialog">레벨별 학습 내용</button>') +
+      sec("areas", "영역별 결과", '<p class="v-tx">' + esc(end.head) + '</p><div class="v-rings"><button type="button" data-go="vocab">' + ring(v, 116, 15, WH, true) + "<b>어휘 (V-block)</b><span>" + VW.acc + '</span></button><button type="button" data-go="gram">' + ring(g, 116, 15, WH, true) + "<b>문법 (G-block)</b><span>" + GW.acc + '</span></button></div><p class="v-leg"><span><i style="background:var(--green)"></i>힌트 없이 정답</span><span><i style="background:var(--v-hint)"></i>힌트 사용 정답</span></p>') +
+      sec("days", "학습 참여", '<p class="v-blk"><b>' + num(d.days) + "</b><span>일 학습" + (d.access ? " · 앱 접속 <strong>" + num(d.access) + "일</strong> 중" : "") + "</span></p>" + (d.access ? '<div class="v-ln"><i style="width:' + (d.days / d.access * 100).toFixed(1) + '%"></i></div>' : "") + '<p class="v-sm" style="margin-top:10px">' + esc(d.period.join(" – ")) + " 기준이며, GV 라이팅이 아닌 학습을 한 날도 포함돼요.</p>"));
+    var V = skill("vocab", "어휘 학습 결과", v, vk, VW, d.vb), Q = skill("gram", "문법 학습 결과", g, gk, GW, d.gb);
+    h += panel("vocab", V[0], V[1]);
+    h += panel("gram", Q[0], Q[1] + (N ? sec("notes", "작성 문장 비교", '<p class="v-tx">피드백을 받기 전, 처음 제출한 문장이에요.</p><div class="noteband">' + wrote("then", N.first) + wrote("now", N.recent) + '</div><div class="v-say">' + N.say.split("\n").map(function (t) { return "<p>" + rich(t) + "</p>"; }).join("") + "</div>") : ""));
+    h += panel("total", '<section class="v-hero v-lia" data-item="b-lia" data-name="리아 선생님의 한마디"><div><p class="v-who">리아 선생님의 한마디</p><h2 class="v-h">' + esc(end.good[1]) + ',<br><b>잘하고 있어요</b></h2></div><img src="img/echo_thumb.png" alt="" width="92" height="135"></section>',
+      '<section class="v-memo"><p>' + end.say.map(function (s) { return esc(s); }).join("</p><p>") + "</p></section>" +
+      (p.lv < 9 ? sec("next", "다음 학습 과정", '<div class="v-step"><i class="a">' + p.lv + '</i><p class="v-sm">' + (p.full ? "레벨 " + p.lv + " 레슨을 모두 마쳤어요." : "레벨 " + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.") + '</p><span class="bar"></span><span></span><i class="z">' + (p.lv + 1) + "</i><b>" + (nx ? esc(nx.title) : "2027년 상반기에 안내해 드릴 예정이에요") + "</b></div>" + (nx ? '<div class="v-ex"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" : "")) : "") +
+      sec("recs", "추천 학습", '<ul class="v-rc">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<div><b>" + esc(r[0]) + "</b><p>" + esc(r[1]) + "</p></div></li>"; }).join("") + "</ul>" + AI_NOTE));
+    return h + '</main><div class="ctabar" data-item="b-cta" data-name="학습 상담 버튼"><button type="button" class="cta" id="consultBtn">학습 상담 신청</button></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
+  }
+
   function renderTalk(id, d) {
     var nm = d.name || "학생", p = progress(d.levels), v = facts(d.v), g = facts(d.g), vk = kind(v, RULE.vLow), gk = kind(g, RULE.gLow), end = verdict(d, p, v, vk, g, gk);
     var lv = LEVELS[p.lv] || { title: "레벨 " + p.lv + " 과정", cefr: "안내 예정" }, gd = GUIDE[p.lv] || { goal: "" }, nx = LEVELS[p.lv + 1], N = d.notes;
@@ -377,8 +426,8 @@
 
   function jo(n, a, b) { return "136780".indexOf(String(n).slice(-1)) >= 0 ? a : b; } /* 숫자 뒤 조사 */
 
-  window.renderReport = function (id, d) {
-    if (d.template === "talk") return renderTalk(id, d);
+  window.renderReport = function (id, d, ver) {
+    if (d.template === "talk") return ver === "b" ? renderB(id, d) : renderTalk(id, d);
     if (d.template === "all") return renderAll(id, d);
     if (d.template === "sheet") return renderSheet(id, d);
     var lv = LEVELS[d.level] || LEVELS[1], nm = d.name || "학생";
