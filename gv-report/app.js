@@ -8,7 +8,7 @@
   var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvbGphc21nb2dkY3ZueXRhb2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NzIwMDEsImV4cCI6MjEwMTQ0ODAwMX0.G8wiFPCgvzoDwGlk__SDkn8SxP6lDMHY6g6pt61-a5o";
   var K = { token: "socra_admin_token", exp: "socra_admin_token_exp", refresh: "socra_refresh_token", uid: "socra_user_id",
             role: "socra_user_role", email: "socra_user_email", name: "socra_user_name", tabs: "socra_visible_tabs" };
-  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons,variant:data->>variant&order=is_sample.desc,created_at.asc";
+  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons,variant:data->>variant&data->>hidden=is.null&order=is_sample.desc,created_at.asc";
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -133,10 +133,10 @@
   $("addForm").addEventListener("submit", async function (e) {
     e.preventDefault();
     var id = addId.value.trim();
-    var have = byId(id);
+    var have = byId(id) || reports.filter(function (x) { return x.student_id === id; })[0];
     if (have) {
       say("warn", "이미 있는 학생이에요. 새로 만들지 않고 " + (have.name || id) + " 리포트를 열었어요.");
-      openReport(id, true); flashItem(id); return;
+      openReport(have.id, true); flashItem(have.id); return;
     }
     if (!/^[0-9]{4,12}$/.test(id)) { say("err", "학생 ID는 숫자 4~12자리로 넣어 주세요."); addId.focus(); return; }
     addBtn.disabled = true; addBtn.textContent = "만드는 중…";
@@ -149,7 +149,7 @@
       if (expired(err)) return;
       if (err && (err.status === 409 || err.code === "23505")) {
         reports = await api(LIST).catch(function () { return reports; }) || reports; renderList();
-        say("warn", "방금 다른 분이 같은 학생을 먼저 넣었어요. 목록에서 " + id + "을(를) 눌러 보세요."); flashItem(id);
+        var dup = byId(id); say("warn", dup ? "방금 다른 분이 같은 학생을 먼저 넣었어요. 목록에서 눌러 보세요." : "예전에 만든 리포트가 있어 목록에서 숨긴 학생이에요. 다시 필요하면 브랜드팀에 알려 주세요."); if (dup) flashItem(id);
       } else say("err", "넣지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally { addBtn.textContent = "만들기"; addBtn.disabled = !addId.value; }
   });
@@ -282,7 +282,7 @@
     "praise-card": "칭찬 카드", "parent-guide": "리포트 보는 법", "level": "레벨 설명 팝업", "tabs": "탭 구성",
     "items-intro": "항목별로 보기 안내", "items-ach": "학습 성취도", "items-eng": "학습 참여도", "items-growth": "성장 추세", "items-type": "학생 유형", "items-recs": "추천학습 기준" };
   var TABNAME = { "p-summary": "요약", "p-writing": "글 비교", "p-skills": "활동 기록", "p-next": "다음 학습", "p-items": "항목별" };
-  var sections = [], filterSec = null, fb = { docs: [], loading: false, again: false, pending: null, timer: 0 };
+  var sections = [], filterSec = null, fbView = "all", fb = { docs: [], loading: false, again: false, pending: null, timer: 0 };
   var groups = $("fbGroups"), sel = $("fbSection"), fbText = $("fbText"), fbSend = $("fbSend");
   function buildSections() {
     sections = [{ id: "", name: NAMES[""], tab: "" }];
@@ -304,6 +304,7 @@
     if (focusThread) { filterSec = id ? id : null; renderFb(); }
   }
   sel.addEventListener("change", function () { pickSection(sel.value, true); });
+  $("fbTabs").addEventListener("click", function (e) { var b = e.target.closest("[data-fbview]"); if (!b) return; fbView = b.getAttribute("data-fbview"); groups.scrollTop = 0; renderFb(); });
   $("fbAll").addEventListener("click", function () { filterSec = null; pickSection("", false); renderFb(); });
   async function loadFb() {
     if (!current) { groups.innerHTML = ""; return; }
@@ -327,8 +328,8 @@
     var mine = d.author_id === me;
     return '<div class="msg' + (mine ? " me" : "") + (d.done ? " done" : "") + '"><span class="msg-meta">' + (mine ? "나" : esc(d.author_name || "팀원")) + " · " + fmt(d.created_at) +
       (mine ? '<button type="button" class="msg-del" data-del="' + esc(d.id) + '">지우기</button>' : "") + '</span><div class="msg-bubble">' + esc(d.body) + "</div>" +
-      '<button type="button" class="msg-done" data-done="' + esc(d.id) + '" aria-pressed="' + (d.done ? "true" : "false") + '"><span class="box">' + CHECK + "</span>" +
-      (d.done ? "완료 · " + esc(d.done_by_name || "팀원") + (d.done_at ? " · " + fmt(d.done_at) : "") : "반영했으면 완료 표시") + "</button></div>";
+      '<button type="button" class="msg-done" data-done="' + esc(d.id) + '" aria-pressed="' + (d.done ? "true" : "false") + '"' + (d.done ? ' title="누르면 남은 의견으로 되돌려요"' : "") + '><span class="box">' + CHECK + "</span>" +
+      (d.done ? "반영 완료 · " + esc(d.done_by_name || "팀원") + (d.done_at ? " · " + fmt(d.done_at) : "") : "반영했으면 완료 표시") + "</button></div>";
   }
   function sortDone(list) { return list.slice().sort(function (a, b) { return (a.done ? 1 : 0) - (b.done ? 1 : 0); }); }
   function renderFb() {
@@ -336,30 +337,35 @@
     var me = ls(K.uid), by = {};
     sortDone(fb.docs).forEach(function (d) { var k = d.section || ""; (by[k] = by[k] || []).push(d); });
     badges(by);
-    var flt = $("fbFilter");
-    if (filterSec) {
-      flt.hidden = false; $("fbFilterName").textContent = secOf(filterSec).name;
-      var list = by[filterSec] || [];
-      groups.innerHTML = list.length ? list.map(function (d) { return msgHtml(d, me); }).join("")
-        : '<p class="empty">이 부분에는 아직 의견이 없어요. 아래 칸에 첫 의견을 적어 주세요.</p>';
-      return;
-    }
-    flt.hidden = true;
-    if (!fb.docs.length) {
-      groups.innerHTML = '<div class="fb-empty"><b>의견은 이렇게 남겨요</b><ol>' +
+    var flt = $("fbFilter"), pool = filterSec ? (by[filterSec] || []) : fb.docs, nDone = pool.filter(function (d) { return d.done; }).length, nOpen = pool.length - nDone;
+    flt.hidden = !filterSec; if (filterSec) $("fbFilterName").textContent = secOf(filterSec).name;
+    $("fbTabs").hidden = !pool.length;
+    $("fbTabs").querySelectorAll("[data-fbview]").forEach(function (b) {
+      var v = b.getAttribute("data-fbview"); b.setAttribute("aria-pressed", String(v === fbView));
+      b.querySelector("i").textContent = v === "open" ? nOpen : v === "done" ? nDone : pool.length;
+    });
+    if (!pool.length) {
+      groups.innerHTML = filterSec ? '<p class="empty">이 부분에는 아직 의견이 없어요. 아래 칸에 첫 의견을 적어 주세요.</p>' : '<div class="fb-empty"><b>의견은 이렇게 남겨요</b><ol>' +
         (wide.matches ? "<li>가운데 리포트에서 의견을 남길 부분을 눌러요.</li>" : "<li>아래 ‘의견 남길 곳’에서 부분을 골라요.</li>") +
         "<li>아래 칸에 하고 싶은 말을 적어요.</li><li>위쪽 화살표 버튼을 누르면 저장돼요.</li></ol></div>";
       return;
     }
     var order = sections.map(function (x) { return x.id; });
     Object.keys(by).forEach(function (k) { if (order.indexOf(k) < 0) order.push(k); });
-    var keep = groups.scrollTop;
-    groups.innerHTML = order.filter(function (k) { return by[k]; }).map(function (k) {
-      var x = secOf(k);
-      return '<section class="fb-group"><button type="button" class="fb-group-h" data-jump="' + esc(k) + '"><span><b>' + esc(x.name) + "</b>" +
-        (x.tab ? "<small>" + esc(x.tab) + " 탭 · 눌러서 그 부분으로 가기</small>" : "") + "</span>" + (openCount(by[k]) ? "<em>" + openCount(by[k]) + "</em>" : '<em class="all-done">' + CHECK + "완료</em>") + "</button>" +
-        by[k].map(function (d) { return msgHtml(d, me); }).join("") + "</section>";
-    }).join("");
+    function block(done) {
+      return order.filter(function (k) { return by[k] && (!filterSec || k === filterSec); }).map(function (k) {
+        var list = by[k].filter(function (d) { return !!d.done === done; }); if (!list.length) return "";
+        var x = secOf(k);
+        return '<section class="fb-group' + (done ? " is-done" : "") + '">' + (filterSec ? "" : '<button type="button" class="fb-group-h" data-jump="' + esc(k) + '"><span><b>' + esc(x.name) + "</b>" +
+          (x.tab ? "<small>" + esc(x.tab) + " 탭 · 눌러서 그 부분으로 가기</small>" : "") + "</span>" + (done ? "" : "<em>" + list.length + "</em>") + "</button>") +
+          list.map(function (d) { return msgHtml(d, me); }).join("") + "</section>";
+      }).join("");
+    }
+    var keep = groups.scrollTop, html = "";
+    if (fbView !== "done") html += nOpen ? block(false) : '<p class="empty">남은 의견이 없어요. 모두 반영했어요.</p>';
+    if (fbView !== "open" && nDone) html += (fbView === "all" ? '<p class="done-h">' + CHECK + "반영 완료 " + nDone + "건</p>" : "") + block(true);
+    if (fbView === "done" && !nDone) html += '<p class="empty">아직 반영 완료로 표시한 의견이 없어요.</p>';
+    groups.innerHTML = html;
     groups.scrollTop = keep;
   }
   groups.addEventListener("click", async function (e) {
@@ -367,7 +373,7 @@
     if (dn) {
       var fid = dn.getAttribute("data-done"), on = dn.getAttribute("aria-pressed") !== "true";
       dn.disabled = true;
-      try { await api("rpc/gv_feedback_set_done", { method: "POST", body: { fid: fid, val: on } }); await loadFb(); if (on) toast("완료로 표시했어요"); }
+      try { await api("rpc/gv_feedback_set_done", { method: "POST", body: { fid: fid, val: on } }); await loadFb(); toast(on ? "반영 완료로 옮겼어요" : "남은 의견으로 되돌렸어요"); }
       catch (err) { if (!expired(err)) { toast("저장하지 못했어요. 다시 눌러 주세요."); dn.disabled = false; } }
       return;
     }

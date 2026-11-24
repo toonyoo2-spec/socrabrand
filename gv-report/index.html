@@ -466,7 +466,13 @@ body.review [data-item] { outline: none; }
 @media (hover: hover) { .msg-done:hover .box { border-color: var(--green-ink); } }
 .msg-done[aria-pressed="true"] { color: var(--green-ink); }
 .msg-done[aria-pressed="true"] .box { background: var(--green-ink); border-color: var(--green-ink); color: #fff; }
-.msg.done .msg-bubble { opacity: .55; text-decoration: line-through; text-decoration-color: rgba(20,23,26,.35); }
+.msg.done .msg-bubble { background: #F3F5F4; color: #6B756F; }
+.is-done .fb-group-h b { color: #6B756F; font-size: 13.5px; } .is-done .msg-meta { color: #8B958F; }
+.done-h { display: flex; align-items: center; gap: 6px; margin: 14px 0 0; padding-top: 14px; border-top: 2px solid var(--line); font-size: 13.5px; font-weight: 800; color: var(--green-ink); }
+.fb-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 10px 18px 2px; padding: 3px; border-radius: 10px; background: var(--ground); }
+.fb-tabs button { min-height: 36px; border: 0; border-radius: 8px; background: none; font: 700 13px var(--font); color: var(--sub); white-space: nowrap; }
+.fb-tabs button[aria-pressed="true"] { background: #fff; color: var(--ink); }
+.fb-tabs i { font-style: normal; font-variant-numeric: tabular-nums; color: var(--green-ink); }
 .fb-group-h em.all-done { display: inline-flex; align-items: center; gap: 3px; color: #fff; background: var(--green-ink); }
 /* 수정 샘플(평가 항목 틀) */
 .rlist b .vtag { margin-left: 6px; font-size: 11px; font-weight: 800; color: #B4540A; background: #FFF1E6; border-radius: 999px; padding: 2px 7px; vertical-align: 1px; white-space: nowrap; }
@@ -811,6 +817,7 @@ button.res-i { cursor: pointer; transition: filter .15s; }
       <button type="button" class="side-x" data-close="fbPanel" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
     <div class="fb-filter" id="fbFilter" hidden><button type="button" id="fbAll">← 전체 의견 보기</button><span id="fbFilterName"></span></div>
+    <div class="fb-tabs" id="fbTabs" role="group" aria-label="의견 나눠 보기" hidden><button type="button" data-fbview="all" aria-pressed="true">전체 <i></i></button><button type="button" data-fbview="open" aria-pressed="false">남은 의견 <i></i></button><button type="button" data-fbview="done" aria-pressed="false">반영 완료 <i></i></button></div>
     <div class="fb-groups" id="fbGroups" aria-live="polite"></div>
     <form class="fb-compose" id="fbForm">
       <div class="fb-where"><span>의견 남길 곳</span><label class="fb-pick"><select id="fbSection" aria-label="의견 남길 곳"></select></label></div>
@@ -824,7 +831,7 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="render.js?v=1124f"></script>
-<script src="app.js?v=1124f"></script>
+<script src="render.js?v=1124g"></script>
+<script src="app.js?v=1124g"></script>
 </body>
 </html>
