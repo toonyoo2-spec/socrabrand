@@ -7,7 +7,7 @@ import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinat
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
 
-import { workDay, transferStatus, element, lessonList, channels, transferCell } from './transfer-board.mjs?v=2';
+import { workDay, transferStatus, element, lessonList, channels, transferCell as planCell } from './transfer-board.mjs?v=2';
 
 const $ = id => document.getElementById(id);
 const tokenKey = 'socra_admin_token';
@@ -308,7 +308,7 @@ async function loadProgress() {
       progressRows('math_teacher_quizzes', filter, 'course_id,lesson,slot'),
       progressRows(resourceSelections, filter, 'course_id,lesson,slot,stage_mode'),
       submissionHistory(filter),
-      state.staff ? progressRows('math_transfer_state', filter, 'course_id,lesson,channel,completed_id,claim_until') : [],
+      state.staff ? progressRows('math_transfer_state', filter, 'course_id,lesson,channel,completed_id,result_url,claim_until') : [],
       state.staff ? table('math_transfer_plans', { course_id:filter, work_day:'eq.'+workDay(), select:'course_id,lesson,channel,allow_repeat_id' }) : [],
     ]);
     if (generation !== progressGeneration || version !== state.courseVersion || state.stage !== 'delivery') return;
@@ -418,6 +418,23 @@ async function loadProgress() {
       }
     }
   }
+}
+
+function transferCell(row,channel,change) {
+  const cell = planCell(row,channel,change);
+  const receipt = row.receipts[channel];
+  if (!receipt?.completed_id || !receipt.result_url) return cell;
+  let url;
+  try {url = new URL(receipt.result_url);} catch {return cell;}
+  const path = channel === 'sheet' ? /^\/spreadsheets\/d\/[A-Za-z0-9_-]+(?:\/|$)/ : /^\/presentation\/d\/[A-Za-z0-9_-]+(?:\/|$)/;
+  if (url.origin !== 'https://docs.google.com' || !path.test(url.pathname)) return cell;
+  const link = element('a',channel === 'sheet' ? '시트 열기' : '슬라이드 열기');
+  link.href=url.href; link.target='_blank'; link.rel='noopener noreferrer';
+  link.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 '+link.textContent);
+  const label=cell.querySelector('label');
+  const group=element('div');group.style.cssText='display:flex;align-items:center;gap:.5em;flex-wrap:wrap';
+  label.replaceWith(group);group.append(label,link);
+  return cell;
 }
 
 function weekRows(view) {
@@ -1493,7 +1510,7 @@ async function transferData(course) {
   const [lessons, submissions, receipts, plans, settings] = await Promise.all([
     table('math_lessons',{...filter,select:'course_id,lesson,topic,live_date,curriculum_url,quiz_mode',order:'lesson'}),
     table('math_transfer_versions',{...filter,select:'lesson,id'}),
-    table('math_transfer_state',{...filter,select:'course_id,lesson,channel,completed_id,claim_until,destination'}),
+    table('math_transfer_state',{...filter,select:'course_id,lesson,channel,completed_id,result_url,claim_until,destination'}),
     table('math_transfer_plans',{...filter,work_day:'eq.'+workDay(),select:'course_id,lesson,channel,allow_repeat_id'}),
     table('math_transfer_settings',{...filter,select:'sheet_url,folder_url,revision'})
   ]);
