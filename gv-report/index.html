@@ -584,47 +584,57 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 .sheet-tpl .level-strip { box-shadow: inset 0 0 0 1.5px var(--mint-2, #BDEFD4); }
 /* 새 시안 */
 #sampleBox { display: grid; gap: 10px; }
-.talk .ans h2 { margin-top: 6px; font-size: 25px; letter-spacing: -0.04em; line-height: 1.36; }
-.talk h2 em, .talk .jump-b em { font-style: normal; color: var(--green-ink); }
-.talk .eyebrow { font-size: 13px; }
-.talk .who { margin-bottom: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 700; color: var(--sub); }
-.talk .how { margin-top: 10px; font-size: 13px; }
-.pg { margin-top: 18px; display: flex; align-items: center; gap: 12px; }
-.pg-bar { flex: 1; height: 14px; border-radius: 99px; background: var(--ground); overflow: hidden; }
-.pg-bar i { display: block; height: 100%; border-radius: inherit; background: var(--green); }
-.pg-k { font-size: 14px; font-weight: 700; color: var(--sub); font-variant-numeric: tabular-nums; }
-.pg-k b { font-size: 18px; font-weight: 800; color: var(--ink); }
-.ten { margin-top: 18px; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
-.ten i { aspect-ratio: 1; border-radius: 50%; background: var(--ground); box-shadow: inset 0 0 0 1.5px var(--line); }
-.ten i.on, .ten-key i.on { background: var(--green); box-shadow: none; }
-.ten i.hint, .ten-key i.hint { background: #D6F5E4; box-shadow: inset 0 0 0 1.5px #6FDDA6; }
-.ten-key { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13.5px; font-weight: 700; color: var(--sub); }
-.ten-key span { display: inline-flex; align-items: center; gap: 6px; }
-.ten-key i { width: 11px; height: 11px; border-radius: 50%; }
-.tk-count > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 4px; font-variant-numeric: tabular-nums; }
-.tk-count small { font-size: 12px; font-weight: 700; color: var(--sub); }
-.tk-count b { white-space: nowrap; }
-.blk { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.blk > div { display: flex; flex-direction: column; justify-content: space-between; gap: 4px; }
-.blk > div + div { padding-left: 14px; border-left: 1px solid var(--line); }
-.blk span { font-size: 13px; font-weight: 700; color: var(--sub); line-height: 1.45; }
-.blk b { font-size: 25px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.blk b small { margin-left: 2px; font-size: 14px; font-weight: 700; color: var(--sub); letter-spacing: 0; }
-.blk .in b { color: var(--green-ink); }
-.blk-bar { display: block; margin-top: 14px; height: 10px; border-radius: 99px; background: #DDF3E7; overflow: hidden; }
-.blk-bar i { display: block; height: 100%; border-radius: inherit; background: var(--green); }
-.jump { display: grid; gap: 8px; }
-.jump-b { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; min-height: 56px; border: 0; border-radius: 18px; padding: 10px 16px; background: var(--paper); font: inherit; text-align: left; color: var(--ink); cursor: pointer; transition: background .15s; }
-@media (hover: hover) { .jump-b:hover { background: var(--green-wash); } }
-.jump-b span { font-size: 13px; font-weight: 800; color: var(--green-ink); }
-.jump-b b { font-size: 14.5px; font-weight: 700; line-height: 1.45; text-wrap: balance; }
+.talk .card h2 { margin-top: 0; font-size: 18px; letter-spacing: -0.03em; }
+.talk .card h2 small { margin-left: 6px; font-size: 13px; font-weight: 700; color: var(--sub); letter-spacing: 0; }
+.talk .who { font-size: 13px; font-weight: 800; color: var(--green-ink); }
+.stu { margin-top: 2px; padding-bottom: 16px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.stu b { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+.stu span { font-size: 13px; font-weight: 600; color: var(--sub); font-variant-numeric: tabular-nums; }
+.pgx { margin-top: 18px; }
+.mts { margin-top: 18px; display: grid; gap: 22px; }
+.mt-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.mt-h span { font-size: 15px; font-weight: 700; }
+.mt-h b { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.mt-h small { margin-left: 1px; font-size: 14px; font-weight: 700; color: var(--sub); }
+.mt.main .mt-h b, .pgx .mt-h b { font-size: 32px; color: var(--green-ink); }
+.mt-bar { display: block; margin-top: 8px; height: 8px; border-radius: 99px; background: var(--ground); overflow: hidden; }
+.mt-bar i { display: block; height: 100%; border-radius: inherit; background: #A9B5AE; }
+.mt.main .mt-bar i, .pgx .mt-bar i { background: var(--green); }
+.mt-n { display: block; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--sub); text-align: right; font-variant-numeric: tabular-nums; }
+.cm { margin-top: 20px; padding: 14px 16px; border-radius: 14px; background: var(--ground); }
+.cm b { display: block; }
+.cm > b { font-size: 13px; font-weight: 800; color: var(--green-ink); margin-bottom: 4px; }
+.cm p { font-size: 15px; line-height: 1.65; text-wrap: pretty; }
+.cm p b, .cm p strong { display: inline; font-weight: 800; }
+.cm p + p { margin-top: 2px; }
+.fn { list-style: none; margin: 16px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 4px; }
+.fn li { font-size: 12.5px; line-height: 1.55; color: var(--sub); text-wrap: pretty; }
+.fn b { font-weight: 800; margin-right: 4px; }
+.kv2 { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; }
+.kv2 > div + div { padding-left: 18px; border-left: 1px solid var(--line); }
+.kv2 span { display: block; font-size: 13.5px; font-weight: 700; color: var(--sub); }
+.kv2 b { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.kv2 b small { margin-left: 2px; font-size: 14px; font-weight: 700; color: var(--sub); letter-spacing: 0; }
+.rows { margin: 16px 0 0; }
+.rows > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-block: 11px; border-top: 1px solid var(--line); }
+.rows dt { flex: none; font-size: 14px; font-weight: 600; color: var(--sub); }
+.rows dd { margin: 0; font-size: 15px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.talk .rows + .fn { margin-top: 0; }
+.jump { margin-top: 6px; display: grid; }
+.jump-b { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; width: 100%; min-height: 54px; border: 0; background: none; padding: 8px 0; font: inherit; text-align: left; color: var(--ink); cursor: pointer; }
+.jump-b + .jump-b { border-top: 1px solid var(--line); }
+.jump-b span { font-size: 15px; font-weight: 800; }
+.jump-b em { font-style: normal; font-size: 13.5px; color: var(--sub); }
+.jump-b b { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .jump-b .go { transform: rotate(-90deg); color: var(--faint); }
-.talk .teacher p.first { font-size: 19px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.5; text-wrap: balance; }
-.todo { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 14px; }
-.todo li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; }
-.todo i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 14px; font-weight: 800; color: #fff; background: var(--green-ink); }
-.todo b { display: block; font-size: 16px; font-weight: 800; line-height: 1.5; }
-.todo span { font-size: 14.5px; color: var(--sub); line-height: 1.6; }
+@media (hover: hover) { .jump-b:hover em { color: var(--ink); } }
+.op { margin-top: 12px; display: grid; gap: 8px; }
+.op p { font-size: 16px; line-height: 1.75; text-wrap: pretty; }
+.rec2 { list-style: none; margin: 8px 0 0; padding: 0; }
+.rec2 li { padding-block: 12px; border-bottom: 1px solid var(--line); }
+.rec2 b { display: block; font-size: 16px; font-weight: 800; line-height: 1.5; }
+.rec2 span { font-size: 14px; color: var(--sub); line-height: 1.6; }
+.talk .how { margin-top: 14px; font-size: 13px; }
 /* AI 작성 안내 */
 .ai-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.55; color: var(--sub); }
 .fb-compose { border-top: 1px solid var(--line); padding: 10px 18px 14px; display: grid; gap: 8px; }
