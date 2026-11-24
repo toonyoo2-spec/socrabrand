@@ -427,8 +427,13 @@ function weekRows(view) {
 function refreshProgressActions() {
   const view = staffProgress;
   const week = weekRows(view);
-  const missing = week.some(row => Object.keys(channels).some(ch=>transferStatus(row,ch).available && !row.plans[ch]));
-  $('select-week').disabled = !missing || Boolean(view.pending);
+  for (const [channel, label] of [['','이번 주'],['sheet','시트'],['slides','슬라이드']]) {
+    const keys = channel ? [channel] : Object.keys(channels);
+    const available = week.flatMap(row => keys.filter(key => transferStatus(row,key).available).map(key => Boolean(row.plans[key])));
+    const button = $(channel ? 'select-week-'+channel : 'select-week');
+    button.disabled = !available.length || Boolean(view.pending);
+    button.textContent = label + (available.length && available.every(Boolean) ? ' 전체 해제' : ' 전체 선택');
+  }
   $('progress-transfer').disabled = !view.rows.some(row=>row.submission) || Boolean(view.pending);
   $('progress-week').disabled = !view.rows.length || Boolean(view.pending);
 }
@@ -2074,11 +2079,14 @@ $('progress-week').addEventListener('change', () => {
   $('transfer-feedback').textContent='';
   renderStaffProgress();
 });
-$('select-week').addEventListener('click', () => {
-  const grid=$('progress-tracks');
-  const boxes=[...grid.querySelectorAll('input[type=checkbox]:not(:checked):enabled')];
-  for (const box of boxes) box.click();
-});
+for (const channel of ['', 'sheet', 'slides']) {
+  $(channel ? 'select-week-'+channel : 'select-week').addEventListener('click', () => {
+    const cells = channel ? 'td[data-channel="'+channels[channel]+'"] ' : '';
+    const boxes = [...$('progress-tracks').querySelectorAll(cells+'input[type=checkbox]:enabled')];
+    const select = boxes.some(box => !box.checked);
+    for (const box of boxes) if (box.checked !== select) box.click();
+  });
+}
 $('progress-transfer').addEventListener('click', () => openTransfers(staffProgress.courses, staffProgress.week));
 $('destination-course').addEventListener('change',showDestination);
 $('all-progress').addEventListener('toggle', () => {

@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; connect-src 'self' https://eoljasmgogdcvnytaoax.supabase.co https://www.googleapis.com https://sheets.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; img-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>수학자동화 · Socra LX팀</title>
   <link rel="stylesheet" href="math.css?v=22">
-  <script type="module" src="math.mjs?v=55"></script>
+  <script type="module" src="math.mjs?v=56"></script>
 </head>
 <body>
   <main>
@@ -158,7 +158,9 @@
               <div id="progress-filters" class="progress-filters" hidden>
                 <label>주차 <select id="progress-week"></select></label>
                 <span id="progress-total"></span>
-                <button type="button" id="select-week">이 주 자료 선택</button>
+                <button type="button" id="select-week">이번 주 전체 선택</button>
+                <button type="button" id="select-week-sheet">시트 전체 선택</button>
+                <button type="button" id="select-week-slides">슬라이드 전체 선택</button>
               </div>
               <div id="progress-tracks" class="progress-tracks"></div>
               <p id="transfer-feedback" role="status" aria-live="polite"></p>
