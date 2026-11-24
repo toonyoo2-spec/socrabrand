@@ -491,15 +491,13 @@ function renderStaffProgress() {
     const actions = element('div', undefined, 'course-actions');
     courseCell.append(actions);
     actions.append(open);
-    if (usesQuizN(row.course)) {
-      const download = element('button','퀴즈앤','quiz-download');
-      download.type='button';
-      download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 엑셀 받기');
-      download.addEventListener('click',()=>downloadQuizExcel(row,download,$('transfer-feedback')));
-      download.disabled = !row.submission;
-      download.title = row.submission ? '퀴즈앤 등록용 엑셀 받기' : '선생님이 제출하면 다운로드할 수 있습니다.';
-      actions.append(download);
-    }
+    const download = element('button','퀴즈앤','quiz-download');
+    download.type='button';
+    download.setAttribute('aria-label',className(row.course)+' '+row.lesson.lesson+'강 퀴즈앤 엑셀 받기');
+    download.addEventListener('click',()=>downloadQuizExcel(row,download,$('transfer-feedback')));
+    download.disabled = !row.submission;
+    download.title = row.submission ? '퀴즈앤 등록용 엑셀 받기' : '선생님이 제출하면 다운로드할 수 있습니다.';
+    actions.append(download);
     const counts = tr.insertCell();
     counts.className = 'progress-counts';
     counts.append(element('span',lessonProgressLabel(row.lessonProgress)));
@@ -1404,7 +1402,6 @@ function changedSubmission(mode) {
 
 function renderSubmission() {
   $('lesson-ppt').disabled = !state.submitted;
-  $('quiz-excel').hidden = !usesQuizN(currentCourse());
   $('quiz-excel').disabled = !state.submitted;
   const groups = lessonModes().map(mode => {
     const picks = state.stagePicks.get(mode);
@@ -1789,7 +1786,7 @@ async function downloadLessonPpt() {
 }
 
 async function downloadQuizExcel(row,button,notice) {
-  if (button.disabled || !row.submission || !usesQuizN(row.course)) return;
+  if (button.disabled || !row.submission) return;
   button.disabled = true;
   notice.textContent = '제출한 퀴즈로 등록용 엑셀을 만드는 중입니다.';
   try {
