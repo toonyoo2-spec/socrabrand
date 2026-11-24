@@ -330,7 +330,7 @@
       (d.access ? '<div><span>학습일 비율</span><b>' + pc(d.days / d.access * 100) + "</b></div>" : "") + "</div>";
 
     h += panel("summary",
-      '<section class="hero" data-item="talk-sum" data-name="종합 결과"><p class="hero-k">GV 라이팅 학습 리포트</p><h1>' + esc(nm) + '</h1><p class="hero-s">' + esc(end.head) + "</p>" +
+      '<section class="hero" data-item="talk-sum" data-name="종합 결과"><div class="hero-t"><div><p class="hero-k">GV 라이팅 학습 리포트</p><h1>' + esc(nm) + '</h1><p class="hero-s">' + esc(end.head).replace(/힌트 없이/g, "힌트&nbsp;없이").replace(/쓸 때/g, "쓸&nbsp;때") + '</p></div><img src="img/echo_thumb.png" alt="" width="82" height="120"></div>' +
       '<dl><div><dt>현재 레벨</dt><dd>레벨 ' + p.lv + " " + (p.full ? "학습 완료" : "학습 중") + "</dd></div><div><dt>학습 기간</dt><dd>" + esc(d.period.join(" – ")) + "</dd></div></dl></section>" +
       sec("talk-level", "학습 레벨", "학습 레벨", "", levelPath(d, p) +
         '<div class="lvnow"><p class="lvnow-t"><b>레벨 ' + p.lv + "</b>" + esc(lv.title) + '</p><p class="lvnow-g">' + esc(gd.goal) + "</p></div>" +

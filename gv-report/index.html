@@ -590,7 +590,10 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 .hero-k { font-size: 13px; font-weight: 700; color: #0B3B27; }
 .rp .hero h1 { margin-top: 2px; font-size: 26px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.35; }
 .hero-s { margin-top: 14px; font-size: 19px; font-weight: 700; line-height: 1.5; letter-spacing: -0.02em; text-wrap: balance; }
-.rp .hero dl { margin: 20px 0 0; padding-top: 14px; border-top: 1px solid rgba(11,59,39,.22); display: grid; gap: 6px; }
+.hero-t { display: grid; grid-template-columns: minmax(0, 1fr) 82px; gap: 10px; align-items: end; }
+.hero-t img { width: 82px; height: auto; margin-bottom: -4px; }
+.hero-t > div { padding-bottom: 18px; }
+.rp .hero dl { margin: 0; padding-top: 14px; border-top: 1px solid rgba(11,59,39,.22); display: grid; gap: 6px; }
 .rp .hero dl div { display: flex; gap: 16px; font-size: 14px; }
 .rp .hero dt { flex: none; width: 60px; color: #0B3B27; font-weight: 500; }
 .rp .hero dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -808,7 +811,7 @@ button.res-i { cursor: pointer; transition: filter .15s; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="render.js"></script>
-<script src="app.js"></script>
+<script src="render.js?v=1124d"></script>
+<script src="app.js?v=1124d"></script>
 </body>
 </html>
