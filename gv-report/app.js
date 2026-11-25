@@ -247,7 +247,7 @@
       var send = $("praiseSend"); if (send) { send.disabled = !on; send.textContent = on ? "칭찬 카드 보내기" : "보낼 말을 골라 주세요"; }
       return;
     }
-    if (t.closest("#consultBtn")) return; /* 새 탭에서 상담 예약 페이지 */
+    if (t.closest("#consultBtn, #extendBtn")) return; /* 새 탭에서 상담 예약, 사전 연장 신청 페이지 */
     if (t.closest("#praiseSend")) { toast("지금은 미리보기예요. 실제 리포트에서는 칭찬 카드가 아이에게 전달돼요."); return; }
     if (wide.matches) { var it = t.closest("#report [data-item]"); if (it) { pickSection(it.getAttribute("data-item"), true); fbText.focus(); } }
   });
