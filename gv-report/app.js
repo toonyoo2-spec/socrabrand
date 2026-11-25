@@ -301,7 +301,7 @@
     sel.innerHTML = sections.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.tab ? x.tab + " · " + x.name : x.name) + "</option>"; }).join("");
   }
   /* 지금 화면에 없는 부분의 이름 (작성 문장이 없는 학생 등) */
-  var SECN = { sum: ["요약", "종합 결과"], level: ["요약", "학습 레벨"], days: ["요약", "학습 참여"], areas: ["요약", "영역별 결과"], vocab: ["어휘", "어휘 학습 결과"], vblock: ["어휘", "V-block 학습 현황"], gram: ["문법", "문법 학습 결과"], gblock: ["문법", "G-block 학습 현황"], notes: ["문법", "작성 문장 비교"], lia: ["총평", "리아 선생님의 한마디"], next: ["총평", "다음 학습 과정"], recs: ["총평", "추천 학습"], cta: ["", "학습 상담 버튼"] };
+  var SECN = { sum: ["요약", "종합 결과"], level: ["요약", "학습 레벨"], days: ["요약", "학습 참여"], areas: ["요약", "영역별 결과"], vocab: ["어휘", "어휘 학습 결과"], vblock: ["어휘", "V-block 학습 현황"], gram: ["문법", "문법 학습 결과"], gblock: ["문법", "G-block 학습 현황"], notes: ["문법", "작성 문장 비교"], lia: ["총평", "리아 선생님의 한마디"], next: ["총평", "다음 학습 과정"], recs: ["총평", "추천 학습"], cta: ["", "사전 연장·리얼 코칭 상담 버튼"] };
   function secOf(id) { for (var i = 0; i < sections.length; i++) if (sections[i].id === (id || "")) return sections[i]; var s = SECN[String(id).replace(/^b-/, "")]; return { id: id, name: s ? s[1] : NAMES[id] || id, tab: s ? s[0] : "" }; }
   function pickSection(id, focusThread) {
     if (!sections.some(function (x) { return x.id === (id || ""); })) id = "";
