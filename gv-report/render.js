@@ -348,13 +348,20 @@
   /* 비포·애프터: GV 노트 모양. 패턴 적용 문장 줄은 KWAN 11/26 요청으로 뺌(데이터 l[2]는 남겨 둠) */
   /* 표시 규칙(모든 학생 공통, KWAN 11/26): {{ }} 한국어로 쓴 부분 = 노란 칸, [[ ]] 철자·문법이 다른 단어 = 물결.
      대소문자·문장부호·숫자로 쓴 것은 표시하지 않는다. 표시가 없는 문장에는 '바르게 썼어요', 표시가 있으면 l[2](레슨 뒤 학생이 다시 쓴 최종 문장)를 '배운 뒤 고쳐 쓴 문장'으로 보여 준다. 설명은 카드 아래 한 번만, 항상 두 줄 모두 */
+  /* 문장 키워드 태그 (11/26 은비님·혜민님 시안): 학생이 쓴 문장 아래에. 초록 = 학습하며 성장, 흰색 = 이미 잘하고 있음 */
+  function kwTags(l) {
+    var r = kwLine(l[0], l[2]); if (!r) return "";
+    var order = KW.map(function (k) { return k[0]; }), by = function (a, b) { return order.indexOf(a) - order.indexOf(b); };
+    var t = r.grow.slice().sort(by).map(function (k) { return '<i class="kt up">' + k + "</i>"; }).concat(r.good.slice().sort(by).map(function (k) { return '<i class="kt">' + k + "</i>"; }));
+    return t.length ? '<span class="kwt">' + t.join("") + "</span>" : "";
+  }
   function wrote(kd, n) {
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
       var ok = !l[2]; /* 고친 문장이 없으면 처음부터 바르게 쓴 문장 */
-      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
+      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + kwTags(l) + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
     }).join("") + "</ul></div>";
   }
-  var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 어려웠던 곳도 리아 선생님과 함께 고치며 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 리아 선생님과 함께 고친 곳</span></div>';
+  var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 어려웠던 곳도 리아 선생님과 함께 고치며 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 리아 선생님과 함께 고친 곳</span><span><i class="k3"></i>초록 태그: 학습하며 성장한 점</span><span><i class="k4"></i>흰 태그: 이미 잘하고 있는 점</span></div>';
   /* 학생 원문 (지희님 11/24): AI 개입 없는 데이터. 레벨 1~4는 Stage 2 첫 입력, 레벨 5 이상은 Stage 3 1차 에세이와 G-block 조건 달성 여부.
      data.orig = { lv, lesson, lines: [[학생 원문, G-block 패턴]] } 또는 { lv, lesson, essay, gs: [[G-block 패턴, 달성 여부(true/false)]] } */
   function origin(o) {
@@ -448,7 +455,6 @@
     else if (rows.length && up && ups.length === rows.length) head = "레벨이 " + (lv1 - lv0) + "단계 오르고, 힌트 없이 쓰기도 늘었어요";
     else if (rows.length && up && ups.length) head = "레벨이 오르고, 힌트 없이 " + best.w + " 쓰기도 늘었어요";
     else if (up) head = "레벨 " + lv0 + "에서 " + lv1 + "까지, 올라왔어요";
-    else if (kwOf(d) && kwOf(d).grow.length) head = kwOf(d).grow[0][0] + josa(kwOf(d).grow[0][0], "을", "를") + ", 바로잡으며 학습했어요";
     else head = num(d.lessons) + "레슨을, 꾸준히 학습했어요";
     return { G: G, rows: rows, best: best, low: low, up: up, lv0: lv0, lv1: lv1, head: head };
   }
@@ -465,16 +471,8 @@
           bar("처음 (레벨 " + G.early.lv + ")", r.a, "a") + bar("지금 (레벨 " + G.recent.lv + ")", r.b, "b") + "</div>";
       }).join("");
     }
-    var K = kwOf(d);
-    if (K) {
-      /* 작성 문장 평가표 (11/26 에이전시 A안): 항목 6개를 모든 학생에게 같은 순서로 */
-      var lab = { fix: "학습하며 성장했어요", ok: "이미 잘하고 있어요", "": "–" };
-      h += '<div class="gw-kw"><div class="gw-kw-h"><b>작성 문장 평가</b><span>첫 레슨 · 최근 레슨 문장 기준</span></div><table><tbody>' +
-        K.table.map(function (r) { return '<tr><th scope="row">' + r.k + '</th><td class="kw-' + (r.s || "na") + '">' + lab[r.s] + "</td></tr>"; }).join("") +
-        '</tbody></table><button type="button" class="gw-go" data-go="gram">아이가 쓴 문장 보기</button></div>';
-    }
     h += '<p class="gw-next"><b>다음 목표</b> ' + (gr.low ? gr.low.w + (gr.low.w === "문장" ? "을" : "를") : "단어와 문장을") + " 힌트 없이 먼저 써 보기</p>";
-    return '<section class="v-sec gw" data-item="b-growth" data-name="성장 한눈에"><h2>' + secIcon("b-areas") + (gr.best || gr.up || (K && K.grow.length) ? "처음보다 이만큼 성장했어요" : "지금까지 이만큼 배웠어요") + "</h2>" + h + "</section>";
+    return '<section class="v-sec gw" data-item="b-growth" data-name="성장 한눈에"><h2>' + secIcon("b-areas") + (gr.best || gr.up ? "처음보다 이만큼 성장했어요" : "지금까지 이만큼 배웠어요") + "</h2>" + h + "</section>";
   }
 
   /* 추천 학습 아이콘: 앱 디자인 라이브러리 [RA] PAGE UI_All > menuicon 원본(피그마, 160px) */

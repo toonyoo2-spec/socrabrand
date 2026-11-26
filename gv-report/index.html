@@ -928,22 +928,15 @@ body:has(.vb)::before{background:#E9F4EE}
 .rlist em.ready{background:#08794A;color:#fff}
 #report .vb .rx-hero p{color:#fff}
 .msg-del{min-height:32px;padding:6px 8px}
-/* 작성 문장 평가표 (11/26 에이전시 A안) */
-#report .vb .gw-kw{margin-top:16px;padding:16px;border-radius:16px;box-shadow:inset 0 0 0 1px #E3EAE6;background:#fff}
-#report .vb .gw-kw-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 8px}
-#report .vb .gw-kw-h b{font-size:16px;font-weight:800;color:#10221A}
-#report .vb .gw-kw-h span{font-size:13px;color:var(--v-t2)}
-#report .vb .gw-kw table{width:100%;margin-top:12px;border-collapse:collapse;font-size:15px}
-#report .vb .gw-kw th,#report .vb .gw-kw td{padding:10px 0;border-top:1px solid #EEF2EF;text-align:left;font-weight:500}
-#report .vb .gw-kw th{color:#10221A;width:40%}
-#report .vb .gw-kw td{text-align:right;font-weight:700}
-#report .vb .gw-kw td.kw-fix{color:#08794A}
-#report .vb .gw-kw td.kw-fix::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#08794A;vertical-align:2px}
-#report .vb .gw-kw td.kw-ok{color:#4B5A52}
-#report .vb .gw-kw td.kw-ok::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;box-shadow:inset 0 0 0 2px #8FBFA6;vertical-align:2px}
-#report .vb .gw-kw td.kw-na{color:#B4BDB8;font-weight:500}
-#report .vb .gw-go{margin-top:4px;min-height:44px;padding:0;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#08794A;cursor:pointer}
-#report .vb .gw-go::after{content:" →"}
+/* 문장 키워드 태그 (11/26, 문법 탭) */
+#report .vb .kwt{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#report .vb .kwt .kt{font-style:normal;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600;line-height:1.3;background:#fff;color:#4B5A52;box-shadow:inset 0 0 0 1px #D5E4DB}
+#report .vb .kwt .kt::before{content:"✓";font-weight:700;color:#8FBFA6}
+#report .vb .kwt .kt.up{background:#DDF0E4;color:#08794A;box-shadow:none}
+#report .vb .kwt .kt.up::before{color:#08794A}
+#report .vb .legend .k3,#report .vb .legend .k4{display:inline-block;width:14px;height:10px;border-radius:999px;vertical-align:0}
+#report .vb .legend .k3{background:#DDF0E4}
+#report .vb .legend .k4{background:#fff;box-shadow:inset 0 0 0 1px #D5E4DB}
 #report .vb .v-blk{flex-wrap:wrap}
 </style>
 </head>
@@ -1024,8 +1017,8 @@ body:has(.vb)::before{background:#E9F4EE}
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="curriculum.js?v=1127c"></script>
-<script src="render.js?v=1127c"></script>
-<script src="app.js?v=1127c"></script>
+<script src="curriculum.js?v=1127d"></script>
+<script src="render.js?v=1127d"></script>
+<script src="app.js?v=1127d"></script>
 </body>
 </html>
