@@ -251,6 +251,30 @@
     if (t.closest("#praiseSend")) { toast("지금은 미리보기예요. 실제 리포트에서는 칭찬 카드가 아이에게 전달돼요."); return; }
     if (wide.matches) { var it = t.closest("#report [data-item]"); if (it) { pickSection(it.getAttribute("data-item"), true); fbText.focus(); } }
   });
+  /* 휴대폰에서 좌우로 밀어 탭 넘기기 (KWAN 11/26). 가로 이동이 세로보다 확실히 클 때만, 처음·마지막 탭에서는 멈춘다 */
+  var sw = null;
+  function swipeOk(t) {
+    if (!t.closest || !t.closest("#report main") || t.closest(".sheet, input, textarea, select, [data-noswipe]")) return false;
+    if (document.querySelector("#report .sheet:not([hidden])")) return false;
+    for (var el = t; el && el.id !== "report"; el = el.parentElement) { /* 가로로 스크롤되는 표·그림 안에서는 그 스크롤을 우선 */
+      if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return false;
+    }
+    return true;
+  }
+  document.addEventListener("touchstart", function (e) {
+    var x0 = e.touches.length === 1 ? e.touches[0].clientX : -1; /* 화면 가장자리는 브라우저 뒤로 가기 동작에 양보 */
+    sw = x0 > 24 && x0 < window.innerWidth - 24 && swipeOk(e.target) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+  }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (!sw) return; var c = e.changedTouches[0], dx = c.clientX - sw.x, dy = c.clientY - sw.y, quick = Date.now() - sw.t < 800; sw = null;
+    if (!quick || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    var have = tabIds(), cur = document.querySelector("#report [role=tab][aria-selected=true]"); if (!cur) return;
+    var i = have.indexOf(cur.id.slice(2)) + (dx < 0 ? 1 : -1); if (i < 0 || i >= have.length) return;
+    showTab(have[i], true);
+    var p = $("p-" + have[i]); if (p) { p.classList.remove("sw-l", "sw-r"); void p.offsetWidth; p.classList.add(dx < 0 ? "sw-l" : "sw-r"); }
+  }, { passive: true });
+  document.addEventListener("touchcancel", function () { sw = null; }, { passive: true });
+
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { lvHide(); popHide(); closeSide("fbPanel"); closeSide("listPanel"); return; }
     if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && e.target.closest && e.target.closest("#report [role=tab]")) {
