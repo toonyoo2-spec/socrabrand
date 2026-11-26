@@ -385,20 +385,19 @@
     return { G: G, rows: rows, best: best, low: low, up: up, lv0: lv0, lv1: lv1, head: head };
   }
   function growthCard(d, p, gr) {
-    var G = gr.G, rows = gr.rows;
+    /* 오른 항목만 막대로 보여 준다. 내려간 항목은 숫자를 보여 주지 않는다 (11/26 KWAN) */
+    var G = gr.G, rows = gr.rows.filter(function (r) { return r.dl > 0; });
     var bar = function (lbl, v, cls) { return '<div class="gw-b"><span>' + lbl + '</span><i><u class="' + cls + '" style="width:' + Math.max(2, Math.min(100, v)) + '%"></u></i><b>' + p1(v) + "</b></div>"; };
     var h = '<div class="gw-tiles"><div><b>' + num(d.lessons) + '</b><span>레슨 학습</span></div><div><b>' + num(d.vb[0]) + '</b><span>모은 단어</span></div><div><b>' + num(d.gb[0]) + '</b><span>익힌 문장 패턴</span></div></div>';
     if (gr.up) h += '<div class="gw-lv"><span>레벨</span><b>' + gr.lv0 + '</b><i aria-hidden="true">→</i><b class="on">' + gr.lv1 + '</b><em>' + (gr.lv1 - gr.lv0) + "단계 올라갔어요</em></div>";
     if (rows.length) {
       h += '<p class="gw-cap">처음 두 달(' + esc(G.early.s.slice(2)) + "~)과 최근 두 달, 처음 풀 때 힌트 없이 맞힌 비율이에요.</p>";
       h += rows.map(function (r) {
-        var chip = r.dl > 0 ? '<em class="up">+' + r.dl + "%p</em>" : "";
-        return '<div class="gw-row' + (gr.best === r ? " best" : "") + '"><div class="gw-h"><b>' + r.w + " 스스로 쓰기</b>" + (gr.best === r ? '<span class="gw-tag">가장 많이 자랐어요</span>' : "") + chip + "</div>" +
+        return '<div class="gw-row' + (gr.best === r ? " best" : "") + '"><div class="gw-h"><b>' + r.w + " 스스로 쓰기</b>" + (gr.best === r ? '<span class="gw-tag">가장 많이 자랐어요</span>' : "") + '<em class="up">+' + r.dl + "%p</em></div>" +
           bar("처음 (레벨 " + G.early.lv + ")", r.a, "a") + bar("지금 (레벨 " + G.recent.lv + ")", r.b, "b") + "</div>";
       }).join("");
-      if (gr.up && rows.some(function (r) { return r.dl < 0; })) h += '<p class="gw-hard">지금은 레벨 ' + gr.lv1 + " 문제라 처음보다 어려워요.</p>";
-      if (gr.low) h += '<p class="gw-next"><b>다음 목표</b> ' + gr.low.w + "를 힌트 없이 먼저 써 보기</p>";
     }
+    h += '<p class="gw-next"><b>다음 목표</b> ' + (gr.low ? gr.low.w + (gr.low.w === "문장" ? "을" : "를") : "단어와 문장을") + " 힌트 없이 먼저 써 보기</p>";
     return '<section class="v-sec gw" data-item="b-growth" data-name="성장 한눈에"><h2>' + secIcon("b-areas") + (gr.best || gr.up ? "처음보다 이만큼 자랐어요" : "지금까지 이만큼 배웠어요") + "</h2>" + h + "</section>";
   }
 
