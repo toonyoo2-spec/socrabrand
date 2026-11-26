@@ -156,7 +156,7 @@
       }).join("") + (N.note ? '<p class="how" style="margin-top:14px">' + rich(N.note) + "</p>" : "") + "</section></div>";
 
     h += "</main>" +
-      '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
+      "</div>";
     return h + levelSheet(d, nm);
   }
 
@@ -190,7 +190,7 @@
     h += '<section data-item="all-needs" data-name="필요한 데이터"><h2>더 채우려면 필요한 데이터</h2><ul>' +
       (d.needs || []).map(function (n) { return "<li><b>" + esc(n[0]) + "</b><span>" + esc(n[1]) + "</span></li>"; }).join("") + "</ul></section>" +
       AI_NOTE + "</main>" +
-      '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
+      "</div>";
     return h;
   }
 
@@ -352,16 +352,17 @@
   function kwTags(l) {
     var r = kwLine(l[0], l[2]); if (!r) return "";
     var order = KW.map(function (k) { return k[0]; }), by = function (a, b) { return order.indexOf(a) - order.indexOf(b); };
-    var t = r.grow.slice().sort(by).map(function (k) { return '<i class="kt up">' + k + "</i>"; }).concat(r.good.slice().sort(by).map(function (k) { return '<i class="kt">' + k + "</i>"; }));
-    return t.length ? '<span class="kwt">' + t.join("") + "</span>" : "";
+    var row = function (cls, lab, ks) { return ks.length ? '<p class="kw-row ' + cls + '"><b>' + lab + "</b><span>" + ks.slice().sort(by).map(function (k) { return "<i>" + k + "</i>"; }).join("") + "</span></p>" : ""; };
+    var h = row("up", "학습하며 성장했어요", r.grow) + row("ok", "이미 잘하고 있어요", r.good);
+    return h ? '<div class="kwt">' + h + "</div>" : "";
   }
   function wrote(kd, n) {
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
       var ok = !l[2]; /* 고친 문장이 없으면 처음부터 바르게 쓴 문장 */
-      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + kwTags(l) + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
+      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (kd === "now" ? kwTags(l) : "") + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
     }).join("") + "</ul></div>";
   }
-  var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 어려웠던 곳도 리아 선생님과 함께 고치며 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 리아 선생님과 함께 고친 곳</span><span><i class="k3"></i>초록 태그: 학습하며 성장한 점</span><span><i class="k4"></i>흰 태그: 이미 잘하고 있는 점</span></div>';
+  var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 어려웠던 곳도 리아 선생님과 함께 고치며 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 리아 선생님과 함께 고친 곳</span></div>';
   /* 학생 원문 (지희님 11/24): AI 개입 없는 데이터. 레벨 1~4는 Stage 2 첫 입력, 레벨 5 이상은 Stage 3 1차 에세이와 G-block 조건 달성 여부.
      data.orig = { lv, lesson, lines: [[학생 원문, G-block 패턴]] } 또는 { lv, lesson, essay, gs: [[G-block 패턴, 달성 여부(true/false)]] } */
   function origin(o) {
@@ -389,9 +390,12 @@
     var clean = function (x) { return String(x || "").replace(/\[\[|\]\]|\{\{|\}\}/g, "").replace(/\s+/g, " ").trim(); };
     var a = clean(a0), f = clean(f0) || clean(a0), g = {}, ok = {}; /* 최종 문장이 없으면 처음부터 맞게 쓴 문장 */
     if (!a) return null;
+    if (/\b(im|dont|cant|its|isnt|wont)\b/i.test(a) && /\b(i am|do not|don't|can't|cannot|it is|it's|is not|isn't|will not|won't)\b/i.test(f)) { a = a.replace(/\bim\b/i, "I'm").replace(/\bdont\b/i, "don't").replace(/\bcant\b/i, "can't").replace(/\bisnt\b/i, "isn't").replace(/\bwont\b/i, "won't"); g["철자"] = 1; } /* 아포스트로피를 빠뜨린 줄임말 */
     var ko = /[\uAC00-\uD7A3]/.test(a);
     var w = function (x) { return x.split(" ").map(function (t) { return t.replace(/[^\w'\uAC00-\uD7A3]/g, ""); }).filter(Boolean); };
-    var A = w(a), F = w(f), la = A.map(function (t) { return t.toLowerCase(); }), lf = F.map(function (t) { return t.toLowerCase(); });
+    var EXP = { "i'm": "i am", "it's": "it is", "don't": "do not", "can't": "can not", "isn't": "is not", "aren't": "are not", "won't": "will not", "he's": "he is", "she's": "she is", "they're": "they are", "we're": "we are", "you're": "you are" };
+    var ex = function (x) { return x.replace(/\b[a-z]+'[a-z]+\b/gi, function (t) { return EXP[t.toLowerCase()] || t; }); }; /* 줄임말을 풀어서 단어를 맞춘다 */
+    var A = w(ex(a)), F = w(ex(f)), la = A.map(function (t) { return t.toLowerCase(); }), lf = F.map(function (t) { return t.toLowerCase(); });
     /* 대문자·문장 부호: 글자만 같고 대소문자나 부호가 다른 경우 */
     var bare = function (x) { return x.toLowerCase().replace(/[^\w\s'\uAC00-\uD7A3]/g, "").replace(/\s+/g, " ").trim(); };
     var capP = a.replace(/[\w\s'\uAC00-\uD7A3]/g, "") !== f.replace(/[\w\s'\uAC00-\uD7A3]/g, "") || A.some(function (t, i) { var j = lf.indexOf(la[i]); return j >= 0 && t !== F[j]; }) || (/^[a-z]/.test(a) && /^[A-Z]/.test(f));
@@ -418,7 +422,7 @@
       var best = -1, bd = 99; rf.forEach(function (y, k) { if (used[k]) return; var e = ed(x, y); if (e < bd) { bd = e; best = k; } });
       var y = best >= 0 ? rf[best] : "";
       if (y && stem(x, y)) { g["문법 사용"] = 1; used[best] = 1; }
-      else if (y && bd <= Math.max(1, Math.floor(Math.max(x.length, y.length) / 3)) && FN.indexOf(x) < 0) { g["철자"] = 1; used[best] = 1; }
+      else if (y && bd <= Math.max(1, Math.floor(Math.max(x.length, y.length) / 2)) && FN.indexOf(x) < 0) { g["철자"] = 1; used[best] = 1; }
       else if (FN.indexOf(x) >= 0) { g["문법 사용"] = 1; if (best >= 0 && FN.indexOf(y) >= 0) used[best] = 1; }
       else { g["단어 선택"] = 1; if (best >= 0) used[best] = 1; }
     });
@@ -465,9 +469,9 @@
     var h = '<div class="gw-tiles"><div><b>' + num(d.lessons) + '</b><span>레슨 학습</span></div><div><b>' + num(d.vb[0]) + '</b><span>모은 단어</span></div><div><b>' + num(d.gb[0]) + '</b><span>익힌 문장 패턴</span></div></div>';
     if (gr.up) h += '<div class="gw-lv"><span>레벨</span><b>' + gr.lv0 + '</b><i aria-hidden="true">→</i><b class="on">' + gr.lv1 + '</b><em>' + (gr.lv1 - gr.lv0) + "단계 올라갔어요</em></div>";
     if (rows.length) {
-      h += '<p class="gw-cap">처음 두 달(' + esc(G.early.s.replace(/-/g, ".")) + "부터)과 최근 두 달, 처음 풀었을 때 힌트 없이 맞힌 비율이에요.</p>";
+      h += '<p class="gw-cap">처음 두 달(' + esc(G.early.s.replace(/-/g, ".")) + "부터)과 최근 두 달,<br>처음 풀었을 때 힌트 없이 맞힌 비율이에요.</p>";
       h += rows.map(function (r) {
-        return '<div class="gw-row' + (gr.best === r ? " best" : "") + '"><div class="gw-h"><b>' + r.w + " 스스로 쓰기</b>" + (gr.best === r ? '<span class="gw-tag">가장 많이 자랐어요</span>' : "") + '<em class="up">+' + r.dl.toFixed(1) + "%p</em></div>" +
+        return '<div class="gw-row' + (gr.best === r ? " best" : "") + '"><div class="gw-h"><b>' + r.w + " 스스로 쓰기</b>" + (gr.best === r ? '<span class="gw-tag">가장 많이 성장했어요</span>' : "") + '<em class="up">+' + r.dl.toFixed(1) + "%p</em></div>" +
           bar("처음 (레벨 " + G.early.lv + ")", r.a, "a") + bar("지금 (레벨 " + G.recent.lv + ")", r.b, "b") + "</div>";
       }).join("");
     }
@@ -537,7 +541,7 @@
           '<ul class="rx-list">' + rest.map(function (r) { var lv = /라이브/.test(r[0]); return "<li>" + appIcon(r[0]) + '<div><span class="rx-tag' + (lv ? " live" : "") + '">' + (lv ? "라이브 수업" : "앱 학습") + "</span><b>" + esc(r[0]) + "</b><p>" + esc(r[1]) + "</p></div></li>"; }).join("") + "</ul>" +
           '<p class="rx-ask">추천 학습이 맞을지 리얼 코칭 상담에서 정해 보세요.</p></section>';
       })() + AI_NOTE);
-    return h + '</main><div class="minibar" id="miniBar"><div class="mb-in"><a class="mb1" href="' + EXTEND + '" target="_blank" rel="noopener noreferrer">사전 연장 신청</a><a class="mb2" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer">리얼 코칭 상담</a></div></div><div class="ctabar" data-item="b-cta" data-name="사전 연장·리얼 코칭 상담 버튼"><a class="cta" id="extendBtn" href="' + EXTEND + '" target="_blank" rel="noopener noreferrer">사전 연장 신청</a><a class="cta cta2" id="consultBtn" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer"><span>리얼 코칭 상담<small>선생님의 자세한 피드백을 듣고, 학습 방향성을 정해 보세요.</small></span></a></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
+    return h + '</main><div class="minibar" id="miniBar"><div class="mb-in"><a class="mb1" href="' + EXTEND + '" target="_blank" rel="noopener noreferrer">사전 연장 신청</a><a class="mb2" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer">리얼 코칭 상담</a></div></div><div class="ctabar" data-item="b-cta" data-name="사전 연장·리얼 코칭 상담 버튼"><a class="cta" id="extendBtn" href="' + EXTEND + '" target="_blank" rel="noopener noreferrer">사전 연장 신청</a><a class="cta cta2" id="consultBtn" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer"><span>리얼 코칭 상담<small>선생님의 자세한 피드백을 듣고, 학습 방향성을 정해 보세요.</small></span></a></div></div>' + levelGuide(p);
   }
 
   function renderTalk(id, d) {
@@ -583,7 +587,7 @@
         (p.full ? "" : '<p class="cap">레벨 ' + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.</p>") : '<p class="lvnow-g">레벨 9의 학습 내용은 2027년 상반기에 안내해 드릴 예정이에요.</p>') : "") +
       sec("talk-recs", "추천 학습", "추천 학습", "", '<ol class="recs">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></li>"; }).join("") + '</ol><p class="live-n">' + LIVE_NOTE + "</p>" + AI_NOTE));
 
-    return h + '</main><div class="ctabar" data-item="talk-cta" data-name="학습 상담 버튼"><a class="cta" id="consultBtn" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer">학습 상담 신청</a></div><footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>" + levelGuide(p);
+    return h + '</main><div class="ctabar" data-item="talk-cta" data-name="학습 상담 버튼"><a class="cta" id="consultBtn" href="' + CONSULT + '" target="_blank" rel="noopener noreferrer">학습 상담 신청</a></div></div>' + levelGuide(p);
   }
 
   function jo(n, a, b) { return "136780".indexOf(String(n).slice(-1)) >= 0 ? a : b; } /* 숫자 뒤 조사 */
@@ -675,7 +679,7 @@
        ["힌트를 쓰는 건 괜찮아요", "힌트도 어려운 표현을 배우는 과정이에요. 다음에 비슷한 문장을 쓸 때 힌트 없이 써 내는지를 함께 지켜봐 주세요."]]
         .map(function (g, i) { return '<div class="gi"><span class="n">' + (i + 1) + "</span><div><b>" + g[0] + "</b><span>" + g[1] + "</span></div></div>"; }).join("") +
       "</div></section></div>" + (d.items ? itemsPanel(d.items) : "") + "</main>" +
-      '<footer class="pad"><b>내부 검토용 · 학생 ID ' + esc(id) + "</b><span>권한이 있는 팀원 계정으로만 볼 수 있어요. 밖으로 보낼 때는 학생 정보를 꼭 가려 주세요.</span></footer></div>";
+      "</div>";
 
     return h + levelSheet(d, nm);
   };

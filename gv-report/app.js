@@ -521,4 +521,17 @@
   }
 
   start();
+
+  /* 학부모 보기: 학생 목록·피드백·기기 전환·상단 바를 숨긴다. 오른쪽 위 버튼이나 Esc로 돌아온다 */
+  (function () {
+    var btn = $("parentBtn"), ex = $("pvExit"); if (!btn || !ex) return;
+    function setPv(on) {
+      document.documentElement.classList.toggle("pv", on); ex.hidden = !on;
+      if (on) { ["listPanel", "fbPanel"].forEach(function (id) { var el = $(id); if (el) el.classList.remove("open"); }); ex.focus(); } else btn.focus();
+      if (typeof fitPhone === "function") fitPhone();
+    }
+    btn.addEventListener("click", function () { setPv(true); });
+    ex.addEventListener("click", function () { setPv(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && document.documentElement.classList.contains("pv")) setPv(false); });
+  })();
 })();
