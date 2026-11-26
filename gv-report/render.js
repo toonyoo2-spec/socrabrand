@@ -365,6 +365,23 @@
   }
   /* 총평: 처음과 지금 비교(성장 한눈에). data.growth = { early, recent } (리대시 3928, 처음 60일 / 최근 60일, 첫 시도 힌트 없이 정답 비율).
      문항이 30개 미만인 기간은 믿기 어려워 그 줄은 빼고, 레벨이 올랐으면 레벨 변화를 먼저 보여 준다 */
+  /* 문장 키워드 (11/26 고명주님 시트 '키워드 및 선정 기준'). 순서가 같은 수일 때의 우선순위 */
+  var KW = [
+    ["문장 구성", "영어로 끝까지, 필요한 내용을 담아 문장을 만들 수 있게 됐어요", "영어로 끝까지, 문장을 만들 수 있게 됐어요"],
+    ["문법 사용", "알맞은 문법을 필요한 자리에 쓸 수 있게 됐어요", "알맞은 문법을, 쓸 수 있게 됐어요"],
+    ["단어 선택", "상황에 맞는 단어를 골라 쓸 수 있게 됐어요", "상황에 맞는 단어를, 고를 수 있게 됐어요"],
+    ["표현 확장", "같은 뜻을 다른 방법으로도 말할 수 있게 됐어요", "같은 뜻을, 다르게도 말할 수 있게 됐어요"],
+    ["철자", "단어를 정확하게 쓸 수 있게 됐어요", "단어를, 정확하게 쓸 수 있게 됐어요"],
+    ["문장 부호", "대문자와 문장 부호를 알맞게 쓸 수 있게 됐어요", "대문자와 문장 부호를, 알맞게 쓰게 됐어요"]
+  ];
+  /* d.kw = [{ grow: [...], good: [...] }, ...] 첫 레슨·최근 레슨 문장별. 성장 2개까지, 성장과 겹치는 긍정은 뺀다 */
+  function kwOf(d) {
+    if (!d.kw || !d.kw.length) return null;
+    var cnt = function (key) { var c = {}; d.kw.forEach(function (x) { (x[key] || []).forEach(function (k) { c[k] = (c[k] || 0) + 1; }); }); return KW.filter(function (k) { return c[k[0]]; }).sort(function (a, b) { return c[b[0]] - c[a[0]] || KW.indexOf(a) - KW.indexOf(b); }); };
+    var grow = cnt("grow").slice(0, 2), gn = grow.map(function (k) { return k[0]; });
+    var good = cnt("good").filter(function (k) { return gn.indexOf(k[0]) < 0; }).slice(0, 3);
+    return grow.length || good.length ? { grow: grow, good: good } : null;
+  }
   function growthOf(d) {
     var G = d.growth, rows = [], best = null, low = null;
     if (G && G.early && G.recent) {
@@ -381,6 +398,7 @@
     else if (rows.length && up && ups.length === rows.length) head = "레벨이 " + (lv1 - lv0) + "단계 오르고, 힌트 없이 쓰기도 늘었어요";
     else if (rows.length && up && ups.length) head = "레벨이 오르고, 힌트 없이 " + best.w + " 쓰기도 늘었어요";
     else if (up) head = "레벨 " + lv0 + "에서 " + lv1 + "까지, 올라왔어요";
+    else if (kwOf(d) && kwOf(d).grow.length) head = kwOf(d).grow[0][2];
     else head = num(d.lessons) + "레슨을, 꾸준히 학습했어요";
     return { G: G, rows: rows, best: best, low: low, up: up, lv0: lv0, lv1: lv1, head: head };
   }
@@ -397,8 +415,15 @@
           bar("처음 (레벨 " + G.early.lv + ")", r.a, "a") + bar("지금 (레벨 " + G.recent.lv + ")", r.b, "b") + "</div>";
       }).join("");
     }
+    var K = kwOf(d);
+    if (K) {
+      h += '<div class="gw-kw"><p class="gw-kw-h">첫 레슨과 최근 레슨 문장을 비교해 보면</p>' +
+        (K.grow.length ? '<ul>' + K.grow.map(function (k) { return '<li><b>' + k[0] + '</b><span>' + k[1] + '</span></li>'; }).join("") + '</ul>' : "") +
+        (K.good.length ? '<p class="gw-good"><em>처음부터 잘한 점</em>' + K.good.map(function (k) { return '<i>' + k[0] + '</i>'; }).join("") + '</p>' : "") +
+        '<button type="button" class="gw-go" data-go="gram">실제 문장 보기</button></div>';
+    }
     h += '<p class="gw-next"><b>다음 목표</b> ' + (gr.low ? gr.low.w + (gr.low.w === "문장" ? "을" : "를") : "단어와 문장을") + " 힌트 없이 먼저 써 보기</p>";
-    return '<section class="v-sec gw" data-item="b-growth" data-name="성장 한눈에"><h2>' + secIcon("b-areas") + (gr.best || gr.up ? "처음보다 이만큼 자랐어요" : "지금까지 이만큼 배웠어요") + "</h2>" + h + "</section>";
+    return '<section class="v-sec gw" data-item="b-growth" data-name="성장 한눈에"><h2>' + secIcon("b-areas") + (gr.best || gr.up || (K && K.grow.length) ? "처음보다 이만큼 자랐어요" : "지금까지 이만큼 배웠어요") + "</h2>" + h + "</section>";
   }
 
   /* 추천 학습 아이콘: 앱 디자인 라이브러리 [RA] PAGE UI_All > menuicon 원본(피그마, 160px) */
@@ -437,7 +462,7 @@
     function skill(key, title, f, k, w, b) {
       return ['<section class="v-hero" data-item="b-' + key + '" data-name="' + esc(title) + '"><p class="v-who">' + title + '</p><div class="v-hring"><div><p class="v-big">' + pc(f.okP) + '</p><p class="v-s"><b>' + w.acc + "</b><br>" + num(f.q) + "문항을 처음 풀었을 때<br>맞힌 비율이에요.</p></div>" + ring(f, 144, 22, ON) + '</div><ul class="v-hleg"><li><i style="background:var(--v-on)"></i>힌트 없이 <b>' + num(f.solo) + '</b></li><li><i style="background:var(--v-hint-on)"></i>힌트 사용 <b>' + num(f.hint) + "</b></li><li>" + w.solo + " <b>" + p1(f.soloP) + "</b></li></ul></section>",
         '<section class="v-sec"><div class="v-say">' + comment(f, k, w).map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") + "</div></section>" +
-        sec(w.k + "block", w.code + " 학습 현황", '<p class="v-blk"><b>' + num(b[1]) + "</b><span>개 마스터 · <strong>" + num(b[0]) + '개</strong> 획득</span></p><div class="v-ln" role="img" aria-label="획득 ' + b[0] + "개 중 마스터 " + b[1] + '개"><i style="width:' + (b[0] ? b[1] / b[0] * 100 : 0).toFixed(1) + '%"></i></div><dl class="v-defs"><div><dt>획득</dt><dd>새로운 ' + w.obj + " 배웠어요. 스스로 쓰려면 연습이 더 필요해요.</dd></div><div><dt>마스터</dt><dd>배운 " + w.obj + ' 힌트 없이 써서 문장을 만들 수 있어요.</dd></div></dl><div class="v-tip"><b>GV 마스터란</b><p>GV 레슨 하나를 완료하면 진행할 수 있는 복습 프로그램이에요. 헷갈렸거나 틀린 단어와 문장을 복습하면 그 블록을 마스터할 수 있어요.</p></div>')];
+        sec(w.k + "block", w.code + " 학습 현황", '<p class="v-blk"><span><strong>' + num(b[0]) + "개</strong> 획득 중</span><b>" + num(b[1]) + '</b><span>개 마스터</span></p><div class="v-ln" role="img" aria-label="획득 ' + b[0] + "개 중 마스터 " + b[1] + '개"><i style="width:' + (b[0] ? b[1] / b[0] * 100 : 0).toFixed(1) + '%"></i></div><dl class="v-defs"><div><dt>획득</dt><dd>새로운 ' + w.obj + " 배웠어요. 스스로 쓰려면 연습이 더 필요해요.</dd></div><div><dt>마스터</dt><dd>배운 " + w.obj + ' 힌트 없이 써서 문장을 만들 수 있어요.</dd></div></dl><div class="v-tip"><b>GV 마스터란</b><p>GV 레슨 하나를 완료하면 진행할 수 있는 복습 프로그램이에요. 헷갈렸거나 틀린 단어와 문장을 복습하면 그 블록을 마스터할 수 있어요.</p></div>')];
     }
     var l9 = "", i; for (i = 1; i <= 9; i++) l9 += '<li class="' + (i === p.lv ? "me" : p.allDone.indexOf(i) >= 0 ? "ok" : i === 9 ? "yet" : "") + '"' + (i === p.lv ? ' aria-current="step"' : "") + "><b>" + i + "</b></li>";
     var h = '<div class="app vb"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><span>GV 라이팅</span><button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
