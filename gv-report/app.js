@@ -8,7 +8,7 @@
   var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvbGphc21nb2dkY3ZueXRhb2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NzIwMDEsImV4cCI6MjEwMTQ0ODAwMX0.G8wiFPCgvzoDwGlk__SDkn8SxP6lDMHY6g6pt61-a5o";
   var K = { token: "socra_admin_token", exp: "socra_admin_token_exp", refresh: "socra_refresh_token", uid: "socra_user_id",
             role: "socra_user_role", email: "socra_user_email", name: "socra_user_name", tabs: "socra_visible_tabs" };
-  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons,variant:data->>variant&data->>hidden=is.null&order=is_sample.desc,created_at.asc";
+  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons,variant:data->>variant,err:data->>build_error&data->>hidden=is.null&order=is_sample.desc,created_at.asc";
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -117,22 +117,27 @@
     filterList();
   }
   function filterList() {
-    var q = addId.value.trim();
-    document.querySelectorAll("#listPanel [data-row]").forEach(function (li) { li.hidden = !!q && li.getAttribute("data-row").indexOf(q) < 0; });
+    var qs = idsOf(addId.value);
+    document.querySelectorAll("#listPanel [data-row]").forEach(function (li) { var row = li.getAttribute("data-row"); li.hidden = qs.length > 0 && !qs.some(function (q) { return row.indexOf(q) >= 0; }); });
   }
   function flashItem(id) {
     var b = document.querySelector('#listPanel [data-rid="' + id + '"]'); if (!b) return;
     b.scrollIntoView({ block: "nearest", behavior: calm ? "auto" : "smooth" });
     b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash");
   }
+  /* 학생 ID는 쉼표·띄어쓰기·줄바꿈으로 여러 개를 한 번에 넣을 수 있다 (KWAN 11/26) */
+  function idsOf(v) { var seen = {}; return String(v || "").split(/[^0-9]+/).filter(function (x) { if (!x || seen[x]) return false; seen[x] = 1; return true; }); }
   addId.addEventListener("input", function () {
-    var v = addId.value.replace(/[^0-9]/g, ""); if (v !== addId.value) addId.value = v;
-    addBtn.disabled = !v; say("", ""); filterList();
-    var exact = byId(v); addBtn.textContent = exact ? "열기" : "만들기";
+    var v = addId.value.replace(/[^0-9,\s]/g, ""); if (v !== addId.value) addId.value = v;
+    var ids = idsOf(v);
+    addBtn.disabled = !ids.length; say("", ""); filterList();
+    addBtn.textContent = ids.length > 1 ? ids.length + "명 만들기" : byId(ids[0]) ? "열기" : "만들기";
   });
   $("addForm").addEventListener("submit", async function (e) {
     e.preventDefault();
-    var id = addId.value.trim();
+    var ids = idsOf(addId.value);
+    if (ids.length > 1) { await addMany(ids); return; }
+    var id = ids[0] || "";
     var have = byId(id) || reports.filter(function (x) { return x.student_id === id; })[0];
     if (have) {
       say("warn", "이미 있는 학생이에요. 새로 만들지 않고 " + (have.name || id) + " 리포트를 열었어요.");
@@ -143,8 +148,8 @@
     try {
       await api("gv_reports", { method: "POST", body: { id: id, student_id: id, title: id + " 학생 · GV 라이팅 리포트", status: "requested" }, headers: { Prefer: "return=minimal" } });
       addId.value = ""; filterList();
-      say("ok", id + " 학생을 목록에 넣었어요. 학습 기록이 연결되면 리포트가 채워져요.");
-      reports = await api(LIST) || []; renderList(); openReport(id, true); flashItem(id);
+      say("ok", id + " 학생 리포트를 만들고 있어요. 보통 1분 안에 완성돼요.");
+      reports = await api(LIST) || []; renderList(); openReport(id, true); flashItem(id); pollTimer();
     } catch (err) {
       if (expired(err)) return;
       if (err && (err.status === 409 || err.code === "23505")) {
@@ -153,6 +158,30 @@
       } else say("err", "넣지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally { addBtn.textContent = "만들기"; addBtn.disabled = !addId.value; }
   });
+  async function addMany(ids) {
+    var bad = ids.filter(function (x) { return !/^[0-9]{4,12}$/.test(x); });
+    if (bad.length) { say("err", "학생 ID는 숫자 4~12자리로 넣어 주세요: " + bad.join(", ")); addId.focus(); return; }
+    var have = ids.filter(function (x) { return reports.some(function (r) { return r.id === x || r.student_id === x; }); });
+    var todo = ids.filter(function (x) { return have.indexOf(x) < 0; });
+    addBtn.disabled = true; addBtn.textContent = "만드는 중…";
+    var made = [], hidden = [], failed = [];
+    try {
+      await Promise.all(todo.map(function (id) {
+        return api("gv_reports", { method: "POST", body: { id: id, student_id: id, title: id + " 학생 · GV 라이팅 리포트", status: "requested" }, headers: { Prefer: "return=minimal" } })
+          .then(function () { made.push(id); })
+          .catch(function (err) { if (err && (err.status === 409 || err.code === "23505")) hidden.push(id); else failed.push(id); });
+      }));
+      reports = await api(LIST).catch(function () { return reports; }) || reports; renderList();
+      var msg = made.length ? made.length + "명 리포트를 만들고 있어요. 보통 1~2분 안에 완성돼요." : "새로 만든 학생이 없어요.";
+      if (have.length) msg += " 이미 있는 " + have.length + "명은 건너뛰었어요.";
+      if (hidden.length) msg += " 예전에 만들어 숨긴 학생(" + hidden.join(", ") + ")은 브랜드팀에 알려 주세요.";
+      if (failed.length) msg += " 넣지 못한 학생: " + failed.join(", ") + ".";
+      say(failed.length ? "warn" : "ok", msg);
+      if (!failed.length) { addId.value = ""; filterList(); }
+      if (made[0]) { openReport(made[0], true); made.forEach(flashItem); pollTimer(); }
+    } catch (err) { if (!expired(err)) say("err", "넣지 못했어요. 잠시 뒤 다시 눌러 주세요."); }
+    finally { addBtn.textContent = "만들기"; addBtn.disabled = !addId.value; }
+  }
   $("listPanel").addEventListener("click", function (e) {
     var b = e.target.closest("[data-rid]"); if (!b) return;
     openReport(b.getAttribute("data-rid"), true);
@@ -185,8 +214,9 @@
   function showWait(meta) {
     $("report").innerHTML = '<div class="app"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>GV 라이팅 리포트</span>' +
       '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
-      '<div class="wait-card"><img src="img/echo_thumb.png" alt=""><h2>' + esc(meta.student_id) + " 학생은<br>학습 기록을 기다리고 있어요</h2>" +
-      "<p>이 학생의 학습 기록이 아직 연결되지 않았어요. 기록이 연결되면 다른 리포트와 같은 기준으로 채워지고, 왼쪽 목록에 ‘완성’이 떠요.</p>" +
+      '<div class="wait-card"><img src="img/echo_thumb.png" alt="">' + (meta.err
+        ? "<h2>" + esc(meta.student_id) + " 학생 리포트를<br>만들지 못했어요</h2><p>" + esc(meta.err) + '</p><button type="button" class="bar-btn" id="rebuildBtn" data-rid="' + esc(meta.id) + '">다시 만들기</button>'
+        : "<h2>" + esc(meta.student_id) + ' 학생 리포트를<br>만들고 있어요</h2><p>학습 기록을 불러와 리포트를 채우는 중이에요. 보통 1분 안에 끝나고, 끝나면 이 화면이 저절로 바뀌어요.</p>') +
       "<small>" + (meta.requested_by_name ? esc(meta.requested_by_name) + "님이 " : "") + fmt(meta.created_at) + "에 넣었어요</small></div></div>";
     buildSections();
   }
@@ -237,7 +267,7 @@
     /* 읽는 동안은 하단에 작은 신청 버튼 두 개가 따라다니고, 맨 아래 큰 버튼이 보이면 숨긴다 */
     if (fabObs) { fabObs.disconnect(); fabObs = null; }
     var cta = document.querySelector("#report .ctabar"), fw = $("miniBar");
-    if (cta && fw && "IntersectionObserver" in window) { fabObs = new IntersectionObserver(function (es) { fw.classList.toggle("off", es[0].isIntersecting); }); fabObs.observe(cta); }
+    if (cta && fw && "IntersectionObserver" in window) { var seen = new Set(); fabObs = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target); }); fw.classList.toggle("off", seen.size > 0); }); fabObs.observe(cta); var rc = $("recCta"); if (rc) fabObs.observe(rc); } /* 큰 버튼이나 추천 상담 버튼이 보이면 하단 작은 버튼은 숨김 */
     fitPhone();
     var h = location.hash.slice(1); showTab(tabIds().indexOf(h) >= 0 ? h : "summary", false);
     buildSections();
@@ -258,6 +288,14 @@
     if (t.closest("#lvOpen")) { lvShow(); return; }
     if (t.closest("#lvClose") || t.closest("#lvBg")) { lvHide(); return; }
     if (t.closest("#chatOpen")) { openSide("fbPanel"); return; }
+    var rb = t.closest("#rebuildBtn");
+    if (rb) {
+      rb.disabled = true; rb.textContent = "다시 만드는 중…";
+      api("rpc/gv_report_rebuild", { method: "POST", body: { rid: rb.getAttribute("data-rid") } }).then(function () {
+        reports.forEach(function (x) { if (x.id === rb.getAttribute("data-rid")) x.err = null; }); if (current && current.id === rb.getAttribute("data-rid")) { current.err = null; showWait(current); } pollTimer();
+      }).catch(function (err) { if (!expired(err)) { toast("다시 만들지 못했어요. 잠시 뒤 눌러 주세요."); rb.disabled = false; rb.textContent = "다시 만들기"; } });
+      return;
+    }
     var ch = t.closest("#praiseChips .choice");
     if (ch) {
       var on = ch.getAttribute("aria-pressed") !== "true";
@@ -266,7 +304,7 @@
       var send = $("praiseSend"); if (send) { send.disabled = !on; send.textContent = on ? "칭찬 카드 보내기" : "보낼 말을 골라 주세요"; }
       return;
     }
-    if (t.closest("#consultBtn, #extendBtn, #miniBar a")) return; /* 새 탭에서 상담 예약, 사전 연장 신청 페이지 */
+    if (t.closest("#consultBtn, #extendBtn, #miniBar a, #recCta")) return; /* 새 탭에서 상담 예약, 사전 연장 신청 페이지 */
     if (t.closest("#praiseSend")) { toast("지금은 미리보기예요. 실제 리포트에서는 칭찬 카드가 아이에게 전달돼요."); return; }
     if (wide.matches) { var it = t.closest("#report [data-item]"); if (it) { pickSection(it.getAttribute("data-item"), true); fbText.focus(); } }
   });
@@ -344,7 +382,7 @@
     sel.innerHTML = sections.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.tab ? x.tab + " · " + x.name : x.name) + "</option>"; }).join("");
   }
   /* 지금 화면에 없는 부분의 이름 (작성 문장이 없는 학생 등) */
-  var SECN = { sum: ["요약", "종합 결과"], level: ["요약", "학습 레벨"], days: ["요약", "학습 참여"], areas: ["요약", "영역별 결과"], vocab: ["어휘", "어휘 학습 결과"], vblock: ["어휘", "V-block 학습 현황"], gram: ["문법", "문법 학습 결과"], gblock: ["문법", "G-block 학습 현황"], notes: ["문법", "작성 문장 비교"], lia: ["총평", "리아 선생님의 한마디"], next: ["총평", "다음 학습 과정"], recs: ["총평", "추천 학습"], cta: ["", "사전 연장·리얼 코칭 상담 버튼"] };
+  var SECN = { sum: ["요약", "종합 결과"], level: ["요약", "학습 레벨"], days: ["요약", "학습 참여"], areas: ["요약", "영역별 결과"], vocab: ["어휘", "어휘 학습 결과"], vblock: ["어휘", "V-block 학습 현황"], gram: ["문법", "문법 학습 결과"], gblock: ["문법", "G-block 학습 현황"], notes: ["문법", "작성 문장 비교"], lia: ["총평", "리아 선생님의 한마디"], growth: ["총평", "성장 한눈에"], recs: ["총평", "다음 학습 추천"], next: ["총평", "다음 학습 과정"], "rec-peek": ["요약", "추천 학습 미리보기"], cta: ["", "사전 연장·리얼 코칭 상담 버튼"] };
   function secOf(id) { for (var i = 0; i < sections.length; i++) if (sections[i].id === (id || "")) return sections[i]; var s = SECN[String(id).replace(/^b-/, "")]; return { id: id, name: s ? s[1] : NAMES[id] || id, tab: s ? s[0] : "" }; }
   function pickSection(id, focusThread) {
     if (!sections.some(function (x) { return x.id === (id || ""); })) id = "";
@@ -468,11 +506,12 @@
         try {
           var next = await api(LIST) || [];
           var was = current && current.status, now = current && next.filter(function (x) { return x.id === current.id; })[0];
-          reports = next; renderList();
+          reports = next; renderList(); if (!next.some(function (x) { return x.status !== "ready"; })) pollTimer(); /* 다 완성되면 다시 느리게 */
           if (now && was !== "ready" && now.status === "ready") { toast((now.name || now.student_id) + " 리포트가 완성됐어요."); openReport(now.id, false); }
+          else if (now && now.status !== "ready" && (now.err || "") !== ((current && current.err) || "")) { current = now; showWait(now); }
         } catch (err) { expired(err); }
       }
-    }, 20000);
+    }, reports.some(function (x) { return x.status !== "ready"; }) ? 6000 : 20000); /* 만드는 중인 리포트가 있으면 자주 확인 */
   }
 
   start();
