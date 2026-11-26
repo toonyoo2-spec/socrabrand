@@ -4,6 +4,7 @@ import {fillTemplate} from './template-slides.mjs?v=2';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
 import {addEchoScenes} from './intro.mjs?v=3';
+import {normalizeQuizNotation} from './math-notation.mjs?v=1';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
 const FONT = 'Pretendard';
@@ -423,18 +424,17 @@ async function paperQuizImage(question, loadPage) {
   } finally {page.close();}
 }
 
-// Only numeric product choices in a prime-factorization question are unambiguous.
-export function normalizeFactorChoices(quiz) {
-  if (quiz?.kind !== 'choice' || !/소인수\s*분해/.test(quiz.prompt)) return quiz;
-  const product = /^\s*\d+(?:\^\{\d+\}|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?(?:\s*[x×]\s*\d+(?:\^\{\d+\}|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?)+\s*$/;
-  const choices = quiz.choices.split('\n').map(line => product.test(line) ? line.replaceAll('x','×') : line).join('\n');
-  return choices === quiz.choices ? quiz : {...quiz, choices};
-}
+// Kept for callers that still import the old name; the rule now covers every quiz field.
+export const normalizeFactorChoices = normalizeQuizNotation;
 
 function orderedQuizItems(written, questions) {
   const items = [
-    ...written.map(quiz => ({quiz:normalizeFactorChoices(quiz),group:1,slot:quiz.slot})),
-    ...questions.map(q => ({q,quiz:q.quiz_override,group:q.quizOne ? 1 : 2,slot:q.slot})),
+    ...written.map(quiz => ({quiz:normalizeQuizNotation(quiz),group:1,slot:quiz.slot})),
+    ...questions.map(original => {
+      const quiz = normalizeQuizNotation(original.quiz_override);
+      const q = quiz === original.quiz_override ? original : {...original, quiz_override:quiz};
+      return {q,quiz,group:q.quizOne ? 1 : 2,slot:q.slot};
+    }),
   ].sort((a,b) => a.group-b.group || a.slot-b.slot);
   const slots=new Set();
   for (const {group,slot} of items) {

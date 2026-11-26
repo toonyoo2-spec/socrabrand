@@ -1,4 +1,5 @@
 import { connectStaffGoogle } from './google-drive.mjs?v=9';
+import { normalizeQuizNotation } from './math-notation.mjs?v=1';
 
 const sheetsScope = 'https://www.googleapis.com/auth/spreadsheets';
 const targets = {
@@ -52,7 +53,8 @@ function cellEntries(columns, items, format) {
   });
 }
 
-function formatQuiz(quiz) {
+function formatQuiz(raw) {
+  const quiz = normalizeQuizNotation(raw);
   const choices = quiz.kind === 'choice' ? '\n' + quiz.choices.split('\n').map((choice, i) => (i + 1) + '. ' + choice).join('\n')
     : quiz.kind === 'ox' ? '\nO / X' : '';
   return quiz.prompt + choices + '\n정답 ' + quiz.answer;

@@ -1,3 +1,4 @@
+import { numericTimes } from './math-notation.mjs?v=1';
 function exponentBase(selection) {
   const value = selection.trim();
   return /[\s+−×÷-]/.test(value) && !(value.startsWith('(') && value.endsWith(')')) ? '(' + value + ')' : value;
@@ -80,8 +81,7 @@ export function mountMathSymbols(root, fields) {
   convert.type = 'button';
   convert.hidden = true;
   // Offer a correction only at numeric boundaries, including exponent notation.
-  const numericX = /(\d|[⁰¹²³⁴⁵⁶⁷⁸⁹]|\^\{\d+\})([ \t]*)[xX](?=[ \t]*\d)/g;
-  const withTimes = value => value.replace(numericX, '$1$2×');
+  const withTimes = numericTimes;
   convert.addEventListener('click', () => {
     const input = activeInput();
     const start = input.selectionStart, end = input.selectionEnd;

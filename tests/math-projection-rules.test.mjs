@@ -64,3 +64,15 @@ assert len([g for g in slide.findall('.//{*}prstGeom') if g.get('prst')=='line']
 assert not any('__' in t for t in items)
 `,process.env.MATH_QA_EXPORTS],{stdio:'pipe'});
 });
+
+test('an English x between numbers becomes ×, a variable x stays', async ()=>{
+  const {numericTimes,normalizeQuizNotation}=await import('../math-automation/math-notation.mjs');
+  for(const [input,expected] of [
+    ['2x3x10','2×3×10'],['2^{2}x15','2^{2}×15'],['2²x3x5','2²×3×5'],
+    ['8은 2²x5의 약수이다.','8은 2²×5의 약수이다.'],['2³x5²의 약수의 개수','2³×5²의 약수의 개수'],['2 x 3','2 × 3'],
+  ]) assert.equal(numericTimes(input),expected);
+  for(const kept of ['2x','x²','3x+1','2x²','2x = 6','(192)⁄(x)','2x 3']) assert.equal(numericTimes(kept),kept);
+  const ox={kind:'ox',prompt:'15는 소수이다.',answer:'X'};
+  assert.equal(normalizeQuizNotation(ox),ox);
+  assert.equal(normalizeQuizNotation({kind:'choice',prompt:'60을 소인수분해 한 것은?',choices:'2x3x10\n3x4x5',answer:'1'}).choices,'2×3×10\n3×4×5');
+});

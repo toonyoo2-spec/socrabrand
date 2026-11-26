@@ -1,11 +1,12 @@
 import {submissionTemplate,slotLimits} from './lesson-template.mjs?v=3';
 import { lessonIntro } from './intro.mjs?v=1';
-import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=14';
+import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=15';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel, normalizeFactorChoices } from './presentation.mjs?v=29';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=30';
+import { numericTimes, normalizeQuizNotation } from './math-notation.mjs?v=1';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=15';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
-import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=4';
+import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=5';
 
 import { workDay, transferStatus, element, lessonList, channels, transferCell as planCell } from './transfer-board.mjs?v=2';
 
@@ -1284,10 +1285,12 @@ async function saveQuiz(event) {
   if (state.busy || !state.composer) return;
   const slot = state.quizSlot;
   const kind = $('quiz-kind').value;
-  const prompt = $('quiz-prompt').value.trim();
+  // 2x3 or 2²x5 is always multiplication; 2x and x² stay as the variable x.
+  const prompt = numericTimes($('quiz-prompt').value.trim());
   let answer = $(kind === 'choice' ? 'quiz-choice-answer' : 'quiz-answer').value.trim();
-  const choices = kind === 'choice' ? choiceInputs.map(id => $(id).value.trim()) : [];
+  const choices = kind === 'choice' ? choiceInputs.map(id => numericTimes($(id).value.trim())) : [];
   if (kind === 'ox') answer = answer.toUpperCase();
+  else if (kind === 'short') answer = numericTimes(answer);
   const incomplete = ['quiz-prompt', ...(kind === 'choice' ? choiceInputs : ['quiz-answer'])]
     .find(id => hasIncompleteMath($(id).value));
   if (incomplete) {
@@ -1840,7 +1843,9 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       const review=submission.math_submission_reviews;
       const template=submissionTemplate(row.course,submission,row.lesson.quiz_mode);
       const baseLayout=template ? 'lx-lora-v4-'+template : 'han-lora-v6';
-      const quizLayout = submission.quizzes?.some(q => normalizeFactorChoices(q) !== q) ? baseLayout+'-numeric-product' : baseLayout;
+      const rewritten = [...(submission.quizzes ?? []), ...(submission.stage_questions ?? []).map(p => p.quiz_override)]
+        .some(q => normalizeQuizNotation(q) !== q);
+      const quizLayout = rewritten ? baseLayout+'-numeric-product' : baseLayout;
       const layout=review?.status==='passed' && Object.keys(review.crop_fixes ?? {}).length
         ? quizLayout+'@'+Date.parse(review.updated_at) : quizLayout;
       const prev=row.receipts.slides;
