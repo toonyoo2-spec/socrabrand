@@ -1,6 +1,6 @@
-import {typeRuns,loadLessonFonts} from './math-type.mjs?v=2';
+import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=3';
 // Lay out selectable text in the browser, then transfer its lines, rules and original figures to PPT.
-const FACE='Pretendard', PX=96, marks='①②③④⑤';
+const FACE=KOREAN_FACE, PX=96, marks='①②③④⑤';
 const W=1300,H=835,LEFT=62,TOP=161;
 const node=(tag,css='')=>{const n=document.createElement(tag);n.style.cssText=css;return n;};
 function closingBrace(value,start){
@@ -152,7 +152,10 @@ async function addContent(root,g,quiz,loadImage,q){
     if(choices.length){
       const grid=node('div','display:grid;gap:.14em .64em;font-size:.86em;line-height:1.35;grid-template-columns:repeat('+ (choices.some(c=>c.length>30)?1:2)+', minmax(0,1fr))');
       for(const [i,txt] of choices.entries()){
-        const cell=node('div');await rich(cell,(marks[i]??String(i+1))+ '　'+txt);grid.append(cell);
+        const cell=node('div','display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:.5em;align-items:baseline');
+        const mark=node('span');styleText(mark,marks[i]??String(i+1),false);
+        const text=node('div','min-width:0');await rich(text,txt);
+        cell.append(mark,text);grid.append(cell);
       }
       root.append(grid);
     }
@@ -181,25 +184,29 @@ function* textLines(t){
 // reflow at different widths in PowerPoint and Google Slides when a font changes.
 function addProseLines(slide, block, xy) {
   const bounds=block.getBoundingClientRect();
+  const size=parseFloat(getComputedStyle(block).fontSize);
   const walker=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);
   let line;
   function emit(){
     if(!line || !line.runs.some(r=>r.text.trim()))return;
     slide.addText(line.runs,{...xy(line.left,line.top),w:(bounds.right-line.left)/PX,
       h:(line.bottom-line.top)/PX,margin:0,fontFace:FACE,bold:true,color:'FFFFFF',
-      fontSize:line.size*.75,align:'left',valign:'mid',wrap:false,lang:'ko-KR',
+      fontSize:size*.75,align:'left',valign:'mid',wrap:false,lang:'ko-KR',
       paraSpaceBefore:0,paraSpaceAfter:0});
   }
   while(walker.nextNode()){
     const text=walker.currentNode,el=text.parentElement,css=getComputedStyle(el);
+    const script=el.closest('sup')?'superscript':el.closest('sub')?'subscript':null;
     for(const part of textLines(text)){
       const mid=(part.top+part.bottom)/2;
-      if(!line || Math.abs(line.mid-mid)>parseFloat(css.fontSize)*.4){
-        emit();line={mid,left:part.left,top:part.top,bottom:part.bottom,size:parseFloat(css.fontSize),runs:[]};
+      // A raised or lowered script belongs to the line it follows, never starts one.
+      if(!line || (!script && Math.abs(line.mid-mid)>size*.4)){
+        emit();line={mid,left:part.left,top:part.top,bottom:part.bottom,runs:[]};
       }
-      line.top=Math.min(line.top,part.top);line.bottom=Math.max(line.bottom,part.bottom);
+      if(!script){line.top=Math.min(line.top,part.top);line.bottom=Math.max(line.bottom,part.bottom);}
       line.runs.push({text:part.text,options:{fontFace:el.dataset.face??FACE,
-        italic:css.fontStyle==='italic',underline:Boolean(el.closest('u'))}});
+        italic:css.fontStyle==='italic',underline:Boolean(el.closest('u')),
+        ...(script?{[script]:true}:{})}});
     }
   }
   emit();
@@ -232,8 +239,8 @@ export async function addGothicQuestion(slide,q,loadImage){
     }
     const prose=new Set();
     for(const block of root.querySelectorAll('div')){
-      // Fractions, superscripts, tables, diagrams and grids have independent geometry.
-      if(getComputedStyle(block).display!=='block' || block.querySelector('div,table,img,sup,sub,[data-rule],span:not([data-face])'))continue;
+      // Fractions, tables, diagrams, blanks and grids have independent geometry; scripts ride in the line.
+      if(getComputedStyle(block).display!=='block' || block.querySelector('div,table,img,[data-rule],span:not([data-face]),sup sup,sup sub,sub sup,sub sub'))continue;
       addProseLines(slide,block,xy);prose.add(block);
     }
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);

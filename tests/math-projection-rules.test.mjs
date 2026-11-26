@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {typeRuns} from '../math-automation/math-type.mjs';
+import {typeRuns,KOREAN_FACE} from '../math-automation/math-type.mjs';
 
 function verifyText(input, check, math=true) {
   const runs=typeRuns(input,math);
@@ -10,10 +10,10 @@ function verifyText(input, check, math=true) {
 
 test('unit codes, labels and numbered prompts are upright',()=>{
   for(const text of ['Ⅰ-1 소인수분해','IV-3 일차방정식']) {
-    verifyText(text,(_,o)=>{assert.equal(o.italic,false);assert.equal(o.fontFace,'Pretendard');});
+    verifyText(text,(_,o)=>{assert.equal(o.italic,false);assert.equal(o.fontFace,KOREAN_FACE);});
   }
   for(const text of ['0001','(1)','RPM 9p 0001~0006번']){
-    verifyText(text,(_,o)=>{assert.equal(o.italic,false);assert.equal(o.fontFace,'Pretendard');},false);
+    verifyText(text,(_,o)=>{assert.equal(o.italic,false);assert.equal(o.fontFace,KOREAN_FACE);},false);
   }
 });
 test('judgment marks, placeholders, operators and numerals remain upright',()=>{
@@ -75,4 +75,11 @@ test('an English x between numbers becomes ×, a variable x stays', async ()=>{
   const ox={kind:'ox',prompt:'15는 소수이다.',answer:'X'};
   assert.equal(normalizeQuizNotation(ox),ox);
   assert.equal(normalizeQuizNotation({kind:'choice',prompt:'60을 소인수분해 한 것은?',choices:'2x3x10\n3x4x5',answer:'1'}).choices,'2×3×10\n3×4×5');
+});
+
+test('every run uses a face that Google Slides serves', ()=>{
+  const served=[KOREAN_FACE,'Lora','STIX Two Math'];
+  assert.equal(KOREAN_FACE,'Noto Sans KR');
+  for(const text of ['다음 중 옳지 않은 것은?','2³×5²의 약수','x²+3x−1≠0','∠A=90°, π≒3.14','①②③ □ ○ △ ×','(가) A는 √2 ≤ |a|','RPM 10p 0046번'])
+    for(const {options} of typeRuns(text)) assert.ok(served.includes(options.fontFace),text+' → '+options.fontFace);
 });

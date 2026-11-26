@@ -1,10 +1,10 @@
 import {submissionTemplate,slotLimits} from './lesson-template.mjs?v=3';
-import { lessonIntro } from './intro.mjs?v=1';
+import { lessonIntro } from './intro.mjs?v=4';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=15';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=30';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=31';
 import { numericTimes, normalizeQuizNotation } from './math-notation.mjs?v=1';
-import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=15';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=16';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=5';
 
@@ -1842,7 +1842,7 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
     } else {
       const review=submission.math_submission_reviews;
       const template=submissionTemplate(row.course,submission,row.lesson.quiz_mode);
-      const baseLayout=template ? 'lx-lora-v4-'+template : 'han-lora-v6';
+      const baseLayout=template ? 'lx-lora-v5-'+template : 'han-lora-v7';
       const rewritten = [...(submission.quizzes ?? []), ...(submission.stage_questions ?? []).map(p => p.quiz_override)]
         .some(q => normalizeQuizNotation(q) !== q);
       const quizLayout = rewritten ? baseLayout+'-numeric-product' : baseLayout;

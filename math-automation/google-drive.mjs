@@ -140,6 +140,14 @@ function rememberId(key, file) {
   return url;
 }
 
+// A teacher's edits (pasted concept captures, fixed wording) must never be overwritten
+// by a regenerated deck. Files saved before socraMathSavedAt existed fall back to who edited last.
+function editedAfterExport(file) {
+  const saved = Date.parse(file.appProperties?.socraMathSavedAt ?? '');
+  if (Number.isFinite(saved)) return Date.parse(file.modifiedTime) - saved > 5 * 60 * 1000;
+  return file.lastModifyingUser?.me === false;
+}
+
 export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder, beforeWrite = async () => {}, layout = projectionLayout, priorReceipt) {
   const parent = fileId(folder.id);
   const headers={...connection.headers};
@@ -149,7 +157,7 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   const candidates = [{id:savedId(key),submission}, priorReceipt].filter(candidate=>candidate?.id);
   let confirmed;
   for (const hint of candidates) {
-    const response = await fetch(driveApi+'files/'+fileId(hint.id)+'?supportsAllDrives=true&fields=id,parents,mimeType,trashed,appProperties',{headers,cache:'no-store'});
+    const response = await fetch(driveApi+'files/'+fileId(hint.id)+'?supportsAllDrives=true&fields=id,parents,mimeType,trashed,appProperties,modifiedTime,lastModifyingUser(me)',{headers,cache:'no-store'});
     if (response.status===404) continue;
     const file = await checkGoogleResponse(response,'기존 슬라이드의 저장 위치를 확인하지 못했습니다.');
     if (file.trashed || file.mimeType!==slidesMime || !file.parents?.includes(parent) || file.appProperties?.socraMathSubmission!==hint.submission) continue;
@@ -163,7 +171,7 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
     ...folderQuery(folder),
     q: "trashed = false and '" + parent + "' in parents and mimeType = '" + slidesMime +
       "' and (" + searchIds.map(submissionFilter).join(' or ') + ")",
-    fields: 'nextPageToken,files(id,mimeType,appProperties)', pageSize: '100',
+    fields: 'nextPageToken,files(id,mimeType,appProperties,modifiedTime,lastModifyingUser(me))', pageSize: '100',
   });
   const { files } = await fetch(driveApi + 'files?' + lookup, { headers, cache: 'no-store' })
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
@@ -176,6 +184,8 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   };
   const family = layout.split('@')[0];
   const knownLayouts = [...(predecessors[family] ?? []), family, projectionLayout];
+  if (family.startsWith('lx-lora-v5-')) knownLayouts.push(family.replace('lx-lora-v5-','lx-lora-v4-'),family.replace('lx-lora-v5-','lx-lora-v4-').replace(/-numeric-product$/,''));
+  if (family==='han-lora-v7') knownLayouts.push('han-lora-v6');
   if (family.startsWith('lx-lora-v3-')) knownLayouts.push(family.replace('lx-lora-v3-','lx-gothic-v2-'),family.replace('lx-lora-v3-','lx-sample-v1-'));
   if (family==='han-lora-v5') knownLayouts.push('han-gothic-v4','han-quiz-ppt-3',...Object.values(predecessors).flat());
   if (family.startsWith('lx-gothic-v2-')) knownLayouts.push(family.replace('lx-gothic-v2-','lx-sample-v1-'));
@@ -183,6 +193,9 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   const previous = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]) || (priorReceipt?.submission && file.appProperties?.socraMathSubmission===priorReceipt.submission));
   if (previous.length > 1) throw Error('같은 제출본의 이전 슬라이드가 두 개 이상 있습니다. 저장 폴더를 확인해 주세요.');
   const existing = previous[0] ?? confirmed;
+  if (existing && editedAfterExport(existing)) {
+    throw Error('이 슬라이드는 반영 후 직접 수정된 기록이 있어 덮어쓰지 않았습니다. 수정본을 보존하려면 기존 파일을 다른 폴더로 옮긴 뒤 다시 반영해 주세요.');
+  }
   if (typeof blob === 'function') blob = await blob();
   await beforeWrite();
   const path = 'https://www.googleapis.com/upload/drive/v3/files' + (existing ? '/' + fileId(existing.id) : '');
@@ -191,7 +204,7 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
     headers: { ...headers, 'Content-Type': 'application/json',
       'X-Upload-Content-Type': pptxMime, 'X-Upload-Content-Length': String(blob.size) },
     body: JSON.stringify({ name, mimeType: slidesMime, ...(existing ? {} : { parents:[parent] }),
-      appProperties: { socraMathSubmission: submission, socraMathLayout: layout } }),
+      appProperties: { socraMathSubmission: submission, socraMathLayout: layout, socraMathSavedAt: new Date().toISOString() } }),
   });
   if (!start.ok) throw Error('Google Drive에서 저장을 시작하지 못했습니다.');
   const session = start.headers.get('location');

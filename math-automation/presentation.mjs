@@ -1,13 +1,13 @@
-import {typeRuns,loadLessonFonts} from './math-type.mjs?v=2';
-import {addGothicQuestion} from './gothic-question.mjs?v=5';
-import {fillTemplate} from './template-slides.mjs?v=2';
+import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=3';
+import {addGothicQuestion} from './gothic-question.mjs?v=6';
+import {fillTemplate} from './template-slides.mjs?v=3';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
-import {addEchoScenes} from './intro.mjs?v=3';
+import {addEchoScenes} from './intro.mjs?v=4';
 import {normalizeQuizNotation} from './math-notation.mjs?v=1';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
-const FONT = 'Pretendard';
+const FONT = KOREAN_FACE;
 const SLIDE_WIDTH = 20;
 const SLIDE_MARGIN = .625;
 let library;
@@ -329,6 +329,18 @@ function addLessonIntro(deck, intro) {
   }
 }
 
+// Google Slides swaps any face it does not serve (Pretendard became Arial), which
+// moves every line measured in the browser. Refuse such a deck instead of saving it.
+export const SLIDES_FACES = [KOREAN_FACE, 'Lora', 'STIX Two Math'];
+async function assertSlidesFonts(bytes) {
+  const zip = await window.JSZip.loadAsync(bytes), found = new Set();
+  for (const name of Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))) {
+    for (const [,face] of (await zip.file(name).async('string')).matchAll(/typeface="([^"]+)"/g)) found.add(face);
+  }
+  const other = [...found].filter(face => !SLIDES_FACES.includes(face));
+  if (other.length) throw Error('Google 슬라이드에 없는 글꼴('+other.join(', ')+')이 들어 있어 PPT를 만들지 않았습니다.');
+}
+
 export async function buildPresentation({
   title, intro, templateBytes, topic, nextTopic, onSlideOrder, picks, quizzes, appendix, stageLabel = '퀴즈앤 ② · 교사부록', quizLabel = '퀴즈앤 ①',
 }, loadImage) {
@@ -359,6 +371,7 @@ export async function buildPresentation({
     if (q && quiz?.book_quiz) slide.addNotes('퀴즈 '+number+'번 · 정답 '+quiz.answer);
   }
   const generated=await deck.write({outputType:'arraybuffer',compression:true});
+  await assertSlidesFonts(generated);
   if(templateBytes) return fillTemplate(templateBytes,generated,picks,orderedQuizItems(quizzes,appendix),topic,nextTopic,title,onSlideOrder);
   return new Blob([generated],{type:MIME});
 }
