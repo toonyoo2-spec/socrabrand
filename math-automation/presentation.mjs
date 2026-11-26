@@ -1,5 +1,5 @@
 import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=4';
-import {addGothicQuestion} from './gothic-question.mjs?v=7';
+import {addGothicQuestion} from './gothic-question.mjs?v=8';
 import {fillTemplate} from './template-slides.mjs?v=4';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
@@ -332,10 +332,20 @@ function addLessonIntro(deck, intro) {
 // Google Slides swaps any face it does not serve (Pretendard became Arial), which
 // moves every line measured in the browser. Refuse such a deck instead of saving it.
 export const SLIDES_FACES = [KOREAN_FACE, 'Lora', 'STIX Two Math'];
+// The right strip and bottom band of the projector screen are covered (camera, controls).
+export const SAFE_AREA = {right:.765, bottom:.91};
 async function assertSlidesFonts(bytes) {
   const zip = await window.JSZip.loadAsync(bytes), found = new Set();
+  const size = (await zip.file('ppt/presentation.xml').async('string')).match(/<p:sldSz cx="(\d+)" cy="(\d+)"/);
+  const [maxX, maxY] = [Number(size[1]) * SAFE_AREA.right, Number(size[2]) * SAFE_AREA.bottom];
   for (const name of Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))) {
-    for (const [,face] of (await zip.file(name).async('string')).matchAll(/typeface="([^"]+)"/g)) found.add(face);
+    const xml = await zip.file(name).async('string');
+    for (const [,face] of xml.matchAll(/typeface="([^"]+)"/g)) found.add(face);
+    for (const [,x,y,cx,cy] of xml.matchAll(/<a:off x="(-?\d+)" y="(-?\d+)"\/>\s*<a:ext cx="(\d+)" cy="(\d+)"\/>/g)) {
+      if (Number(x) + Number(cx) > maxX + 1 || Number(y) + Number(cy) > maxY + 1) {
+        throw Error(name.match(/\d+/)[0] + '번째 생성 슬라이드가 화면 가림 영역(오른쪽·아래)에 걸려 PPT를 만들지 않았습니다.');
+      }
+    }
   }
   const other = [...found].filter(face => !SLIDES_FACES.includes(face));
   if (other.length) throw Error('Google 슬라이드에 없는 글꼴('+other.join(', ')+')이 들어 있어 PPT를 만들지 않았습니다.');

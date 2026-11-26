@@ -140,12 +140,24 @@ function rememberId(key, file) {
   return url;
 }
 
-// A teacher's edits (pasted concept captures, fixed wording) must never be overwritten
-// by a regenerated deck. Files saved before socraMathSavedAt existed fall back to who edited last.
+// A deck someone edited after export is replaced by a new file and the edited one goes to the
+// trash (recoverable for 30 days) instead of being overwritten in place. Files saved before
+// socraMathSavedAt existed fall back to who edited last.
 function editedAfterExport(file) {
   const saved = Date.parse(file.appProperties?.socraMathSavedAt ?? '');
   if (Number.isFinite(saved)) return Date.parse(file.modifiedTime) - saved > 5 * 60 * 1000;
   return file.lastModifyingUser?.me === false;
+}
+
+async function retireSlides(headers, file, name) {
+  const update = body => fetch(driveApi + 'files/' + fileId(file.id) + '?supportsAllDrives=true', {
+    method:'PATCH', headers:{...headers, 'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const untag = { socraMathSubmission:null, socraMathLayout:null, socraMathSavedAt:null };
+  if ((await update({ trashed:true, appProperties:untag })).ok) return;
+  // Without permission to trash (another owner), keep it out of the way under a clear name.
+  const day = new Date().toLocaleDateString('ko-KR', { month:'2-digit', day:'2-digit' }).replace(/\s/g,'');
+  const renamed = await update({ name:name + ' (이전본 ' + day + ')', appProperties:untag });
+  if (!renamed.ok) throw Error('새 슬라이드는 저장했지만 이전 슬라이드를 정리하지 못했습니다. 폴더에서 이전 파일을 지워 주세요.');
 }
 
 export async function saveSlidesToStaffDrive(connection, blob, name, submission, folder, beforeWrite = async () => {}, layout = projectionLayout, priorReceipt) {
@@ -170,8 +182,8 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   const lookup = new URLSearchParams({
     ...folderQuery(folder),
     q: "trashed = false and '" + parent + "' in parents and mimeType = '" + slidesMime +
-      "' and (" + searchIds.map(submissionFilter).join(' or ') + ")",
-    fields: 'nextPageToken,files(id,mimeType,appProperties,modifiedTime,lastModifyingUser(me))', pageSize: '100',
+      "' and (" + [...searchIds.map(submissionFilter), "name = '" + name.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"].join(' or ') + ")",
+    fields: 'nextPageToken,files(id,name,mimeType,appProperties,modifiedTime,lastModifyingUser(me))', pageSize: '100',
   });
   const { files } = await fetch(driveApi + 'files?' + lookup, { headers, cache: 'no-store' })
     .then(response => checkGoogleResponse(response, '내 드라이브에서 저장 여부를 확인하지 못했습니다.'));
@@ -190,12 +202,12 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   if (family==='han-lora-v5') knownLayouts.push('han-gothic-v4','han-quiz-ppt-3',...Object.values(predecessors).flat());
   if (family.startsWith('lx-gothic-v2-')) knownLayouts.push(family.replace('lx-gothic-v2-','lx-sample-v1-'));
   if (family.startsWith('lx-') || family==='han-gothic-v4') knownLayouts.push('han-quiz-ppt-3','beam-lesson-intro-3',...Object.values(predecessors).flat());
-  const previous = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]) || (priorReceipt?.submission && file.appProperties?.socraMathSubmission===priorReceipt.submission));
-  if (previous.length > 1) throw Error('같은 제출본의 이전 슬라이드가 두 개 이상 있습니다. 저장 폴더를 확인해 주세요.');
-  const existing = previous[0] ?? confirmed;
-  if (existing && editedAfterExport(existing)) {
-    throw Error('이 슬라이드는 반영 후 직접 수정된 기록이 있어 덮어쓰지 않았습니다. 수정본을 보존하려면 기존 파일을 다른 폴더로 옮긴 뒤 다시 반영해 주세요.');
-  }
+  const ours = files.filter(file => knownLayouts.includes(file.appProperties?.socraMathLayout?.split('@')[0]) || (priorReceipt?.submission && file.appProperties?.socraMathSubmission===priorReceipt.submission));
+  // A same-named deck without our tag was made or copied by hand; it is replaced too.
+  const sameName = files.filter(file => file.name === name && !file.appProperties?.socraMathSubmission);
+  const pool = [...new Map([...ours, ...(confirmed ? [confirmed] : []), ...sameName].map(file => [file.id, file])).values()];
+  const existing = pool.find(file => file.appProperties?.socraMathSubmission && !editedAfterExport(file)) ?? null;
+  const retired = pool.filter(file => file !== existing);
   if (typeof blob === 'function') blob = await blob();
   await beforeWrite();
   const path = 'https://www.googleapis.com/upload/drive/v3/files' + (existing ? '/' + fileId(existing.id) : '');
@@ -217,5 +229,7 @@ export async function saveSlidesToStaffDrive(connection, blob, name, submission,
   const uploaded = await fetch(location.href, {
     method: 'PUT', headers: { ...headers, 'Content-Type': pptxMime }, body: blob,
   }).then(response => checkGoogleResponse(response, '내 Google Drive에 프레젠테이션을 저장하지 못했습니다.'));
+  // Only after the new deck is saved: retire the edited or duplicate ones.
+  for (const old of retired) await retireSlides(headers, old, name);
   return rememberId(key,uploaded);
 }

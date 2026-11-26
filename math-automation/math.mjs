@@ -2,9 +2,9 @@ import {submissionTemplate,slotLimits} from './lesson-template.mjs?v=3';
 import { lessonIntro } from './intro.mjs?v=5';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=15';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=32';
+import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=33';
 import { numericTimes, normalizeQuizNotation } from './math-notation.mjs?v=1';
-import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=16';
+import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=17';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=5';
 

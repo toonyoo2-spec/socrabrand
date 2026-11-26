@@ -1,7 +1,8 @@
 import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=4';
 // Lay out selectable text in the browser, then transfer its lines, rules and original figures to PPT.
 const FACE=KOREAN_FACE, PX=96, marks='①②③④⑤';
-const W=1300,H=835,LEFT=62,TOP=161;
+// The question must end above the bottom band of the projector screen (91% of the height).
+const W=1300,H=800,LEFT=62,TOP=161;
 const node=(tag,css='')=>{const n=document.createElement(tag);n.style.cssText=css;return n;};
 function closingBrace(value,start){
   let depth=0;
