@@ -354,7 +354,7 @@
       return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
     }).join("") + "</ul></div>";
   }
-  var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 정확하게 쓰지 못한 곳도 있었지만, 리아 선생님과 레슨을 하며 함께 고쳐 쓰면서 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 처음에 놓친 곳</span></div>';
+  var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 정확하게 쓰지 못한 곳도 있었지만, 리아 선생님과 레슨을 하며 함께 고쳐 쓰면서 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 리아 선생님과 함께 고친 곳</span></div>';
   /* 학생 원문 (지희님 11/24): AI 개입 없는 데이터. 레벨 1~4는 Stage 2 첫 입력, 레벨 5 이상은 Stage 3 1차 에세이와 G-block 조건 달성 여부.
      data.orig = { lv, lesson, lines: [[학생 원문, G-block 패턴]] } 또는 { lv, lesson, essay, gs: [[G-block 패턴, 달성 여부(true/false)]] } */
   function origin(o) {
