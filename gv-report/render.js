@@ -279,7 +279,7 @@
     var one = nm + "은 지금까지 레벨 " + lvs.join(", ") + "의 총 " + num(d.lessons) + "개 레슨을 학습" + (c === "l" ? "했어요." : "했고, 처음 풀 때 ") +
       { s: p1(v.soloP) + "의 단어와 " + p1(g.soloP) + "의 문장을 힌트 없이 완성했어요.", v: p1(g.soloP) + "의 문장을 힌트 없이 완성했어요.", g: p1(v.soloP) + "의 단어를 힌트 없이 완성했어요.", b: p1(v.okP) + "의 단어와 " + p1(g.okP) + "의 문장을 완성했어요.", l: "" }[c];
     /* 2) 칭찬 */
-    var two = (d.notes ? "최근에는 ‘" + d.notes.recent.title + "’ 주제로 영어 문장을 썼어요. " : "") + (best ? "특히 독립 문장 완성률이 " + RULE.good + "% 이상으로 아주 훌륭해요." :
+    var two = (d.notes ? "최근에는 ‘" + d.notes.recent.title + "’ 주제로 영어 문장을 썼어요. " : "") + (best ? "특히 독립 문장 작성률이 " + RULE.good + "% 이상으로 아주 훌륭해요." :
       { s: "배운 단어와 문장을 힌트 없이 스스로 쓰며 잘하고 있어요.", v: "특히 문장을 힌트 없이 스스로 쓰며 잘하고 있어요.", g: "특히 단어를 힌트 없이 스스로 쓰며 잘하고 있어요.", b: "필요한 순간에는 힌트를 활용해 끝까지 완성하며 잘하고 있어요.", l: "새로운 단어와 문장을 배우며 잘하고 있어요." }[c]);
     /* 3) 다음 한 걸음 */
     var three = { s: best ? "이제 더 높은 수준의 학습을 추천해요. 배운 표현으로 자기 생각을 영어로 표현해 보면 좋을 것 같아요." : "이제 배운 표현으로 자기 생각을 영어로 표현해 보면 좋을 것 같아요.",
@@ -349,7 +349,7 @@
   function wrote(kd, n) {
     var hl = n.lines.some(function (l) { return /\{\{/.test(l[0]); }), fx = n.lines.some(function (l) { return /\[\[/.test(l[0]); });
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
-      return '<li><span class="en" lang="en">' + rich(l[0]) + "</span>" + (l[2] ? '<span class="aft" lang="en"><em lang="ko">수정 후 답안</em>' + rich(l[2]) + "</span>" : "") + '<span class="ko">' + esc(l[1]) + "</span></li>";
+      return '<li><span class="en" lang="en">' + rich(l[0]) + "</span>" + (l[2] ? '<span class="aft" lang="en"><em lang="ko">패턴 적용 문장</em>' + rich(l[2]) + "</span>" : "") + '<span class="ko">' + esc(l[1]) + "</span></li>";
     }).join("") + "</ul>" + (hl || fx ? '<div class="legend">' + (hl ? '<span><i class="k1"></i>한국어로 쓴 부분</span>' : "") + (fx ? '<span><i class="k2"></i>다시 볼 부분</span>' : "") + "</div>" : "") + "</div>";
   }
   /* 학생 원문 (지희님 11/24): AI 개입 없는 데이터. 레벨 1~4는 Stage 2 첫 입력, 레벨 5 이상은 Stage 3 1차 에세이와 G-block 조건 달성 여부.
@@ -386,7 +386,7 @@
   function renderB(id, d) {
     var nm = d.name || "학생", p = progress(d.levels), v = facts(d.v), g = facts(d.g), vk = kind(v, RULE.vLow), gk = kind(g, RULE.gLow), end = verdict(d, p, v, vk, g, gk);
     var lv = LEVELS[p.lv] || { title: "레벨 " + p.lv + " 과정", cefr: "안내 예정" }, gd = GUIDE[p.lv] || { goal: "" }, nx = LEVELS[p.lv + 1], N = d.notes;
-    var VW = { word: "단어", acc: "어휘 작성률", solo: "독립 어휘 작성률", code: "V-block", what: "필수 단어예요", obj: "단어를", k: "v" }, GW = { word: "문장", acc: "문장 완성률", solo: "독립 문장 완성률", code: "G-block", what: "문장 패턴이에요", obj: "문장 패턴을", k: "g" };
+    var VW = { word: "단어", acc: "어휘 작성률", solo: "독립 어휘 작성률", code: "V-block", what: "필수 단어예요", obj: "단어를", k: "v" }, GW = { word: "문장", acc: "문장 작성률", solo: "독립 문장 작성률", code: "G-block", what: "문장 패턴이에요", obj: "문장 패턴을", k: "g" };
     var ON = ["var(--v-on)", "var(--v-hint-on)", "var(--v-dark)"], WH = ["var(--green)", "var(--v-hint)", "#E6EDE9"];
     var tabs = [["summary", "요약"], ["vocab", "어휘"], ["gram", "문법"], ["total", "총평"]];
     function sec(key, name, body, tt) { return '<section class="v-sec" data-item="b-' + key + '" data-name="' + esc(name) + '"><h2>' + secIcon("b-" + key) + esc(tt || name) + "</h2>" + body + "</section>"; }
@@ -406,7 +406,7 @@
     var V = skill("vocab", "어휘 학습 결과", v, vk, VW, d.vb), Q = skill("gram", "문법 학습 결과", g, gk, GW, d.gb);
     h += panel("vocab", V[0], V[1]);
     h += panel("gram", Q[0], Q[1] + (d.orig ? sec("notes", "학생 원문", origin(d.orig)) : N ? sec("notes", "작성 문장 비교", '<p class="v-tx">예시 문장이에요. AI 개입 없이 학생이 직접 입력한 원문으로 바꿀 예정이에요.</p><div class="noteband">' + wrote("then", N.first) + wrote("now", N.recent) + '</div><div class="v-say">' + N.say.split("\n").map(function (t) { return "<p>" + rich(t) + "</p>"; }).join("") + "</div>") : ""));
-    h += panel("total", '<section class="v-hero v-lia" data-item="b-lia" data-name="리아 선생님의 한마디"><div><p class="v-who">리아 선생님의 한마디</p><h2 class="v-h">' + esc(end.good[1]) + ',<br><b>잘하고 있어요</b></h2></div><img src="img/echo_thumb.png" alt="" width="92" height="135"></section>',
+    h += panel("total", '<section class="v-hero v-lia" data-item="b-lia" data-name="리아 선생님의 한마디"><div><p class="v-who">리아 선생님의 한마디</p><h2 class="v-h">' + esc(end.good[1]) + ',<br><b>잘하고 있어요</b></h2></div><svg class="v-stamp" viewBox="0 0 120 120" role="img" aria-label="Great Work! 도장"><defs><filter id="ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.7 1.32" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter><path id="stArc" d="M17 60a43 43 0 0 1 86 0"/></defs><g filter="url(#ink)" fill="#CC3E2E" stroke="#CC3E2E"><circle cx="60" cy="60" r="56" fill="none" stroke-width="3.2"/><circle cx="60" cy="60" r="49.5" fill="none" stroke-width="1.2"/><text font-size="9.5" font-weight="800" letter-spacing="2.2" text-anchor="middle" stroke="none" style="font-family:var(--nu)"><textPath href="#stArc" startOffset="50%">REAL ACADEMY</textPath></text><image href="img/stamp_r.png" x="50" y="27" width="20" height="22.5"/><rect x="2" y="55" width="116" height="23" rx="2" stroke="none"/><text x="60" y="71.5" font-size="14.5" font-weight="900" fill="#fff" stroke="none" text-anchor="middle" letter-spacing=".3" style="font-family:var(--nu)">GREAT WORK!</text><text x="60" y="97" font-size="10" stroke="none" text-anchor="middle" letter-spacing="3">★★★</text></g></svg></section>',
       '<section class="v-memo"><p>' + end.say.map(function (s) { return esc(s); }).join("</p><p>") + "</p></section>" +
       (p.lv < 9 ? sec("next", "다음 학습 과정", '<div class="v-step"><i class="a">' + p.lv + '</i><p class="v-sm">' + (p.full ? "레벨 " + p.lv + " 레슨을 모두 마쳤어요." : "레벨 " + p.lv + "의 남은 레슨은 " + (RULE.lesson - p.n) + "개예요.") + '</p><span class="bar"></span><span></span><i class="z">' + (p.lv + 1) + "</i><b>" + (nx ? esc(nx.title) : "2027년 상반기에 안내해 드릴 예정이에요") + "</b></div>" + (nx ? '<div class="v-ex"><span>이런 표현을 배워요</span><p lang="en">' + esc(nx.rep) + "</p><small>" + esc(GUIDE[p.lv + 1].ko) + "</small></div>" : "")) : "") +
       sec("recs", "추천 학습", '<ul class="v-rc">' + end.recs.map(function (r) { return "<li>" + recIcon(r[0]) + "<div><b>" + esc(r[0]) + "</b><p>" + esc(r[1]) + "</p></div></li>"; }).join("") + '</ul><p class="live-n">' + LIVE_NOTE + "</p>" + AI_NOTE));
@@ -416,7 +416,7 @@
   function renderTalk(id, d) {
     var nm = d.name || "학생", p = progress(d.levels), v = facts(d.v), g = facts(d.g), vk = kind(v, RULE.vLow), gk = kind(g, RULE.gLow), end = verdict(d, p, v, vk, g, gk);
     var lv = LEVELS[p.lv] || { title: "레벨 " + p.lv + " 과정", cefr: "안내 예정" }, gd = GUIDE[p.lv] || { goal: "" }, nx = LEVELS[p.lv + 1], N = d.notes;
-    var VW = { word: "단어", block: "레슨에서 배운 단어", solo: "독립 어휘 작성률", acc: "어휘 작성률" }, GW = { word: "문장", block: "레슨에서 배운 문장", solo: "독립 문장 완성률", acc: "문장 완성률" };
+    var VW = { word: "단어", block: "레슨에서 배운 단어", solo: "독립 어휘 작성률", acc: "어휘 작성률" }, GW = { word: "문장", block: "레슨에서 배운 문장", solo: "독립 문장 작성률", acc: "문장 작성률" };
     var tabs = [["summary", "요약"], ["vocab", "어휘"], ["gram", "문법"], ["total", "총평"]];
     var h = '<div class="app rp"><header class="top pad"><img src="img/logo_dark.png" alt="리얼 아카데미"><i class="rule"></i><span>GV 라이팅</span>' +
       '<button type="button" class="test" id="chatOpen" aria-haspopup="dialog">피드백 <b id="chatCount">0</b></button></header>' +
