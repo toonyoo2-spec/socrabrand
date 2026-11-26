@@ -345,12 +345,12 @@
         return h + "</ul>";
       }).join("") + '<p class="fnote">레벨과 학교 학년은 일대일로 맞지 않아요. 학년은 참고로만 봐 주세요.</p></div></div></div>' + cefrPop(p) + window.curriculumPopup(p.lv);
   }
-  /* 비포·애프터: 이전 시안의 GV 노트 모양 + 수정 후 답안 */
+  /* 비포·애프터: GV 노트 모양. 패턴 적용 문장 줄은 KWAN 11/26 요청으로 뺌(데이터 l[2]는 남겨 둠) */
   function wrote(kd, n) {
     var hl = n.lines.some(function (l) { return /\{\{/.test(l[0]); }), fx = n.lines.some(function (l) { return /\[\[/.test(l[0]); });
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
-      return '<li><span class="en" lang="en">' + rich(l[0]) + "</span>" + (l[2] ? '<span class="aft" lang="en"><em lang="ko">패턴 적용 문장</em>' + rich(l[2]) + "</span>" : "") + '<span class="ko">' + esc(l[1]) + "</span></li>";
-    }).join("") + "</ul>" + (hl || fx ? '<div class="legend">' + (hl ? '<span><i class="k1"></i>한국어로 쓴 부분</span>' : "") + (fx ? '<span><i class="k2"></i>다시 볼 부분</span>' : "") + "</div>" : "") + "</div>";
+      return '<li><span class="en" lang="en">' + rich(l[0]) + "</span>" + '<span class="ko">' + esc(l[1]) + "</span></li>";
+    }).join("") + "</ul>" + (hl || fx ? '<div class="legend">' + (hl ? '<span><i class="k1"></i>노란 칸은 영어로 바꿔 보면 좋은 곳이에요.</span>' : "") + (fx ? '<span><i class="k2"></i>물결 표시는 한 번 더 살펴보면 더 멋진 문장이 되는 곳이에요.</span>' : "") + "</div>" : "") + "</div>";
   }
   /* 학생 원문 (지희님 11/24): AI 개입 없는 데이터. 레벨 1~4는 Stage 2 첫 입력, 레벨 5 이상은 Stage 3 1차 에세이와 G-block 조건 달성 여부.
      data.orig = { lv, lesson, lines: [[학생 원문, G-block 패턴]] } 또는 { lv, lesson, essay, gs: [[G-block 패턴, 달성 여부(true/false)]] } */
