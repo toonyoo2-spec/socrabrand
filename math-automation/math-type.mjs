@@ -35,7 +35,9 @@ export function typeRuns(value, math=true){
     const variable = /^[a-zA-Zα-ωΑ-Ω]+$/u.test(t) && isValue(t);
     const italic = Boolean(math && !inChapter && variable);
     for(const ch of t){
-      const fontFace = !math || inChapter || /^[○△□×]$/.test(ch) && /[옳안이면]/.test(normalized) ? KOREAN_FACE :
+      // ×, ○, △ are judgment marks in "옳으면 ○, 옳지 않으면 ×"; an × next to a value multiplies.
+      const judgment = /^[○△□×]$/.test(ch) && /[옳안이면]/.test(normalized) && !(ch === '×' && (isValue(before) || isValue(after)));
+      const fontFace = !math || inChapter || judgment ? KOREAN_FACE :
         isValue(t) || (punct && joinsMath) ? faceFor(ch) : KOREAN_FACE;
       const last=runs.at(-1);
       if(last && last.options.fontFace===fontFace && last.options.italic===italic)last.text+=ch;

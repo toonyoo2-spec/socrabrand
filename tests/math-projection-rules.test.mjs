@@ -83,3 +83,10 @@ test('every run uses a face that Google Slides serves', ()=>{
   for(const text of ['다음 중 옳지 않은 것은?','2³×5²의 약수','x²+3x−1≠0','∠A=90°, π≒3.14','①②③ □ ○ △ ×','(가) A는 √2 ≤ |a|','RPM 10p 0046번'])
     for(const {options} of typeRuns(text)) assert.ok(served.includes(options.fontFace),text+' → '+options.fontFace);
 });
+
+test('an × between values is multiplication even in a sentence with 이 or 면', ()=>{
+  const face=text=>typeRuns(text).find(r=>r.text.includes('×')).options.fontFace;
+  assert.equal(face('12=2²×3이므로 오른쪽 표에서'),'Lora');
+  assert.equal(face('2⁴ × 5² × 7 × a가 어떤 자연수의 제곱이 되도록 할 때'),'Lora');
+  assert.equal(face('옳은 것은 ○, 옳지 않은 것은 ×를 쓰시오.'),KOREAN_FACE);
+});
