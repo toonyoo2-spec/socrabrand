@@ -928,17 +928,21 @@ body:has(.vb)::before{background:#E9F4EE}
 .rlist em.ready{background:#08794A;color:#fff}
 #report .vb .rx-hero p{color:#fff}
 .msg-del{min-height:32px;padding:6px 8px}
-/* 문장 키워드 (11/26) */
-#report .vb .gw-kw{margin-top:16px;padding:16px;border-radius:16px;background:#F4F8F6}
-#report .vb .gw-kw-h{font-size:14px;color:var(--v-t2);line-height:1.5}
-#report .vb .gw-kw ul{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:8px}
-#report .vb .gw-kw li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;font-size:15px;line-height:1.5;word-break:keep-all}
-#report .vb .gw-kw li b{padding:2px 8px;border-radius:999px;background:#08794A;color:#fff;font-size:13px;font-weight:700;white-space:nowrap}
-#report .vb .gw-kw li span{color:#10221A}
-#report .vb .gw-good{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px}
-#report .vb .gw-good em{font-style:normal;color:var(--v-t2);margin-right:4px}
-#report .vb .gw-good i{font-style:normal;padding:2px 8px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px #CFE3D8;color:#10221A}
-#report .vb .gw-go{margin-top:12px;min-height:44px;padding:0;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#08794A;cursor:pointer}
+/* 작성 문장 평가표 (11/26 에이전시 A안) */
+#report .vb .gw-kw{margin-top:16px;padding:16px;border-radius:16px;box-shadow:inset 0 0 0 1px #E3EAE6;background:#fff}
+#report .vb .gw-kw-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 8px}
+#report .vb .gw-kw-h b{font-size:16px;font-weight:800;color:#10221A}
+#report .vb .gw-kw-h span{font-size:13px;color:var(--v-t2)}
+#report .vb .gw-kw table{width:100%;margin-top:12px;border-collapse:collapse;font-size:15px}
+#report .vb .gw-kw th,#report .vb .gw-kw td{padding:10px 0;border-top:1px solid #EEF2EF;text-align:left;font-weight:500}
+#report .vb .gw-kw th{color:#10221A;width:40%}
+#report .vb .gw-kw td{text-align:right;font-weight:700}
+#report .vb .gw-kw td.kw-fix{color:#08794A}
+#report .vb .gw-kw td.kw-fix::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#08794A;vertical-align:2px}
+#report .vb .gw-kw td.kw-ok{color:#4B5A52}
+#report .vb .gw-kw td.kw-ok::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;box-shadow:inset 0 0 0 2px #8FBFA6;vertical-align:2px}
+#report .vb .gw-kw td.kw-na{color:#B4BDB8;font-weight:500}
+#report .vb .gw-go{margin-top:4px;min-height:44px;padding:0;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#08794A;cursor:pointer}
 #report .vb .gw-go::after{content:" →"}
 #report .vb .v-blk{flex-wrap:wrap}
 </style>
@@ -1020,8 +1024,8 @@ body:has(.vb)::before{background:#E9F4EE}
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="curriculum.js?v=1127b"></script>
-<script src="render.js?v=1127b"></script>
-<script src="app.js?v=1127b"></script>
+<script src="curriculum.js?v=1127c"></script>
+<script src="render.js?v=1127c"></script>
+<script src="app.js?v=1127c"></script>
 </body>
 </html>

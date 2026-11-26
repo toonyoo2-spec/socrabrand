@@ -267,10 +267,10 @@
     var NX = ["다음 단계 GV 라이팅", "더 높은 수준의 문장에 도전하는 학습이에요. 새로운 표현을 더 다양하게 배울 수 있어요."], RV = ["GV 라이팅 복습", "지금 레벨에서 배운 레슨을 다시 학습해요. 배운 단어와 문장을 한 번 더 써 볼 수 있어요."];
     var GM = ["GV 마스터", "배운 GV 레슨을 복습하는 활동이에요. 문법과 어휘를 오래 기억하는 데 도움이 돼요."], DI = ["다이어리 (내 생각)", "자기 생각을 영어로 표현해 보는 활동이에요. 배운 표현을 다양한 주제에 써 볼 수 있어요."];
     var EW = ["에코런 단어 연습", "단어를 듣고 따라 말하며 익히는 활동이에요. 짧게 자주 해 보면 좋을 것 같아요."], EC = ["에코런 문장 연습", "문장을 조금씩 늘려 가며 따라 말하는 활동이에요. 짧게 자주 해 보면 좋을 것 같아요."];
-    if (p.full && p.lv >= 8 && q.s >= 70) NX = RV; /* 다음 단계가 아직 없으면 복습 */
+    if (p.full && p.lv >= 8 && q.s >= 70) NX = GM; /* 다음 단계가 아직 없으면 복습(GV 마스터) */
     if (q.s < 40) return q.w < 40 ? [GM, EW] : [GM, EC];
     if (q.w < 40) return [EW, q.s >= 70 ? NX : GM];
-    return q.s >= 70 ? [NX, DI] : [RV, GM];
+    return q.s >= 70 ? [NX, DI] : [GM]; /* GV 라이팅 복습 = GV 마스터 (11/26 KWAN), 같은 학습을 두 번 쓰지 않는다 */
   }
   function verdict(d, p, v, vk, g, gk) {
     var low = vk === "low" || gk === "low", c = low ? "l" : vk === "hint" && gk === "hint" ? "b" : vk === "hint" ? "v" : gk === "hint" ? "g" : "s";
@@ -374,13 +374,63 @@
     ["철자", "단어를 정확하게 쓸 수 있게 됐어요", "단어를, 정확하게 쓸 수 있게 됐어요"],
     ["문장 부호", "대문자와 문장 부호를 알맞게 쓸 수 있게 됐어요", "대문자와 문장 부호를, 알맞게 쓰게 됐어요"]
   ];
-  /* d.kw = [{ grow: [...], good: [...] }, ...] 첫 레슨·최근 레슨 문장별. 성장 2개까지, 성장과 겹치는 긍정은 뺀다 */
+  /* 문장 키워드: 문법 탭 '작성 문장 비교'와 같은 문장(리대시 첫 영작 → 최종 문장)을 규칙으로 비교해 뽑는다 (11/26).
+     성장 = 처음 쓴 문장에서 고쳐진 점, 긍정 = 처음부터 맞게 쓴 점. 성장 2개까지, 성장과 겹치는 긍정은 뺀다 */
+  var FN = "a an the to at in on for of with by from is am are was were be been do does did have has had will can i you he she it we they my your his her our their me him us them".split(" ");
+  var NUMW = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty".split(" ");
+  function kwLine(a0, f0) {
+    var clean = function (x) { return String(x || "").replace(/\[\[|\]\]|\{\{|\}\}/g, "").replace(/\s+/g, " ").trim(); };
+    var a = clean(a0), f = clean(f0) || clean(a0), g = {}, ok = {}; /* 최종 문장이 없으면 처음부터 맞게 쓴 문장 */
+    if (!a) return null;
+    var ko = /[\uAC00-\uD7A3]/.test(a);
+    var w = function (x) { return x.split(" ").map(function (t) { return t.replace(/[^\w'\uAC00-\uD7A3]/g, ""); }).filter(Boolean); };
+    var A = w(a), F = w(f), la = A.map(function (t) { return t.toLowerCase(); }), lf = F.map(function (t) { return t.toLowerCase(); });
+    /* 대문자·문장 부호: 글자만 같고 대소문자나 부호가 다른 경우 */
+    var bare = function (x) { return x.toLowerCase().replace(/[^\w\s'\uAC00-\uD7A3]/g, "").replace(/\s+/g, " ").trim(); };
+    var capP = a.replace(/[\w\s'\uAC00-\uD7A3]/g, "") !== f.replace(/[\w\s'\uAC00-\uD7A3]/g, "") || A.some(function (t, i) { var j = lf.indexOf(la[i]); return j >= 0 && t !== F[j]; }) || (/^[a-z]/.test(a) && /^[A-Z]/.test(f));
+    if (capP) g["문장 부호"] = 1; else ok["문장 부호"] = 1;
+    if (bare(a) === bare(f)) { if (!ko) { ok["문장 구성"] = ok["문법 사용"] = ok["단어 선택"] = ok["철자"] = 1; } return { grow: Object.keys(g), good: Object.keys(ok) }; }
+    /* 문장 구성: 우리말이 섞였거나 끝까지 쓰지 못한 문장 */
+    if (ko || A.length < F.length * 0.6) g["문장 구성"] = 1; else ok["문장 구성"] = 1;
+    /* 줄임말·숫자를 풀어 쓴 경우는 표현 확장 */
+    if (/\b(i'm|it's|don't|can't|he's|she's|they're|we're|you're|isn't|aren't)\b/i.test(a) && !/'/.test(f.replace(/'s\b/g, ""))) g["표현 확장"] = 1;
+    if (/\d/.test(a) && NUMW.some(function (n) { return lf.indexOf(n) >= 0; })) g["표현 확장"] = 1;
+    /* 단어 맞추기 (LCS) 뒤 남은 단어로 철자·문법·단어 선택을 나눈다 */
+    var n = la.length, m = lf.length, L = [];
+    for (var i = 0; i <= n; i++) { L.push([]); for (var j = 0; j <= m; j++) L[i].push(0); }
+    for (i = n - 1; i >= 0; i--) for (j = m - 1; j >= 0; j--) L[i][j] = la[i] === lf[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    var ra = [], rf = []; i = 0; j = 0;
+    while (i < n && j < m) { if (la[i] === lf[j]) { i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) ra.push(la[i++]); else rf.push(lf[j++]); }
+    ra = ra.concat(la.slice(i)); rf = rf.concat(lf.slice(j));
+    var ed = function (x, y) { var d = []; for (var p = 0; p <= x.length; p++) { d.push([p]); for (var q = 1; q <= y.length; q++) d[p].push(p ? 0 : q); } for (p = 1; p <= x.length; p++) for (q = 1; q <= y.length; q++) d[p][q] = Math.min(d[p - 1][q] + 1, d[p][q - 1] + 1, d[p - 1][q - 1] + (x[p - 1] === y[q - 1] ? 0 : 1)); return d[x.length][y.length]; };
+    var stem = function (x, y) { var k = 0; while (k < x.length && k < y.length && x[k] === y[k]) k++; return k >= 3 && /^(s|es|ed|d|ing|er|est|ies|y)?$/.test(x.slice(k)) && /^(s|es|ed|d|ing|er|est|ies|y)?$/.test(y.slice(k)); };
+    var used = {};
+    ra.forEach(function (x) {
+      if (/[\uAC00-\uD7A3]/.test(x) || /^\d+$/.test(x)) return; /* 우리말·숫자는 위에서 처리 */
+      if (/\d/.test(x)) { g["철자"] = 1; return; } /* 10yaers처럼 숫자와 붙여 쓴 단어 */
+      var best = -1, bd = 99; rf.forEach(function (y, k) { if (used[k]) return; var e = ed(x, y); if (e < bd) { bd = e; best = k; } });
+      var y = best >= 0 ? rf[best] : "";
+      if (y && stem(x, y)) { g["문법 사용"] = 1; used[best] = 1; }
+      else if (y && bd <= Math.max(1, Math.floor(Math.max(x.length, y.length) / 3)) && FN.indexOf(x) < 0) { g["철자"] = 1; used[best] = 1; }
+      else if (FN.indexOf(x) >= 0) { g["문법 사용"] = 1; if (best >= 0 && FN.indexOf(y) >= 0) used[best] = 1; }
+      else { g["단어 선택"] = 1; if (best >= 0) used[best] = 1; }
+    });
+    rf.forEach(function (y, k) { if (used[k] || NUMW.indexOf(y) >= 0) return; if (FN.indexOf(y) >= 0) g["문법 사용"] = 1; else if (!g["문장 구성"] && ko) g["단어 선택"] = 1; });
+    if (ko && la.some(function (t) { return /[\uAC00-\uD7A3]/.test(t); })) g["단어 선택"] = 1;
+    ["문법 사용", "단어 선택", "철자"].forEach(function (k) { if (!g[k]) ok[k] = 1; });
+    if (g["문장 구성"]) delete ok["문법 사용"], delete ok["단어 선택"];
+    return { grow: Object.keys(g), good: Object.keys(ok) };
+  }
   function kwOf(d) {
-    if (!d.kw || !d.kw.length) return null;
-    var cnt = function (key) { var c = {}; d.kw.forEach(function (x) { (x[key] || []).forEach(function (k) { c[k] = (c[k] || 0) + 1; }); }); return KW.filter(function (k) { return c[k[0]]; }).sort(function (a, b) { return c[b[0]] - c[a[0]] || KW.indexOf(a) - KW.indexOf(b); }); };
+    var N = d.notes; if (!N) return null;
+    var lines = [].concat(N.first && N.first.lines || [], N.recent && N.recent.lines || []);
+    var rows = lines.map(function (l) { return kwLine(l[0], l[2]); }).filter(Boolean); if (!rows.length) return null;
+    var cnt = function (key) { var c = {}; rows.forEach(function (x) { x[key].forEach(function (k) { c[k] = (c[k] || 0) + 1; }); }); return KW.filter(function (k) { return c[k[0]]; }).sort(function (a, b) { return c[b[0]] - c[a[0]] || KW.indexOf(a) - KW.indexOf(b); }); };
     var grow = cnt("grow").slice(0, 2), gn = grow.map(function (k) { return k[0]; });
     var good = cnt("good").filter(function (k) { return gn.indexOf(k[0]) < 0; }).slice(0, 3);
-    return grow.length || good.length ? { grow: grow, good: good } : null;
+    var gAll = {}, okAll = {}; rows.forEach(function (x) { x.grow.forEach(function (k) { gAll[k] = 1; }); x.good.forEach(function (k) { okAll[k] = 1; }); });
+    var table = KW.map(function (k) { return { k: k[0], s: gAll[k[0]] ? "fix" : okAll[k[0]] && k[0] !== "표현 확장" ? "ok" : "" }; });
+    return grow.length || good.length ? { grow: grow, good: good, table: table, n: rows.length } : null;
   }
   function growthOf(d) {
     var G = d.growth, rows = [], best = null, low = null;
@@ -398,7 +448,7 @@
     else if (rows.length && up && ups.length === rows.length) head = "레벨이 " + (lv1 - lv0) + "단계 오르고, 힌트 없이 쓰기도 늘었어요";
     else if (rows.length && up && ups.length) head = "레벨이 오르고, 힌트 없이 " + best.w + " 쓰기도 늘었어요";
     else if (up) head = "레벨 " + lv0 + "에서 " + lv1 + "까지, 올라왔어요";
-    else if (kwOf(d) && kwOf(d).grow.length) head = kwOf(d).grow[0][2];
+    else if (kwOf(d) && kwOf(d).grow.length) head = kwOf(d).grow[0][0] + josa(kwOf(d).grow[0][0], "을", "를") + ", 바로잡으며 학습했어요";
     else head = num(d.lessons) + "레슨을, 꾸준히 학습했어요";
     return { G: G, rows: rows, best: best, low: low, up: up, lv0: lv0, lv1: lv1, head: head };
   }
@@ -417,13 +467,14 @@
     }
     var K = kwOf(d);
     if (K) {
-      h += '<div class="gw-kw"><p class="gw-kw-h">첫 레슨과 최근 레슨 문장을 비교해 보면</p>' +
-        (K.grow.length ? '<ul>' + K.grow.map(function (k) { return '<li><b>' + k[0] + '</b><span>' + k[1] + '</span></li>'; }).join("") + '</ul>' : "") +
-        (K.good.length ? '<p class="gw-good"><em>처음부터 잘한 점</em>' + K.good.map(function (k) { return '<i>' + k[0] + '</i>'; }).join("") + '</p>' : "") +
-        '<button type="button" class="gw-go" data-go="gram">실제 문장 보기</button></div>';
+      /* 작성 문장 평가표 (11/26 에이전시 A안): 항목 6개를 모든 학생에게 같은 순서로 */
+      var lab = { fix: "학습하며 성장했어요", ok: "이미 잘하고 있어요", "": "–" };
+      h += '<div class="gw-kw"><div class="gw-kw-h"><b>작성 문장 평가</b><span>첫 레슨 · 최근 레슨 문장 기준</span></div><table><tbody>' +
+        K.table.map(function (r) { return '<tr><th scope="row">' + r.k + '</th><td class="kw-' + (r.s || "na") + '">' + lab[r.s] + "</td></tr>"; }).join("") +
+        '</tbody></table><button type="button" class="gw-go" data-go="gram">아이가 쓴 문장 보기</button></div>';
     }
     h += '<p class="gw-next"><b>다음 목표</b> ' + (gr.low ? gr.low.w + (gr.low.w === "문장" ? "을" : "를") : "단어와 문장을") + " 힌트 없이 먼저 써 보기</p>";
-    return '<section class="v-sec gw" data-item="b-growth" data-name="성장 한눈에"><h2>' + secIcon("b-areas") + (gr.best || gr.up || (K && K.grow.length) ? "처음보다 이만큼 자랐어요" : "지금까지 이만큼 배웠어요") + "</h2>" + h + "</section>";
+    return '<section class="v-sec gw" data-item="b-growth" data-name="성장 한눈에"><h2>' + secIcon("b-areas") + (gr.best || gr.up || (K && K.grow.length) ? "처음보다 이만큼 성장했어요" : "지금까지 이만큼 배웠어요") + "</h2>" + h + "</section>";
   }
 
   /* 추천 학습 아이콘: 앱 디자인 라이브러리 [RA] PAGE UI_All > menuicon 원본(피그마, 160px) */
