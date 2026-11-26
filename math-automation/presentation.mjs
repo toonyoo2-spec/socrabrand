@@ -423,9 +423,17 @@ async function paperQuizImage(question, loadPage) {
   } finally {page.close();}
 }
 
+// Only numeric product choices in a prime-factorization question are unambiguous.
+export function normalizeFactorChoices(quiz) {
+  if (quiz?.kind !== 'choice' || !/소인수\s*분해/.test(quiz.prompt)) return quiz;
+  const product = /^\s*\d+(?:\^\{\d+\}|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?(?:\s*[x×]\s*\d+(?:\^\{\d+\}|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?)+\s*$/;
+  const choices = quiz.choices.split('\n').map(line => product.test(line) ? line.replaceAll('x','×') : line).join('\n');
+  return choices === quiz.choices ? quiz : {...quiz, choices};
+}
+
 function orderedQuizItems(written, questions) {
   const items = [
-    ...written.map(quiz => ({quiz,group:1,slot:quiz.slot})),
+    ...written.map(quiz => ({quiz:normalizeFactorChoices(quiz),group:1,slot:quiz.slot})),
     ...questions.map(q => ({q,quiz:q.quiz_override,group:q.quizOne ? 1 : 2,slot:q.slot})),
   ].sort((a,b) => a.group-b.group || a.slot-b.slot);
   const slots=new Set();

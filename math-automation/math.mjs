@@ -2,7 +2,7 @@ import {submissionTemplate,slotLimits} from './lesson-template.mjs?v=3';
 import { lessonIntro } from './intro.mjs?v=1';
 import { syncSubmissionToSheet, sheetDestination } from './sheet-sync.mjs?v=14';
 import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
-import { buildPresentation, bookQuizPreview, quizExcel } from './presentation.mjs?v=28';
+import { buildPresentation, bookQuizPreview, quizExcel, normalizeFactorChoices } from './presentation.mjs?v=29';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=15';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
 import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
@@ -1840,8 +1840,9 @@ async function transferOne(task,connection,sheet,folder,folderUrl) {
       const review=submission.math_submission_reviews;
       const template=submissionTemplate(row.course,submission,row.lesson.quiz_mode);
       const baseLayout=template ? 'lx-lora-v4-'+template : 'han-lora-v6';
+      const quizLayout = submission.quizzes?.some(q => normalizeFactorChoices(q) !== q) ? baseLayout+'-numeric-product' : baseLayout;
       const layout=review?.status==='passed' && Object.keys(review.crop_fixes ?? {}).length
-        ? baseLayout+'@'+Date.parse(review.updated_at) : baseLayout;
+        ? quizLayout+'@'+Date.parse(review.updated_at) : quizLayout;
       const prev=row.receipts.slides;
       const [prior]=prev?.completed_id ? await table('math_staff_exports',{course_id:'eq.'+row.course.id,submission_id:'eq.'+prev.completed_id,select:'drive_url'}) : [];
       const priorId=prior?.drive_url?.match(/^https:\/\/docs\.google\.com\/presentation\/d\/([A-Za-z0-9_-]+)\/edit/)?.[1];
