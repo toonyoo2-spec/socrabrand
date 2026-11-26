@@ -270,7 +270,7 @@
     /* 읽는 동안은 하단에 작은 신청 버튼 두 개가 따라다니고, 맨 아래 큰 버튼이 보이면 숨긴다 */
     if (fabObs) { fabObs.disconnect(); fabObs = null; }
     var cta = document.querySelector("#report .ctabar"), fw = $("miniBar");
-    if (cta && fw && "IntersectionObserver" in window) { var seen = new Set(); fabObs = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target); }); fw.classList.toggle("off", seen.size > 0); }); fabObs.observe(cta); var rc = $("recCta"); if (rc) fabObs.observe(rc); } /* 큰 버튼이나 추천 상담 버튼이 보이면 하단 작은 버튼은 숨김 */
+    if (cta && fw && "IntersectionObserver" in window) { var seen = new Set(); fabObs = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target); }); fw.classList.toggle("off", seen.size > 0); }, { rootMargin: "0px 0px 72px 0px" }); fabObs.observe(cta); var rc = $("recCta"); if (rc) fabObs.observe(rc); } /* 큰 버튼이나 추천 상담 버튼이 보이면 하단 작은 버튼은 숨김 */
     fitPhone();
     var h = location.hash.slice(1); showTab(tabIds().indexOf(h) >= 0 ? h : "summary", false);
     buildSections();
@@ -386,7 +386,7 @@
     sel.innerHTML = sections.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.tab ? x.tab + " · " + x.name : x.name) + "</option>"; }).join("");
   }
   /* 지금 화면에 없는 부분의 이름 (작성 문장이 없는 학생 등) */
-  var SECN = { sum: ["요약", "종합 결과"], level: ["요약", "학습 레벨"], days: ["요약", "학습 참여"], areas: ["요약", "영역별 결과"], vocab: ["어휘", "어휘 학습 결과"], vblock: ["어휘", "V-block 학습 현황"], gram: ["문법", "문법 학습 결과"], gblock: ["문법", "G-block 학습 현황"], notes: ["문법", "작성 문장 비교"], lia: ["총평", "리아 선생님의 한마디"], growth: ["총평", "성장 한눈에"], recs: ["총평", "다음 학습 추천"], next: ["총평", "다음 학습 과정"], "rec-peek": ["요약", "추천 학습 미리보기"], cta: ["", "사전 연장·리얼 코칭 상담 버튼"] };
+  var SECN = { sum: ["요약", "종합 결과"], level: ["요약", "학습 레벨"], days: ["요약", "학습 참여"], areas: ["요약", "영역별 결과"], vocab: ["어휘", "어휘 학습 결과"], vblock: ["어휘", "V-block 학습 현황"], gram: ["문법", "문법 학습 결과"], gblock: ["문법", "G-block 학습 현황"], notes: ["문법", "이렇게 배우고 있어요"], lia: ["총평", "리아 선생님의 한마디"], growth: ["총평", "성장 한눈에"], recs: ["총평", "다음 학습 추천"], next: ["총평", "다음 학습 과정"], "rec-peek": ["요약", "추천 학습 미리보기"], cta: ["", "사전 연장·리얼 코칭 상담 버튼"] };
   function secOf(id) { for (var i = 0; i < sections.length; i++) if (sections[i].id === (id || "")) return sections[i]; var s = SECN[String(id).replace(/^b-/, "")]; return { id: id, name: s ? s[1] : NAMES[id] || id, tab: s ? s[0] : "" }; }
   function pickSection(id, focusThread) {
     if (!sections.some(function (x) { return x.id === (id || ""); })) id = "";
