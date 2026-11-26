@@ -33,7 +33,7 @@ const keys = [
   ['절댓값', '절댓값', wrap('|', '|'), '막대 사이에 값을 입력하세요.'],
   ['제곱근 √', '제곱근', () => ({ text:'√' })],
   ['순환점', '순환소수 점', selected => ({ text:selected + '\u0307' }), '반복되는 숫자 바로 뒤에 점을 붙이세요.'],
-  ['×', '곱하기'], ['÷', '나누기'], ['−', '빼기'], ['±', '플러스 마이너스'],
+  ['곱하기 ×', '곱하기', () => ({ text:'×' })], ['미지수 x', '미지수 x', () => ({ text:'x' })], ['÷', '나누기'], ['−', '빼기'], ['±', '플러스 마이너스'],
   ['≠', '같지 않음'], ['≤', '작거나 같음'], ['≥', '크거나 같음'],
   ['∠', '각'], ['°', '도'], ['∥', '평행'], ['⊥', '수직'], ['π', '파이'],
 ];
@@ -76,7 +76,21 @@ export function mountMathSymbols(root, fields) {
   next.type = 'button';
   next.hidden = true;
   const feedback = element('div', 'math-keypad-feedback');
-  feedback.append(help, hint, next);
+  const convert = element('button', 'math-next-field', '이 입력칸의 숫자 사이 x를 ×로 바꾸기');
+  convert.type = 'button';
+  convert.hidden = true;
+  // Offer a correction only at numeric boundaries, including exponent notation.
+  const numericX = /(\d|[⁰¹²³⁴⁵⁶⁷⁸⁹]|\^\{\d+\})([ \t]*)[xX](?=[ \t]*\d)/g;
+  const withTimes = value => value.replace(numericX, '$1$2×');
+  convert.addEventListener('click', () => {
+    const input = activeInput();
+    const start = input.selectionStart, end = input.selectionEnd;
+    input.value = withTimes(input.value);
+    input.focus();
+    input.setSelectionRange(start, end);
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+  });
+  feedback.append(help, hint, next, convert);
 
   function setHint(message = '', mode) {
     hint.textContent = message;
@@ -87,6 +101,7 @@ export function mountMathSymbols(root, fields) {
     const input = activeInput();
     const pendingFraction = fractionDestination(input, false) !== null;
     next.hidden = !pendingFraction;
+    convert.hidden = withTimes(input.value) === input.value;
     if ((hintMode === 'fraction' && !pendingFraction)
       || (hintMode === 'power' && !/\^\{\s*\}/.test(input.value))) setHint();
   }

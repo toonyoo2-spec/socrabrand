@@ -5,7 +5,7 @@ import {quizPlan,numberButtons} from './quizn-export.mjs?v=1';
 import { buildPresentation, bookQuizPreview, quizExcel, normalizeFactorChoices } from './presentation.mjs?v=29';
 import { prepareGoogleDrive, connectStaffGoogle, folderDestination, openDestinationFolder, saveSlidesToStaffDrive } from './google-drive.mjs?v=15';
 import { supabaseUrl, publishableKey } from './public-config.mjs';
-import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=3';
+import { hasIncompleteMath, mountMathSymbols } from './math-symbols.mjs?v=4';
 
 import { workDay, transferStatus, element, lessonList, channels, transferCell as planCell } from './transfer-board.mjs?v=2';
 
