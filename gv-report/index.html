@@ -53,6 +53,8 @@ img { display: block; max-width: 100%; }
   .frame-label b { color: var(--ink); font-weight: 800; }
   .frame-label a { color: var(--green-ink); text-decoration: none; background: var(--paper); border-radius: 999px; padding: 6px 12px; }
   .app { width: 390px; min-height: 0; margin: 0 auto; border-radius: 40px; overflow: clip; box-shadow: 0 0 0 10px #15181B, 0 40px 80px -30px rgba(10, 40, 25, .45); }
+  /* 실제 휴대폰 화면 크기(390×844)로 보이게: 프레임 안에서만 스크롤한다 (KWAN 11/26) */
+  #report > .app { height: min(844px, calc(100vh - 130px)); overflow-x: clip; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; } #report > .app::-webkit-scrollbar { display: none; }
 }
 .pad { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
 
@@ -935,8 +937,8 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="curriculum.js?v=1126f"></script>
-<script src="render.js?v=1126f"></script>
-<script src="app.js?v=1126f"></script>
+<script src="curriculum.js?v=1126g"></script>
+<script src="render.js?v=1126g"></script>
+<script src="app.js?v=1126g"></script>
 </body>
 </html>

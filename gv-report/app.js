@@ -179,7 +179,7 @@
     if (!current || current.id !== id) return; /* 그 사이 다른 학생을 눌렀으면 무시 */
     var d = rows && rows[0] && rows[0].data;
     if (!d) { showWait(meta); loadFb(); return; }
-    lastData = d; drawReport(); window.scrollTo(0, 0);
+    lastData = d; drawReport(); window.scrollTo(0, 0); var sc0 = document.querySelector("#report > .app"); if (sc0) sc0.scrollTop = 0;
     loadFb();
   }
   function showWait(meta) {
@@ -196,6 +196,8 @@
   }
 
   /* 리포트 안의 동작. 리포트를 바꿔도 한 번만 걸리도록 문서에 위임한다 */
+  /* PC에서는 리포트가 휴대폰 크기 프레임 안에서 스크롤된다. 그때는 그 프레임, 아니면 null(창 전체) */
+  function scroller() { var a = document.querySelector("#report > .app"); return a && a.scrollHeight > a.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(a).overflowY) ? a : null; }
   function tabIds() { return Array.prototype.map.call(document.querySelectorAll("#report [role=tab]"), function (b) { return b.id.slice(2); }); }
   function showTab(name, scroll) {
     var TABS = tabIds();
@@ -206,8 +208,9 @@
     });
     if (scroll) {
       var bar = document.querySelector("#report .tabbar"), head = document.querySelector("#report .top"); if (!bar || !head) return;
-      var y = Math.round(head.getBoundingClientRect().bottom + window.scrollY - (parseFloat(getComputedStyle(bar).top) || 0));
-      if (window.scrollY > y) window.scrollTo({ top: y, behavior: "instant" });
+      var sc = scroller(), base = sc ? sc.getBoundingClientRect().top - sc.scrollTop : -window.scrollY, now = sc ? sc.scrollTop : window.scrollY;
+      var y = Math.round(head.getBoundingClientRect().bottom - base - (sc ? 0 : parseFloat(getComputedStyle(bar).top) || 0));
+      if (now > y) { if (sc) sc.scrollTop = y; else window.scrollTo({ top: y, behavior: "instant" }); }
     }
   }
   var stickObs = null, fabObs = null;
