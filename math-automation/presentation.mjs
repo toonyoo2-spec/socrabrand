@@ -1,4 +1,4 @@
-import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=3';
+import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=4';
 import {addGothicQuestion} from './gothic-question.mjs?v=6';
 import {fillTemplate} from './template-slides.mjs?v=3';
 import { closingRegion } from './closing-regions.mjs';

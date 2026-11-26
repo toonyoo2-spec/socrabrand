@@ -1,4 +1,4 @@
-import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=3';
+import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=4';
 // Lay out selectable text in the browser, then transfer its lines, rules and original figures to PPT.
 const FACE=KOREAN_FACE, PX=96, marks='①②③④⑤';
 const W=1300,H=835,LEFT=62,TOP=161;

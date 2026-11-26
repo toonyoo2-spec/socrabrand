@@ -1,4 +1,4 @@
-import {typeRuns,KOREAN_FACE} from './math-type.mjs?v=3';
+import {typeRuns,KOREAN_FACE} from './math-type.mjs?v=4';
 // Coordinates are in the 20 × 11.25 inch projector layout.
 export function lessonIntro(course, lesson) {
   const concept = course.track === 'concept';

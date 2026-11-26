@@ -1,4 +1,4 @@
-import {typeRuns} from './math-type.mjs?v=3';
+import {typeRuns} from './math-type.mjs?v=4';
 // Populate a copy of the approved PPTX. Masters, slide layouts and artwork stay native.
 const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const parts = (node,name) => Array.from(node.getElementsByTagNameNS('*',name));
