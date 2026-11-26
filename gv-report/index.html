@@ -875,6 +875,59 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
   #report [data-item]:hover { box-shadow: 0 0 0 2px var(--mint-2); }
   #report [data-item].fb-picked { box-shadow: 0 0 0 2.5px var(--green); }
 }
+
+/* ── 간격 규칙 (8px 그리드, 11/26) ─────────────────────────────
+   섹션 사이 48 · 제목→설명 8 · 제목/설명→본문 16 · 카드 안 16 · 카드 사이 12 · 줄 사이 8
+   흩어진 값 위에 덮어쓰도록 #report 로 시작한다. */
+#report .vb .v-hero{padding:24px 24px 48px}
+#report .vb .v-hero.v-lia{padding-bottom:48px}
+#report .vb .v-sheet{padding:32px 24px 24px}
+#report .vb .v-sheet > .v-sec:first-child{margin-top:0}
+#report .vb .v-sec + .v-sec{margin-top:48px}
+#report .vb .v-sec[data-item="b-recs"]{margin:48px -24px 0;padding:24px}
+#report .vb .v-sec > h2 + *{margin-top:16px}
+#report .vb .v-sec > h2 + :is(.v-tx,.rx-lead,.v-lead){margin-top:8px}
+#report .vb .v-sec > :is(.v-tx,.rx-lead,.v-lead) + *{margin-top:16px}
+#report .vb .v-lead{margin-bottom:0;gap:8px}
+#report .vb .rx-lead{margin-bottom:0}
+#report .vb .v-tip{margin-top:16px;padding:16px}
+#report .vb .v-defs{margin-top:16px;gap:12px}
+#report .vb .v-rings,#report .vb .v-facts,#report .vb .v-lnk{margin-top:16px}
+#report .vb .v-facts > *{padding-top:12px;padding-bottom:12px}
+#report .vb .v-blk + .v-sm,#report .vb .v-ln + .v-sm{margin-top:12px}
+#report .vb .noteband{gap:12px}
+#report .vb .noteband .legend{margin:0}
+#report .vb .okline,#report .vb .fixline{margin-top:8px}
+#report .vb .gw-lv,#report .vb .gw-row{margin-top:12px;padding:12px 16px}
+#report .vb .gw-row{padding:16px}
+#report .vb .gw-cap{margin-top:16px}
+#report .vb .gw-b{margin-top:8px}
+#report .vb .gw-hard,#report .vb .gw-next{margin-top:16px}
+#report .vb .v-step{gap:0 12px}
+#report .vb .v-step + .v-step{margin-top:16px}
+#report .vb .v-ex{margin:16px 0 0 46px;padding:16px}
+#report .vb .rx-hero{padding:20px}
+#report .vb .rx-list{gap:12px}
+#report .vb .rx-list li{padding:16px;gap:12px}
+#report .vb .rx-ask{margin-top:16px}
+#report .vb .rx-peek{padding:20px}
+#report .vb .ai-note{margin-top:24px}
+#report .vb .rx + .ai-note,#report .vb [data-item="b-recs"] + .ai-note{border-top:0;padding-top:0}
+#report .minibar .mb-in{padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+#report .minibar a{min-height:44px}
+#report .vb .lv9n{margin-top:8px}
+/* 접근성·모바일 (11/26 검수) */
+html{scroll-padding-bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+body{min-height:100dvh}
+body:has(.vb)::before{background:#E9F4EE}
+:focus-visible{outline-color:#08794A}
+.minibar.off .mb-in{visibility:hidden;transition:transform .2s,visibility 0s .2s}
+#report .vb .v-tabs button{min-height:44px}
+#fbText,#fbSection,.fb-compose select,textarea,input[type=text],input[type=email],input[type=password],input:not([type]){font-size:16px}
+.wait-card small,.msg-del,.fb-tip,.is-done .msg-meta{color:var(--sub)}
+.rlist em.ready{background:#08794A;color:#fff}
+#report .vb .rx-hero p{color:#fff}
+.msg-del{min-height:32px;padding:6px 8px}
 </style>
 </head>
 <body>
@@ -917,7 +970,7 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
     </div>
     <form class="add-form" id="addForm" novalidate>
       <label for="addId">학생 ID로 찾기 · 새로 만들기</label>
-      <div class="add-row"><input id="addId" inputmode="text" autocomplete="off" placeholder="학생 ID (여러 명은 쉼표로)" maxlength="400" aria-describedby="addHelp"><button type="submit" id="addBtn" disabled>만들기</button></div>
+      <div class="add-row"><input id="addId" inputmode="text" autocomplete="off" placeholder="학생 ID (여러 명은 쉼표로)" aria-describedby="addHelp"><button type="submit" id="addBtn" disabled>만들기</button></div>
       <p class="add-help" id="addHelp">숫자를 넣으면 목록에서 바로 찾아 줘요. 없는 학생이면 ‘만들기’를 눌러 주세요. 여러 명은 1234567, 2345678처럼 쉼표로 이어 넣으면 한 번에 만들어요.</p>
       <p class="add-msg" id="addMsg" role="status" hidden></p>
     </form>
@@ -954,8 +1007,8 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="curriculum.js?v=1126y"></script>
-<script src="render.js?v=1126y"></script>
-<script src="app.js?v=1126y"></script>
+<script src="curriculum.js?v=1127a"></script>
+<script src="render.js?v=1127a"></script>
+<script src="app.js?v=1127a"></script>
 </body>
 </html>
