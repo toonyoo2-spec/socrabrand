@@ -54,7 +54,7 @@ img { display: block; max-width: 100%; }
   .frame-label a { color: var(--green-ink); text-decoration: none; background: var(--paper); border-radius: 999px; padding: 6px 12px; }
   .app { width: 390px; min-height: 0; margin: 0 auto; border-radius: 40px; overflow: clip; box-shadow: 0 0 0 10px #15181B, 0 40px 80px -30px rgba(10, 40, 25, .45); }
   /* 실제 휴대폰 화면 크기(390×844)로 보이게: 프레임 안에서만 스크롤한다 (KWAN 11/26) */
-  #report > .app { height: min(844px, calc(100vh - 130px)); overflow-x: clip; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; } #report > .app::-webkit-scrollbar { display: none; }
+  #report > .app { width: var(--pw, 402px); height: var(--ph, 874px); zoom: var(--pz, 1); overflow-x: clip; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; } #report > .app::-webkit-scrollbar { display: none; }
 }
 .pad { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
 
@@ -799,6 +799,9 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 .minibar a{display:grid;place-items:center;min-height:42px;border-radius:12px;font-size:15px;font-weight:800;letter-spacing:-.02em;text-decoration:none}
 .minibar .mb1{background:#08794A;color:#fff}.minibar .mb2{background:#fff;box-shadow:inset 0 0 0 1.5px #08794A;color:#08794A}
 @media (hover:hover){.minibar .mb1:hover{background:#06653D}.minibar .mb2:hover{background:#E9F4EE}}
+/* PC 미리보기 기기 (KWAN 11/26): 갤럭시 S26 360×780 / 아이폰 17 402×874 (기본 아이폰), 창이 낮으면 비율 그대로 축소 */
+.dev-bar{display:none}
+@media (min-width:600px){.dev-bar{display:flex;gap:4px;width:max-content;margin:0 auto 10px;padding:3px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px #DCE8E1}.dev-bar button{min-height:30px;padding:0 14px;border:0;border-radius:999px;background:none;font:inherit;font-size:12.5px;font-weight:800;color:#4B5A52}.dev-bar button[aria-pressed=true]{background:#10221A;color:#fff}.frame-label{width:var(--pwz,360px)}}
 /* 상단 탭: 리얼 아카데미 초록으로 지금 탭이 눈에 띄게 (KWAN 11/26) */
 .vb .tabbar{padding-block:6px 8px}.v-tabs{gap:4px;padding:4px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px #D5E7DD,0 4px 12px -8px rgba(8,121,74,.45)}.v-tabs button{min-height:40px;border-radius:999px;font-size:15.5px;font-weight:700;color:#3E5047;transition:background .18s,color .18s}.v-tabs button[aria-selected=true]{background:#08794A;color:#fff;font-weight:800;box-shadow:0 3px 8px -3px rgba(8,121,74,.6)}.v-tabs button[aria-selected=true]::after{content:none}@media (hover:hover){.v-tabs button[aria-selected=false]:hover{background:#E9F4EE;color:#08794A}}.v-tabs button:focus-visible{outline:2px solid #08794A;outline-offset:2px}
 .v-hero{color:#10221A}.v-h b{color:#08794A}.v-cap b{color:#08794A}.v-s b,.v-hleg b{color:#10221A}.v-big{color:#08794A}
@@ -843,9 +846,9 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
   .fb-tip { display: none; }
 }
 @media (min-width: 1180px) {
-  #reportWrap:not([hidden]) { display: grid; grid-template-columns: 300px 390px 380px; column-gap: 24px; justify-content: center; align-items: start; }
+  #reportWrap:not([hidden]) { display: grid; grid-template-columns: 300px var(--pwz, 402px) 380px; column-gap: 24px; justify-content: center; align-items: start; }
   .center { grid-column: 2; }
-  #reportWrap .frame-label { width: 390px; margin: 0 0 12px; }
+  #reportWrap .frame-label { width: var(--pwz, 402px); margin: 0 0 12px; }
   #reportWrap .app { margin: 0; }
   #listPanel { grid-column: 1; grid-row: 1; }
   #fbPanel { grid-column: 3; grid-row: 1; }
@@ -913,6 +916,7 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
   </aside>
 
   <div class="center">
+    <div class="dev-bar" role="group" aria-label="미리보기 기기"><button type="button" data-dev="iphone" aria-pressed="true">아이폰 17</button><button type="button" data-dev="galaxy" aria-pressed="false">갤럭시 S26</button></div>
     <div class="frame-label"><span><b id="barTitle">GV 라이팅 리포트</b></span><span class="bar-actions"><button type="button" class="bar-btn only-narrow" data-open="listPanel">학생 목록</button><button type="button" class="bar-btn" id="logoutBtn">로그아웃</button></span></div>
     <div id="report"></div>
   </div>
@@ -937,8 +941,8 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="curriculum.js?v=1126h"></script>
-<script src="render.js?v=1126h"></script>
-<script src="app.js?v=1126h"></script>
+<script src="curriculum.js?v=1126i"></script>
+<script src="render.js?v=1126i"></script>
+<script src="app.js?v=1126i"></script>
 </body>
 </html>

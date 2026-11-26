@@ -198,6 +198,17 @@
   /* 리포트 안의 동작. 리포트를 바꿔도 한 번만 걸리도록 문서에 위임한다 */
   /* PC에서는 리포트가 휴대폰 크기 프레임 안에서 스크롤된다. 그때는 그 프레임, 아니면 null(창 전체) */
   function scroller() { var a = document.querySelector("#report > .app"); return a && a.scrollHeight > a.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(a).overflowY) ? a : null; }
+  /* PC 미리보기 기기: 화면 크기는 CSS 픽셀 기준. 창이 낮으면 휴대폰 비율 그대로 줄인다 */
+  var DEV = { galaxy: [360, 780], iphone: [402, 874] }, dev = "iphone"; /* 기본은 아이폰 17 (KWAN 11/26) */
+  try { var sd = localStorage.getItem("gv_dev"); if (DEV[sd]) dev = sd; } catch (e) {}
+  function fitPhone() {
+    var w = $("reportWrap"); if (!w) return; var d = DEV[dev], lab = document.querySelector("#reportWrap .frame-label"), bar = document.querySelector(".dev-bar");
+    var top = (bar ? bar.offsetHeight + 10 : 0) + (lab ? lab.offsetHeight + 12 : 0) + 48, z = Math.min(1, Math.max(.55, (window.innerHeight - top - 24) / d[1]));
+    w.style.setProperty("--pw", d[0] + "px"); w.style.setProperty("--ph", d[1] + "px"); w.style.setProperty("--pz", z.toFixed(3)); w.style.setProperty("--pwz", Math.round(d[0] * z) + "px");
+    document.querySelectorAll(".dev-bar [data-dev]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-dev") === dev)); });
+  }
+  window.addEventListener("resize", fitPhone);
+  document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".dev-bar [data-dev]"); if (!b) return; dev = b.getAttribute("data-dev"); try { localStorage.setItem("gv_dev", dev); } catch (x) {} fitPhone(); });
   function tabIds() { return Array.prototype.map.call(document.querySelectorAll("#report [role=tab]"), function (b) { return b.id.slice(2); }); }
   function showTab(name, scroll) {
     var TABS = tabIds();
@@ -208,8 +219,8 @@
     });
     if (scroll) {
       var bar = document.querySelector("#report .tabbar"), head = document.querySelector("#report .top"); if (!bar || !head) return;
-      var sc = scroller(), base = sc ? sc.getBoundingClientRect().top - sc.scrollTop : -window.scrollY, now = sc ? sc.scrollTop : window.scrollY;
-      var y = Math.round(head.getBoundingClientRect().bottom - base - (sc ? 0 : parseFloat(getComputedStyle(bar).top) || 0));
+      var sc = scroller(), now = sc ? sc.scrollTop : window.scrollY;
+      var y = sc ? head.offsetTop + head.offsetHeight : Math.round(head.getBoundingClientRect().bottom + window.scrollY - (parseFloat(getComputedStyle(bar).top) || 0));
       if (now > y) { if (sc) sc.scrollTop = y; else window.scrollTo({ top: y, behavior: "instant" }); }
     }
   }
@@ -227,6 +238,7 @@
     if (fabObs) { fabObs.disconnect(); fabObs = null; }
     var cta = document.querySelector("#report .ctabar"), fw = $("miniBar");
     if (cta && fw && "IntersectionObserver" in window) { fabObs = new IntersectionObserver(function (es) { fw.classList.toggle("off", es[0].isIntersecting); }); fabObs.observe(cta); }
+    fitPhone();
     var h = location.hash.slice(1); showTab(tabIds().indexOf(h) >= 0 ? h : "summary", false);
     buildSections();
   }
