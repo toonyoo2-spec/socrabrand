@@ -26,16 +26,16 @@ const quizStages = ['quiz-one', 'quiz-two', 'quiz-practice'];
 const quizModes = {
   teacher: { stage: 'quiz-one', number: '①', source: '직접 제작', title: '퀴즈앤 ① · 직접 제작' },
   appendix: { stage: 'quiz-two', number: '②', source: '교사부록', title: '퀴즈앤 ② · 교사부록' },
-  rpm_final: { stage: 'quiz-one', number: '①', source: 'RPM', title: '퀴즈앤 ① · RPM' },
+  rpm_final: { stage: 'quiz-one', number: '①', source: 'RPM Pro', title: '퀴즈앤 ① · RPM Pro' },
   rpm_pro: { stage: 'quiz-two', number: '②', source: 'RPM Pro', title: '퀴즈앤 ② · RPM Pro' },
-  practice: { stage: 'quiz-practice', source: '개념원리', title: '실전 스테이지' },
+  practice: { stage: 'quiz-practice', source: 'RPM', title: '실전 스테이지' },
 };
 const resourceSelections = 'math_stage_group_selections';
 const tracks = { concept: '개념탄탄 · 개념원리', application: '실력탄탄 · RPM' };
 const resourceStages = {
   appendix: { kind: 'appendix', slots: ['부록 1번 (2분)', '부록 2번 (2분)', '부록 3번 (3분)'], copy: '교사부록 문항 3개를 선택해 주세요.' },
-  practice: { kind: 'practice', slots: ['빈출 문제 (2분)', '고난도 문제 (3분)'], copy: '개념원리 · 빈출 1문항, 고난도 1문항' },
-  rpm_final: { kind: 'lesson', slots: ['빈출 문제 1 (2분)', '빈출 문제 2 (2분)', '고난도 문제 3 (3분)'], copy: 'RPM · 빈출 2문항, 고난도 1문항' },
+  practice: { kind: 'lesson', book: 'RPM', slots: ['빈출 문제 (2분)', '고난도 문제 (3분)'], copy: 'RPM · 빈출 1문항, 고난도 1문항' },
+  rpm_final: { kind: 'rpm_pro', slots: ['빈출 문제 1 (2분)', '빈출 문제 2 (2분)', '고난도 문제 3 (3분)'], copy: 'RPM Pro · 빈출 2문항, 고난도 1문항' },
   rpm_pro: { kind: 'rpm_pro', slots: ['문제 1 (2분)', '문제 2 (3분)'], copy: 'RPM Pro 문항 2개를 선택해 주세요.' },
 };
 const state = {
@@ -783,7 +783,7 @@ function renderQuizStage(mode) {
   $('quiz-heading').textContent = stageTitle(mode);
   if (mode === 'teacher') return;
   const previous = state.resourceViews.get(mode);
-  $('stage-copy').textContent = resourceStages[mode].copy;
+  $('stage-copy').textContent = resourceStages[mode].copy + (state.composer ? ' 교재에서 문제를 눌러 자리를 고르거나, 원하는 칸으로 끌어 놓으세요.' : '');
   $('stage-status').textContent = '';
   options($('stage-book'), values(stageCatalog(), 'book'), previous?.book);
   setStageUnit(previous?.unit ?? currentLesson().unit, previous?.section);
@@ -804,8 +804,9 @@ function lessonCatalog() {
 }
 
 function stageCatalog() {
-  const kind = resourceStages[activeQuizMode()]?.kind;
-  return kind ? state.catalog.filter(q => (!q.bundle_root_id || q.bundle_root_id === q.question_id) && (q.use_kind ?? 'lesson') === kind) : [];
+  const { kind, book } = resourceStages[activeQuizMode()] ?? {};
+  return kind ? state.catalog.filter(q => (!q.bundle_root_id || q.bundle_root_id === q.question_id)
+    && (q.use_kind ?? 'lesson') === kind && (!book || q.book === book)) : [];
 }
 
 function setUnit(unit, section) {
@@ -829,10 +830,14 @@ function catalogUnitQuestions() {
 
 let draggedQuestion = null;
 
-function placeInSlot(slot, question, select) {
+function placeInSlot(slot, question, select, mode) {
   const option = [...select.options].find(item => item.value === String(question.question_id));
   if (state.busy || !state.composer || !option || option.disabled || select.disabled) return;
-  if (select.value !== option.value) void savePick(slot, option.value, select);
+  if (select.value !== option.value) void savePick(slot, option.value, select, mode);
+}
+
+function clearDropSlots() {
+  document.querySelectorAll('.drop-slot').forEach(el => el.classList.remove('drop-slot'));
 }
 
 function selectionFeedback(message, undo) {
@@ -870,27 +875,28 @@ async function movePick(from, to, source, canUndo = true) {
   }, 'selection-status');
 }
 
-function chooseQuestionSlot(question, from) {
+function chooseQuestionSlot(question, from, mode) {
   const dialog = $('question-slot-dialog');
   if (state.busy || !state.composer || dialog.open) return;
   $('slot-dialog-title').textContent = question.label + (from ? ' 옮길 자리' : ' 넣을 자리');
-  const controls = [...$('question-slots').querySelectorAll('select')];
+  const controls = [...$(mode ? 'stage-picks' : 'question-slots').querySelectorAll('select')];
+  const picks = mode ? state.stagePicks.get(mode) : state.picks;
   $('slot-dialog-options').replaceChildren(...controls.map((select, index) => {
     const slot = index + 1;
     const button = element('button');
     button.type = 'button';
-    const assigned = state.catalog.find(q => q.question_id === state.picks.get(slot));
-    button.append(element('strong', (slot <= requiredLessonSlots() ? '기본 ' : '예비 ') + slot + '번'),
+    const assigned = state.catalog.find(q => q.question_id === picks.get(slot));
+    button.append(element('strong', mode ? resourceStages[mode].slots[index] : lessonSlotName(slot)),
       element('span', assigned?.label || '빈 자리'));
     const option = [...select.options].find(item => item.value === String(question.question_id));
     button.disabled = select.disabled || (from ? slot === from : !option || option.disabled);
-    button.addEventListener('click', () => { dialog.close(); if (from) void movePick(from, slot, question.question_id); else placeInSlot(slot, question, select); });
+    button.addEventListener('click', () => { dialog.close(); if (from) void movePick(from, slot, question.question_id); else placeInSlot(slot, question, select, mode); });
     return button;
   }));
   dialog.showModal();
 }
 
-function addQuestionRegions(image, questions) {
+function addQuestionRegions(image, questions, mode) {
   const surface = element('div', undefined, 'pick-page');
   image.draggable = false;
   surface.append(image);
@@ -908,25 +914,22 @@ function addQuestionRegions(image, questions) {
     let suppressClick = false;
     button.addEventListener('pointerdown', () => { suppressClick = false; });
     button.addEventListener('click', event => {
-      if (!suppressClick || event.detail === 0) chooseQuestionSlot(question);
+      if (!suppressClick || event.detail === 0) chooseQuestionSlot(question, undefined, mode);
     });
     button.addEventListener('dragstart', event => {
       if (state.busy || !state.composer) { event.preventDefault(); return; }
       suppressClick = true;
-      draggedQuestion = {question, version:state.lessonVersion};
+      draggedQuestion = {question, mode, version:state.lessonVersion};
       event.dataTransfer.setData('text/plain',question.label);
       event.dataTransfer.effectAllowed = 'copy';
     });
-    button.addEventListener('dragend', () => {
-      draggedQuestion = null;
-      $('question-slots').querySelectorAll('.drop-slot').forEach(el => el.classList.remove('drop-slot'));
-    });
+    button.addEventListener('dragend', () => { draggedQuestion = null; clearDropSlots(); });
     surface.append(button);
   }
   return surface;
 }
 
-function pickControls(total, selectedIds, questions, slotLabel, save) {
+function pickControls(total, selectedIds, questions, slotLabel, save, mode) {
   const slots = [];
   for (let slot = 1; slot <= total; slot += 1) {
     const label = document.createElement('label');
@@ -978,14 +981,14 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
           draggedQuestion = {question:selected,from:slot,version:state.lessonVersion};
           event.dataTransfer.setData('text/plain', selected.label); event.dataTransfer.effectAllowed = 'move';
         });
-        handle.addEventListener('dragend', () => {
-          draggedQuestion = null;
-          $('question-slots').querySelectorAll('.drop-slot').forEach(el => el.classList.remove('drop-slot'));
-        });
+        handle.addEventListener('dragend', () => { draggedQuestion = null; clearDropSlots(); });
         moveHandle = handle;
       }
+    }
+    if ((save === savePick || mode) && state.composer) {
+      const accepts = () => draggedQuestion?.version === state.lessonVersion && draggedQuestion.mode === mode;
       label.addEventListener('dragover', event => {
-        if (draggedQuestion?.version !== state.lessonVersion || state.busy) return;
+        if (!accepts() || state.busy) return;
         event.preventDefault(); event.dataTransfer.dropEffect = draggedQuestion.from ? 'move' : 'copy'; label.classList.add('drop-slot');
       });
       label.addEventListener('dragleave', event => {
@@ -993,10 +996,10 @@ function pickControls(total, selectedIds, questions, slotLabel, save) {
       });
       label.addEventListener('drop', event => {
         label.classList.remove('drop-slot');
-        if (draggedQuestion?.version !== state.lessonVersion) return;
+        if (!accepts()) return;
         event.preventDefault();
         if (draggedQuestion.from) void movePick(draggedQuestion.from,slot,draggedQuestion.question.question_id);
-        else placeInSlot(slot, draggedQuestion.question, select);
+        else placeInSlot(slot, draggedQuestion.question, select, mode);
         draggedQuestion = null;
       });
     }
@@ -1064,7 +1067,7 @@ function renderStagePicks() {
   const mode = activeQuizMode();
   const labels = slot => resourceStages[mode].slots[slot - 1];
   const controls = pickControls(quizCount(mode), state.stagePicks.get(mode), selectedStageQuestions(), labels,
-    (slot, value, select) => savePick(slot, value, select, mode));
+    (slot, value, select) => savePick(slot, value, select, mode), mode);
   $('stage-picks').replaceChildren(...controls.map((control, index) => {
     const slot = index + 1;
     const question = selectedStagePick(slot);
@@ -1106,7 +1109,7 @@ function selectedStagePick(slot, mode = activeQuizMode()) {
 
 function renderStagePreview() {
   const title = [$('stage-unit').value, $('stage-section').value].filter(Boolean).join(' · ');
-  renderPageStack('stage-preview', $('stage-book').value, title, selectedStageQuestions());
+  renderPageStack('stage-preview', $('stage-book').value, title, selectedStageQuestions(), false, activeQuizMode());
 }
 
 async function withSaving(work, statusId) {
@@ -1953,7 +1956,7 @@ function markCatalogType() {
   }
 }
 
-function renderPageStack(prefix, bookName, title, questions, grouped = false) {
+function renderPageStack(prefix, bookName, title, questions, grouped = false, mode) {
   const groups = new Map();
   for (const q of questions) {
     const name = grouped ? q.section : '';
@@ -1965,7 +1968,7 @@ function renderPageStack(prefix, bookName, title, questions, grouped = false) {
   ).flat();
   const activeCourse = currentCourse();
   const course = activeCourse?.preview_course_id ?? activeCourse?.id;
-  const key = JSON.stringify([course,bookName,title,pages]);
+  const key = JSON.stringify([course,bookName,title,pages,mode ?? null,state.composer]);
   if (state.pagePreviews.get(prefix)?.key === key) return;
   resetPageStack(prefix);
   const scroller = $(prefix + '-scroll');
@@ -1977,9 +1980,9 @@ function renderPageStack(prefix, bookName, title, questions, grouped = false) {
       if (!entry.isIntersecting) continue;
       observer.unobserve(entry.target);
       const { page, book } = entry.target.dataset;
-      const items = grouped && state.composer ? questions.filter(q => q.page === Number(page)
-        && q.preview_book === book && q.section === entry.target.dataset.section) : [];
-      void loadCatalogPage(entry.target, course, book, page, urls, items);
+      const items = (grouped || mode) && state.composer ? questions.filter(q => q.page === Number(page)
+        && q.preview_book === book && (!grouped || q.section === entry.target.dataset.section)) : [];
+      void loadCatalogPage(entry.target, course, book, page, urls, items, mode);
     }
   }, { root: scroller, rootMargin: '500px 0px' });
   const anchors = [];
@@ -2018,7 +2021,7 @@ function renderPageStack(prefix, bookName, title, questions, grouped = false) {
   scroller.scrollTop = 0;
 }
 
-async function loadCatalogPage(figure, course, book, page, urls, questions) {
+async function loadCatalogPage(figure, course, book, page, urls, questions, mode) {
   const placeholder = figure.querySelector('.page-placeholder');
   try {
     const file = await (await request(previewPath(course, book, page))).blob();
@@ -2029,7 +2032,7 @@ async function loadCatalogPage(figure, course, book, page, urls, questions) {
     const image = new Image();
     image.alt = page + '쪽 교재 원본';
     image.src = url;
-    placeholder.replaceWith(questions.length ? addQuestionRegions(image, questions) : image);
+    placeholder.replaceWith(questions.length ? addQuestionRegions(image, questions, mode) : image);
   } catch {
     placeholder.textContent = '이 쪽의 미리보기를 열 수 없습니다.';
   }

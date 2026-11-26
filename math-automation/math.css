@@ -433,10 +433,10 @@ button:disabled, select:disabled { opacity: .57; cursor: not-allowed; }
 .combined-track { overflow-x:auto; }
 
 .pick-page { position:relative; }
-#preview-scroll .pick-page img { aspect-ratio:auto; }
+#preview-scroll .pick-page img, #stage-preview-scroll .pick-page img { aspect-ratio:auto; }
 .pick-page .pick-region { position:absolute; background:transparent; color:inherit; padding:0; border:0; min-height:0; min-width:0; border-radius:3px; cursor:grab; box-shadow:none; }
 .pick-page .pick-region:hover, .pick-page .pick-region:focus-visible { outline:2px solid #277d62; outline-offset:-2px; background:#277d620d; }
-#question-slots label.drop-slot { outline:2px solid #277d62; background:var(--selected); }
+#question-slots label.drop-slot, #stage-picks label.drop-slot { outline:2px solid #277d62; background:var(--selected); }
 #question-slot-dialog { width:min(380px,calc(100% - 24px)); max-height:85dvh; overflow:auto; color:var(--ink); background:var(--surface); padding:18px; border:1px solid var(--border); border-radius:10px; }
 #question-slot-dialog::backdrop { background:#10231b88; }
 #slot-dialog-options { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px; }
