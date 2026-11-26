@@ -790,6 +790,13 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 .vb{--v-bg:#E9F4EE;--v-dark:#CFE2D8;--v-on:#10B46A;--v-hint-on:#E9A512;--v-soft:#4B5C53;--v-pale:#F3F7F5;--green:#10B46A;--v-hint:#E9A512;--g:#08794A;--cta:#08794A;--v-rule:#E3EAE6;--v-t2:#4B5A52}
 .vb .top img{filter:none}.vb .top .test{background:#fff;color:#14241C}
 .v-tabs button{color:#5A6A62}.v-tabs button[aria-selected=true]{color:#10221A}.v-tabs button[aria-selected=true]::after{background:#08864D}
+/* 하단 신청 버튼: 맨 아래에 두고, 읽는 동안은 오른쪽 아래 작은 버튼이 따라다닌다 (KWAN 11/26) */
+.vb .ctabar{position:static;border-top:0}
+.minibar{position:sticky;bottom:0;z-index:16;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(255,255,255,.96);border-top:1px solid #E3EAE6;box-shadow:0 -8px 20px -16px rgba(16,34,26,.5);transition:opacity .2s,transform .2s}
+.minibar.off{opacity:0;transform:translateY(100%);pointer-events:none}
+.minibar a{display:grid;place-items:center;min-height:42px;border-radius:12px;font-size:15px;font-weight:800;letter-spacing:-.02em;text-decoration:none}
+.minibar .mb1{background:#08794A;color:#fff}.minibar .mb2{background:#fff;box-shadow:inset 0 0 0 1.5px #08794A;color:#08794A}
+@media (hover:hover){.minibar .mb1:hover{background:#06653D}.minibar .mb2:hover{background:#E9F4EE}}
 /* 상단 탭: 리얼 아카데미 초록으로 지금 탭이 눈에 띄게 (KWAN 11/26) */
 .vb .tabbar{padding-block:6px 8px}.v-tabs{gap:4px;padding:4px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px #D5E7DD,0 4px 12px -8px rgba(8,121,74,.45)}.v-tabs button{min-height:40px;border-radius:999px;font-size:15.5px;font-weight:700;color:#3E5047;transition:background .18s,color .18s}.v-tabs button[aria-selected=true]{background:#08794A;color:#fff;font-weight:800;box-shadow:0 3px 8px -3px rgba(8,121,74,.6)}.v-tabs button[aria-selected=true]::after{content:none}@media (hover:hover){.v-tabs button[aria-selected=false]:hover{background:#E9F4EE;color:#08794A}}.v-tabs button:focus-visible{outline:2px solid #08794A;outline-offset:2px}
 .v-hero{color:#10221A}.v-h b{color:#08794A}.v-cap b{color:#08794A}.v-s b,.v-hleg b{color:#10221A}.v-big{color:#08794A}
@@ -928,8 +935,8 @@ a.cta { display: grid; place-items: center; text-decoration: none; }
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="curriculum.js?v=1126d"></script>
-<script src="render.js?v=1126d"></script>
-<script src="app.js?v=1126d"></script>
+<script src="curriculum.js?v=1126f"></script>
+<script src="render.js?v=1126f"></script>
+<script src="app.js?v=1126f"></script>
 </body>
 </html>

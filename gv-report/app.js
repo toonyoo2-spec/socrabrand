@@ -210,7 +210,7 @@
       if (window.scrollY > y) window.scrollTo({ top: y, behavior: "instant" });
     }
   }
-  var stickObs = null;
+  var stickObs = null, fabObs = null;
   function setupReport() {
     var bar = document.querySelector("#report .tabbar");
     if (stickObs) { stickObs.disconnect(); stickObs = null; }
@@ -220,6 +220,10 @@
       stickObs = new IntersectionObserver(function (es) { bar.classList.toggle("stuck", !es[0].isIntersecting); }, { rootMargin: "-1px 0px 0px 0px" });
       stickObs.observe(s);
     }
+    /* 읽는 동안은 하단에 작은 신청 버튼 두 개가 따라다니고, 맨 아래 큰 버튼이 보이면 숨긴다 */
+    if (fabObs) { fabObs.disconnect(); fabObs = null; }
+    var cta = document.querySelector("#report .ctabar"), fw = $("miniBar");
+    if (cta && fw && "IntersectionObserver" in window) { fabObs = new IntersectionObserver(function (es) { fw.classList.toggle("off", es[0].isIntersecting); }); fabObs.observe(cta); }
     var h = location.hash.slice(1); showTab(tabIds().indexOf(h) >= 0 ? h : "summary", false);
     buildSections();
   }
@@ -247,7 +251,7 @@
       var send = $("praiseSend"); if (send) { send.disabled = !on; send.textContent = on ? "칭찬 카드 보내기" : "보낼 말을 골라 주세요"; }
       return;
     }
-    if (t.closest("#consultBtn, #extendBtn")) return; /* 새 탭에서 상담 예약, 사전 연장 신청 페이지 */
+    if (t.closest("#consultBtn, #extendBtn, #miniBar a")) return; /* 새 탭에서 상담 예약, 사전 연장 신청 페이지 */
     if (t.closest("#praiseSend")) { toast("지금은 미리보기예요. 실제 리포트에서는 칭찬 카드가 아이에게 전달돼요."); return; }
     if (wide.matches) { var it = t.closest("#report [data-item]"); if (it) { pickSection(it.getAttribute("data-item"), true); fbText.focus(); } }
   });
