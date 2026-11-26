@@ -1,9 +1,9 @@
 import {typeRuns,loadLessonFonts,KOREAN_FACE} from './math-type.mjs?v=4';
-import {addGothicQuestion} from './gothic-question.mjs?v=6';
-import {fillTemplate} from './template-slides.mjs?v=3';
+import {addGothicQuestion} from './gothic-question.mjs?v=7';
+import {fillTemplate} from './template-slides.mjs?v=4';
 import { closingRegion } from './closing-regions.mjs';
 import {quizPlan, quizWorkbook} from './quizn-export.mjs?v=1';
-import {addEchoScenes} from './intro.mjs?v=4';
+import {addEchoScenes} from './intro.mjs?v=5';
 import {normalizeQuizNotation} from './math-notation.mjs?v=1';
 const MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const DARK = '111111';
