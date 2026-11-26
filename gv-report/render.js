@@ -347,14 +347,14 @@
   }
   /* 비포·애프터: GV 노트 모양. 패턴 적용 문장 줄은 KWAN 11/26 요청으로 뺌(데이터 l[2]는 남겨 둠) */
   /* 표시 규칙(모든 학생 공통, KWAN 11/26): {{ }} 한국어로 쓴 부분 = 노란 칸, [[ ]] 철자·문법이 다른 단어 = 물결.
-     대소문자·문장부호·숫자로 쓴 것은 표시하지 않는다. 표시가 없는 문장에는 '바르게 썼어요'를 붙인다. 설명은 카드 아래 한 번만, 항상 두 줄 모두 */
+     대소문자·문장부호·숫자로 쓴 것은 표시하지 않는다. 표시가 없는 문장에는 '바르게 썼어요', 표시가 있으면 l[2](레슨 뒤 학생이 다시 쓴 최종 문장)를 '배운 뒤 고쳐 쓴 문장'으로 보여 준다. 설명은 카드 아래 한 번만, 항상 두 줄 모두 */
   function wrote(kd, n) {
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
       var ok = !/\[\[|\{\{/.test(l[0]);
-      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : "") + "</li>";
+      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>배운 뒤 고쳐 쓴 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
     }).join("") + "</ul></div>";
   }
-  var NOTE_KEY = '<div class="legend"><p class="lg-t">문장은 레슨에서 패턴을 배우기 전에 혼자 먼저 써 본 거예요. 표시된 곳은 레슨을 하며 고쳐 쓴 부분이에요.</p><span><i class="k1"></i>노란 칸: 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 철자나 표현을 고친 곳</span></div>';
+  var NOTE_KEY = '<div class="legend"><p class="lg-t">레슨을 시작할 때 혼자 먼저 써 본 문장이에요. 처음에 놓친 곳은 레슨에서 패턴을 배운 뒤 직접 고쳐 썼어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 처음에 놓친 곳</span></div>';
   /* 학생 원문 (지희님 11/24): AI 개입 없는 데이터. 레벨 1~4는 Stage 2 첫 입력, 레벨 5 이상은 Stage 3 1차 에세이와 G-block 조건 달성 여부.
      data.orig = { lv, lesson, lines: [[학생 원문, G-block 패턴]] } 또는 { lv, lesson, essay, gs: [[G-block 패턴, 달성 여부(true/false)]] } */
   function origin(o) {
