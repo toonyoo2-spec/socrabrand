@@ -152,6 +152,16 @@ function applyLessonLabelColors(doc) {
       if(run){run.textContent=run.textContent.trimEnd();count++;}
     }
   }
+  // Lift each numbered badge and its caption together, retaining room for the camera.
+  const steps = lookup('나눈 소수들과 마지막 몫을곱셈 기호 ×로 연결한다.');
+  const conclusion = lookup('어느 방법으로 해도 결과는 같다.');
+  for (const shape of shapes) {
+    const off=child(child(child(shape,'spPr'),'xfrm'),'off');
+    if (!off) continue;
+    const y=Number(off.getAttribute('y'))/12700;
+    const shift=steps && y>=220 ? (y>=320?14:y>=270?9:4) : shape===conclusion && y>=350 ? 17 : 0;
+    if (shift) {off.setAttribute('y',String(Math.round((y-shift)*12700)));count++;}
+  }
   const title=lookup('개념플러스'), question=lookup('2는 어떤 소수일까?');
   if (title && question && shapes.length===11 && shapes.every(sp=>child(child(sp,'spPr'),'xfrm'))) {
     const rows=[
