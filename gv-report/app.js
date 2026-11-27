@@ -111,11 +111,25 @@
     rest.sort(function (a, b) { return (a.status === b.status ? 0 : a.status === "ready" ? -1 : 1) || String(a.name || "~").localeCompare(String(b.name || "~"), "ko") || a.id.localeCompare(b.id); });
     var draftHtml = draft.length ? '<div class="sample"><span class="sample-tag">' + STAR + "새 시안</span><p>요약·어휘·문법·총평 구성이에요. 학생마다 문구가 어떻게 달라지는지 비교해 보세요.</p><ul class=\"rlist\">" + draft.map(item).join("") + "</ul></div>" : "";
     sampleBox.innerHTML = draftHtml + (sample.length ? '<div class="sample"><span class="sample-tag">' + STAR + (draft.length ? "이전 샘플" : "대표 샘플") + "</span><p>" + (draft.length ? "지난번 시안이에요. 비교할 때 보세요." : "처음 보시는 분은 이 리포트부터 보세요.") + (sample.length > 1 ? " ‘수정 샘플’은 학부모용 화면, ‘지표 전체 보기’는 평가 항목을 모두 펼친 화면이에요." : " 다른 리포트도 같은 기준으로 만들었어요.") + "</p><ul class=\"rlist\">" + sample.map(item).join("") + "</ul></div>" : "");
-    $("allLabel").textContent = "전체 학생 " + rest.length + "명";
+    $("allLabel").textContent = "전체 학생 " + rest.length + "명"; $("clearAll").hidden = !rest.length;
     rlist.innerHTML = rest.length ? rest.map(item).join("") : '<li class="list-empty">아직 다른 학생이 없어요. 위 칸에 학생 ID를 넣어 만들어 보세요.</li>';
     $("listCount").textContent = "리포트 " + reports.length + "개 · 누르면 가운데에 리포트가 나와요";
     filterList();
   }
+  /* 전체 학생 모두 삭제: 샘플·새 시안은 남기고, 의견도 함께 지운다 (KWAN 11/27) */
+  $("clearAll").addEventListener("click", async function () {
+    var ids = reports.filter(function (x) { return x.variant !== "새 시안" && !x.is_sample; }).map(function (x) { return x.id; });
+    if (!ids.length) return;
+    if (!confirm("전체 학생 " + ids.length + "명의 리포트를 모두 지울까요?\n샘플과 새 시안은 남아요. 지우면 되돌릴 수 없어요.")) return;
+    var btn = this; btn.disabled = true;
+    try {
+      var n = await api("rpc/gv_reports_delete", { method: "POST", body: { ids: ids } });
+      if (current && ids.indexOf(current.id) >= 0) { current = null; showEmptyCenter(); }
+      reports = await api(LIST) || []; renderList();
+      say("ok", (n || 0) + "명 리포트를 지웠어요.");
+    } catch (err) { if (!expired(err)) say("err", "지우지 못했어요. 잠시 뒤 다시 눌러 주세요."); }
+    finally { btn.disabled = false; }
+  });
   function filterList() {
     var qs = idsOf(addId.value);
     document.querySelectorAll("#listPanel [data-row]").forEach(function (li) { var row = li.getAttribute("data-row"); li.hidden = qs.length > 0 && !qs.some(function (q) { return row.indexOf(q) >= 0; }); });
@@ -201,7 +215,7 @@
     if (push) history.replaceState(null, "", "?r=" + encodeURIComponent(id));
     var nm = meta.name || (meta.student_id + " 학생");
     $("barTitle").textContent = nm + " · " + meta.student_id;
-    $("fbSub").textContent = nm + " 리포트에 남긴 의견";
+    $("fbSub").setAttribute("data-nm", nm); $("fbSub").textContent = fbScope === "all" ? "모든 학생 리포트의 의견 · 새 의견은 " + nm + " 리포트에 남아요" : nm + " 리포트에 남긴 의견";
     document.title = nm + " · GV 라이팅 리포트";
     filterSec = null;
     if (meta.status !== "ready") { showWait(meta); loadFb(); return; }
@@ -372,7 +386,7 @@
     "praise-card": "칭찬 카드", "parent-guide": "리포트 보는 법", "level": "레벨 설명 팝업", "tabs": "탭 구성",
     "items-intro": "항목별로 보기 안내", "items-ach": "학습 성취도", "items-eng": "학습 참여도", "items-growth": "성장 추세", "items-type": "학생 유형", "items-recs": "추천학습 기준" };
   var TABNAME = { "p-summary": "요약", "p-writing": "글 비교", "p-skills": "활동 기록", "p-next": "다음 학습", "p-items": "항목별" };
-  var sections = [], filterSec = null, fbView = "all", fb = { docs: [], loading: false, again: false, pending: null, timer: 0 };
+  var sections = [], filterSec = null, fbView = "all", fbScope = "all", /* 의견은 모든 학생 리포트에 함께 적용되므로 기본은 모든 학생 보기 (KWAN 11/27) */ fb = { docs: [], loading: false, again: false, pending: null, timer: 0 };
   var groups = $("fbGroups"), sel = $("fbSection"), fbText = $("fbText"), fbSend = $("fbSend");
   function buildSections() {
     sections = [{ id: "", name: NAMES[""], tab: "" }];
@@ -396,6 +410,7 @@
     if (focusThread) { filterSec = id ? id : null; renderFb(); }
   }
   sel.addEventListener("change", function () { pickSection(sel.value, true); });
+  $("fbScope").addEventListener("click", function (e) { var b = e.target.closest("[data-fbscope]"); if (!b || b.getAttribute("data-fbscope") === fbScope) return; fbScope = b.getAttribute("data-fbscope"); var nm0 = $("fbSub").getAttribute("data-nm") || "이 학생"; $("fbSub").textContent = fbScope === "all" ? "모든 학생 리포트의 의견 · 새 의견은 " + nm0 + " 리포트에 남아요" : nm0 + " 리포트에 남긴 의견"; $("fbScope").querySelectorAll("[data-fbscope]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); groups.scrollTop = 0; loadFb(); });
   $("fbTabs").addEventListener("click", function (e) { var b = e.target.closest("[data-fbview]"); if (!b) return; fbView = b.getAttribute("data-fbview"); groups.scrollTop = 0; renderFb(); });
   $("fbAll").addEventListener("click", function () { filterSec = null; pickSection("", false); renderFb(); });
   async function loadFb() {
@@ -404,8 +419,9 @@
     fb.loading = true; var done; fb.pending = new Promise(function (r) { done = r; });
     var rid = current.id;
     try {
-      var docs = await api("gv_report_feedback?select=id,section,author_id,author_name,body,created_at,done,done_by_name,done_at&report_id=eq." + encodeURIComponent(rid) + "&order=created_at.asc");
-      if (current && current.id === rid) { fb.docs = (docs || []).map(function (d) { if (d.section) d.section = d.section.replace(/^talk-/, "b-"); return d; }); renderFb(); }
+      var all = fbScope === "all";
+      var docs = await api("gv_report_feedback?select=id,report_id,section,author_id,author_name,body,created_at,done,done_by_name,done_at" + (all ? "" : "&report_id=eq." + encodeURIComponent(rid)) + "&order=created_at.asc");
+      if (current && (all || current.id === rid)) { fb.docs = (docs || []).map(function (d) { if (d.section) d.section = d.section.replace(/^talk-/, "b-"); return d; }); renderFb(); }
     } catch (err) { expired(err); }
     finally { fb.loading = false; done(); }
     if (fb.again) { fb.again = false; return loadFb(); }
@@ -418,7 +434,8 @@
   var CHECK = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function msgHtml(d, me) {
     var mine = d.author_id === me;
-    return '<div class="msg' + (mine ? " me" : "") + (d.done ? " done" : "") + '"><span class="msg-meta">' + (mine ? "나" : esc(d.author_name || "팀원")) + " · " + fmt(d.created_at) +
+    var who = fbScope === "all" && d.report_id ? (function (r) { return r ? (r.name || r.student_id || r.id) : d.report_id; })(byId(d.report_id)) : "";
+    return '<div class="msg' + (mine ? " me" : "") + (d.done ? " done" : "") + '"><span class="msg-meta">' + (mine ? "나" : esc(d.author_name || "팀원")) + " · " + fmt(d.created_at) + (who ? ' · <b class="msg-who">' + esc(who) + "</b>" : "") +
       (mine ? '<button type="button" class="msg-del" data-del="' + esc(d.id) + '">지우기</button>' : "") + '</span><div class="msg-bubble">' + esc(d.body) + "</div>" +
       '<button type="button" class="msg-done" data-done="' + esc(d.id) + '" aria-pressed="' + (d.done ? "true" : "false") + '"' + (d.done ? ' title="누르면 남은 의견으로 되돌려요"' : "") + '><span class="box">' + CHECK + "</span>" +
       (d.done ? "반영 완료 · " + esc(d.done_by_name || "팀원") + (d.done_at ? " · " + fmt(d.done_at) : "") : "반영했으면 완료 표시") + "</button></div>";
