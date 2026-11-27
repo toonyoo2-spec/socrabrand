@@ -151,7 +151,7 @@ async function addContent(root,g,quiz,loadImage,q){
     if(g.body){const body=node('div','font-size:.84em;line-height:1.38;margin-bottom:.3em');await layoutBody(body,g.body);root.append(body);}
     const choices=displayedChoices(g,quiz);
     if(choices.length){
-      const grid=node('div','display:grid;gap:.14em .64em;font-size:.86em;line-height:1.35;grid-template-columns:repeat('+ (choices.some(c=>c.length>30)?1:2)+', minmax(0,1fr))');
+      const grid=node('div','display:grid;gap:.14em .64em;font-size:.86em;line-height:1.35;grid-template-columns:repeat('+ (choices.some(c=>c.length>30 || /[가-힣].*[.!?]\s*$/.test(c))?1:2)+', minmax(0,1fr))');
       for(const [i,txt] of choices.entries()){
         const cell=node('div','display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:.5em;align-items:baseline');
         const mark=node('span');styleText(mark,marks[i]??String(i+1),false);
@@ -159,6 +159,15 @@ async function addContent(root,g,quiz,loadImage,q){
         cell.append(mark,text);grid.append(cell);
       }
       root.append(grid);
+      // Keep each choice on one line when the full slide width is available.
+      if (getComputedStyle(grid).gridTemplateColumns.split(' ').length > 1) {
+        const wraps = Array.from(grid.children).some(cell => {
+          const body = cell.lastElementChild;
+          if (body.querySelector('img,table,[data-rule]')) return false;
+          return body.getBoundingClientRect().height > parseFloat(getComputedStyle(body).lineHeight) * 1.6;
+        });
+        if (wraps) grid.style.gridTemplateColumns='minmax(0,1fr)';
+      }
     }
     if(quiz?.book_quiz?.mode==='pairs'){
       const el=node('div','font-size:.75em;margin-top:.6em;line-height:1.4');styleText(el,'답 버튼　'+quiz.choices.split('\n').map((s,i)=>(i+1)+'. '+s).join('　　 '));root.append(el);
