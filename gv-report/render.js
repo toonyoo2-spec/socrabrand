@@ -349,25 +349,21 @@
   /* 표시 규칙(모든 학생 공통, KWAN 11/26): {{ }} 한국어로 쓴 부분 = 노란 칸, [[ ]] 철자·문법이 다른 단어 = 물결.
      대소문자·문장부호·숫자로 쓴 것은 표시하지 않는다. 표시가 없는 문장에는 '바르게 썼어요', 표시가 있으면 l[2](레슨 뒤 학생이 다시 쓴 최종 문장)를 '배운 뒤 고쳐 쓴 문장'으로 보여 준다. 설명은 카드 아래 한 번만, 항상 두 줄 모두 */
   /* 문장 키워드 태그 (11/26 은비님·혜민님 시안): 학생이 쓴 문장 아래에. 초록 = 학습하며 성장, 흰색 = 이미 잘하고 있음 */
-  /* 문장 키워드 (11/26 1단계): 피드백 받기 전 아이가 혼자 쓴 첫 영작끼리 비교한다.
-     첫 레슨 첫 영작에서 틀렸던 항목 중 최근 레슨 첫 영작에서는 맞게 쓴 것 = 성장 (명주님 정의: 전에 비해 잘하게 된 점)
-     최근 레슨 첫 영작에서 맞게 쓴 나머지 = 잘하고 있는 점. 리아가 고쳐 준 것은 성장으로 치지 않는다.
-     틀린 곳은 첫 영작을 그 레슨의 최종 문장과 맞춰 찾는다(최종 문장이 없으면 바르게 쓴 문장). 표현 확장은 시점 비교에 쓰지 않는다 */
-  var FIX = function (l) { var f = l[2] || l[3]; var r = kwLine(l[0], f); return r ? r.grow.filter(function (k) { return k !== "표현 확장"; }) : []; };
-  function kwTags(l, base) {
-    if (!base || !base.lines || !base.lines.length) return "";
-    var then = {}; base.lines.forEach(function (b) { FIX(b).forEach(function (k) { then[k] = 1; }); });
-    var now = {}; FIX(l).forEach(function (k) { now[k] = 1; });
-    var all = KW.map(function (k) { return k[0]; }).filter(function (k) { return k !== "표현 확장"; });
-    var grow = all.filter(function (k) { return then[k] && !now[k]; }), good = all.filter(function (k) { return !now[k] && !then[k]; });
-    var row = function (cls, lab, ks) { return ks.length ? '<p class="kw-row ' + cls + '"><b>' + lab + "</b><span>" + ks.map(function (k) { return "<i>" + k + "</i>"; }).join("") + "</span></p>" : ""; };
-    var h = row("up", "첫 레슨보다 성장했어요", grow) + row("ok", "이미 잘하고 있어요", good);
-    return h ? '<div class="kwt">' + h + "</div>" : "";
+  /* 문장 키워드 (11/27 슬랙 확정: 은비님·명주님·재연님)
+     - 최근 레슨 문장에서 첫 영작 → 학습 후 최종 문장으로 나아진 점만 '성장' 태그로 (긍정 태그는 쓰지 않음)
+     - 우선순위 문장 구성 > 단어 선택 > 문법 사용 > 철자 > 표현 다양성 > 문장 부호, 최대 3개
+     - 나아진 점이 없으면(처음부터 맞게 쓴 문장) 표현 다양성 하나로, 태그 없는 학생이 없게 */
+  var KW_PRI = ["문장 구성", "단어 선택", "문법 사용", "철자", "표현 다양성", "문장 부호"];
+  function kwTags(l) {
+    var r = kwLine(l[0], l[2] || l[3]); if (!r) return "";
+    var t = KW_PRI.filter(function (k) { return r.grow.indexOf(k) >= 0; }).slice(0, 3);
+    if (!t.length) t = ["표현 다양성"];
+    return '<div class="kwt"><p class="kw-row up"><b>학습하며 성장했어요</b><span>' + t.map(function (k) { return "<i>" + k + "</i>"; }).join("") + "</span></p></div>";
   }
   function wrote(kd, n, base) {
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
       var ok = !l[2]; /* 고친 문장이 없으면 처음부터 바르게 쓴 문장 */
-      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (kd === "now" ? kwTags(l, base) : "") + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
+      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (kd === "now" ? kwTags(l) : "") + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
     }).join("") + "</ul></div>";
   }
   var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 어려웠던 곳도 리아 선생님과 함께 고치며 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 리아 선생님과 함께 고친 곳</span></div>';
@@ -386,59 +382,82 @@
     ["문장 구성", "영어로 끝까지, 필요한 내용을 담아 문장을 만들 수 있게 됐어요", "영어로 끝까지, 문장을 만들 수 있게 됐어요"],
     ["문법 사용", "알맞은 문법을 필요한 자리에 쓸 수 있게 됐어요", "알맞은 문법을, 쓸 수 있게 됐어요"],
     ["단어 선택", "상황에 맞는 단어를 골라 쓸 수 있게 됐어요", "상황에 맞는 단어를, 고를 수 있게 됐어요"],
-    ["표현 확장", "같은 뜻을 다른 방법으로도 말할 수 있게 됐어요", "같은 뜻을, 다르게도 말할 수 있게 됐어요"],
+    ["표현 다양성", "같은 뜻을 다른 방법으로도 말할 수 있게 됐어요", "같은 뜻을, 다르게도 말할 수 있게 됐어요"],
     ["철자", "단어를 정확하게 쓸 수 있게 됐어요", "단어를, 정확하게 쓸 수 있게 됐어요"],
     ["문장 부호", "대문자와 문장 부호를 알맞게 쓸 수 있게 됐어요", "대문자와 문장 부호를, 알맞게 쓰게 됐어요"]
   ];
   /* 문장 키워드: 문법 탭 '작성 문장 비교'와 같은 문장(리대시 첫 영작 → 최종 문장)을 규칙으로 비교해 뽑는다 (11/26).
      성장 = 처음 쓴 문장에서 고쳐진 점, 긍정 = 처음부터 맞게 쓴 점. 성장 2개까지, 성장과 겹치는 긍정은 뺀다 */
-  var FN = "a an the to at in on for of with by from is am are was were be been do does did have has had will can i you he she it we they my your his her our their me him us them".split(" ");
+  var FN = "a an the to at in on for of with by from as about into than is am are was were be been do does did have has had will would can could should i you he she it we they my your his her our their me him us them".split(" ");
   var NUMW = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty".split(" ");
+  /* 문장 키워드 판정 v2 (11/27 명주님 기준·시트 44문장으로 맞춤): 첫 영작 → 학습 후 최종 문장에서 나아진 점 */
   function kwLine(a0, f0) {
     var clean = function (x) { return String(x || "").replace(/\[\[|\]\]|\{\{|\}\}/g, "").replace(/\s+/g, " ").trim(); };
-    var a = clean(a0), f = clean(f0) || clean(a0), g = {}, ok = {}; /* 최종 문장이 없으면 처음부터 맞게 쓴 문장 */
+    var a = clean(a0), f = clean(f0) || clean(a0), g = {};
     if (!a) return null;
-    if (/\b(im|dont|cant|its|isnt|wont)\b/i.test(a) && /\b(i am|do not|don't|can't|cannot|it is|it's|is not|isn't|will not|won't)\b/i.test(f)) { a = a.replace(/\bim\b/i, "I'm").replace(/\bdont\b/i, "don't").replace(/\bcant\b/i, "can't").replace(/\bisnt\b/i, "isn't").replace(/\bwont\b/i, "won't"); g["철자"] = 1; } /* 아포스트로피를 빠뜨린 줄임말 */
-    var ko = /[\uAC00-\uD7A3]/.test(a);
-    var w = function (x) { return x.split(" ").map(function (t) { return t.replace(/[^\w'\uAC00-\uD7A3]/g, ""); }).filter(Boolean); };
-    var EXP = { "i'm": "i am", "it's": "it is", "don't": "do not", "can't": "can not", "isn't": "is not", "aren't": "are not", "won't": "will not", "he's": "he is", "she's": "she is", "they're": "they are", "we're": "we are", "you're": "you are" };
-    var ex = function (x) { return x.replace(/\b[a-z]+'[a-z]+\b/gi, function (t) { return EXP[t.toLowerCase()] || t; }); }; /* 줄임말을 풀어서 단어를 맞춘다 */
-    var A = w(ex(a)), F = w(ex(f)), la = A.map(function (t) { return t.toLowerCase(); }), lf = F.map(function (t) { return t.toLowerCase(); });
-    /* 대문자·문장 부호: 글자만 같고 대소문자나 부호가 다른 경우 */
-    var bare = function (x) { return x.toLowerCase().replace(/[^\w\s'\uAC00-\uD7A3]/g, "").replace(/\s+/g, " ").trim(); };
-    var capP = a.replace(/[\w\s'\uAC00-\uD7A3]/g, "") !== f.replace(/[\w\s'\uAC00-\uD7A3]/g, "") || A.some(function (t, i) { var j = lf.indexOf(la[i]); return j >= 0 && t !== F[j]; }) || (/^[a-z]/.test(a) && /^[A-Z]/.test(f));
-    if (capP) g["문장 부호"] = 1; else ok["문장 부호"] = 1;
-    if (bare(a) === bare(f)) { if (!ko) { ok["문장 구성"] = ok["문법 사용"] = ok["단어 선택"] = ok["철자"] = 1; } return { grow: Object.keys(g), good: Object.keys(ok) }; }
-    /* 문장 구성: 우리말이 섞였거나 끝까지 쓰지 못한 문장 */
-    if (ko || A.length < F.length * 0.6) g["문장 구성"] = 1; else ok["문장 구성"] = 1;
-    /* 줄임말·숫자를 풀어 쓴 경우는 표현 확장 */
-    if (/\b(i'm|it's|don't|can't|he's|she's|they're|we're|you're|isn't|aren't)\b/i.test(a) && !/'/.test(f.replace(/'s\b/g, ""))) g["표현 확장"] = 1;
-    if (/\d/.test(a) && NUMW.some(function (n) { return lf.indexOf(n) >= 0; })) g["표현 확장"] = 1;
-    /* 단어 맞추기 (LCS) 뒤 남은 단어로 철자·문법·단어 선택을 나눈다 */
-    var n = la.length, m = lf.length, L = [];
-    for (var i = 0; i <= n; i++) { L.push([]); for (var j = 0; j <= m; j++) L[i].push(0); }
+    var KO = /[가-힣]/, out = function () { return { grow: Object.keys(g), good: [] }; };
+    if (a === f) return out();
+    /* 문장 부호: 대문자(문장 첫 글자·I·이름·전부 대문자), 마침표·쉼표, 쉼표 뒤 띄어쓰기, 아포스트로피 */
+    var endP = function (x) { return (x.match(/[.!?]$/) || [""])[0]; };
+    if (endP(a) !== endP(f) && endP(f) && !KO.test(a)) g["문장 부호"] = 1;
+    if (/[a-z]/.test(f.charAt(0)) === false && /^[a-z]/.test(a)) g["문장 부호"] = 1;
+    if (/(^|\s)i(\s|'|$)/.test(a)) g["문장 부호"] = 1;
+    if (a.length > 6 && a === a.toUpperCase() && /[A-Z]/.test(a) && f !== f.toUpperCase()) g["문장 부호"] = 1;
+    if (/,\S/.test(a) && /, /.test(f)) g["문장 부호"] = 1;
+    if ((f.match(/,/g) || []).length > (a.match(/,/g) || []).length) g["문장 부호"] = 1;
+    if (/^l'm\b/i.test(a) || /\bl\b/.test(a)) g["문장 부호"] = 1;
+    /* 단어로 나누기: 공백·문장 부호 기준, 줄임말은 풀어서 */
+    var EXP = { "i'm": "i am", "it's": "it is", "don't": "do not", "can't": "can not", "isn't": "is not", "aren't": "are not", "won't": "will not", "he's": "he is", "she's": "she is", "they're": "they are", "we're": "we are", "you're": "you are", "im": "i am", "dont": "do not", "cant": "can not" };
+    var toks = function (x) { return x.toLowerCase().replace(/[’]/g, "'").split(/[\s,.!?;:"()]+/).filter(Boolean).reduce(function (o, t) { return o.concat((EXP[t] || t).split(" ")); }, []); };
+    if (/\b(i'm|it's|don't|can't|isn't|aren't)\b/i.test(a) && !/\b(i'm|it's|don't|can't|isn't|aren't)\b/i.test(f)) g["표현 다양성"] = 1; /* 줄임말 → 풀어 쓰기 */
+    var la = toks(a), lf = toks(f);
+    /* 우리말: 서술어(되고 싶어요 등)가 우리말이면 문장 구성 + 단어 선택, 낱말만 우리말이면 단어 선택 */
+    var kot = a.split(/\s+/).filter(function (t) { return KO.test(t); });
+    if (kot.length) {
+      g["단어 선택"] = 1;
+      var mostlyKo = kot.length >= a.split(/\s+/).length / 2;
+      if (kot.some(function (t) { return /(요|다|니다|어요|아요|해요|싶어|고|가능|함)[.!?]?$/.test(t); }) || mostlyKo) g["문장 구성"] = 1;
+    }
+    /* 숫자: 10 → ten 은 표현 다양성, 10years 처럼 붙여 쓴 건 철자 */
+    if (la.some(function (t) { return /\d/.test(t); }) && lf.some(function (t) { return NUMW.indexOf(t) >= 0; })) g["표현 다양성"] = 1;
+    /* 끝까지 쓰지 못한 문장 */
+    var en = a.split(/\s+/).filter(function (t) { return !KO.test(t); });
+    if (en.length <= 2 && lf.length >= 4 || la.length < lf.length * 0.5) g["문장 구성"] = 1;
+    var sc = function (x) { return (x.match(/[.!?](\s|$)/g) || []).length; };
+    if (sc(f) > sc(a) && sc(a) >= 1 && lf.length > la.length + 4) g["문장 구성"] = 1;
+    /* 순서만 바꾼 경우(패턴 어순): 같은 단어 묶음이 대부분 그대로면 표현 다양성 */
+    var bag = {}; lf.forEach(function (t) { bag[t] = (bag[t] || 0) + 1; });
+    var ra = [], rest = {}; for (var k in bag) rest[k] = bag[k];
+    la.forEach(function (t) { if (rest[t] > 0) rest[t]--; else ra.push(t); });
+    var rf = []; for (k in rest) for (var c = 0; c < rest[k]; c++) rf.push(k);
+    var n = la.length, m = lf.length, L = []; for (var i = 0; i <= n; i++) { L.push([]); for (var j = 0; j <= m; j++) L[i].push(0); }
     for (i = n - 1; i >= 0; i--) for (j = m - 1; j >= 0; j--) L[i][j] = la[i] === lf[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
-    var ra = [], rf = []; i = 0; j = 0;
-    while (i < n && j < m) { if (la[i] === lf[j]) { i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) ra.push(la[i++]); else rf.push(lf[j++]); }
-    ra = ra.concat(la.slice(i)); rf = rf.concat(lf.slice(j));
+    var same = n - ra.length; if (n >= 4 && same >= n * 0.6 && L[0][0] < same - 1) g["표현 다양성"] = 1;
+    /* 남은 단어 짝짓기: 철자 / 문법 / 단어 선택 */
     var ed = function (x, y) { var d = []; for (var p = 0; p <= x.length; p++) { d.push([p]); for (var q = 1; q <= y.length; q++) d[p].push(p ? 0 : q); } for (p = 1; p <= x.length; p++) for (q = 1; q <= y.length; q++) d[p][q] = Math.min(d[p - 1][q] + 1, d[p][q - 1] + 1, d[p - 1][q - 1] + (x[p - 1] === y[q - 1] ? 0 : 1)); return d[x.length][y.length]; };
-    var stem = function (x, y) { var k = 0; while (k < x.length && k < y.length && x[k] === y[k]) k++; return k >= 3 && /^(s|es|ed|d|ing|er|est|ies|y)?$/.test(x.slice(k)) && /^(s|es|ed|d|ing|er|est|ies|y)?$/.test(y.slice(k)); };
-    var used = {};
+    var infl = function (x, y) { var s = x.length < y.length ? x : y, l = x.length < y.length ? y : x; if (l.indexOf(s) !== 0 || s.length < 3) return false; var t = l.slice(s.length); return /^(s|es|ed|ing|er|est)$/.test(t) || (t === "d" && /e$/.test(s)); };
+    var IRR = { get: "got", go: "went", eat: "ate", is: "was", are: "were", have: "had", make: "made", see: "saw", buy: "bought", come: "came", take: "took", do: "did", am: "was", give: "gave", say: "said", meet: "met", run: "ran", swim: "swam", write: "wrote", read: "read", much: "many", a: "an", an: "a", the: "a" };
+    var irr = function (x, y) { return IRR[x] === y || IRR[y] === x; };
+    var used = {}, koSent = !!(kot.length && g["문장 구성"]);
     ra.forEach(function (x) {
-      if (/[\uAC00-\uD7A3]/.test(x) || /^\d+$/.test(x)) return; /* 우리말·숫자는 위에서 처리 */
-      if (/\d/.test(x)) { g["철자"] = 1; return; } /* 10yaers처럼 숫자와 붙여 쓴 단어 */
-      var best = -1, bd = 99; rf.forEach(function (y, k) { if (used[k]) return; var e = ed(x, y); if (e < bd) { bd = e; best = k; } });
+      if (KO.test(x) || /^\d+$/.test(x)) return;
+      if (koSent && FN.indexOf(x) >= 0) return; /* 우리말로 쓴 서술어 문장에서 빠진 기능어는 문장 구성에 포함 */
+      if (/\d/.test(x)) { g["철자"] = 1; var wd = x.replace(/\d+/g, ""); rf.forEach(function (y, q) { if (!used[q] && wd && ed(wd, y) <= 2) used[q] = 1; }); return; } /* 10years */
+      for (var p = 0; p + 1 < rf.length; p++) if (!used[p] && !used[p + 1] && rf[p] + rf[p + 1] === x) { g["철자"] = 1; used[p] = used[p + 1] = 1; return; } /* iam → i am */
+      var xs = x.replace(/'/g, ""), best = -1, bd = 99; rf.forEach(function (y, q) { if (used[q]) return; var e = ed(xs, y.replace(/'/g, "")); if (e < bd) { bd = e; best = q; } });
       var y = best >= 0 ? rf[best] : "";
-      if (y && stem(x, y)) { g["문법 사용"] = 1; used[best] = 1; }
-      else if (y && bd <= Math.max(1, Math.floor(Math.max(x.length, y.length) / 2)) && FN.indexOf(x) < 0) { g["철자"] = 1; used[best] = 1; }
-      else if (FN.indexOf(x) >= 0) { g["문법 사용"] = 1; if (best >= 0 && FN.indexOf(y) >= 0) used[best] = 1; }
-      else { g["단어 선택"] = 1; if (best >= 0) used[best] = 1; }
+      if (y && (infl(x, y) || irr(x, y))) { g["문법 사용"] = 1; used[best] = 1; }
+      else if (y && x[0] === y[0] && bd <= Math.max(2, Math.floor(Math.max(x.length, y.length) / 3)) && FN.indexOf(x) < 0 && FN.indexOf(y) < 0) { g["철자"] = 1; used[best] = 1; }
+      else if (FN.indexOf(x) >= 0 || (y && FN.indexOf(y) >= 0)) { g["문법 사용"] = 1; if (best >= 0 && FN.indexOf(y) >= 0) used[best] = 1; }
+      else if (y) { g["단어 선택"] = 1; used[best] = 1; }
     });
-    rf.forEach(function (y, k) { if (used[k] || NUMW.indexOf(y) >= 0) return; if (FN.indexOf(y) >= 0) g["문법 사용"] = 1; else if (!g["문장 구성"] && ko) g["단어 선택"] = 1; });
-    if (ko && la.some(function (t) { return /[\uAC00-\uD7A3]/.test(t); })) g["단어 선택"] = 1;
-    ["문법 사용", "단어 선택", "철자"].forEach(function (k) { if (!g[k]) ok[k] = 1; });
-    if (g["문장 구성"]) delete ok["문법 사용"], delete ok["단어 선택"];
-    return { grow: Object.keys(g), good: Object.keys(ok) };
+    /* 새로 들어간 말: 문법 기능어(to, a/the, can, 전치사)는 문법 사용, 뜻을 더한 말은 단어 선택 */
+    var added = rf.filter(function (y, q) { return !used[q] && NUMW.indexOf(y) < 0 && !/^\d+$/.test(y); });
+    var mk = kot.length >= a.split(/\s+/).length / 2;
+    added.forEach(function (y) { if (FN.indexOf(y) >= 0) { if (!mk && !(koSent && /^(i|you|we|they|he|she|it)$/.test(y))) g["문법 사용"] = 1; } else if (!g["문장 구성"]) g["단어 선택"] = 1; });
+    /* 처음 문장도 뜻이 통했는데(빠진 말 없이 그대로 담김) 더 구체적·다른 형태로 쓴 경우 */
+    if (!ra.length && added.some(function (y) { return FN.indexOf(y) < 0 || /^(can|could|would|should|will)$/.test(y); }) && !g["문장 구성"]) g["표현 다양성"] = 1; /* 뜻을 더하거나 할 수 있다(can) 같은 표현을 더함 */
+    return out();
   }
   function kwOf(d) {
     var N = d.notes; if (!N) return null;
@@ -448,7 +467,7 @@
     var grow = cnt("grow").slice(0, 2), gn = grow.map(function (k) { return k[0]; });
     var good = cnt("good").filter(function (k) { return gn.indexOf(k[0]) < 0; }).slice(0, 3);
     var gAll = {}, okAll = {}; rows.forEach(function (x) { x.grow.forEach(function (k) { gAll[k] = 1; }); x.good.forEach(function (k) { okAll[k] = 1; }); });
-    var table = KW.map(function (k) { return { k: k[0], s: gAll[k[0]] ? "fix" : okAll[k[0]] && k[0] !== "표현 확장" ? "ok" : "" }; });
+    var table = KW.map(function (k) { return { k: k[0], s: gAll[k[0]] ? "fix" : okAll[k[0]] && k[0] !== "표현 다양성" ? "ok" : "" }; });
     return grow.length || good.length ? { grow: grow, good: good, table: table, n: rows.length } : null;
   }
   function growthOf(d) {
