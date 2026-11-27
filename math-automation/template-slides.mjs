@@ -87,6 +87,49 @@ async function placeContent(template, source, doc, file, number, ratio) {
   }
 }
 
+const labelNames = new Set(['예', '읽기', '약속']);
+function applyLessonLabelColors(doc) {
+  const drawing = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+  const child = (node, name) => Array.from(node?.children || []).find(el => el.localName === name);
+  const make = name => doc.createElementNS(drawing, 'a:' + name);
+  const geometry = shape => child(child(shape, 'spPr'), 'prstGeom')?.getAttribute('prst');
+  function bounds(shape) {
+    const transform = child(child(shape, 'spPr'), 'xfrm');
+    const off = child(transform, 'off'), size = child(transform, 'ext');
+    if (off && size) return [off.getAttribute('x'), off.getAttribute('y'), size.getAttribute('cx'), size.getAttribute('cy')].join(',');
+  }
+  function fill(parent, color, after) {
+    const paint = make('solidFill'), rgb = make('srgbClr');
+    rgb.setAttribute('val', color);
+    paint.append(rgb);
+    const old = Array.from(parent.children).find(el => ['noFill','solidFill','gradFill','blipFill','pattFill','grpFill'].includes(el.localName));
+    if (old) old.replaceWith(paint);
+    else parent.insertBefore(paint, after ? after.nextSibling : parent.firstChild);
+  }
+  let count = 0;
+  for (const label of parts(doc, 'sp')) {
+    if (!labelNames.has(textOf(label))) continue;
+    const box = bounds(label);
+    const rounded = geometry(label) === 'roundRect' ? label :
+      Array.from(label.parentNode.children).slice(0, Array.from(label.parentNode.children).indexOf(label)).reverse()
+        .find(el => box && el.localName === 'sp' && geometry(el) === 'roundRect' && !textOf(el) && bounds(el) === box);
+    if (!rounded) continue;
+    const properties = child(rounded, 'spPr');
+    fill(properties, '35651C', child(properties, 'prstGeom'));
+    const line = child(properties, 'ln');
+    if (line) fill(line, 'BFFF00');
+    for (const run of parts(label, 'r')) {
+      let style = child(run, 'rPr');
+      if (!style) {style = make('rPr'); run.prepend(style);}
+      child(style, 'highlight')?.remove();
+      fill(style, 'FFFFFF', child(style, 'ln'));
+      style.setAttribute('b', '1');
+    }
+    count++;
+  }
+  return count;
+}
+
 export async function fillTemplate(bytes, generated, picks, extras, topic, nextTopic, title, onSlideOrder) {
   const template=await window.JSZip.loadAsync(bytes), source=await window.JSZip.loadAsync(generated);
   const main='ppt/presentation.xml', pres=await xml(template,main), rels=await xml(template,relPath(main));
@@ -115,6 +158,7 @@ export async function fillTemplate(bytes, generated, picks, extras, topic, nextT
         if(next && !nextTopic)setTopic(next,'수업 마무리');
       }
     }
+    applyLessonLabelColors(doc);
     order.push(entry?.id??null);template.file(file,serialize(doc));
   }
   if(seen.size!==picks.length || quizSeen.size!==extras.length) throw Error('제출한 문항 수와 PPT 양식의 자리가 다릅니다.');
