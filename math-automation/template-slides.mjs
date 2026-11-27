@@ -141,6 +141,42 @@ function applyLessonLabelColors(doc) {
     const prop=child(shape,'spPr');
     fill(prop,color,child(prop,'prstGeom') || child(prop,'xfrm'));
   }
+  // Paint the pill itself. A text highlight otherwise produces a square inside its rounded outline.
+  for (const shape of shapes) {
+    const marked = parts(shape,'r').filter(r => child(child(r,'rPr'),'highlight'));
+    if (!marked.length) continue;
+    const previous = shape.previousElementSibling, value = textOf(shape);
+    const label = value.length < 14 && parts(shape,'p').length === 1 &&
+      geometry(previous) === 'roundRect' && !textOf(previous) && bounds(previous) === bounds(shape);
+    if (label) {
+      panel(previous,'244637');
+      const line = child(child(previous,'spPr'),'ln');
+      if (line) fill(line,'738F7A');
+      const body=child(child(shape,'txBody'),'bodyPr');
+      if(body) body.setAttribute('anchor','ctr');
+      for(const para of parts(shape,'pPr')) para.setAttribute('algn','ctr');
+    }
+    for(const run of marked) {
+      const rp=child(run,'rPr');
+      child(rp,'highlight').remove();
+      fill(rp,label || value.includes('|') ? 'FFFFFF' : 'FFE347',child(rp,'ln'));
+    }
+    count++;
+  }
+  for (const shape of shapes) {
+    const value = textOf(shape);
+    for (const run of parts(shape,'r')) {
+      const chars = child(run,'t'), rp = child(run,'rPr');
+      if (!chars || !rp) continue;
+      const east=child(rp,'ea');
+      if (/[가-힣]/.test(chars.textContent) && east && /^(Lora|Cambria Math|Symbol|Wingdings)/i.test(east.getAttribute('typeface') || '')) {
+        east.setAttribute('typeface','Noto Sans KR'); count++;
+      }
+      if (value.includes('60을 소인수분해 한 것은?') && /[0-9²³]x[0-9]/.test(value) && chars.textContent.includes('x')) {
+        chars.textContent=chars.textContent.replace(/x/g,'×'); count++;
+      }
+    }
+  }
   const teachingPage = shapes.some(sp => /^(개념 언박싱|개념 충전|0[0-9]-[0-9]|[1-9]\s+.+[?？])/.test(textOf(sp)));
   for (const [index, shape] of shapes.entries()) {
     const value = textOf(shape), previous = shape.previousElementSibling;
