@@ -102,19 +102,16 @@
     var ready = x.status === "ready";
     var meta = ready ? "LV " + (x.level || "-") + (x.lessons == null ? "" : " · " + x.lessons + "레슨") : "학습 기록을 기다리는 중";
     return '<li data-row="' + esc(x.id) + '"><button type="button" data-rid="' + esc(x.id) + '"' + (current && current.id === x.id ? ' aria-current="true"' : "") + ">" +
-      '<b><span class="nm">' + esc(x.name || "새 학생") + '</span><span class="id">' + esc(x.student_id) + "</span>" + (x.variant && !x.auto ? '<span class="vtag">' + esc(x.variant) + "</span>" : "") + "</b>" +
+      '<b><span class="nm">' + esc(x.name || "새 학생") + '</span><span class="id">' + esc(x.student_id) + "</span>" + "" + "</b>" +
       '<em class="' + (ready ? "ready" : "wait") + '">' + (ready ? "완성" : "준비 중") + "</em><small>" + esc(meta) + "</small></button>" +
-      (x.is_sample || (x.variant === "새 시안" && !x.auto) ? "" : '<button type="button" class="row-del" data-delrow="' + esc(x.id) + '" aria-label="' + esc((x.name || x.student_id) + " 리포트 삭제") + '">삭제</button>') + "</li>";
+      ('<button type="button" class="row-del" data-delrow="' + esc(x.id) + '" aria-label="' + esc((x.name || x.student_id) + " 리포트 삭제") + '">삭제</button>') + "</li>";
   }
   function renderList() {
-    var isDraft = function (x) { return x.variant === "새 시안" && !x.auto; }; /* 학생 ID로 자동 생성한 리포트는 시안이 아니라 일반 학생 (11/27) */
-    var draft = reports.filter(isDraft), others = reports.filter(function (x) { return !isDraft(x); });
-    var sample = others.filter(function (x) { return x.is_sample; }), rest = others.filter(function (x) { return !x.is_sample; });
-    rest.sort(function (a, b) { return (a.status === b.status ? 0 : a.status === "ready" ? -1 : 1) || String(a.name || "~").localeCompare(String(b.name || "~"), "ko") || a.id.localeCompare(b.id); });
-    var draftHtml = draft.length ? '<div class="sample"><span class="sample-tag">' + STAR + "새 시안</span><p>요약·어휘·문법·총평 구성이에요. 학생마다 문구가 어떻게 달라지는지 비교해 보세요.</p><ul class=\"rlist\">" + draft.map(item).join("") + "</ul></div>" : "";
-    sampleBox.innerHTML = draftHtml + (sample.length ? '<div class="sample"><span class="sample-tag">' + STAR + (draft.length ? "이전 샘플" : "대표 샘플") + "</span><p>" + (draft.length ? "지난번 시안이에요. 비교할 때 보세요." : "처음 보시는 분은 이 리포트부터 보세요.") + (sample.length > 1 ? " ‘수정 샘플’은 학부모용 화면, ‘지표 전체 보기’는 평가 항목을 모두 펼친 화면이에요." : " 다른 리포트도 같은 기준으로 만들었어요.") + "</p><ul class=\"rlist\">" + sample.map(item).join("") + "</ul></div>" : "");
-    $("allLabel").textContent = "전체 학생 " + rest.length + "명"; $("clearAll").hidden = !rest.length;
-    rlist.innerHTML = rest.length ? rest.map(item).join("") : '<li class="list-empty">아직 다른 학생이 없어요. 위 칸에 학생 ID를 넣어 만들어 보세요.</li>';
+    /* 샘플·새 시안·학생 ID로 만든 리포트를 나누지 않고 '전체 학생' 하나로 관리한다 (KWAN 11/27) */
+    var all = reports.slice().sort(function (a, b) { return (a.status === b.status ? 0 : a.status === "ready" ? -1 : 1) || String(a.name || "~").localeCompare(String(b.name || "~"), "ko") || a.id.localeCompare(b.id); });
+    sampleBox.innerHTML = "";
+    $("allLabel").textContent = "전체 학생 " + all.length + "명"; $("clearAll").hidden = !all.length;
+    rlist.innerHTML = all.length ? all.map(item).join("") : '<li class="list-empty">아직 학생이 없어요. 위 칸에 학생 ID를 넣어 만들어 보세요.</li>';
     $("listCount").textContent = "리포트 " + reports.length + "개 · 누르면 가운데에 리포트가 나와요";
     filterList();
   }
@@ -130,9 +127,9 @@
   $("listPanel").addEventListener("click", function (e) { var d = e.target.closest("[data-delrow]"); if (!d) return; e.stopPropagation(); var id = d.getAttribute("data-delrow"), x = byId(id); delReports([id], (x && x.name || id) + " (" + (x && x.student_id || id) + ") 리포트를 지울까요?"); }, true);
   /* 전체 학생 모두 삭제: 샘플·새 시안은 남기고, 의견도 함께 지운다 (KWAN 11/27) */
   $("clearAll").addEventListener("click", async function () {
-    var ids = reports.filter(function (x) { return !(x.variant === "새 시안" && !x.auto) && !x.is_sample; }).map(function (x) { return x.id; });
+    var ids = reports.map(function (x) { return x.id; });
     if (!ids.length) return;
-    if (!confirm("전체 학생 " + ids.length + "명의 리포트를 모두 지울까요?\n샘플과 새 시안은 남아요. 지우면 되돌릴 수 없어요.")) return;
+    if (!confirm("전체 학생 " + ids.length + "명의 리포트를 모두 지울까요?\n달린 의견도 함께 지워지고, 되돌릴 수 없어요.")) return;
     var btn = this; btn.disabled = true;
     try {
       var n = await api("rpc/gv_reports_delete", { method: "POST", body: { ids: ids } });
