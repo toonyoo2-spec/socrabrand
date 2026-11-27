@@ -352,18 +352,23 @@
   /* 문장 키워드 (11/27 슬랙 확정: 은비님·명주님·재연님)
      - 최근 레슨 문장에서 첫 영작 → 학습 후 최종 문장으로 나아진 점만 '성장' 태그로 (긍정 태그는 쓰지 않음)
      - 우선순위 문장 구성 > 단어 선택 > 문법 사용 > 철자 > 표현 다양성 > 문장 부호, 최대 3개
-     - 나아진 점이 없으면(처음부터 맞게 쓴 문장) 표현 다양성 하나로, 태그 없는 학생이 없게 */
+     - 3934에 키워드가 없는 문장은 태그 없이, 기존 리포트는 이전 표시 규칙 유지 */
   var KW_PRI = ["문장 구성", "단어 선택", "문법 사용", "철자", "표현 다양성", "문장 부호"];
-  function kwTags(l) {
-    var r = kwLine(l[0], l[2] || l[3]); if (!r) return "";
+  function sentenceKeywords(note, line) {
+    if (Array.isArray(note.keywords)) return { grow: note.keywords, good: [] };
+    return kwLine(line[0], line[2] || line[3]);
+  }
+  function kwTags(note, line) {
+    var r = sentenceKeywords(note, line); if (!r) return "";
     var t = KW_PRI.filter(function (k) { return r.grow.indexOf(k) >= 0; }).slice(0, 3);
-    if (!t.length) t = ["표현 다양성"];
-    return '<div class="kwt"><p class="kw-row up"><b>학습하며 성장했어요</b><span>' + t.map(function (k) { return "<i>" + k + "</i>"; }).join("") + "</span></p></div>";
+    if (!t.length && !Array.isArray(note.keywords)) t = ["표현 다양성"];
+    if (!t.length) return "";
+    return '<div class="kwt"><p class="kw-row up"><b>학습하며 성장했어요</b><span>' + t.map(function (k) { return "<i>" + esc(k) + "</i>"; }).join("") + "</span></p></div>";
   }
   function wrote(kd, n, base) {
     return '<div class="note' + (kd === "now" ? " now" : "") + '"><div class="note-top"><div><span class="eyebrow">' + (kd === "now" ? "지금" : "처음") + "</span><h3>" + esc(n.title) + '</h3></div><span class="stamp">' + esc(n.date + " · " + n.lesson) + '</span></div><ul class="lines">' + n.lines.map(function (l) {
       var ok = !l[2]; /* 고친 문장이 없으면 처음부터 바르게 쓴 문장 */
-      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (kd === "now" ? kwTags(l) : "") + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
+      return '<li><span class="en" lang="en">' + rich(l[0]) + '</span><span class="ko">' + esc(l[1]) + "</span>" + (kd === "now" ? kwTags(n, l) : "") + (ok ? '<span class="okline">바르게 쓴 문장이에요.</span>' : l[2] ? '<span class="fixline"><em>리아 선생님과 함께 고친 문장</em><b lang="en">' + esc(l[2]) + "</b></span>" : "") + "</li>";
     }).join("") + "</ul></div>";
   }
   var NOTE_KEY = '<div class="legend"><p class="lg-t">처음엔 어려웠던 곳도 리아 선생님과 함께 고치며 배웠어요.</p><span><i class="k1"></i>노란 칸: 영어 대신 한국어로 쓴 곳</span><span><i class="k2"></i>물결: 리아 선생님과 함께 고친 곳</span></div>';
