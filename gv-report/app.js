@@ -8,7 +8,7 @@
   var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvbGphc21nb2dkY3ZueXRhb2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NzIwMDEsImV4cCI6MjEwMTQ0ODAwMX0.G8wiFPCgvzoDwGlk__SDkn8SxP6lDMHY6g6pt61-a5o";
   var K = { token: "socra_admin_token", exp: "socra_admin_token_exp", refresh: "socra_refresh_token", uid: "socra_user_id",
             role: "socra_user_role", email: "socra_user_email", name: "socra_user_name", tabs: "socra_visible_tabs" };
-  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons,variant:data->>variant,err:data->>build_error&data->>hidden=is.null&order=is_sample.desc,created_at.asc";
+  var LIST = "gv_reports?select=id,student_id,status,is_sample,requested_by_name,created_at,name:data->>name,level:data->>level,lessons:data->>lessons,variant:data->>variant,auto:data->>auto,err:data->>build_error&data->>hidden=is.null&order=is_sample.desc,created_at.asc";
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -102,11 +102,13 @@
     var ready = x.status === "ready";
     var meta = ready ? "LV " + (x.level || "-") + (x.lessons == null ? "" : " · " + x.lessons + "레슨") : "학습 기록을 기다리는 중";
     return '<li data-row="' + esc(x.id) + '"><button type="button" data-rid="' + esc(x.id) + '"' + (current && current.id === x.id ? ' aria-current="true"' : "") + ">" +
-      '<b><span class="nm">' + esc(x.name || "새 학생") + '</span><span class="id">' + esc(x.student_id) + "</span>" + (x.variant ? '<span class="vtag">' + esc(x.variant) + "</span>" : "") + "</b>" +
-      '<em class="' + (ready ? "ready" : "wait") + '">' + (ready ? "완성" : "준비 중") + "</em><small>" + esc(meta) + "</small></button></li>";
+      '<b><span class="nm">' + esc(x.name || "새 학생") + '</span><span class="id">' + esc(x.student_id) + "</span>" + (x.variant && !x.auto ? '<span class="vtag">' + esc(x.variant) + "</span>" : "") + "</b>" +
+      '<em class="' + (ready ? "ready" : "wait") + '">' + (ready ? "완성" : "준비 중") + "</em><small>" + esc(meta) + "</small></button>" +
+      (x.is_sample || (x.variant === "새 시안" && !x.auto) ? "" : '<button type="button" class="row-del" data-delrow="' + esc(x.id) + '" aria-label="' + esc((x.name || x.student_id) + " 리포트 삭제") + '">삭제</button>') + "</li>";
   }
   function renderList() {
-    var draft = reports.filter(function (x) { return x.variant === "새 시안"; }), others = reports.filter(function (x) { return x.variant !== "새 시안"; });
+    var isDraft = function (x) { return x.variant === "새 시안" && !x.auto; }; /* 학생 ID로 자동 생성한 리포트는 시안이 아니라 일반 학생 (11/27) */
+    var draft = reports.filter(isDraft), others = reports.filter(function (x) { return !isDraft(x); });
     var sample = others.filter(function (x) { return x.is_sample; }), rest = others.filter(function (x) { return !x.is_sample; });
     rest.sort(function (a, b) { return (a.status === b.status ? 0 : a.status === "ready" ? -1 : 1) || String(a.name || "~").localeCompare(String(b.name || "~"), "ko") || a.id.localeCompare(b.id); });
     var draftHtml = draft.length ? '<div class="sample"><span class="sample-tag">' + STAR + "새 시안</span><p>요약·어휘·문법·총평 구성이에요. 학생마다 문구가 어떻게 달라지는지 비교해 보세요.</p><ul class=\"rlist\">" + draft.map(item).join("") + "</ul></div>" : "";
@@ -116,9 +118,19 @@
     $("listCount").textContent = "리포트 " + reports.length + "개 · 누르면 가운데에 리포트가 나와요";
     filterList();
   }
+  async function delReports(ids, label) {
+    if (!confirm(label + "\n지우면 되돌릴 수 없어요.")) return;
+    try {
+      var n = await api("rpc/gv_reports_delete", { method: "POST", body: { ids: ids } });
+      if (current && ids.indexOf(current.id) >= 0) { current = null; showEmptyCenter(); }
+      reports = await api(LIST) || []; renderList();
+      say("ok", (n || 0) + "명 리포트를 지웠어요.");
+    } catch (err) { if (!expired(err)) say("err", "지우지 못했어요. 잠시 뒤 다시 눌러 주세요."); }
+  }
+  $("listPanel").addEventListener("click", function (e) { var d = e.target.closest("[data-delrow]"); if (!d) return; e.stopPropagation(); var id = d.getAttribute("data-delrow"), x = byId(id); delReports([id], (x && x.name || id) + " (" + (x && x.student_id || id) + ") 리포트를 지울까요?"); }, true);
   /* 전체 학생 모두 삭제: 샘플·새 시안은 남기고, 의견도 함께 지운다 (KWAN 11/27) */
   $("clearAll").addEventListener("click", async function () {
-    var ids = reports.filter(function (x) { return x.variant !== "새 시안" && !x.is_sample; }).map(function (x) { return x.id; });
+    var ids = reports.filter(function (x) { return !(x.variant === "새 시안" && !x.auto) && !x.is_sample; }).map(function (x) { return x.id; });
     if (!ids.length) return;
     if (!confirm("전체 학생 " + ids.length + "명의 리포트를 모두 지울까요?\n샘플과 새 시안은 남아요. 지우면 되돌릴 수 없어요.")) return;
     var btn = this; btn.disabled = true;

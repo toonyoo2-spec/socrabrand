@@ -1010,6 +1010,11 @@ body:has(.vb)::before{background:#E9F4EE}
 .rlist-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-right:4px}
 .rlist-clear{min-height:32px;padding:0 10px;border:0;border-radius:8px;background:none;font:700 12px var(--font);color:#C2410C;cursor:pointer}
 .rlist-clear:hover{background:#FFF1E8}
+/* 학생별 삭제 (11/27) */
+#rlist li{display:flex;align-items:center;gap:4px}
+#rlist li > button[data-rid]{flex:1;min-width:0}
+#rlist .row-del{flex:none;width:auto;display:inline-flex;align-items:center;justify-content:center;box-shadow:none;min-height:36px;padding:0 8px;border:0;border-radius:8px;background:none;font:700 12px var(--font);color:#C2410C;cursor:pointer;opacity:.75}
+#rlist .row-del:hover,#rlist .row-del:focus-visible{opacity:1;background:#FFF1E8}
 </style>
 </head>
 <body>
@@ -1091,8 +1096,8 @@ body:has(.vb)::before{background:#E9F4EE}
 <div class="side-backdrop" id="sideBackdrop" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="curriculum.js?v=1127l"></script>
-<script src="render.js?v=1127l"></script>
-<script src="app.js?v=1127l"></script>
+<script src="curriculum.js?v=1127m"></script>
+<script src="render.js?v=1127m"></script>
+<script src="app.js?v=1127m"></script>
 </body>
 </html>
