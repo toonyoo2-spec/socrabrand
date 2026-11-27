@@ -125,7 +125,67 @@ function applyLessonLabelColors(doc) {
       fill(style, 'FFFFFF', child(style, 'ln'));
       style.setAttribute('b', '1');
     }
+    const body = child(label, 'txBody'), bp = child(body, 'bodyPr');
+    for (const key of ['tIns','bIns','lIns','rIns']) bp.setAttribute(key,'0');
+    bp.setAttribute('anchor','ctr');
+    for (const el of Array.from(bp.children)) if (/autofit/i.test(el.localName)) el.remove();
+    bp.append(make('noAutofit'));
+    for (const pp of parts(body,'pPr')) pp.setAttribute('algn','ctr');
     count++;
+  }
+  const shapes = parts(doc,'sp'), lookup = value => shapes.find(sp => textOf(sp)===value);
+  const paintText = (shape,color) => {
+    for (const r of parts(shape,'rPr')) { fill(r,color,child(r,'ln')); child(r,'highlight')?.remove(); }
+  };
+  function panel(shape,color) {
+    const prop=child(shape,'spPr');
+    fill(prop,color,child(prop,'prstGeom') || child(prop,'xfrm'));
+  }
+  for(const shape of shapes) {
+    const value=textOf(shape);
+    if (/^(?:[0-9]{2}-[0-9]+\s+.+|개념플러스)$/.test(value) && parts(shape,'rPr').some(r=>r.getAttribute('u')==='sng')) {
+      for (const r of [...parts(shape,'rPr'),...parts(shape,'endParaRPr')]) r.setAttribute('u','none');
+      paintText(shape,'FFE347'); count++;
+    }
+    if (value==='24 = 23 × 3 의 소인수는 2, 3이다.') {
+      const run=parts(shape,'t').find(t=>t.textContent.endsWith('× 3 '));
+      if(run){run.textContent=run.textContent.trimEnd();count++;}
+    }
+  }
+  const title=lookup('개념플러스'), question=lookup('2는 어떤 소수일까?');
+  if (title && question && shapes.length===11 && shapes.every(sp=>child(child(sp,'spPr'),'xfrm'))) {
+    const rows=[
+      [22,15,655,33,23,null,'FFE347'],
+      [22,65,310,35,18,'244637','FFFFFF'],
+      [36,107,285,24,15,null,'FFE347'],
+      [36,134,285,24,15,null,'FFE347'],
+      [36,164,293,51,15,null,'FFFFFF'],
+      [350,65,344,35,18,'244637','FFFFFF'],
+      [362,108,326,70,17,null,'FFFFFF'],
+      [22,225,672,36,16,'244637','FFFFFF'],
+      [32,267,652,33,16,null,'FFE347'],
+      [32,317,301,53,17,'40302D','FFFFFF'],
+      [350,317,344,53,17,'234637','FFE347']
+    ];
+    const strs=['개념플러스','소수 2의 두 가지 성질','① 소수 중 유일한 짝수','② 가장 작은 소수','자연수는 1, 소수, 합성수로 나뉜다.','거듭제곱의 성질','1의 거듭제곱은 항상 1이다.\na ≠ 0일 때, a¹ = a로 정한다.','소인수분해한 결과를 쓰는 방법','작은 소인수부터 쓰고, 같은 소인수의 곱은 거듭제곱으로 나타낸다.','분해가 더 필요함\n84 = 2 × 42','소인수만 남은 결과\n84 = 2² × 3 × 7'];
+    const expected=['개념플러스','2는 어떤 소수일까?','① 소수 중 유일한 짝수','② 가장 작은 소수','자연수는 1, 소수, 합성수로 이루어져 있다.','1의 거듭제곱은 항상 1이다.','a≠0일 때, a1=a로 정한다.','소인수분해 한 결과는 작은 소인수부터 차례대로 쓰고같은 소인수의 곱은 거듭제곱으로 나타낸다.','소인수분해 한 결과는 반드시 소인수만의 곱으로 나타내어야 한다.','→ 84=2×42 (×)','84=22×3×7 (○)'];
+    if(expected.every((v,i)=>textOf(shapes[i])===v)) shapes.forEach((sp,i)=>{
+      const [x,y,w,h,sz,bg,color]=rows[i], prop=child(sp,'spPr'), transform=child(prop,'xfrm'), off=child(transform,'off'), ext=child(transform,'ext');
+      for(const [node,key,v] of [[off,'x',x],[off,'y',y],[ext,'cx',w],[ext,'cy',h]]) node.setAttribute(key,String(v*12700));
+      const body=child(sp,'txBody'), bp=child(body,'bodyPr');
+      bp.setAttribute('anchor','ctr'); for(const key of ['lIns','rIns','tIns','bIns']) bp.setAttribute(key, key==='lIns'&&bg?'114300':'0');
+      for(const c of Array.from(bp.children)) if(/autofit/i.test(c.localName))c.remove();
+      bp.append(make('noAutofit')); for(const p of Array.from(body.children))if(p.localName==='p')p.remove();
+      for(const line of strs[i].split('\n')){
+        const para=make('p');body.append(para);
+        for(const token of line.match(/[0-9a¹²≠=×]+|[^0-9a¹²≠=×]+/gu)||[]){
+          const r=make('r'),style=make('rPr'),t=make('t'); style.setAttribute('sz',String(sz*100));style.setAttribute('b','1');fill(style,color);
+          for(const k of ['latin','ea','cs']){const face=make(k);face.setAttribute('typeface',/^[0-9a¹²≠=×]/.test(token)?'Lora':'Noto Sans KR');style.append(face);}
+          t.textContent=token;r.append(style,t);para.append(r);
+        }
+      }
+      if(bg)panel(sp,bg); count++;
+    });
   }
   return count;
 }
