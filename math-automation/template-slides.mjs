@@ -165,15 +165,25 @@ function applyLessonLabelColors(doc) {
   }
   for (const shape of shapes) {
     const value = textOf(shape);
+    // The teacher-confirmed legacy quiz has four numeric products. Match only their literal x positions.
+    const nodes=parts(shape,'t');
+    const plain=nodes.map(t=>t.textContent).join('');
+    if(value.includes('60을 소인수분해 한 것은?') && plain.includes('2x3x10')) {
+      const operators=new Set(Array.from(plain.matchAll(/(?<=[0-9²³])x(?=[0-9])/g),m=>m.index));
+      let offset=0;
+      for(const node of nodes) {
+        const old=node.textContent;
+        node.textContent=old.replace(/x/g,(ch,i)=>operators.has(offset+i)?'×':ch);
+        offset+=old.length;
+      }
+      count+=operators.size;
+    }
     for (const run of parts(shape,'r')) {
       const chars = child(run,'t'), rp = child(run,'rPr');
       if (!chars || !rp) continue;
       const east=child(rp,'ea');
       if (/[가-힣]/.test(chars.textContent) && east && /^(Lora|Cambria Math|Symbol|Wingdings)/i.test(east.getAttribute('typeface') || '')) {
         east.setAttribute('typeface','Noto Sans KR'); count++;
-      }
-      if (value.includes('60을 소인수분해 한 것은?') && /[0-9²³]x[0-9]/.test(value) && chars.textContent.includes('x')) {
-        chars.textContent=chars.textContent.replace(/x/g,'×'); count++;
       }
     }
   }
