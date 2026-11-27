@@ -141,6 +141,30 @@ function applyLessonLabelColors(doc) {
     const prop=child(shape,'spPr');
     fill(prop,color,child(prop,'prstGeom') || child(prop,'xfrm'));
   }
+  const teachingPage = shapes.some(sp => /^(개념 언박싱|개념 충전|0[0-9]-[0-9]|[1-9]\s+.+[?？])/.test(textOf(sp)));
+  for (const [index, shape] of shapes.entries()) {
+    const value = textOf(shape), previous = shape.previousElementSibling;
+    if (/^\d{1,2}$/.test(value) && (geometry(shape)==='ellipse' ||
+        (geometry(previous)==='ellipse' && bounds(previous)===bounds(shape)))) {
+      for (const mark of parts(shape,'highlight')) mark.remove();
+      paintText(shape,'FFFFFF');
+      count++;
+    }
+    if (!teachingPage || index>3 || !/^(?:.+[?？]|0\d-\d+ .+)$/.test(value) || parts(shape,'p').length!==1) continue;
+    const xfrm=child(child(shape,'spPr'),'xfrm'), ext=child(xfrm,'ext'), body=child(child(shape,'txBody'),'bodyPr');
+    if (!ext || !body) continue;
+    const canvas = globalThis.document.createElement('canvas').getContext('2d');
+    let width=0;
+    for(const run of parts(shape,'r')) {
+      const style=child(run,'rPr'), size=Number(style?.getAttribute('sz')||1800)/100;
+      canvas.font=(style?.getAttribute('b')==='1'?'bold ':'')+size+'px "'+(child(style,'ea')?.getAttribute('typeface')||'Noto Sans KR')+'", sans-serif';
+      width+=canvas.measureText(child(run,'t')?.textContent||'').width;
+    }
+    const maxWidth=Number(ext.getAttribute('cx')), fitted=Math.ceil((width+12)*12700);
+    if(width>0 && fitted<maxWidth) ext.setAttribute('cx',String(fitted));
+    body.setAttribute('lIns','50800'); body.setAttribute('rIns','50800');
+    panel(shape,'244637');paintText(shape,'FFFFFF'); count++;
+  }
   for(const shape of shapes) {
     const value=textOf(shape);
     if (/^(?:[0-9]{2}-[0-9]+\s+.+|개념플러스)$/.test(value) && parts(shape,'rPr').some(r=>r.getAttribute('u')==='sng')) {
